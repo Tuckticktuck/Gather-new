@@ -162,7 +162,10 @@ async function directChat(p){
   await createChat("direct",null,[p.id]);
 }
 async function createChat(kind,title,ids){
-  const c=await db.from("conversations").insert({kind,title,created_by:S.user.id}).select("id").single();
+  const id=crypto.randomUUID();
+  // Do not request the inserted row here: RLS only exposes conversations to members,
+  // and the creator is added as a member immediately after this insert.
+  const c=await db.from("conversations").insert({id,kind,title,created_by:S.user.id});
   if(c.error){status("people-status",c.error.message,"error");return;}
   const id=c.data.id;
   const owner=await db.from("conversation_members").insert({conversation_id:id,user_id:S.user.id,role:"owner"});
