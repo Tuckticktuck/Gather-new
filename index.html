@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#171923">
+<meta name="description" content="Private direct and group conversations.">
+<title>Gather — Private Chat</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="app.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
+<script defer src="app.js"></script>
+</head>
+<body>
+<section id="auth" class="auth-shell">
+  <form id="auth-form" class="auth-card">
+    <div class="brand"><span class="brand-icon">g</span><span>gather</span></div>
+    <p class="eyebrow">YOUR PRIVATE SPACE</p>
+    <h1 id="auth-title">Welcome back.</h1>
+    <p id="auth-subtitle" class="muted">Sign in to see your conversations.</p>
+    <div class="tabs">
+      <button type="button" class="tab active" data-mode="signin">Sign in</button>
+      <button type="button" class="tab" data-mode="signup">Create account</button>
+    </div>
+    <label id="name-wrap" hidden>Display name<input id="name" maxlength="50" autocomplete="nickname" placeholder="Your name"></label>
+    <label>Email<input id="email" type="email" required autocomplete="email" placeholder="you@example.com"></label>
+    <label>Password<input id="password" type="password" required minlength="8" autocomplete="current-password" placeholder="At least 8 characters"></label>
+    <p id="auth-status" class="status" role="status"></p>
+    <button id="auth-submit" class="primary" type="submit">Sign in</button>
+    <p class="tiny muted">Only signed-in members of a conversation can read its messages.</p>
+  </form>
+</section>
+
+<section id="app" hidden>
+  <header class="topbar">
+    <div class="brand"><span class="brand-icon">g</span><span>gather</span></div>
+    <button id="profile-open" class="profile-pill"><span id="user-initial" class="avatar">?</span><span id="user-name">Account</span><span>⌄</span></button>
+  </header>
+  <div id="layout" class="layout">
+    <aside class="sidebar">
+      <div class="side-title"><div><p class="eyebrow">YOUR SPACE</p><h2>Messages</h2></div><button id="new-chat" class="plus" aria-label="New conversation">＋</button></div>
+      <input id="filter" class="search" type="search" placeholder="Search conversations">
+      <p class="list-label">RECENT <span id="chat-count">0</span></p>
+      <div id="chat-list" class="chat-list"><p class="muted tiny">Your conversations will appear here.</p></div>
+      <p class="privacy">✦ Only members of a chat can read its messages.</p>
+    </aside>
+    <main class="main">
+      <section id="empty" class="empty">
+        <div class="empty-mark">g</div><p class="eyebrow">A LITTLE MORE CONNECTED</p>
+        <h2>Your conversations, all in one place.</h2>
+        <p class="muted">Choose a chat or start a new one using someone's username.</p>
+        <button id="empty-new" class="primary">Start a conversation ↗</button>
+      </section>
+      <section id="chat" class="chat" hidden>
+        <header class="chat-head"><button id="back" class="back" aria-label="Back">←</button><span id="chat-avatar" class="avatar">?</span><div class="chat-title"><strong id="chat-title"></strong><small id="chat-subtitle"></small></div><button id="add-people" class="outline" hidden>＋ Add people</button></header>
+        <div id="messages" class="messages"></div>
+        <form id="send-form" class="composer"><textarea id="message" rows="1" maxlength="4000" placeholder="Write a message…" aria-label="Write a message"></textarea><div><small>Enter to send · Shift + Enter for a new line</small><button id="send" type="submit" aria-label="Send">↑</button></div></form>
+      </section>
+    </main>
+  </div>
+</section>
+
+<div id="people-modal" class="overlay" hidden><section class="modal">
+  <button class="close" data-close aria-label="Close">×</button><p class="eyebrow">MAKE A CONNECTION</p><h2 id="people-title">Start a conversation</h2><p id="people-desc" class="muted tiny">Find someone by their username.</p>
+  <label id="group-wrap" hidden>Group name<input id="group-title" maxlength="60" placeholder="Name your group"></label>
+  <label>Find people<input id="people-search" type="search" placeholder="Search username"></label>
+  <div id="people-results" class="people-results"><p class="muted tiny">Type at least 2 characters.</p></div>
+  <p id="people-status" class="status"></p><button id="people-create" class="primary" hidden>Create group</button>
+</section></div>
+
+<div id="profile-modal" class="overlay" hidden><section class="modal">
+  <button class="close" data-close aria-label="Close">×</button><p class="eyebrow">YOUR ACCOUNT</p><h2>Profile settings</h2>
+  <form id="profile-form"><label>Display name<input id="profile-name" maxlength="50" required></label><label>Username<input id="profile-username" minlength="3" maxlength="24" pattern="[a-z0-9_]{3,24}" required><small>3–24 lowercase letters, numbers, or underscores.</small></label><p id="profile-status" class="status"></p><button class="primary" type="submit">Save changes</button></form>
+  <button id="signout" class="signout">Sign out</button>
+</section></div>
+<div id="toast" class="toast" role="status"></div>
+</body>
+</html>
