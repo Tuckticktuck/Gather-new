@@ -14,7 +14,7 @@ const ACCENTS = {
 };
 const FONT_SCALES = {small:"0.9",normal:"1",large:"1.15"};
 const DEFAULT_PREFERENCES = {accent:"lavender",fontSize:"normal",messageNotificationMode:"temporary"};
-const S = { user:null, profile:null, profiles:{}, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, hasOlderMessages:false, loadingOlder:false, replyTo:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null };
+const S = { user:null, profile:null, profiles:{}, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, hasOlderMessages:false, loadingOlder:false, replyTo:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function status(id, text, kind) { const n=$(id); n.textContent=text||""; n.className="status"+(kind?" "+kind:""); }
@@ -304,7 +304,7 @@ async function loadChats(){
   if(!ids.length){S.chats=[];S.profiles={};await loadUnreadCounts();renderChats();renderActive();return await loadRequests();}
   const [members,msgs,groupPics]=await Promise.all([
     db.from("conversation_members").select("conversation_id,user_id,role").in("conversation_id",ids),
-    db.from("messages").select("id,conversation_id,sender_id,body,created_at").in("conversation_id",ids).order("created_at",{ascending:false}).limit(1000),
+    db.from("messages").select("id,conversation_id,sender_id,body,created_at,attachment_path").in("conversation_id",ids).order("created_at",{ascending:false}).limit(1000),
     db.from("group_avatars").select("conversation_id,image_data").in("conversation_id",ids)
   ]);
   if(members.error){S.loadError="Chat members could not be loaded: "+members.error.message;toast(S.loadError);return false;}
@@ -449,7 +449,7 @@ function showMessageNotification(message,chat){
   heading.append(el("strong","",chatTitle(chat)));
   const sender=S.profiles[message.sender_id]?.display_name||"A group member";
   heading.append(el("small","",chat.kind==="group"?sender+" sent a message":"New message"));
-  const preview=el("span","message-notification-preview",message.body||"Sent a message");
+  const preview=el("span","message-notification-preview",message.body||(message.attachment_path?"Sent an image":"Sent a message"));
   open.append(heading,preview);
   open.addEventListener("click",()=>{
     dismissMessageNotification(message.id);
@@ -623,7 +623,7 @@ function renderChatSection(kind,listId,countId,term,sourceChats=null){
     const b=el("button","chat-item"+(c.id===S.active?" active":"")+(unread?" has-unread":""));b.type="button";b.append(avatar(chatTitle(c),avatarImage));
     const copy=el("div","chat-copy");
     copy.append(el("strong","",chatTitle(c)));
-    let preview=c.last?c.last.body:chatSub(c);
+    let preview=c.last?(c.last.body||(c.last.attachment_path?"Sent an image":"")):chatSub(c);
     if(c.last&&c.last.sender_id===S.user.id)preview="You: "+preview;
     else if(c.kind==="group"&&c.last)preview=(S.profiles[c.last.sender_id]?.display_name||"Member")+": "+preview;
     copy.append(el("span","",preview));
@@ -718,7 +718,7 @@ async function loadDeletedMessages(){
   const ids=(markers.data||[]).map(x=>x.message_id);
   S.deletedMessageIds=new Set(ids);
   if(!ids.length){S.deletedMessages=[];renderChats();return true;}
-  const messages=await db.from("messages").select("id,conversation_id,sender_id,body,created_at").in("id",ids);
+  const messages=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,attachment_path").in("id",ids);
   if(messages.error){toast("Deleted messages could not be loaded: "+messages.error.message);return false;}
   const byId=new Map((messages.data||[]).map(x=>[x.id,x]));
   S.deletedMessages=(markers.data||[]).flatMap(marker=>{
@@ -813,12 +813,24 @@ async function toggleBlock(){
   S.directStatus=null;await refreshDirectStatus();await loadRequests();await loadBlocked();toast(unblock?"Member unblocked.":"Member blocked.");
 }
 async function attachReplyPreviews(rows,conversationId){
-  const messages=rows||[],ids=[...new Set(messages.map(m=>m.reply_to_id).filter(id=>id&&!S.deletedMessageIds.has(id)))];
-  if(!ids.length)return messages;
-  const result=await db.from("messages").select("id,sender_id,body").eq("conversation_id",conversationId).in("id",ids);
-  if(result.error){console.warn("Reply previews could not be loaded:",result.error.message);return messages;}
-  const byId=new Map((result.data||[]).map(m=>[m.id,m]));
-  return messages.map(m=>({...m,reply_preview:m.reply_to_id?(S.deletedMessageIds.has(m.reply_to_id)?{body:"Message hidden"}:(byId.get(m.reply_to_id)||{body:"Original message unavailable"})):null}));
+  let messages=rows||[];
+  const ids=[...new Set(messages.map(m=>m.reply_to_id).filter(id=>id&&!S.deletedMessageIds.has(id)))];
+  if(ids.length){
+    const result=await db.from("messages").select("id,sender_id,body,attachment_path").eq("conversation_id",conversationId).in("id",ids);
+    if(result.error)console.warn("Reply previews could not be loaded:",result.error.message);
+    const byId=new Map((result.data||[]).map(m=>[m.id,m]));
+    messages=messages.map(m=>({...m,reply_preview:m.reply_to_id?(S.deletedMessageIds.has(m.reply_to_id)?{body:"Message hidden"}:(byId.get(m.reply_to_id)||{body:"Original message unavailable"})):null}));
+  }else{
+    messages=messages.map(m=>({...m,reply_preview:null}));
+  }
+  const paths=[...new Set(messages.map(m=>m.attachment_path).filter(Boolean))];
+  if(paths.length){
+    const result=await db.storage.from("gather-message-images").createSignedUrls(paths,3600);
+    if(result.error)console.warn("Message images could not be opened:",result.error.message);
+    const byPath=new Map((result.data||[]).filter(x=>x.signedUrl).map(x=>[x.path,x.signedUrl]));
+    messages=messages.map(m=>({...m,image_url:m.attachment_path?(byPath.get(m.attachment_path)||null):null}));
+  }
+  return messages;
 }
 async function loadMessageReads(conversationId,messageIds){
   const ids=[...new Set((messageIds||[]).filter(Boolean))];if(!ids.length)return;
@@ -867,7 +879,7 @@ function cancelReply(){S.replyTo=null;renderReplyComposer();}
 async function loadOlderMessages(){
   if(!S.active||!S.hasOlderMessages||S.loadingOlder||!S.messages.length)return;
   const conversationId=S.active,oldest=S.messages[0].created_at;S.loadingOlder=true;
-  const result=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,reply_to_id").eq("conversation_id",conversationId).or("created_at.lt."+oldest+",and(created_at.eq."+oldest+",id.lt."+S.messages[0].id+")").order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
+  const result=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,reply_to_id,attachment_path").eq("conversation_id",conversationId).or("created_at.lt."+oldest+",and(created_at.eq."+oldest+",id.lt."+S.messages[0].id+")").order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
   S.loadingOlder=false;
   if(result.error){toast("Older messages could not be loaded: "+result.error.message);return;}
   if(S.active!==conversationId)return;
@@ -882,6 +894,7 @@ async function loadOlderMessages(){
   renderMessages(true);
 }
 async function openChat(id){
+  clearPendingMessageImage();
   S.active=id;S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;
   S.messages=[];S.messageReads={};S.replyTo=null;S.hasOlderMessages=false;S.loadingOlder=false;renderReplyComposer();
   markChatRead(id,S.chats.find(c=>c.id===id)?.last?.created_at||null);
@@ -891,7 +904,7 @@ async function openChat(id){
   subscribeMessageReads(id);await markConversationRead(id);
 }
 async function loadMessages(id){
-  const r=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,reply_to_id").eq("conversation_id",id).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
+  const r=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,reply_to_id,attachment_path").eq("conversation_id",id).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
   if(r.error){toast("Messages could not be loaded: "+r.error.message);return;}
   if(S.active!==id)return;
   const raw=r.data||[];S.hasOlderMessages=raw.length===300;
@@ -915,9 +928,16 @@ function renderMessages(preserveScroll=false){
     if(m.reply_to_id){
       const quote=el("div","reply-preview"),target=m.reply_preview;
       const quoteName=target?.sender_id?(target.sender_id===S.user.id?"You":(S.profiles[target.sender_id]?.display_name||"Member")):"Reply";
-      quote.append(el("strong","",quoteName),el("span","",target?.body||"Original message unavailable."));bubble.append(quote);
+      quote.append(el("strong","",quoteName),el("span","",target?.body||(target?.attachment_path?"Sent an image":"Original message unavailable.")));bubble.append(quote);
     }
-    bubble.append(el("div","body-text",m.body));
+    if(m.attachment_path){
+      if(m.image_url){
+        const link=el("a","message-image-link");link.href=m.image_url;link.target="_blank";link.rel="noopener noreferrer";link.setAttribute("aria-label","Open image in a new tab");
+        const image=el("img","message-image");image.src=m.image_url;image.alt="Image sent by "+(p?.display_name||"a Gather member");image.loading="lazy";image.decoding="async";
+        link.append(image);bubble.append(link);
+      }else bubble.append(el("p","message-image-unavailable","Image unavailable"));
+    }
+    if(m.body)bubble.append(el("div","body-text",m.body));
     if(!S.selectingMessages){
       const actions=el("div","message-actions"),reply=el("button","message-reply","Reply");reply.type="button";reply.addEventListener("click",()=>beginReply(m));actions.append(reply);bubble.append(actions);
     }
@@ -1084,7 +1104,7 @@ async function searchConversationMessages(reset=true){
 async function openSearchResult(message){
   const conversationId=S.searchConversationId;$("message-search-modal").hidden=true;
   if(S.active!==conversationId)await openChat(conversationId);
-  const result=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,reply_to_id").eq("conversation_id",conversationId).lte("created_at",message.created_at).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
+  const result=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,reply_to_id,attachment_path").eq("conversation_id",conversationId).lte("created_at",message.created_at).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
   if(result.error){toast("That message could not be opened: "+result.error.message);return;}
   if(S.active!==conversationId)return;
   const raw=result.data||[];S.hasOlderMessages=raw.length===300;
@@ -1095,16 +1115,53 @@ async function openSearchResult(message){
     if(row){row.scrollIntoView({block:"center"});row.classList.add("search-highlight");setTimeout(()=>row.classList.remove("search-highlight"),2200);}
   },50);
 }
+function clearPendingMessageImage(){
+  if(S.pendingImageUrl){URL.revokeObjectURL(S.pendingImageUrl);S.pendingImageUrl=null;}
+  S.pendingImageFile=null;
+  const input=$("message-image-file");if(input)input.value="";
+  const preview=$("message-image-preview");if(preview){preview.hidden=true;preview.replaceChildren();}
+}
+function handleMessageImageFile(){
+  const input=$("message-image-file"),file=input.files?.[0];if(!file)return;
+  const allowed=["image/jpeg","image/png","image/webp","image/gif"];
+  if(!allowed.includes(file.type)){clearPendingMessageImage();toast("Choose a JPG, PNG, WebP, or GIF image.");return;}
+  if(file.size>5*1024*1024){clearPendingMessageImage();toast("Choose an image smaller than 5 MB.");return;}
+  if(S.pendingImageUrl)URL.revokeObjectURL(S.pendingImageUrl);
+  S.pendingImageFile=file;S.pendingImageUrl=URL.createObjectURL(file);
+  const preview=$("message-image-preview");preview.replaceChildren();
+  const image=el("img","message-image-thumb");image.src=S.pendingImageUrl;image.alt="Selected image preview";
+  const details=el("div","message-image-details");details.append(el("strong","","Image ready to send"),el("small","",file.name));
+  const remove=el("button","message-image-remove","Remove");remove.type="button";remove.addEventListener("click",clearPendingMessageImage);
+  preview.append(image,details,remove);preview.hidden=false;
+}
+function imageFileExtension(file){
+  return {"image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/gif":"gif"}[file.type]||null;
+}
 async function sendMessage(e){
-  e.preventDefault();const body=$("message").value.trim();if(!body||!S.active)return;
+  e.preventDefault();
+  const body=$("message").value.trim(),file=S.pendingImageFile;
+  if((!body&&!file)||!S.active)return;
   const conversationId=S.active,activeChat=S.chats.find(x=>x.id===conversationId);
   if(activeChat?.kind==="direct"&&!S.directStatus?.can_message){toast("Private messaging is unavailable in this conversation.");return;}
-  const reply=S.replyTo; $("send").disabled=true;
-  const r=await db.from("messages").insert({conversation_id:conversationId,sender_id:S.user.id,body,reply_to_id:reply?.id||null}).select("id,conversation_id,sender_id,body,created_at,reply_to_id").single();
-  $("send").disabled=false;if(r.error){toast("Message not sent: "+r.error.message);return;}
-  $("message").value="";$("message").style.height="auto";cancelReply();
-  if(!S.messages.some(x=>x.id===r.data.id)){S.messages.push({...r.data,reply_preview:reply||null});renderMessages();}
-  await loadChats();
+  const reply=S.replyTo;const send=$("send");send.disabled=true;
+  let attachmentPath=null;
+  if(file){
+    const extension=imageFileExtension(file);
+    if(!extension||file.size>5*1024*1024){send.disabled=false;toast("That image is not supported or is larger than 5 MB.");return;}
+    const unique=window.crypto?.randomUUID?window.crypto.randomUUID():(Date.now().toString(36)+"_"+Math.random().toString(36).slice(2));
+    attachmentPath=conversationId+"/"+S.user.id+"_"+unique+"."+extension;
+    const upload=await db.storage.from("gather-message-images").upload(attachmentPath,file,{cacheControl:"3600",contentType:file.type,upsert:false});
+    if(upload.error){send.disabled=false;toast("Image upload failed: "+upload.error.message);return;}
+  }
+  const r=await db.from("messages").insert({conversation_id:conversationId,sender_id:S.user.id,body,attachment_path:attachmentPath,reply_to_id:reply?.id||null}).select("id,conversation_id,sender_id,body,created_at,reply_to_id,attachment_path").single();
+  if(r.error){
+    if(attachmentPath){const cleanup=await db.storage.from("gather-message-images").remove([attachmentPath]);if(cleanup.error)console.warn("Unused image cleanup failed:",cleanup.error.message);}
+    send.disabled=false;toast("Message not sent: "+r.error.message);return;
+  }
+  $("message").value="";$("message").style.height="auto";clearPendingMessageImage();cancelReply();
+  const [withReply]=await attachReplyPreviews([r.data],conversationId);
+  if(!S.messages.some(x=>x.id===r.data.id)){S.messages.push({...withReply,reply_preview:reply||null});renderMessages();}
+  send.disabled=false;await loadChats();
 }
 async function openPeople(mode){
   S.picker=mode;S.selected=new Set();$("people-modal").hidden=false;$("people-search").value="";
@@ -1396,7 +1453,7 @@ async function changePassword(e){
 }
 function closeModals(){ $("people-modal").hidden=true;$("profile-modal").hidden=true;$("requests-modal").hidden=true;$("friends-modal").hidden=true;$("settings-modal").hidden=true;$("group-photo-modal").hidden=true;$("group-settings-modal").hidden=true;$("message-search-modal").hidden=true;$("chat-actions-modal").hidden=true; }
 function goHome(){
-  closeModals();S.active=null;S.messages=[];S.messageReads={};S.replyTo=null;S.hasOlderMessages=false;S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;renderReplyComposer();
+  clearPendingMessageImage();closeModals();S.active=null;S.messages=[];S.messageReads={};S.replyTo=null;S.hasOlderMessages=false;S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;renderReplyComposer();
   $("layout").classList.remove("show-chat");$("layout").classList.add("show-home");renderChats();renderActive();
 }
 function wire(){
@@ -1435,10 +1492,10 @@ function wire(){
     status("profile-status","The picture will be removed when you save changes.","success");
   });
   $("password-form").addEventListener("submit",changePassword);
-  $("send-form").addEventListener("submit",sendMessage);
+  $("send-form").addEventListener("submit",sendMessage);$("message-image-file").addEventListener("change",handleMessageImageFile);
   $("message").addEventListener("input",e=>{e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,120)+"px";});
   $("messages").addEventListener("scroll",()=>{if($("messages").scrollTop<80)loadOlderMessages();});
-  $("cancel-reply").addEventListener("click",cancelReply);
+  $("cancel-reply").addEventListener("click",cancelReply);$("message-image-remove").addEventListener("click",clearPendingMessageImage);
   $("search-messages-open").addEventListener("click",openMessageSearch);
   $("message-search-input").addEventListener("input",()=>{clearTimeout(S.searchTimer);S.searchTimer=setTimeout(()=>searchConversationMessages(true),250);});
   $("message-search-more").addEventListener("click",()=>searchConversationMessages(false));
