@@ -14,7 +14,7 @@ const ACCENTS = {
 };
 const FONT_SCALES = {small:"0.9",normal:"1",large:"1.15"};
 const DEFAULT_PREFERENCES = {accent:"lavender",fontSize:"normal"};
-const S = { user:null, profile:null, profiles:{}, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", preferences:{...DEFAULT_PREFERENCES}, pendingAvatarData:null, avatarChanged:false, requestChannel:null, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null };
+const S = { user:null, profile:null, profiles:{}, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, pendingAvatarData:null, avatarChanged:false, requestChannel:null, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function status(id, text, kind) { const n=$(id); n.textContent=text||""; n.className="status"+(kind?" "+kind:""); }
@@ -129,10 +129,35 @@ function syncOwnAvatar(){
   paintAvatar($("profile-avatar-preview"),S.profile.display_name,S.profile.avatar_data);
 }
 function dateLabel(s) { if(!s)return ""; const d=new Date(s), now=new Date(); return d.toDateString()===now.toDateString()?d.toLocaleTimeString([],{hour:"numeric",minute:"2-digit"}):d.toLocaleDateString([],{month:"short",day:"numeric"}); }
+function loadReadState(){
+  if(!S.user){S.lastReadAt={};return;}
+  try{
+    const saved=JSON.parse(localStorage.getItem("gather_last_read_"+S.user.id)||"null");
+    S.lastReadAt=saved&&typeof saved==="object"&&!Array.isArray(saved)?saved:{};
+  }catch(e){S.lastReadAt={};}
+}
+function saveReadState(){
+  if(!S.user)return;
+  try{localStorage.setItem("gather_last_read_"+S.user.id,JSON.stringify(S.lastReadAt));}catch(e){}
+}
+function chatHasUnread(chat){
+  if(!chat?.last||chat.last.sender_id===S.user?.id)return false;
+  const lastAt=new Date(chat.last.created_at).getTime();
+  return Number.isFinite(lastAt)&&lastAt>Number(S.lastReadAt[chat.id]||0);
+}
+function markChatRead(chatId,through=null){
+  if(!chatId)return;
+  const chat=S.chats.find(x=>x.id===chatId);
+  const latest=through||(S.messages.filter(m=>m.conversation_id===chatId).slice(-1)[0]?.created_at)||chat?.last?.created_at;
+  const at=latest?new Date(latest).getTime():Date.now();
+  if(!Number.isFinite(at))return;
+  S.lastReadAt[chatId]=Math.max(Number(S.lastReadAt[chatId]||0),at);
+  saveReadState();
+}
 function showAuth() {
   if(S.channel){db.removeChannel(S.channel);S.channel=null;}
   if(S.requestChannel){db.removeChannel(S.requestChannel);S.requestChannel=null;}
-  S.user=null;S.profile=null;S.profiles={};S.chats=[];S.requests=[];S.friendRequests=[];S.friends=[];S.blockedUsers=[];S.deletedMessages=[];S.deletedMessageIds=new Set();S.folder="friends";S.directStatus=null;S.active=null;S.messages=[];S.loadError=null;S.avatarChanged=false;S.pendingAvatarData=null;loadUIPreferences(DEFAULT_PREFERENCES);
+  S.user=null;S.profile=null;S.profiles={};S.chats=[];S.requests=[];S.friendRequests=[];S.friends=[];S.blockedUsers=[];S.deletedMessages=[];S.deletedMessageIds=new Set();S.lastReadAt={};S.folder="friends";S.directStatus=null;S.active=null;S.messages=[];S.loadError=null;S.avatarChanged=false;S.pendingAvatarData=null;loadUIPreferences(DEFAULT_PREFERENCES);
   setChatLoadStatus("");$("auth").hidden=false;$("app").hidden=true;
 }
 function showApp(){ $("auth").hidden=true;$("app").hidden=false; }
@@ -162,6 +187,7 @@ async function signedIn(user,retry=false){
   try{
     S.profile=await ensureProfile(user);
     if(S.user?.id!==user.id)return;
+    loadReadState();
     loadUIPreferences(S.profile.preferences||DEFAULT_PREFERENCES);
     const ownPicture=await db.from("profile_avatars").select("image_data").eq("user_id",user.id).maybeSingle();
     S.profile.avatar_data=ownPicture.error?null:(ownPicture.data?.image_data||null);
@@ -171,6 +197,7 @@ async function signedIn(user,retry=false){
     subscribeRequests();
     const loaded=await loadChats();
     if(!loaded)throw new Error(S.loadError||"Please check your connection and try again.");
+    subscribeMessages();
     setChatLoadStatus("");
     if(!await loadFriends())console.warn("Gather friend list could not be loaded.");
     if(!await loadBlocked())console.warn("Gather blocked list could not be loaded.");
@@ -201,7 +228,7 @@ async function loadChats(){
   if(!ids.length){S.chats=[];S.profiles={};renderChats();renderActive();return await loadRequests();}
   const [members,msgs]=await Promise.all([
     db.from("conversation_members").select("conversation_id,user_id,role").in("conversation_id",ids),
-    db.from("messages").select("id,conversation_id,body,created_at").in("conversation_id",ids).order("created_at",{ascending:false}).limit(1000)
+    db.from("messages").select("id,conversation_id,sender_id,body,created_at").in("conversation_id",ids).order("created_at",{ascending:false}).limit(1000)
   ]);
   if(members.error){S.loadError="Chat members could not be loaded: "+members.error.message;toast(S.loadError);return false;}
   const userIds=[...new Set(members.data.map(x=>x.user_id))];
@@ -216,6 +243,14 @@ async function loadChats(){
   });
   S.chats=rows.map(x=>({...x.conversations,members:byChat[x.conversation_id]||[],last:last[x.conversation_id]||null,hasMessages:!!hasMessages[x.conversation_id]}))
     .sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at));
+  let readStateChanged=false;
+  S.chats.forEach(chat=>{
+    if(S.lastReadAt[chat.id]===undefined){
+      S.lastReadAt[chat.id]=chat.last?new Date(chat.last.created_at).getTime():0;
+      readStateChanged=true;
+    }
+  });
+  if(readStateChanged)saveReadState();
   renderChats();renderActive();return await loadRequests();
 }
 async function loadRequests(){
@@ -296,6 +331,34 @@ function subscribeRequests(){
       S.deletedMessageIds.delete(payload.old.message_id);
       if(S.active)loadMessages(S.active);
       loadChats();if(S.folder==="deleted")loadDeletedMessages();
+    })
+    .subscribe();
+}
+function subscribeMessages(){
+  if(S.channel){db.removeChannel(S.channel);S.channel=null;}
+  if(!S.user)return;
+  const uid=S.user.id;
+  S.channel=db.channel("messages-"+uid)
+    .on("postgres_changes",{event:"INSERT",schema:"public",table:"messages"},payload=>{
+      const message=payload.new;
+      if(!message?.id||!message.conversation_id||S.deletedMessageIds.has(message.id))return;
+      const chat=S.chats.find(x=>x.id===message.conversation_id);
+      if(!chat){loadChats();return;}
+      if(!chat.last||new Date(message.created_at)>=new Date(chat.last.created_at)){
+        chat.last=message;
+        chat.updated_at=message.created_at;
+      }
+      chat.hasMessages=true;
+      if(S.active===chat.id){
+        if(!S.messages.some(x=>x.id===message.id)){
+          S.messages.push(message);
+          S.messages.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+          renderMessages();
+        }
+        if(message.sender_id!==uid)markChatRead(chat.id,message.created_at);
+      }
+      S.chats.sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at));
+      renderChats();
     })
     .subscribe();
 }
@@ -416,8 +479,16 @@ function renderChatSection(kind,listId,countId,term,sourceChats=null){
   chats.forEach(c=>{
     const row=el("div","chat-row");
     const peer=c.members.find(m=>m.user_id!==S.user.id),peerProfile=peer&&S.profiles[peer.user_id];
-    const b=el("button","chat-item"+(c.id===S.active?" active":""));b.type="button";b.append(avatar(chatTitle(c),peerProfile?.avatar_data));
-    const copy=el("div","chat-copy");copy.append(el("strong","",chatTitle(c)),el("span","",c.last?c.last.body:chatSub(c)));b.append(copy,el("small","chat-time",dateLabel(c.last?.created_at||c.updated_at)));
+    const unread=chatHasUnread(c);
+    const b=el("button","chat-item"+(c.id===S.active?" active":"")+(unread?" has-unread":""));b.type="button";b.append(avatar(chatTitle(c),peerProfile?.avatar_data));
+    const copy=el("div","chat-copy");
+    copy.append(el("strong","",chatTitle(c)));
+    let preview=c.last?c.last.body:chatSub(c);
+    if(c.last&&c.last.sender_id===S.user.id)preview="You: "+preview;
+    else if(c.kind==="group"&&c.last)preview=(S.profiles[c.last.sender_id]?.display_name||"Member")+": "+preview;
+    copy.append(el("span","",preview));
+    if(unread){const badge=el("small","unread-badge","New");badge.setAttribute("aria-label","Unread message");copy.append(badge);}
+    b.append(copy,el("small","chat-time",dateLabel(c.last?.created_at||c.updated_at)));
     b.addEventListener("click",()=>openChat(c.id));
     const del=el("button","conversation-delete","Delete");del.type="button";del.title="Move all messages in this conversation to Deleted messages";
     del.addEventListener("click",()=>deleteConversationMessages(c.id));
@@ -577,17 +648,15 @@ async function toggleBlock(){
   S.directStatus=null;await refreshDirectStatus();await loadRequests();await loadBlocked();toast(unblock?"Member unblocked.":"Member blocked.");
 }
 async function openChat(id){
-  S.active=id;S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;$("layout").classList.remove("show-home");$("layout").classList.add("show-chat");renderActive();await refreshDirectStatus();await loadMessages(id);
-  if(S.channel){await db.removeChannel(S.channel);S.channel=null;}
-  S.channel=db.channel("chat-"+id).on("postgres_changes",{event:"INSERT",schema:"public",table:"messages",filter:"conversation_id=eq."+id},payload=>{
-    if(S.active!==id||S.deletedMessageIds.has(payload.new.id)||S.messages.some(x=>x.id===payload.new.id))return;
-    S.messages.push(payload.new);renderMessages();loadChats();
-  }).subscribe();
+  S.active=id;S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;
+  markChatRead(id,S.chats.find(c=>c.id===id)?.last?.created_at||null);
+  $("layout").classList.remove("show-home");$("layout").classList.add("show-chat");renderActive();
+  await refreshDirectStatus();await loadMessages(id);
 }
 async function loadMessages(id){
   const r=await db.from("messages").select("id,conversation_id,sender_id,body,created_at").eq("conversation_id",id).order("created_at",{ascending:false}).limit(300);
   if(r.error){toast("Messages could not be loaded: "+r.error.message);return;}
-  if(S.active!==id)return;S.messages=(r.data||[]).filter(m=>!S.deletedMessageIds.has(m.id)).reverse();renderMessages();
+  if(S.active!==id)return;S.messages=(r.data||[]).filter(m=>!S.deletedMessageIds.has(m.id)).reverse();markChatRead(id,S.messages[S.messages.length-1]?.created_at||null);renderMessages();
 }
 function renderMessages(){
   const list=$("messages");list.replaceChildren();
@@ -856,7 +925,6 @@ async function changePassword(e){
 function closeModals(){ $("people-modal").hidden=true;$("profile-modal").hidden=true;$("requests-modal").hidden=true;$("friends-modal").hidden=true;$("settings-modal").hidden=true; }
 function goHome(){
   closeModals();S.active=null;S.messages=[];S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;
-  if(S.channel){db.removeChannel(S.channel);S.channel=null;}
   $("layout").classList.remove("show-chat");$("layout").classList.add("show-home");renderChats();renderActive();
 }
 function wire(){
