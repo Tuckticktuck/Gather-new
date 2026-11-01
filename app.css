@@ -286,3 +286,18 @@ input::placeholder,textarea::placeholder{color:var(--accent-muted)}
   #select-messages,#delete-selected,#block-user,#add-people{padding:7px 9px;font-size:calc(11px * var(--font-scale,1))}
   .chat-head .chat-title{flex:1 1 80px}
 }
+
+
+/* Desktop: keep the navigation rail stationary and scroll only the workspace. */
+@media(min-width:721px){
+  html,body{height:100%;min-height:0;overflow:hidden}
+  .layout{height:calc(100dvh - 66px);min-height:0;overflow:hidden}
+  .sidebar{position:relative;min-height:0;height:100%;overflow-y:auto;overscroll-behavior:contain}
+  .main{height:100%;min-height:0;overflow:hidden}
+  .home-workspace{height:100%;min-height:0;overflow-y:auto;overscroll-behavior:contain;align-items:stretch}
+  .workspace-folder,.workspace-group-section{flex:0 0 auto;min-width:0}
+  .workspace-chat-list{width:100%;min-width:0;max-height:none;overflow:visible}
+  .chat-row{width:100%;min-width:0;flex:0 0 auto;align-items:center}
+  .chat-row .chat-item{min-width:0;flex:1 1 auto}
+  .chat-row .chat-copy{min-width:0}
+}
