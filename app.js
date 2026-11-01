@@ -191,7 +191,7 @@ function markChatRead(chatId,through=null){
   saveReadState();
 }
 function showAuth() {
-  clearMessageNotifications();
+  clearPendingMessageImage();clearMessageNotifications();
   $("password-recovery-modal").hidden=true;S.passwordRecovery=false;
   if(S.channel){db.removeChannel(S.channel);S.channel=null;}
   if(S.requestChannel){db.removeChannel(S.requestChannel);S.requestChannel=null;}
