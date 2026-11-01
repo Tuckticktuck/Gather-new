@@ -1495,7 +1495,7 @@ function wire(){
   $("send-form").addEventListener("submit",sendMessage);$("message-image-file").addEventListener("change",handleMessageImageFile);
   $("message").addEventListener("input",e=>{e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,120)+"px";});
   $("messages").addEventListener("scroll",()=>{if($("messages").scrollTop<80)loadOlderMessages();});
-  $("cancel-reply").addEventListener("click",cancelReply);$("message-image-remove").addEventListener("click",clearPendingMessageImage);
+  $("cancel-reply").addEventListener("click",cancelReply);
   $("search-messages-open").addEventListener("click",openMessageSearch);
   $("message-search-input").addEventListener("input",()=>{clearTimeout(S.searchTimer);S.searchTimer=setTimeout(()=>searchConversationMessages(true),250);});
   $("message-search-more").addEventListener("click",()=>searchConversationMessages(false));
