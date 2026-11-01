@@ -372,7 +372,9 @@ input::placeholder,textarea::placeholder{color:var(--accent-muted)}
 .reply-preview span{font-size:calc(10px * var(--font-scale,1));opacity:.85;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .message-actions{display:flex;justify-content:flex-end;margin-top:5px}
 .message-reply{padding:3px 6px;border:0;border-radius:6px;background:transparent;color:var(--accent-text);font-size:calc(9px * var(--font-scale,1))}
-.message-receipts{margin-top:5px;color:var(--accent-muted);font-size:calc(9px * var(--font-scale,1));text-align:right}
+.message-receipts{margin-top:6px;color:var(--muted);font-size:calc(9px * var(--font-scale,1));font-weight:600;text-align:right;letter-spacing:.01em}
+.message-receipts.is-seen{color:var(--accent-text)}
+.message-receipts.is-sent{opacity:.82}
 .message.search-highlight .bubble{outline:2px solid var(--accent);outline-offset:3px}
 .messages .message[data-message-id]{scroll-margin-top:18px}
 
