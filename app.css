@@ -495,3 +495,51 @@ input::placeholder,textarea::placeholder{color:var(--accent-muted)}
 /* Resumable image upload progress. */
 .message-image-progress{display:block;color:var(--accent-text)!important;font-weight:700}
 .message-image-picker{white-space:nowrap}
+
+
+/* Refined message notification shape, spacing, and responsive alignment. */
+.message-notifications{padding:2px;box-sizing:border-box;overscroll-behavior:contain}
+.message-notification{
+  box-sizing:border-box;
+  align-items:center;
+  gap:10px;
+  padding:11px;
+  overflow:hidden;
+  border-radius:18px;
+  background:linear-gradient(135deg,#292b3b 0%,#252738 100%);
+  box-shadow:0 12px 32px #0005;
+}
+.message-notification-open{
+  align-self:stretch;
+  align-content:center;
+  gap:6px;
+  padding:4px 7px;
+  border-radius:11px;
+  overflow:hidden;
+}
+.message-notification-heading{align-items:center;gap:8px}
+.message-notification-heading strong{min-width:0}
+.message-notification-heading small{white-space:nowrap}
+.message-notification-preview{line-height:1.5}
+.message-notification-dismiss{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  align-self:center;
+  width:32px;
+  height:32px;
+  padding:0;
+  border-radius:11px;
+  line-height:1;
+  transition:background .15s,border-color .15s,transform .15s;
+}
+.message-notification-dismiss:hover{background:#3a3d50;transform:scale(1.04)}
+.message-notification-open:focus-visible,.message-notification-dismiss:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media(max-width:720px){
+  .message-notifications{top:70px;right:10px;width:calc(100vw - 20px);max-height:58vh}
+  .message-notification{gap:7px;padding:9px;border-radius:16px}
+  .message-notification-heading{align-items:flex-start;flex-direction:column;gap:3px}
+  .message-notification-heading small{white-space:normal}
+  .message-notification-dismiss{width:30px;height:30px;border-radius:10px}
+  .notification-mode-choices{grid-template-columns:1fr}
+}
