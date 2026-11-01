@@ -38,19 +38,32 @@
   </header>
   <div id="layout" class="layout">
     <aside class="sidebar">
-      <div class="side-title"><div><p class="eyebrow">YOUR SPACE</p><h2>Messages</h2></div><button id="new-chat" class="plus" aria-label="New conversation">＋</button></div>
+      <div class="side-title"><div><p class="eyebrow">YOUR SPACE</p><h2>Messages</h2></div></div>
+      <div class="new-chat-actions">
+        <button id="new-private-chat" class="new-chat-action direct-action" type="button">＋ New private message</button>
+        <button id="new-group-chat" class="new-chat-action group-action" type="button">＋ Create group chat</button>
+      </div>
       <button id="requests-open" class="requests-button" type="button">Chat requests <span id="requests-count">0</span></button>
       <input id="filter" class="search" type="search" placeholder="Search conversations">
-      <p class="list-label">RECENT <span id="chat-count">0</span></p>
-      <div id="chat-list" class="chat-list"><p class="muted tiny">Your conversations will appear here.</p></div>
+      <details class="chat-section" open>
+        <summary><span>Private messages</span><span id="private-chat-count" class="section-count">0</span></summary>
+        <div id="private-chat-list" class="chat-list"><p class="muted tiny">Your private messages will appear here.</p></div>
+      </details>
+      <details class="chat-section" open>
+        <summary><span>Group chats</span><span id="group-chat-count" class="section-count">0</span></summary>
+        <div id="group-chat-list" class="chat-list"><p class="muted tiny">Your group chats will appear here.</p></div>
+      </details>
       <p class="privacy">✦ Only members of a chat can read its messages.</p>
     </aside>
     <main class="main">
       <section id="empty" class="empty">
         <div class="empty-mark">g</div><p class="eyebrow">A LITTLE MORE CONNECTED</p>
         <h2>Your conversations, all in one place.</h2>
-        <p class="muted">Choose a chat or find someone by username to send a request. You can message after they accept.</p>
-        <button id="empty-new" class="primary">Start a conversation ↗</button>
+        <p class="muted">Choose a chat, start a private conversation with a request, or create a group.</p>
+        <div class="empty-actions">
+          <button id="empty-private" class="primary" type="button">＋ New private message</button>
+          <button id="empty-group" class="secondary-action" type="button">＋ Create group chat</button>
+        </div>
       </section>
       <section id="chat" class="chat" hidden>
         <header class="chat-head"><button id="back" class="back" aria-label="Back">←</button><span id="chat-avatar" class="avatar">?</span><div class="chat-title"><strong id="chat-title"></strong><small id="chat-subtitle"></small></div><button id="add-people" class="outline" hidden>＋ Add people</button><button id="block-user" class="outline" hidden>Block</button></header>
