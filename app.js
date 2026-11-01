@@ -1426,7 +1426,6 @@ function wire(){
   document.querySelectorAll("[data-accent]").forEach(b=>b.addEventListener("click",()=>setAccent(b.dataset.accent)));
   document.querySelectorAll("[data-font-size]").forEach(b=>b.addEventListener("click",()=>setFontSize(b.dataset.fontSize)));
   document.querySelectorAll("[data-notification-mode]").forEach(b=>b.addEventListener("click",()=>setMessageNotificationMode(b.dataset.notificationMode)));
-  $("share-online-status").addEventListener("change",e=>setShareOnlineStatus(e.target.checked));
   $("home-friends-open").addEventListener("click",openFriends);$("home-requests-open").addEventListener("click",openRequests);$("open-about-blank").addEventListener("click",openAboutBlank);
   $("filter").addEventListener("input",renderChats);document.querySelectorAll("[data-folder]").forEach(b=>b.addEventListener("click",()=>selectFolder(b.dataset.folder)));$("profile-open").addEventListener("click",openProfile);$("profile-form").addEventListener("submit",saveProfile);
   $("profile-avatar-file").addEventListener("change",handleAvatarFile);
