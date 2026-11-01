@@ -7,7 +7,7 @@
 <meta name="description" content="Private direct and group conversations.">
 <title>Gather — Private Chat</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="app.css?v=20261101-18">
+<link rel="stylesheet" href="app.css?v=20261101-19">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
 <script defer src="app.js?v=20261101-21"></script>
 </head>
@@ -56,19 +56,18 @@
       </div>
       <button id="friends-open" class="requests-button" type="button">Friends <span id="friends-count">0</span></button>
       <button id="requests-open" class="requests-button" type="button">Chat requests <span id="requests-count">0</span></button>
+      <button id="open-about-blank" class="requests-button about-blank-sidebar" type="button">Open in about:blank</button>
       <p class="privacy">✦ Only members of a chat can read its messages.</p>
     </aside>
     <main class="main">
       <section id="empty" class="home-workspace">
         <header class="workspace-header">
-          <div><p class="eyebrow">YOUR SPACE</p><h1>Your conversations</h1><p class="muted workspace-subtitle">Find a conversation, manage your connections, or pick up where you left off.</p>
-            <p class="tiny muted about-blank-note">Opens Gather in a blank browser tab. Gather still loads from its normal website and services.</p></div>
+          <div><p class="eyebrow">YOUR SPACE</p><h1>Your conversations</h1><p class="muted workspace-subtitle">Find a conversation, manage your connections, or pick up where you left off.</p></div>
           <div class="workspace-actions">
             <button id="empty-private" class="primary" type="button">＋ New private message</button>
             <button id="empty-group" class="secondary-action" type="button">＋ Create group chat</button>
             <button id="home-friends-open" class="secondary-action" type="button">Friends</button>
             <button id="home-requests-open" class="secondary-action" type="button">Chat requests</button>
-            <button id="open-about-blank" class="secondary-action about-blank-action" type="button">Open in about:blank</button>
           </div>
         </header>
         <label class="workspace-search">Search conversations<input id="filter" class="search" type="search" placeholder="Search by name or message"></label>
