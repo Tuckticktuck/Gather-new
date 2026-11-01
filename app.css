@@ -433,3 +433,21 @@ input::placeholder,textarea::placeholder{color:var(--accent-muted)}
 .reset-password-modal>p.tiny{line-height:1.55;margin-bottom:16px}
 #recovery-password-save{width:100%;margin-top:8px}
 .recovery-cancel{width:100%;margin-top:10px}
+
+
+/* Clickable in-app alerts for messages arriving in other conversations. */
+.message-notifications{position:fixed;z-index:8;top:78px;right:18px;display:grid;gap:9px;width:min(390px,calc(100vw - 36px));max-height:70vh;overflow-y:auto;pointer-events:none}
+.message-notification{display:flex;align-items:stretch;gap:8px;padding:9px;border:1px solid var(--accent-outline);border-radius:13px;background:#202330;box-shadow:0 14px 42px #0009;pointer-events:auto;animation:message-notification-in .2s ease-out}
+.message-notification-open{display:grid;flex:1;min-width:0;gap:5px;padding:3px 5px;border:0;color:var(--text);background:transparent;text-align:left}
+.message-notification-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0}
+.message-notification-heading strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--accent-text);font-size:calc(11px * var(--font-scale,1))}
+.message-notification-heading small{flex:none;color:var(--muted);font-size:calc(9px * var(--font-scale,1))}
+.message-notification-preview{display:-webkit-box;overflow:hidden;color:#e2dfeb;font-size:calc(10px * var(--font-scale,1));line-height:1.45;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow-wrap:anywhere}
+.message-notification-dismiss{flex:none;align-self:flex-start;width:27px;height:27px;border:1px solid var(--line);border-radius:8px;color:#c9c6d4;background:#2b2e3d;font-size:calc(18px * var(--font-scale,1));line-height:1}
+.message-notification-open:hover .message-notification-heading strong{text-decoration:underline}
+.message-notification-dismiss:hover{border-color:var(--accent-outline);color:var(--text)}
+.notification-mode-choices{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}
+.notification-mode-choices .font-choice{min-height:43px;padding:9px;white-space:normal;line-height:1.4}
+.notification-settings-section>p{margin:0}
+@keyframes message-notification-in{from{opacity:0;transform:translateY(-7px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:720px){.message-notifications{top:70px;right:10px;width:calc(100vw - 20px);max-height:58vh}.message-notification{padding:8px}.message-notification-heading{align-items:flex-start;flex-direction:column;gap:2px}.notification-mode-choices{grid-template-columns:1fr}}
