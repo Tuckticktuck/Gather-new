@@ -29,3 +29,30 @@ label{display:grid;gap:7px;margin:13px 0;color:#d0cede;font-size:11px;font-weigh
 .chat-head #block-user:disabled{opacity:.5;cursor:wait}
 .composer textarea:disabled{opacity:.55;cursor:not-allowed}.composer button:disabled{opacity:.4;cursor:not-allowed}
 @media(max-width:720px){.requests-button{margin-top:10px}.request-item{align-items:flex-start;flex-wrap:wrap}.request-actions{width:100%;padding-left:44px}.chat-notice{margin:0 10px 8px}.chat-head #block-user{padding:7px 9px}}
+
+/* Separate private-message and group-chat navigation */
+.new-chat-actions{display:grid;gap:7px;margin:16px 0 0}
+.new-chat-action{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;text-align:left;font-size:11px;font-weight:700;transition:background .15s,border-color .15s}
+.direct-action{color:#211d35;background:linear-gradient(135deg,#cfc6ff,#9887f1);border-color:transparent}
+.group-action{color:#dedbea;background:#252735}
+.new-chat-action:hover{border-color:#b6a9ff88}
+.requests-button{margin-top:10px}
+.chat-section{margin-top:17px}
+.chat-section summary{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 7px 9px;color:#aaaabd;font-size:10px;font-weight:750;letter-spacing:1px;text-transform:uppercase;cursor:pointer;list-style:none}
+.chat-section summary::-webkit-details-marker{display:none}
+.chat-section summary::after{content:"⌄";order:1;margin-left:3px;color:#85879a;font-size:13px;transition:transform .15s}
+.chat-section:not([open]) summary::after{transform:rotate(-90deg)}
+.chat-section summary>span:first-child{flex:1}
+.section-count{min-width:19px;padding:2px 6px;border-radius:12px;color:#cfc6ff;background:#302d47;text-align:center;font-size:9px;letter-spacing:0}
+.chat-section .chat-list{display:grid;align-content:start;gap:4px}
+.section-empty{margin:0 7px 4px;padding:5px 0;color:#888a9c}
+.empty-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;width:min(100%,430px)}
+.empty-actions .primary,.secondary-action{width:100%;min-height:43px;padding:11px 12px;border-radius:10px;font-size:11px}
+.secondary-action{border:1px solid var(--line);color:#e5e0f2;background:#242633;font-weight:700}
+.secondary-action:hover{border-color:#b6a9ff77;background:#2c2b3c}
+@media(max-width:720px){
+  .new-chat-actions{grid-template-columns:1fr 1fr;gap:6px}
+  .new-chat-action{padding:10px 8px;font-size:10px;text-align:center}
+  .chat-section{margin-top:13px}
+  .empty-actions{grid-template-columns:1fr;width:min(100%,300px)}
+}
