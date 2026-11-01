@@ -308,7 +308,13 @@ function renderBlockedUsers(term){
     const p=S.profiles[item.blocked_id]||{display_name:"Gather member",username:"member"};
     const row=el("div","request-item");row.append(avatar(p.display_name));
     const copy=el("div","request-copy");copy.append(el("strong","",p.display_name),el("small","","@"+p.username));row.append(copy);
-    const actions=el("div","request-actions"),unblock=el("button","request-accept","Unblock");
+    const actions=el("div","request-actions");
+    const history=S.chats.find(c=>c.kind==="direct"&&c.members.some(m=>m.user_id===item.blocked_id)&&c.members.some(m=>m.user_id===S.user.id));
+    if(history){
+      const open=el("button","request-decline","History");open.type="button";
+      open.addEventListener("click",()=>openChat(history.id));actions.append(open);
+    }
+    const unblock=el("button","request-accept","Unblock");
     unblock.type="button";unblock.addEventListener("click",()=>unblockUser(item.blocked_id));
     actions.append(unblock);row.append(actions);list.append(row);
   });
