@@ -4,7 +4,6 @@ const URL = "https://xrwldphmeafiakittcof.supabase.co";
 const KEY = "sb_publishable_5Gws8f_CODwrHigG2U6Veg_bTRrBoeA";
 const $ = (id) => document.getElementById(id);
 const db = window.supabase.createClient(URL, KEY);
-const SETTINGS_KEY = "gather-ui-preferences-v1";
 const ACCENTS = {
   lavender:{accent:"#b6a9ff",strong:"#9583ef",ink:"#211d35",soft:"#302d47",border:"#b6a9ff55"},
   blue:{accent:"#9bcfff",strong:"#589be0",ink:"#142b43",soft:"#243b58",border:"#9bcfff55"},
@@ -15,7 +14,7 @@ const ACCENTS = {
 };
 const FONT_SCALES = {small:"0.9",normal:"1",large:"1.15"};
 const DEFAULT_PREFERENCES = {accent:"lavender",fontSize:"normal"};
-const S = { user:null, profile:null, profiles:{}, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", preferences:{...DEFAULT_PREFERENCES}, requestChannel:null, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null };
+const S = { user:null, profile:null, profiles:{}, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", preferences:{...DEFAULT_PREFERENCES}, pendingAvatarData:null, avatarChanged:false, requestChannel:null, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function status(id, text, kind) { const n=$(id); n.textContent=text||""; n.className="status"+(kind?" "+kind:""); }
@@ -25,14 +24,11 @@ function setChatLoadStatus(message,retry=false){
   box.hidden=!message;box.classList.toggle("error",retry);
   $("chat-load-message").textContent=message||"";$("retry-load-chats").hidden=!retry;
 }
-function loadUIPreferences(){
-  try{
-    const saved=JSON.parse(localStorage.getItem(SETTINGS_KEY)||"{}");
-    S.preferences={
-      accent:ACCENTS[saved.accent]?saved.accent:DEFAULT_PREFERENCES.accent,
-      fontSize:FONT_SCALES[saved.fontSize]?saved.fontSize:DEFAULT_PREFERENCES.fontSize
-    };
-  }catch(_){S.preferences={...DEFAULT_PREFERENCES};}
+function loadUIPreferences(saved){
+  S.preferences={
+    accent:ACCENTS[saved?.accent]?saved.accent:DEFAULT_PREFERENCES.accent,
+    fontSize:FONT_SCALES[saved?.fontSize]?saved.fontSize:DEFAULT_PREFERENCES.fontSize
+  };
   applyUIPreferences();
 }
 function applyUIPreferences(){
@@ -66,9 +62,23 @@ function applyUIPreferences(){
   document.querySelectorAll("[data-font-size]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.fontSize===S.preferences.fontSize)));
 }
 function saveUIPreferences(){
-  try{localStorage.setItem(SETTINGS_KEY,JSON.stringify(S.preferences));}
-  catch(_){$("settings-note").textContent="Settings are active for this session, but this browser could not save them.";}
   applyUIPreferences();
+  if(!S.user)return;
+  const userId=S.user.id,snapshot={...S.preferences};
+  $("settings-note").textContent="Saving to your Gather account…";
+  clearTimeout(S.preferenceSaveTimer);
+  S.preferenceSaveTimer=setTimeout(async()=>{
+    const result=await db.from("profiles").update({preferences:snapshot}).eq("id",userId).select("preferences").single();
+    if(S.user?.id!==userId)return;
+    if(result.error){
+      loadUIPreferences(S.profile?.preferences||DEFAULT_PREFERENCES);
+      $("settings-note").textContent="Couldn't save settings. Please try again.";
+      toast("Appearance settings were not saved: "+result.error.message);
+      return;
+    }
+    S.profile.preferences=result.data.preferences;
+    $("settings-note").textContent="Saved to your account. Your theme follows you to other devices.";
+  },180);
 }
 function setAccent(accent){
   if(!ACCENTS[accent])return;
@@ -82,12 +92,47 @@ function openSettings(){
   applyUIPreferences();$("settings-modal").hidden=false;
 }
 function initials(s) { return (String(s||"?").trim()[0]||"?").toUpperCase(); }
-function avatar(name) { return el("span","avatar",initials(name)); }
+function paintAvatar(node,name,imageData){
+  if(!node)return;
+  node.replaceChildren();
+  node.classList.toggle("has-picture",!!imageData);
+  if(imageData){
+    const image=document.createElement("img");
+    image.src=imageData;image.alt="";image.loading="lazy";image.decoding="async";
+    image.onerror=()=>{node.classList.remove("has-picture");node.replaceChildren();node.textContent=initials(name);};
+    node.append(image);
+  }else node.textContent=initials(name);
+}
+function avatar(name,imageData=null){
+  const node=el("span","avatar");
+  paintAvatar(node,name,imageData);
+  return node;
+}
+async function fetchProfileRecords(ids){
+  const unique=[...new Set((ids||[]).filter(Boolean))];
+  if(!unique.length)return {data:[],error:null};
+  const profiles=await db.from("profiles").select("id,username,display_name").in("id",unique);
+  if(profiles.error)return {data:null,error:profiles.error};
+  const records=(profiles.data||[]).map(p=>({...p,avatar_data:null}));
+  const pictures=await db.from("profile_avatars").select("user_id,image_data").in("user_id",unique);
+  if(pictures.error){
+    console.warn("Gather profile pictures could not be loaded:",pictures.error.message);
+  }else{
+    const byUser=new Map((pictures.data||[]).map(x=>[x.user_id,x.image_data]));
+    records.forEach(p=>p.avatar_data=byUser.get(p.id)||null);
+  }
+  return {data:records,error:null};
+}
+function syncOwnAvatar(){
+  if(!S.profile)return;
+  paintAvatar($("user-initial"),S.profile.display_name,S.profile.avatar_data);
+  paintAvatar($("profile-avatar-preview"),S.profile.display_name,S.profile.avatar_data);
+}
 function dateLabel(s) { if(!s)return ""; const d=new Date(s), now=new Date(); return d.toDateString()===now.toDateString()?d.toLocaleTimeString([],{hour:"numeric",minute:"2-digit"}):d.toLocaleDateString([],{month:"short",day:"numeric"}); }
 function showAuth() {
   if(S.channel){db.removeChannel(S.channel);S.channel=null;}
   if(S.requestChannel){db.removeChannel(S.requestChannel);S.requestChannel=null;}
-  S.user=null;S.profile=null;S.profiles={};S.chats=[];S.requests=[];S.friendRequests=[];S.friends=[];S.blockedUsers=[];S.deletedMessages=[];S.deletedMessageIds=new Set();S.folder="friends";S.directStatus=null;S.active=null;S.messages=[];S.loadError=null;
+  S.user=null;S.profile=null;S.profiles={};S.chats=[];S.requests=[];S.friendRequests=[];S.friends=[];S.blockedUsers=[];S.deletedMessages=[];S.deletedMessageIds=new Set();S.folder="friends";S.directStatus=null;S.active=null;S.messages=[];S.loadError=null;S.avatarChanged=false;S.pendingAvatarData=null;loadUIPreferences(DEFAULT_PREFERENCES);
   setChatLoadStatus("");$("auth").hidden=false;$("app").hidden=true;
 }
 function showApp(){ $("auth").hidden=true;$("app").hidden=false; }
@@ -116,8 +161,12 @@ async function signedIn(user,retry=false){
   try{
     S.profile=await ensureProfile(user);
     if(S.user?.id!==user.id)return;
-    $("user-initial").textContent=initials(S.profile.display_name);
+    loadUIPreferences(S.profile.preferences||DEFAULT_PREFERENCES);
+    const ownPicture=await db.from("profile_avatars").select("image_data").eq("user_id",user.id).maybeSingle();
+    S.profile.avatar_data=ownPicture.error?null:(ownPicture.data?.image_data||null);
+    S.profiles[user.id]=S.profile;
     $("user-name").textContent=S.profile.display_name;
+    syncOwnAvatar();
     subscribeRequests();
     const loaded=await loadChats();
     if(!loaded)throw new Error(S.loadError||"Please check your connection and try again.");
