@@ -18,7 +18,7 @@ label{display:grid;gap:7px;margin:13px 0;color:#d0cede;font-size:calc(11px * var
 
 .requests-button{display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:14px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;color:#dedbea;background:#20222d;text-align:left;font-size:calc(11px * var(--font-scale,1))}
 .requests-button span{min-width:21px;padding:3px 6px;border-radius:12px;color:var(--accent-text);background:var(--accent-badge);text-align:center;font-size:calc(10px * var(--font-scale,1))}
-.requests-button.has-requests{border-color:var(--accent-outline-soft);background:#28263a}
+.requests-button.has-requests{border-color:var(--accent-outline-soft);background:var(--accent-surface)}
 .request-section{margin-top:20px}.request-section h3{margin:0 0 9px;color:#aaaabd;font-size:calc(10px * var(--font-scale,1));letter-spacing:1px;text-transform:uppercase}
 .request-list{display:grid;gap:7px}.request-item{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--line);border-radius:10px;background:#222531}
 .request-item .avatar{width:34px;height:34px}.request-copy{flex:1;min-width:0}.request-copy strong,.request-copy small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.request-copy strong{font-size:calc(11px * var(--font-scale,1))}.request-copy small{margin-top:4px;color:var(--muted);font-size:calc(10px * var(--font-scale,1))}
@@ -43,7 +43,7 @@ label{display:grid;gap:7px;margin:13px 0;color:#d0cede;font-size:calc(11px * var
 .chat-section summary::after{content:"⌄";order:1;margin-left:3px;color:#85879a;font-size:calc(13px * var(--font-scale,1));transition:transform .15s}
 .chat-section:not([open]) summary::after{transform:rotate(-90deg)}
 .chat-section summary>span:first-child{flex:1}
-.section-count{min-width:19px;padding:2px 6px;border-radius:12px;color:#cfc6ff;background:var(--accent-soft);text-align:center;font-size:calc(9px * var(--font-scale,1));letter-spacing:0}
+.section-count{min-width:19px;padding:2px 6px;border-radius:12px;color:var(--accent-text);background:var(--accent-badge);text-align:center;font-size:calc(9px * var(--font-scale,1));letter-spacing:0}
 .chat-section .chat-list{display:grid;align-content:start;gap:4px}
 .section-empty{margin:0 7px 4px;padding:5px 0;color:#888a9c}
 .empty-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;width:min(100%,430px)}
@@ -63,7 +63,7 @@ label{display:grid;gap:7px;margin:13px 0;color:#d0cede;font-size:calc(11px * var
 .chat-section[open] .chat-list{flex:1;min-height:0;overflow:auto}
 
 /* Clear startup feedback and a direct retry when chat data cannot load. */
-.chat-load-status{display:flex;align-items:flex-start;gap:9px;margin:12px 2px 0;padding:10px;border:1px solid #b6a9ff33;border-radius:10px;color:var(--accent-text);background:var(--accent-surface);font-size:calc(10px * var(--font-scale,1));line-height:1.5}
+.chat-load-status{display:flex;align-items:flex-start;gap:9px;margin:12px 2px 0;padding:10px;border:1px solid var(--accent-outline-soft);border-radius:10px;color:var(--accent-text);background:var(--accent-surface);font-size:calc(10px * var(--font-scale,1));line-height:1.5}
 .chat-load-status.error{border-color:#ef9aa355;color:#f1c0c4;background:#34252d}
 .chat-load-status span{flex:1;min-width:0;overflow-wrap:anywhere}
 .chat-load-status button{flex:none;padding:5px 8px;border:1px solid #ffffff22;border-radius:7px;color:var(--text);background:#262837;font-size:calc(10px * var(--font-scale,1));font-weight:700}
