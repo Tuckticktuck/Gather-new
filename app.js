@@ -14,7 +14,7 @@ const ACCENTS = {
 };
 const FONT_SCALES = {small:"0.9",normal:"1",large:"1.15"};
 const DEFAULT_PREFERENCES = {accent:"lavender",fontSize:"normal"};
-const S = { user:null, profile:null, profiles:{}, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, pendingAvatarData:null, avatarChanged:false, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null };
+const S = { user:null, profile:null, profiles:{}, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, pendingAvatarData:null, avatarChanged:false, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, presenceChannel:null, presenceReady:false, typingTimer:null, messageReads:{}, hasOlderMessages:false, loadingOlder:false, replyTo:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function status(id, text, kind) { const n=$(id); n.textContent=text||""; n.className="status"+(kind?" "+kind:""); }
@@ -157,7 +157,10 @@ function markChatRead(chatId,through=null){
 function showAuth() {
   if(S.channel){db.removeChannel(S.channel);S.channel=null;}
   if(S.requestChannel){db.removeChannel(S.requestChannel);S.requestChannel=null;}
-  S.user=null;S.profile=null;S.profiles={};S.chats=[];S.requests=[];S.friendRequests=[];S.friends=[];S.blockedUsers=[];S.deletedMessages=[];S.deletedMessageIds=new Set();S.lastReadAt={};S.folder="friends";S.directStatus=null;S.active=null;S.messages=[];S.loadError=null;S.avatarChanged=false;S.pendingAvatarData=null;loadUIPreferences(DEFAULT_PREFERENCES);
+  if(S.readChannel){db.removeChannel(S.readChannel);S.readChannel=null;}
+  if(S.presenceChannel){db.removeChannel(S.presenceChannel);S.presenceChannel=null;}
+  clearTimeout(S.typingTimer);S.presenceReady=false;
+  S.user=null;S.profile=null;S.profiles={};S.chats=[];S.messages=[];S.messageReads={};S.replyTo=null;S.hasOlderMessages=false;S.requests=[];S.friendRequests=[];S.friends=[];S.blockedUsers=[];S.deletedMessages=[];S.deletedMessageIds=new Set();S.lastReadAt={};S.folder="friends";S.directStatus=null;S.active=null;S.messages=[];S.loadError=null;S.avatarChanged=false;S.pendingAvatarData=null;loadUIPreferences(DEFAULT_PREFERENCES);
   setChatLoadStatus("");$("auth").hidden=false;$("app").hidden=true;
 }
 function showApp(){ $("auth").hidden=true;$("app").hidden=false; }
@@ -213,7 +216,7 @@ function chatTitle(c){
   const other=c.members.find(m=>m.user_id!==S.user.id);return other&&S.profiles[other.user_id]?S.profiles[other.user_id].display_name:"Direct message";
 }
 function chatSub(c){
-  if(c.kind==="group"){const names=c.members.map(m=>S.profiles[m.user_id]?.display_name||"Member");return c.members.length+" members · "+names.slice(0,3).join(", ");}
+  if(c.kind==="group"){const names=c.members.map(m=>S.profiles[m.user_id]?.display_name||"Member");return c.members.length+" members"+(c.description?" · "+c.description:" · "+names.slice(0,3).join(", "));}
   const other=c.members.find(m=>m.user_id!==S.user.id),p=other&&S.profiles[other.user_id];return p?"@"+p.username:"Private conversation";
 }
 async function loadChats(){
@@ -222,7 +225,7 @@ async function loadChats(){
   const hidden=await db.from("user_deleted_messages").select("message_id").eq("user_id",S.user.id);
   if(hidden.error){S.loadError="Deleted-message settings could not be loaded: "+hidden.error.message;toast(S.loadError);return false;}
   S.deletedMessageIds=new Set((hidden.data||[]).map(x=>x.message_id));
-  const m=await db.from("conversation_members").select("conversation_id,role,conversations!inner(id,kind,title,updated_at)").eq("user_id",S.user.id);
+  const m=await db.from("conversation_members").select("conversation_id,role,conversations!inner(id,kind,title,description,updated_at)").eq("user_id",S.user.id);
   if(m.error){S.loadError="Chats could not be loaded: "+m.error.message;toast(S.loadError);return false;}
   const rows=m.data||[],ids=[...new Set(rows.map(x=>x.conversation_id))];
   if(!ids.length){S.chats=[];S.profiles={};renderChats();renderActive();return await loadRequests();}
@@ -628,6 +631,7 @@ function renderActive(){
   const me=c.members.find(x=>x.user_id===S.user.id);
   $("add-people").hidden=!(c.kind==="group"&&me?.role==="owner");
   $("edit-group-photo").hidden=!(c.kind==="group"&&me?.role==="owner");
+  $("group-settings-open").hidden=c.kind!=="group";
   renderDirectControls();renderChats();
 }
 function renderDirectControls(){
@@ -884,6 +888,63 @@ function openProfile(){
   $("profile-avatar-file").value="";
   $("profile-modal").hidden=false;
 }
+function openGroupSettings(){
+  const chat=S.chats.find(x=>x.id===S.active);
+  if(!chat||chat.kind!=="group")return;
+  const owner=chat.members.some(x=>x.user_id===S.user.id&&x.role==="owner");
+  $("group-settings-title").value=chat.title||"";
+  $("group-settings-description").value=chat.description||"";
+  $("group-settings-title").disabled=!owner;
+  $("group-settings-description").disabled=!owner;
+  $("group-settings-save").hidden=!owner;
+  $("group-settings-note").textContent=owner?"Only group owners can edit group details and manage members.":"You can view group details and members. Only the owner can make changes.";
+  renderGroupSettingsMembers(chat,owner);
+  $("group-settings-modal").hidden=false;
+}
+function renderGroupSettingsMembers(chat,owner){
+  const list=$("group-settings-members");list.replaceChildren();
+  chat.members.slice().sort((a,b)=>a.role==="owner"?-1:b.role==="owner"?1:(S.profiles[a.user_id]?.display_name||"").localeCompare(S.profiles[b.user_id]?.display_name||"")).forEach(member=>{
+    const profile=S.profiles[member.user_id]||{display_name:"Gather member",username:"member"};
+    const row=el("div","group-member-row");row.append(avatar(profile.display_name,profile.avatar_data));
+    const details=el("div","group-member-copy");details.append(el("strong","",profile.display_name),el("small","", "@"+profile.username+(member.role==="owner"?" · Owner":"")));
+    row.append(details);
+    if(owner&&member.role!=="owner"){
+      const actions=el("div","group-member-actions");
+      const promote=el("button","outline","Make owner");promote.type="button";promote.addEventListener("click",()=>transferGroupOwnership(member.user_id));
+      const remove=el("button","outline group-remove","Remove");remove.type="button";remove.addEventListener("click",()=>removeGroupMember(member.user_id));
+      actions.append(promote,remove);row.append(actions);
+    }
+    list.append(row);
+  });
+  if(!chat.members.length)list.append(el("p","muted tiny","No members found."));
+}
+async function saveGroupSettings(){
+  const chat=S.chats.find(x=>x.id===S.active);
+  if(!chat||chat.kind!=="group")return;
+  const title=$("group-settings-title").value.trim(),description=$("group-settings-description").value.trim();
+  if(!title||title.length>60){status("group-settings-status","Group names must be between 1 and 60 characters.","error");return;}
+  if(description.length>280){status("group-settings-status","Descriptions must be 280 characters or fewer.","error");return;}
+  const button=$("group-settings-save");button.disabled=true;
+  const result=await db.rpc("update_group_settings",{p_conversation_id:chat.id,p_title:title,p_description:description||null});
+  button.disabled=false;
+  if(result.error){status("group-settings-status","Settings could not be saved: "+result.error.message,"error");return;}
+  chat.title=title;chat.description=description||null;
+  $("group-settings-modal").hidden=true;renderActive();renderChats();toast("Group settings updated.");
+}
+async function removeGroupMember(userId){
+  const chat=S.chats.find(x=>x.id===S.active),profile=S.profiles[userId];
+  if(!chat||!confirm("Remove "+(profile?.display_name||"this member")+" from "+chatTitle(chat)+"? They will no longer receive new messages in this group."))return;
+  const result=await db.rpc("remove_group_member",{p_conversation_id:chat.id,p_user_id:userId});
+  if(result.error){toast("Member could not be removed: "+result.error.message);return;}
+  await loadChats();openGroupSettings();toast("Member removed from the group.");
+}
+async function transferGroupOwnership(userId){
+  const chat=S.chats.find(x=>x.id===S.active),profile=S.profiles[userId];
+  if(!chat||!confirm("Make "+(profile?.display_name||"this member")+" the new owner of "+chatTitle(chat)+"? You will become a regular member."))return;
+  const result=await db.rpc("transfer_group_ownership",{p_conversation_id:chat.id,p_user_id:userId});
+  if(result.error){toast("Ownership could not be transferred: "+result.error.message);return;}
+  await loadChats();openGroupSettings();toast("Group ownership transferred.");
+}
 function openGroupPhoto(){
   const chat=S.chats.find(x=>x.id===S.active);
   const me=chat?.members.find(x=>x.user_id===S.user.id);
@@ -1011,7 +1072,7 @@ async function changePassword(e){
   $("current-password").value="";$("new-password").value="";$("confirm-password").value="";
   status("password-status","Password updated successfully.","success");
 }
-function closeModals(){ $("people-modal").hidden=true;$("profile-modal").hidden=true;$("requests-modal").hidden=true;$("friends-modal").hidden=true;$("settings-modal").hidden=true;$("group-photo-modal").hidden=true; }
+function closeModals(){ $("people-modal").hidden=true;$("profile-modal").hidden=true;$("requests-modal").hidden=true;$("friends-modal").hidden=true;$("settings-modal").hidden=true;$("group-photo-modal").hidden=true;$("group-settings-modal").hidden=true;$("message-search-modal").hidden=true; }
 function goHome(){
   closeModals();S.active=null;S.messages=[];S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;
   $("layout").classList.remove("show-chat");$("layout").classList.add("show-home");renderChats();renderActive();
@@ -1031,7 +1092,7 @@ function wire(){
   $("new-private-chat").addEventListener("click",()=>openPeople("direct"));$("new-group-chat").addEventListener("click",()=>openPeople("group"));
   $("retry-load-chats").addEventListener("click",()=>{if(S.user&&!S.loading)signedIn(S.user,true);});
   $("empty-private").addEventListener("click",()=>openPeople("direct"));$("empty-group").addEventListener("click",()=>openPeople("group"));
-  $("add-people").addEventListener("click",()=>openPeople("add"));$("edit-group-photo").addEventListener("click",openGroupPhoto);$("group-avatar-file").addEventListener("change",handleGroupAvatarFile);$("group-avatar-remove").addEventListener("click",removeGroupAvatar);$("group-avatar-save").addEventListener("click",saveGroupAvatar);$("leave-chat").addEventListener("click",()=>{if(S.active)leaveGroupChat(S.active);});$("requests-open").addEventListener("click",openRequests);$("friends-open").addEventListener("click",openFriends);$("friends-find").addEventListener("click",()=>{$("friends-modal").hidden=true;openPeople("friend");});$("block-user").addEventListener("click",toggleBlock);
+  $("add-people").addEventListener("click",()=>openPeople("add"));$("edit-group-photo").addEventListener("click",openGroupPhoto);$("group-settings-open").addEventListener("click",openGroupSettings);$("group-settings-save").addEventListener("click",saveGroupSettings);$("group-avatar-file").addEventListener("change",handleGroupAvatarFile);$("group-avatar-remove").addEventListener("click",removeGroupAvatar);$("group-avatar-save").addEventListener("click",saveGroupAvatar);$("leave-chat").addEventListener("click",()=>{if(S.active)leaveGroupChat(S.active);});$("requests-open").addEventListener("click",openRequests);$("friends-open").addEventListener("click",openFriends);$("friends-find").addEventListener("click",()=>{$("friends-modal").hidden=true;openPeople("friend");});$("block-user").addEventListener("click",toggleBlock);
   $("people-search").addEventListener("input",()=>{clearTimeout(S.timer);S.timer=setTimeout(searchPeople,220);});$("people-create").addEventListener("click",createGroupOrAdd);
   $("home-open").addEventListener("click",goHome);
   $("settings-open").addEventListener("click",openSettings);
@@ -1059,7 +1120,7 @@ function wire(){
   $("delete-selected").addEventListener("click",deleteSelectedMessages);
   $("signout").addEventListener("click",async()=>{const r=await db.auth.signOut();if(r.error)toast(r.error.message);else closeModals();});
   document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",closeModals));
-  ["people-modal","profile-modal","requests-modal","friends-modal","settings-modal","group-photo-modal"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target===$(id))closeModals();}));
+  ["people-modal","profile-modal","requests-modal","friends-modal","settings-modal","group-photo-modal","group-settings-modal","message-search-modal"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target===$(id))closeModals();}));
   document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModals();});
 }
 async function boot(){
