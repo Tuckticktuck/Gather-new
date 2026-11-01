@@ -4,7 +4,18 @@ const URL = "https://xrwldphmeafiakittcof.supabase.co";
 const KEY = "sb_publishable_5Gws8f_CODwrHigG2U6Veg_bTRrBoeA";
 const $ = (id) => document.getElementById(id);
 const db = window.supabase.createClient(URL, KEY);
-const S = { user:null, profile:null, profiles:{}, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), folder:"friends", requestChannel:null, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null };
+const SETTINGS_KEY = "gather-ui-preferences-v1";
+const ACCENTS = {
+  lavender:{accent:"#b6a9ff",strong:"#9583ef",ink:"#211d35",soft:"#302d47",border:"#b6a9ff55"},
+  blue:{accent:"#9bcfff",strong:"#589be0",ink:"#142b43",soft:"#243b58",border:"#9bcfff55"},
+  mint:{accent:"#9be2c4",strong:"#55b993",ink:"#153b31",soft:"#24483d",border:"#9be2c455"},
+  rose:{accent:"#ffb6ca",strong:"#e8799d",ink:"#411f30",soft:"#472b3a",border:"#ffb6ca55"},
+  amber:{accent:"#ffd48c",strong:"#efa94c",ink:"#432f13",soft:"#4a381f",border:"#ffd48c55"},
+  teal:{accent:"#9be2e4",strong:"#50b9be",ink:"#14373a",soft:"#234649",border:"#9be2e455"}
+};
+const FONT_SCALES = {small:"0.9",normal:"1",large:"1.15"};
+const DEFAULT_PREFERENCES = {accent:"lavender",fontSize:"normal"};
+const S = { user:null, profile:null, profiles:{}, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), folder:"friends", preferences:{...DEFAULT_PREFERENCES}, requestChannel:null, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function status(id, text, kind) { const n=$(id); n.textContent=text||""; n.className="status"+(kind?" "+kind:""); }
@@ -13,6 +24,44 @@ function setChatLoadStatus(message,retry=false){
   const box=$("chat-load-status");if(!box)return;
   box.hidden=!message;box.classList.toggle("error",retry);
   $("chat-load-message").textContent=message||"";$("retry-load-chats").hidden=!retry;
+}
+function loadUIPreferences(){
+  try{
+    const saved=JSON.parse(localStorage.getItem(SETTINGS_KEY)||"{}");
+    S.preferences={
+      accent:ACCENTS[saved.accent]?saved.accent:DEFAULT_PREFERENCES.accent,
+      fontSize:FONT_SCALES[saved.fontSize]?saved.fontSize:DEFAULT_PREFERENCES.fontSize
+    };
+  }catch(_){S.preferences={...DEFAULT_PREFERENCES};}
+  applyUIPreferences();
+}
+function applyUIPreferences(){
+  const accent=ACCENTS[S.preferences.accent]||ACCENTS.lavender;
+  const root=document.documentElement;
+  root.style.setProperty("--accent",accent.accent);
+  root.style.setProperty("--accent-strong",accent.strong);
+  root.style.setProperty("--accent-ink",accent.ink);
+  root.style.setProperty("--accent-soft",accent.soft);
+  root.style.setProperty("--accent-border",accent.border);
+  root.style.setProperty("--font-scale",FONT_SCALES[S.preferences.fontSize]||"1");
+  document.querySelectorAll("[data-accent]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.accent===S.preferences.accent)));
+  document.querySelectorAll("[data-font-size]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.fontSize===S.preferences.fontSize)));
+}
+function saveUIPreferences(){
+  try{localStorage.setItem(SETTINGS_KEY,JSON.stringify(S.preferences));}
+  catch(_){$("settings-note").textContent="Settings are active for this session, but this browser could not save them.";}
+  applyUIPreferences();
+}
+function setAccent(accent){
+  if(!ACCENTS[accent])return;
+  S.preferences.accent=accent;saveUIPreferences();
+}
+function setFontSize(size){
+  if(!FONT_SCALES[size])return;
+  S.preferences.fontSize=size;saveUIPreferences();
+}
+function openSettings(){
+  applyUIPreferences();$("settings-modal").hidden=false;
 }
 function initials(s) { return (String(s||"?").trim()[0]||"?").toUpperCase(); }
 function avatar(name) { return el("span","avatar",initials(name)); }
@@ -290,9 +339,13 @@ function renderChatSection(kind,listId,countId,term,sourceChats=null){
     list.append(el("p","muted tiny section-empty",empty));return;
   }
   chats.forEach(c=>{
+    const row=el("div","chat-row");
     const b=el("button","chat-item"+(c.id===S.active?" active":""));b.type="button";b.append(avatar(chatTitle(c)));
     const copy=el("div","chat-copy");copy.append(el("strong","",chatTitle(c)),el("span","",c.last?c.last.body:chatSub(c)));b.append(copy,el("small","chat-time",dateLabel(c.last?.created_at||c.updated_at)));
-    b.addEventListener("click",()=>openChat(c.id));list.append(b);
+    b.addEventListener("click",()=>openChat(c.id));
+    const del=el("button","conversation-delete","Delete");del.type="button";del.title="Move all messages in this conversation to Deleted messages";
+    del.addEventListener("click",()=>deleteConversationMessages(c.id));
+    row.append(b,del);list.append(row);
   });
 }
 function peerForChat(c){return c?.members.find(m=>m.user_id!==S.user.id)?.user_id||null;}
@@ -403,6 +456,8 @@ async function unblockUser(userId){
 }
 function renderActive(){
   const c=S.chats.find(x=>x.id===S.active);$("empty").hidden=!!c;$("chat").hidden=!c;
+  $("layout").classList.toggle("show-chat",!!c);
+  $("layout").classList.toggle("show-home",!c);
   if(!c)return;
   $("chat-title").textContent=chatTitle(c);$("chat-subtitle").textContent=chatSub(c);$("chat-avatar").textContent=initials(chatTitle(c));
   const me=c.members.find(x=>x.user_id===S.user.id);$("add-people").hidden=!(c.kind==="group"&&me?.role==="owner");
@@ -439,7 +494,7 @@ async function toggleBlock(){
   S.directStatus=null;await refreshDirectStatus();await loadRequests();await loadBlocked();toast(unblock?"Member unblocked.":"Member blocked.");
 }
 async function openChat(id){
-  S.active=id;S.directStatus=null;$("layout").classList.add("show-chat");renderActive();await refreshDirectStatus();await loadMessages(id);
+  S.active=id;S.directStatus=null;$("layout").classList.remove("show-home");$("layout").classList.add("show-chat");renderActive();await refreshDirectStatus();await loadMessages(id);
   if(S.channel){await db.removeChannel(S.channel);S.channel=null;}
   S.channel=db.channel("chat-"+id).on("postgres_changes",{event:"INSERT",schema:"public",table:"messages",filter:"conversation_id=eq."+id},payload=>{
     if(S.active!==id||S.deletedMessageIds.has(payload.new.id)||S.messages.some(x=>x.id===payload.new.id))return;
@@ -462,6 +517,25 @@ function renderMessages(){
     row.append(bubble);list.append(row);
   });
   $("messages").scrollTop=$("messages").scrollHeight;
+}
+async function deleteConversationMessages(conversationId){
+  const conversation=S.chats.find(c=>c.id===conversationId);
+  if(!conversation)return;
+  if(!confirm("Move all messages in this conversation to Deleted messages for your account? Other members will still see them, and you can restore them one at a time."))return;
+  const result=await db.from("messages").select("id").eq("conversation_id",conversationId).limit(1000);
+  if(result.error){toast("Conversation messages could not be loaded: "+result.error.message);return;}
+  const ids=(result.data||[]).map(x=>x.id).filter(id=>!S.deletedMessageIds.has(id));
+  if(!ids.length){toast("There are no visible messages to delete in this conversation.");return;}
+  for(let i=0;i<ids.length;i+=200){
+    const batch=ids.slice(i,i+200).map(message_id=>({user_id:S.user.id,message_id}));
+    const inserted=await db.from("user_deleted_messages").insert(batch);
+    if(inserted.error){toast("Some messages could not be moved: "+inserted.error.message);await loadChats();if(S.folder==="deleted")await loadDeletedMessages();return;}
+  }
+  ids.forEach(id=>S.deletedMessageIds.add(id));
+  if(S.active===conversationId)S.messages=S.messages.filter(m=>!S.deletedMessageIds.has(m.id));
+  renderMessages();await loadChats();
+  if(S.folder==="deleted")await loadDeletedMessages();
+  toast(ids.length+" messages moved to Deleted messages. You can restore them there.");
 }
 async function deleteMessage(id){
   if(!confirm("Move this message to Deleted messages? It will disappear only from your view. Other members will still see it, and you can restore it later."))return;
@@ -570,11 +644,11 @@ async function saveProfile(e){
   S.profile=r.data;S.profiles[S.user.id]=r.data;$("user-name").textContent=r.data.display_name;$("user-initial").textContent=initials(r.data.display_name);
   $("profile-modal").hidden=true;await loadChats();if(S.active)await loadMessages(S.active);toast("Profile updated.");
 }
-function closeModals(){ $("people-modal").hidden=true;$("profile-modal").hidden=true;$("requests-modal").hidden=true;$("friends-modal").hidden=true; }
+function closeModals(){ $("people-modal").hidden=true;$("profile-modal").hidden=true;$("requests-modal").hidden=true;$("friends-modal").hidden=true;$("settings-modal").hidden=true; }
 function goHome(){
   closeModals();S.active=null;S.messages=[];S.directStatus=null;
   if(S.channel){db.removeChannel(S.channel);S.channel=null;}
-  $("layout").classList.remove("show-chat");renderChats();renderActive();
+  $("layout").classList.remove("show-chat");$("layout").classList.add("show-home");renderChats();renderActive();
 }
 function wire(){
   document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>authMode(b.dataset.mode)));
@@ -592,19 +666,24 @@ function wire(){
   $("add-people").addEventListener("click",()=>openPeople("add"));$("requests-open").addEventListener("click",openRequests);$("friends-open").addEventListener("click",openFriends);$("friends-find").addEventListener("click",()=>{$("friends-modal").hidden=true;openPeople("friend");});$("block-user").addEventListener("click",toggleBlock);
   $("people-search").addEventListener("input",()=>{clearTimeout(S.timer);S.timer=setTimeout(searchPeople,220);});$("people-create").addEventListener("click",createGroupOrAdd);
   $("home-open").addEventListener("click",goHome);
+  $("settings-open").addEventListener("click",openSettings);
+  document.querySelectorAll("[data-accent]").forEach(b=>b.addEventListener("click",()=>setAccent(b.dataset.accent)));
+  document.querySelectorAll("[data-font-size]").forEach(b=>b.addEventListener("click",()=>setFontSize(b.dataset.fontSize)));
+  $("home-friends-open").addEventListener("click",openFriends);$("home-requests-open").addEventListener("click",openRequests);
   $("filter").addEventListener("input",renderChats);document.querySelectorAll("[data-folder]").forEach(b=>b.addEventListener("click",()=>selectFolder(b.dataset.folder)));$("profile-open").addEventListener("click",openProfile);$("profile-form").addEventListener("submit",saveProfile);
   $("send-form").addEventListener("submit",sendMessage);
   $("message").addEventListener("input",e=>{e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,120)+"px";});
   $("message").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing){e.preventDefault();$("send-form").requestSubmit();}});
-  $("back").addEventListener("click",()=>{S.active=null;$("layout").classList.remove("show-chat");renderChats();renderActive();if(S.channel){db.removeChannel(S.channel);S.channel=null;}});
+  $("back").addEventListener("click",goHome);
   $("signout").addEventListener("click",async()=>{const r=await db.auth.signOut();if(r.error)toast(r.error.message);else closeModals();});
   document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",closeModals));
-  ["people-modal","profile-modal","requests-modal","friends-modal"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target===$(id))closeModals();}));
+  ["people-modal","profile-modal","requests-modal","friends-modal","settings-modal"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target===$(id))closeModals();}));
   document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModals();});
 }
 async function boot(){
   if(!window.supabase?.createClient){status("auth-status","The chat library did not load. Refresh and try again.","error");return;}
   wire();
+  loadUIPreferences();
   db.auth.onAuthStateChange((event,session)=>{setTimeout(()=>{if(session?.user)signedIn(session.user);else if(event==="SIGNED_OUT")showAuth();},0);});
   const session=await db.auth.getSession();if(session.error){status("auth-status",session.error.message,"error");return;}
   if(session.data.session?.user)await signedIn(session.data.session.user);else showAuth();
