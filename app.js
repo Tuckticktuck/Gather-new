@@ -14,10 +14,11 @@ const ACCENTS = {
 };
 const FONT_SCALES = {small:"0.9",normal:"1",large:"1.15"};
 const DEFAULT_PREFERENCES = {accent:"lavender",fontSize:"normal",messageNotificationMode:"temporary"};
-const S = { user:null, profile:null, profiles:{}, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, hasOlderMessages:false, loadingOlder:false, replyTo:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null };
+const S = { user:null, profile:null, profiles:{}, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, hasOlderMessages:false, loadingOlder:false, replyTo:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function status(id, text, kind) { const n=$(id); n.textContent=text||""; n.className="status"+(kind?" "+kind:""); }
+function isFeedbackAdmin(user){return !!user&&!user.is_anonymous&&String(user.email||"").trim().toLowerCase()==="landoncordeiro237@gmail.com";}
 function toast(text) { $("toast").textContent=text; $("toast").classList.add("show"); clearTimeout(toast.t); toast.t=setTimeout(()=>$("toast").classList.remove("show"),3000); }
 function setChatLoadStatus(message,retry=false){
   const box=$("chat-load-status");if(!box)return;
@@ -196,7 +197,7 @@ function showAuth() {
   if(S.channel){db.removeChannel(S.channel);S.channel=null;}
   if(S.requestChannel){db.removeChannel(S.requestChannel);S.requestChannel=null;}
   if(S.readChannel){db.removeChannel(S.readChannel);S.readChannel=null;}
-  S.user=null;S.profile=null;S.profiles={};S.chats=[];S.messages=[];S.messageReads={};S.replyTo=null;S.hasOlderMessages=false;S.requests=[];S.friendRequests=[];S.friends=[];S.blockedUsers=[];S.deletedMessages=[];S.deletedMessageIds=new Set();S.lastReadAt={};S.folder="friends";S.directStatus=null;S.active=null;S.messages=[];S.loadError=null;S.avatarChanged=false;S.pendingAvatarData=null;loadUIPreferences(DEFAULT_PREFERENCES);
+  S.user=null;S.profile=null;S.feedbackAdminView=false;$("feedback-admin-open").hidden=true;S.profiles={};S.chats=[];S.messages=[];S.messageReads={};S.replyTo=null;S.hasOlderMessages=false;S.requests=[];S.friendRequests=[];S.friends=[];S.blockedUsers=[];S.deletedMessages=[];S.deletedMessageIds=new Set();S.lastReadAt={};S.folder="friends";S.directStatus=null;S.active=null;S.messages=[];S.loadError=null;S.avatarChanged=false;S.pendingAvatarData=null;loadUIPreferences(DEFAULT_PREFERENCES);
   setChatLoadStatus("");$("auth").hidden=false;$("app").hidden=true;
 }
 function showApp(){ $("auth").hidden=true;$("app").hidden=false; }
@@ -258,7 +259,7 @@ async function ensureProfile(user){
 async function signedIn(user,retry=false){
   if(!user||S.loading===user.id)return;
   if(!retry&&S.user&&S.user.id===user.id&&S.profile)return;
-  S.loading=user.id;S.user=user;S.loadError=null;showApp();setChatLoadStatus("Loading your chats…");
+  S.loading=user.id;S.user=user;S.loadError=null;$("feedback-admin-open").hidden=!isFeedbackAdmin(user);showApp();setChatLoadStatus("Loading your chats…");
   try{
     S.profile=await ensureProfile(user);
     if(S.user?.id!==user.id)return;
@@ -1484,7 +1485,143 @@ async function changePassword(e){
   $("current-password").value="";$("new-password").value="";$("confirm-password").value="";
   status("password-status","Password updated successfully.","success");
 }
-function closeModals(){ $("people-modal").hidden=true;$("profile-modal").hidden=true;$("requests-modal").hidden=true;$("friends-modal").hidden=true;$("settings-modal").hidden=true;$("group-photo-modal").hidden=true;$("group-settings-modal").hidden=true;$("message-search-modal").hidden=true;$("chat-actions-modal").hidden=true; }
+
+function feedbackStatusLabel(value){
+  return value==="in_progress"?"In progress":value==="resolved"?"Resolved":"New";
+}
+function renderFeedbackThreads(){
+  const list=$("feedback-thread-list");list.replaceChildren();
+  if(!S.feedbackThreads.length){
+    list.append(el("p","muted tiny",S.feedbackAdminView?"No feedback has been submitted yet.":"You haven't sent any feedback yet."));
+    return;
+  }
+  S.feedbackThreads.forEach(thread=>{
+    const button=el("button","feedback-thread-card"+(thread.id===S.activeFeedbackThreadId?" active":""));
+    button.type="button";
+    const subject=el("strong","",thread.subject);
+    const statusLine=el("span","feedback-thread-meta",feedbackStatusLabel(thread.status)+" · "+dateLabel(thread.created_at));
+    if(S.feedbackAdminView){
+      const profile=S.feedbackProfiles[thread.user_id];
+      button.append(subject,el("small","feedback-thread-member",profile?.display_name||"Gather member"),statusLine);
+    }else button.append(subject,statusLine);
+    button.addEventListener("click",()=>selectFeedbackThread(thread.id));
+    list.append(button);
+  });
+}
+async function loadFeedbackThreads(){
+  const result=await db.from("feedback_threads").select("id,user_id,subject,status,created_at").order("created_at",{ascending:false});
+  if(result.error){$("feedback-thread-list").replaceChildren(el("p","status error","Feedback couldn't be loaded: "+result.error.message));return false;}
+  S.feedbackThreads=result.data||[];
+  S.feedbackProfiles={};
+  if(S.feedbackAdminView&&S.feedbackThreads.length){
+    const profiles=await fetchProfileRecords(S.feedbackThreads.map(thread=>thread.user_id));
+    if(!profiles.error)(profiles.data||[]).forEach(profile=>S.feedbackProfiles[profile.id]=profile);
+  }
+  renderFeedbackThreads();
+  return true;
+}
+function showFeedbackNewForm(){
+  S.activeFeedbackThreadId=null;S.feedbackMessages=[];
+  $("feedback-detail").hidden=true;$("feedback-empty").hidden=true;
+  $("feedback-new-form").hidden=false;
+  $("feedback-subject").value="";$("feedback-new-message").value="";
+  $("feedback-new-status").textContent="";
+  $("feedback-subject").focus();
+  renderFeedbackThreads();
+}
+async function openFeedback(adminView=false){
+  if(!S.user)return;
+  if(adminView&&!isFeedbackAdmin(S.user)){toast("This inbox is only available to the feedback administrator.");return;}
+  S.feedbackAdminView=!!adminView;
+  S.activeFeedbackThreadId=null;S.feedbackMessages=[];
+  $("feedback-modal-title").textContent=S.feedbackAdminView?"Feedback inbox":"Your feedback";
+  $("feedback-modal-eyebrow").textContent=S.feedbackAdminView?"GATHER ADMIN":"FEEDBACK AND SUPPORT";
+  $("feedback-modal-description").textContent=S.feedbackAdminView?"Review messages from Gather members, reply, and update each thread's status.":"Send feedback or ask for help. Replies to your feedback stay private to your account.";
+  $("feedback-new").hidden=false;
+  $("feedback-new-form").hidden=true;$("feedback-detail").hidden=true;$("feedback-empty").hidden=false;
+  $("feedback-modal").hidden=false;
+  $("feedback-empty").textContent=S.feedbackAdminView?"Select a feedback thread to read and respond.":"Choose a feedback thread or start a new one.";
+  await loadFeedbackThreads();
+}
+async function selectFeedbackThread(threadId){
+  const thread=S.feedbackThreads.find(item=>item.id===threadId);
+  if(!thread)return;
+  S.activeFeedbackThreadId=threadId;
+  $("feedback-new-form").hidden=true;$("feedback-empty").hidden=true;$("feedback-detail").hidden=false;
+  $("feedback-thread-subject").textContent=thread.subject;
+  const profile=S.feedbackProfiles[thread.user_id];
+  $("feedback-thread-owner").textContent=S.feedbackAdminView
+    ?("From "+(profile?.display_name||"Gather member")+" · "+dateLabel(thread.created_at))
+    :("Submitted "+dateLabel(thread.created_at));
+  $("feedback-status-label").textContent="Status: "+feedbackStatusLabel(thread.status);
+  $("feedback-status-select").value=thread.status;
+  $("feedback-status-select").hidden=!S.feedbackAdminView;
+  $("feedback-status-label").hidden=S.feedbackAdminView;
+  $("feedback-reply-status").textContent="";
+  $("feedback-reply").value="";
+  renderFeedbackThreads();
+  const result=await db.from("feedback_messages").select("id,thread_id,sender_id,body,created_at").eq("thread_id",threadId).order("created_at",{ascending:true});
+  if(result.error){$("feedback-message-list").replaceChildren(el("p","status error","Messages couldn't be loaded: "+result.error.message));return;}
+  S.feedbackMessages=result.data||[];
+  renderFeedbackMessages();
+}
+function renderFeedbackMessages(){
+  const list=$("feedback-message-list");list.replaceChildren();
+  if(!S.feedbackMessages.length){list.append(el("p","muted tiny","No messages in this thread yet."));return;}
+  const thread=S.feedbackThreads.find(item=>item.id===S.activeFeedbackThreadId);
+  S.feedbackMessages.forEach(message=>{
+    const mine=message.sender_id===S.user?.id;
+    const bubble=el("article","feedback-message"+(mine?" mine":""));
+    const sender=mine?"You":(S.feedbackAdminView?(S.feedbackProfiles[thread?.user_id]?.display_name||"Gather member"):"Gather support");
+    bubble.append(el("div","feedback-message-meta",sender+" · "+dateLabel(message.created_at)),el("p","feedback-message-body",message.body));
+    list.append(bubble);
+  });
+  list.scrollTop=list.scrollHeight;
+}
+async function createFeedbackThread(event){
+  event.preventDefault();
+  const subject=$("feedback-subject").value.trim(),body=$("feedback-new-message").value.trim();
+  if(subject.length<3||subject.length>100){$("feedback-new-status").textContent="Use a subject between 3 and 100 characters.";return;}
+  if(!body||body.length>4000){$("feedback-new-status").textContent="Write a message between 1 and 4,000 characters.";return;}
+  const button=$("feedback-create-submit");button.disabled=true;
+  $("feedback-new-status").textContent="Sending feedback…";
+  const result=await db.rpc("create_feedback_thread",{p_subject:subject,p_message:body});
+  button.disabled=false;
+  if(result.error){$("feedback-new-status").textContent="Feedback could not be sent: "+result.error.message;return;}
+  $("feedback-subject").value="";$("feedback-new-message").value="";
+  $("feedback-new-status").textContent="";
+  await loadFeedbackThreads();
+  await selectFeedbackThread(result.data);
+  toast("Feedback sent.");
+}
+async function sendFeedbackReply(event){
+  event.preventDefault();
+  const body=$("feedback-reply").value.trim(),threadId=S.activeFeedbackThreadId;
+  if(!threadId||!body||body.length>4000){$("feedback-reply-status").textContent="Write a message between 1 and 4,000 characters.";return;}
+  const button=$("feedback-reply-submit");button.disabled=true;
+  $("feedback-reply-status").textContent="Sending reply…";
+  const result=await db.from("feedback_messages").insert({thread_id:threadId,sender_id:S.user.id,body});
+  button.disabled=false;
+  if(result.error){$("feedback-reply-status").textContent="Reply could not be sent: "+result.error.message;return;}
+  $("feedback-reply").value="";$("feedback-reply-status").textContent="";
+  await selectFeedbackThread(threadId);
+  toast("Reply sent.");
+}
+async function updateFeedbackStatus(){
+  if(!S.feedbackAdminView||!isFeedbackAdmin(S.user)||!S.activeFeedbackThreadId)return;
+  const nextStatus=$("feedback-status-select").value;
+  const button=$("feedback-status-select");button.disabled=true;
+  const result=await db.from("feedback_threads").update({status:nextStatus}).eq("id",S.activeFeedbackThreadId).select("id,user_id,subject,status,created_at").maybeSingle();
+  button.disabled=false;
+  if(result.error||!result.data){toast("Feedback status could not be updated.");return;}
+  const index=S.feedbackThreads.findIndex(thread=>thread.id===result.data.id);
+  if(index>=0)S.feedbackThreads[index]=result.data;
+  $("feedback-status-label").textContent="Status: "+feedbackStatusLabel(nextStatus);
+  renderFeedbackThreads();
+  toast("Feedback status updated.");
+}
+
+function closeModals(){ $("people-modal").hidden=true;$("profile-modal").hidden=true;$("requests-modal").hidden=true;$("friends-modal").hidden=true;$("settings-modal").hidden=true;$("group-photo-modal").hidden=true;$("group-settings-modal").hidden=true;$("message-search-modal").hidden=true;$("chat-actions-modal").hidden=true;$("feedback-modal").hidden=true; }
 function goHome(){
   clearPendingMessageImage();closeModals();S.active=null;S.messages=[];S.messageReads={};S.replyTo=null;S.hasOlderMessages=false;S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;renderReplyComposer();
   $("layout").classList.remove("show-chat");$("layout").classList.add("show-home");renderChats();renderActive();
@@ -1513,6 +1650,13 @@ function wire(){
   $("people-search").addEventListener("input",()=>{clearTimeout(S.timer);S.timer=setTimeout(searchPeople,220);});$("people-create").addEventListener("click",createGroupOrAdd);
   $("home-open").addEventListener("click",goHome);
   $("settings-open").addEventListener("click",openSettings);
+  $("feedback-open").addEventListener("click",()=>{$("settings-modal").hidden=true;openFeedback(false);});
+  $("feedback-admin-open").addEventListener("click",()=>{$("settings-modal").hidden=true;openFeedback(true);});
+  $("feedback-new").addEventListener("click",showFeedbackNewForm);
+  $("feedback-refresh").addEventListener("click",async()=>{const keep=S.activeFeedbackThreadId;await loadFeedbackThreads();if(keep&&S.feedbackThreads.some(thread=>thread.id===keep))await selectFeedbackThread(keep);});
+  $("feedback-new-form").addEventListener("submit",createFeedbackThread);
+  $("feedback-reply-form").addEventListener("submit",sendFeedbackReply);
+  $("feedback-status-select").addEventListener("change",updateFeedbackStatus);
   document.querySelectorAll("[data-accent]").forEach(b=>b.addEventListener("click",()=>setAccent(b.dataset.accent)));
   document.querySelectorAll("[data-font-size]").forEach(b=>b.addEventListener("click",()=>setFontSize(b.dataset.fontSize)));
   document.querySelectorAll("[data-notification-mode]").forEach(b=>b.addEventListener("click",()=>setMessageNotificationMode(b.dataset.notificationMode)));
@@ -1543,7 +1687,7 @@ function wire(){
   $("delete-selected").addEventListener("click",deleteSelectedMessages);
   $("signout").addEventListener("click",async()=>{const r=await db.auth.signOut();if(r.error)toast(r.error.message);else closeModals();});
   document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",closeModals));
-  ["people-modal","profile-modal","requests-modal","friends-modal","settings-modal","group-photo-modal","group-settings-modal","message-search-modal","chat-actions-modal"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target===$(id))closeModals();}));
+  ["people-modal","profile-modal","requests-modal","friends-modal","settings-modal","group-photo-modal","group-settings-modal","message-search-modal","chat-actions-modal","feedback-modal"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target===$(id))closeModals();}));
   document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModals();});
 }
 async function boot(){
