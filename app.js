@@ -140,9 +140,12 @@ async function loadChats(){
   const p=await db.from("profiles").select("id,username,display_name").in("id",userIds);
   if(p.error){S.loadError="Member profiles could not be loaded: "+p.error.message;toast(S.loadError);return false;}
   S.profiles={};p.data.forEach(x=>S.profiles[x.id]=x);
-  const byChat={},last={};members.data.forEach(x=>(byChat[x.conversation_id]??=[]).push(x));
-  (msgs.data||[]).forEach(x=>{if(!S.deletedMessageIds.has(x.id)&&!last[x.conversation_id])last[x.conversation_id]=x;});
-  S.chats=rows.map(x=>({...x.conversations,members:byChat[x.conversation_id]||[],last:last[x.conversation_id]||null}))
+  const byChat={},last={},hasMessages={};members.data.forEach(x=>(byChat[x.conversation_id]??=[]).push(x));
+  (msgs.data||[]).forEach(x=>{
+    hasMessages[x.conversation_id]=true;
+    if(!S.deletedMessageIds.has(x.id)&&!last[x.conversation_id])last[x.conversation_id]=x;
+  });
+  S.chats=rows.map(x=>({...x.conversations,members:byChat[x.conversation_id]||[],last:last[x.conversation_id]||null,hasMessages:!!hasMessages[x.conversation_id]}))
     .sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at));
   renderChats();renderActive();return await loadRequests();
 }
@@ -330,7 +333,7 @@ async function respondToRequest(id,accept){
 }
 function renderChatSection(kind,listId,countId,term,sourceChats=null){
   const list=$(listId);list.replaceChildren();
-  const chats=(sourceChats||S.chats.filter(c=>c.kind===kind)).filter(c=>(chatTitle(c)+" "+chatSub(c)).toLowerCase().includes(term));
+  const chats=(sourceChats||S.chats.filter(c=>c.kind===kind)).filter(c=>(!c.hasMessages||!!c.last)&&(chatTitle(c)+" "+chatSub(c)).toLowerCase().includes(term));
   $(countId).textContent=chats.length;
   if(!chats.length){
     const empty=term
