@@ -742,3 +742,6 @@ input::placeholder,textarea::placeholder{color:var(--accent-muted)}
 }
 
 .chat-title .chat-title-profile{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:calc(12px * var(--font-scale,1))}
+
+/* Consecutive messages show the sender only on the first bubble. */
+.message.group-continued .meta.meta-continued{margin-bottom:3px}
