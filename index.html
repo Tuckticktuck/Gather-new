@@ -7,9 +7,9 @@
 <meta name="description" content="Private direct and group conversations.">
 <title>Gather — Private Chat</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="app.css?v=20261101-14">
+<link rel="stylesheet" href="app.css?v=20261101-15">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
-<script defer src="app.js?v=20261101-17"></script>
+<script defer src="app.js?v=20261101-18"></script>
 </head>
 <body>
 <section id="auth" class="auth-shell">
@@ -96,10 +96,11 @@
         </section>
       </section>
       <section id="chat" class="chat" hidden>
-        <header class="chat-head"><button id="back" class="back" aria-label="Back">←</button><span id="chat-avatar" class="avatar">?</span><div class="chat-title"><strong id="chat-title"></strong><small id="chat-subtitle"></small></div><button id="add-people" class="outline" hidden>＋ Add people</button><button id="edit-group-photo" class="outline" type="button" hidden>Edit photo</button><button id="leave-chat" class="outline" type="button" hidden>Leave group</button><button id="block-user" class="outline" hidden>Block</button><button id="select-messages" class="outline" type="button">Select</button><button id="delete-selected" class="outline" type="button" hidden>Delete selected</button></header>
+        <header class="chat-head"><button id="back" class="back" aria-label="Back">←</button><span id="chat-avatar" class="avatar">?</span><div class="chat-title"><strong id="chat-title"></strong><small id="chat-subtitle"></small></div><button id="add-people" class="outline" hidden>＋ Add people</button><button id="edit-group-photo" class="outline" type="button" hidden>Edit photo</button><button id="group-settings-open" class="outline" type="button" hidden>Group settings</button><button id="search-messages-open" class="outline" type="button">Search</button><button id="leave-chat" class="outline" type="button" hidden>Leave group</button><button id="block-user" class="outline" hidden>Block</button><button id="select-messages" class="outline" type="button">Select</button><button id="delete-selected" class="outline" type="button" hidden>Delete selected</button></header>
         <div id="messages" class="messages"></div>
         <p id="chat-notice" class="chat-notice" hidden></p>
-        <form id="send-form" class="composer"><textarea id="message" rows="1" maxlength="4000" placeholder="Write a message…" aria-label="Write a message"></textarea><div><small>Enter to send · Shift + Enter for a new line</small><button id="send" type="submit" aria-label="Send">↑</button></div></form>
+        <div id="typing-indicator" class="typing-indicator" aria-live="polite" hidden></div>
+        <form id="send-form" class="composer"><div id="reply-compose" class="reply-compose" hidden><div><small id="reply-compose-label">Replying to</small><span id="reply-compose-text"></span></div><button id="cancel-reply" type="button" aria-label="Cancel reply">×</button></div><textarea id="message" rows="1" maxlength="4000" placeholder="Write a message…" aria-label="Write a message"></textarea><div><small>Enter to send · Shift + Enter for a new line</small><button id="send" type="submit" aria-label="Send">↑</button></div></form>
       </section>
     </main>
   </div>
@@ -186,6 +187,21 @@
   </div>
   <p id="group-avatar-status" class="status" role="status"></p>
   <button id="group-avatar-save" class="primary" type="button" hidden>Save group photo</button>
+</section></div>
+<div id="group-settings-modal" class="overlay" hidden><section class="modal group-settings-modal">
+  <button class="close" data-close aria-label="Close">×</button><p class="eyebrow">GROUP SETTINGS</p><h2>Manage group</h2>
+  <label>Group name<input id="group-settings-title" maxlength="60"></label>
+  <label>Group description<textarea id="group-settings-description" rows="3" maxlength="280" placeholder="What is this group about?"></textarea></label>
+  <p id="group-settings-note" class="tiny muted"></p><p id="group-settings-status" class="status"></p>
+  <button id="group-settings-save" class="primary" type="button">Save details</button>
+  <div class="group-settings-members-head"><h3>Members</h3><span class="tiny muted">Manage roles and membership</span></div>
+  <div id="group-settings-members" class="group-settings-members"></div>
+</section></div>
+<div id="message-search-modal" class="overlay" hidden><section class="modal message-search-modal">
+  <button class="close" data-close aria-label="Close">×</button><p class="eyebrow">CONVERSATION HISTORY</p><h2>Search messages</h2>
+  <label>Search this conversation<input id="message-search-input" type="search" placeholder="Find a word or phrase"></label>
+  <p id="message-search-status" class="status"></p><div id="message-search-results" class="message-search-results"><p class="muted tiny">Search all messages in this conversation.</p></div>
+  <button id="message-search-more" class="secondary-action" type="button" hidden>Load more results</button>
 </section></div>
 <div id="toast" class="toast" role="status"></div>
 </body>
