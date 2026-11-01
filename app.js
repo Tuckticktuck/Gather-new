@@ -1024,8 +1024,10 @@ function renderMessages(preserveScroll=false){
     const grouping=samePrevious?(sameNext?" group-middle":" group-last"):(sameNext?" group-first":"");
     const row=el("div","message"+(mine?" mine":"")+grouping+(samePrevious?" group-continued":""));row.dataset.messageId=m.id;
     const bubble=el("div","bubble"),meta=el("div","meta");
-    if(mine)meta.append(el("strong","","You"));
-    else {const author=el("button","message-profile-link",p?.display_name||"Member");author.type="button";author.addEventListener("click",()=>openPublicProfile(m.sender_id));meta.append(author);}
+    if(!samePrevious){
+      if(mine)meta.append(el("strong","","You"));
+      else {const author=el("button","message-profile-link",p?.display_name||"Member");author.type="button";author.addEventListener("click",()=>openPublicProfile(m.sender_id));meta.append(author);}
+    }else meta.classList.add("meta-continued");
     meta.append(el("time","",new Date(m.created_at).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})));
     if(m.edited_at)meta.append(el("small","message-edited-label","edited"));
     bubble.append(meta);
