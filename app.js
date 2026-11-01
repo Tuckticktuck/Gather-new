@@ -14,7 +14,7 @@ const ACCENTS = {
 };
 const FONT_SCALES = {small:"0.9",normal:"1",large:"1.15"};
 const DEFAULT_PREFERENCES = {accent:"lavender",fontSize:"normal",shareOnlineStatus:true,messageNotificationMode:"temporary"};
-const S = { user:null, profile:null, profiles:{}, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, onlineFriends:new Set(), friendPresenceReady:new Set(), friendPresenceErrors:new Set(), friendPresenceChannels:{}, ownPresenceChannel:null, typingActive:false, friendPresenceSyncPromise:null, friendPresenceSyncQueued:false, pendingAvatarData:null, avatarChanged:false, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, typingChannel:null, typingReady:false, typingTimer:null, typingHeartbeatTimer:null, remoteTypers:new Map(), messageReads:{}, hasOlderMessages:false, loadingOlder:false, replyTo:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null };
+const S = { user:null, profile:null, profiles:{}, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, hasOlderMessages:false, loadingOlder:false, replyTo:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function status(id, text, kind) { const n=$(id); n.textContent=text||""; n.className="status"+(kind?" "+kind:""); }
@@ -298,7 +298,7 @@ function chatTitle(c){
 function chatSub(c){
   if(c.kind==="group"){const names=c.members.map(m=>S.profiles[m.user_id]?.display_name||"Member");return c.members.length+" members"+(c.description?" · "+c.description:" · "+names.slice(0,3).join(", "));}
   const other=c.members.find(m=>m.user_id!==S.user.id),p=other&&S.profiles[other.user_id];
-  const presence=other&&S.friendPresenceReady.has(other.user_id)?(S.onlineFriends.has(other.user_id)?" · Online":" · Offline"):"";
+  const presence="";
   return p?"@"+p.username+presence:"Private conversation";
 }
 async function loadChats(){
@@ -355,11 +355,6 @@ async function loadRequests(){
     p.data.forEach(x=>S.profiles[x.id]=x);
   }
   renderRequests();return true;
-}
-function refreshFriendPresenceUI(){
-  renderFriends();renderChats();
-  const active=S.chats.find(x=>x.id===S.active);
-  if(active?.kind==="direct")$("chat-subtitle").textContent=chatSub(active);
 }
 function setFriendPresence(friendId,channel){
   if(S.friendPresenceChannels[friendId]!==channel)return;
@@ -938,116 +933,6 @@ function subscribeMessageReads(conversationId){
       renderMessages();
     }).subscribe();
 }
-function clearRemoteTypers(){
-  S.remoteTypers.forEach(entry=>clearTimeout(entry.timer));
-  S.remoteTypers.clear();
-  renderTypingState();
-}
-function renderTypingState(){
-  const names=[...S.remoteTypers.values()].map(entry=>entry.name).sort((a,b)=>a.localeCompare(b));
-  const indicator=$("typing-indicator"),nameList=$("typing-names");
-  if(!indicator||!nameList)return;
-  indicator.hidden=!names.length;
-  nameList.replaceChildren();
-  names.forEach(name=>nameList.append(el("span","typing-name",name)));
-}
-function receiveTypingBroadcast(channel,event){
-  if(S.typingChannel!==channel||!S.user)return;
-  const data=event?.payload;
-  const userId=data?.user_id;
-  if(!userId||userId===S.user.id)return;
-  const existing=S.remoteTypers.get(userId);
-  if(existing)clearTimeout(existing.timer);
-  if(data.typing===true){
-    const entry={name:data.display_name||"Someone",timer:null};
-    entry.timer=setTimeout(()=>{
-      if(S.remoteTypers.get(userId)!==entry)return;
-      S.remoteTypers.delete(userId);
-      renderTypingState();
-    },5200);
-    S.remoteTypers.set(userId,entry);
-  }else{
-    S.remoteTypers.delete(userId);
-  }
-  renderTypingState();
-}
-async function sendTypingBroadcast(typing,channel=S.typingChannel){
-  if(!channel||S.typingChannel!==channel||!S.typingReady)return;
-  try{
-    const result=await channel.send({
-      type:"broadcast",
-      event:"typing",
-      payload:{
-        user_id:S.user.id,
-        display_name:S.profile?.display_name||"Member",
-        typing:!!typing
-      }
-    });
-    if(result!=="ok")console.warn("Typing broadcast was not accepted:",result);
-  }catch(error){
-    console.warn("Typing status could not be broadcast:",error.message||error);
-  }
-}
-function scheduleTypingHeartbeat(){
-  clearTimeout(S.typingHeartbeatTimer);
-  if(!S.typingActive||!S.typingReady)return;
-  S.typingHeartbeatTimer=setTimeout(async()=>{
-    const channel=S.typingChannel;
-    if(!channel||!S.typingReady||!S.typingActive)return;
-    await sendTypingBroadcast(true,channel);
-    scheduleTypingHeartbeat();
-  },2400);
-}
-async function subscribeChatTyping(conversationId){
-  if(S.typingChannel){db.removeChannel(S.typingChannel);S.typingChannel=null;}
-  S.typingReady=false;S.typingActive=false;
-  clearTimeout(S.typingTimer);clearTimeout(S.typingHeartbeatTimer);clearRemoteTypers();
-  try{await db.realtime.setAuth();}catch(error){console.warn("Private chat typing could not authenticate:",error.message);return;}
-  if(S.active!==conversationId||!S.user)return;
-  const uid=S.user.id;
-  const channel=db.channel("gather-chat:"+conversationId,{config:{private:true,broadcast:{self:false}}});
-  S.typingChannel=channel;
-  channel.on("broadcast",{event:"typing"},event=>receiveTypingBroadcast(channel,event));
-  channel.subscribe(async(state,error)=>{
-    if(S.typingChannel!==channel)return;
-    if(state==="SUBSCRIBED"){
-      S.typingReady=true;
-      S.typingActive=false;
-      if($("message").value.trim())await setTyping(true);
-    }else if(state==="CHANNEL_ERROR"||state==="TIMED_OUT"||state==="CLOSED"){
-      S.typingReady=false;S.typingActive=false;
-      clearTimeout(S.typingHeartbeatTimer);
-      console.warn("Chat typing channel could not connect:",error?.message||state);
-    }
-  });
-}
-async function setTyping(typing){
-  const channel=S.typingChannel;
-  const next=!!typing;
-  if(!channel||!S.typingReady)return;
-  if(S.typingActive===next){
-    if(next)scheduleTypingHeartbeat();
-    return;
-  }
-  S.typingActive=next;
-  if(next)scheduleTypingHeartbeat();
-  else clearTimeout(S.typingHeartbeatTimer);
-  await sendTypingBroadcast(next,channel);
-}
-function handleTypingInput(){
-  if(!S.active)return;
-  clearTimeout(S.typingTimer);
-  const hasText=!!$("message").value.trim();
-  if(!hasText){setTyping(false);return;}
-  setTyping(true);
-  S.typingTimer=setTimeout(()=>setTyping(false),1800);
-}
-function stopChatTyping(){
-  clearTimeout(S.typingTimer);clearTimeout(S.typingHeartbeatTimer);
-  if(S.typingChannel){db.removeChannel(S.typingChannel);S.typingChannel=null;}
-  S.typingReady=false;S.typingActive=false;
-  clearRemoteTypers();
-}
 function renderReplyComposer(){
   const box=$("reply-compose");box.hidden=!S.replyTo;
   if(!S.replyTo)return;
@@ -1086,7 +971,7 @@ async function openChat(id){
   $("layout").classList.remove("show-home");$("layout").classList.add("show-chat");renderActive();
   await refreshDirectStatus();await loadMessages(id);
   if(S.active!==id)return;
-  subscribeMessageReads(id);await markConversationRead(id);await subscribeChatTyping(id);
+  subscribeMessageReads(id);await markConversationRead(id);
 }
 async function loadMessages(id){
   const r=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,reply_to_id").eq("conversation_id",id).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
@@ -1635,9 +1520,7 @@ function wire(){
   });
   $("password-form").addEventListener("submit",changePassword);
   $("send-form").addEventListener("submit",sendMessage);
-  $("message").addEventListener("input",e=>{e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,120)+"px";handleTypingInput();});
-  $("message").addEventListener("blur",()=>{clearTimeout(S.typingTimer);setTyping(false);});
-  document.addEventListener("visibilitychange",()=>{if(document.hidden){clearTimeout(S.typingTimer);setTyping(false);}});
+  $("message").addEventListener("input",e=>{e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,120)+"px";});
   $("messages").addEventListener("scroll",()=>{if($("messages").scrollTop<80)loadOlderMessages();});
   $("cancel-reply").addEventListener("click",cancelReply);
   $("search-messages-open").addEventListener("click",openMessageSearch);
