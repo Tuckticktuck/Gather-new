@@ -618,11 +618,12 @@ function renderFriends(){
     const row=el("div","request-item");row.append(avatar(p.display_name,p.avatar_data));
     const copy=el("div","request-copy");copy.append(el("strong","",p.display_name),el("small","","@"+p.username));row.append(copy);
     const actions=el("div","request-actions");
-    const message=el("button","request-accept","Message"),remove=el("button","request-decline","Remove");
-    message.type=remove.type="button";
+    const profile=el("button","outline friend-profile-button","Profile"),message=el("button","request-accept","Message"),remove=el("button","request-decline","Remove");
+    profile.type=message.type=remove.type="button";
+    profile.addEventListener("click",()=>openPublicProfile(f.friend_id));
     message.addEventListener("click",async()=>{ $("friends-modal").hidden=true;await directChat(p); });
     remove.addEventListener("click",()=>removeFriend(f.friend_id));
-    actions.append(message,remove);row.append(actions);list.append(row);
+    actions.append(profile,message,remove);row.append(actions);list.append(row);
   });
   if(!ins.length)incoming.append(el("p","muted tiny","No new friend requests."));
   if(!outs.length)outgoing.append(el("p","muted tiny","You have no pending sent requests."));
@@ -723,7 +724,13 @@ function renderChatSection(kind,listId,countId,term,sourceChats=null){
     b.addEventListener("click",()=>openChat(c.id));
     const del=el("button","conversation-delete","Delete");del.type="button";del.title="Move all messages in this conversation to Deleted messages";
     del.addEventListener("click",()=>deleteConversationMessages(c.id));
-    row.append(b,del);list.append(row);
+    row.append(b);
+    if(c.kind==="direct"){
+      const profile=el("button","conversation-profile","Profile");profile.type="button";
+      profile.addEventListener("click",async()=>{const peerId=peerForChat(c);if(await canViewMemberProfile(peerId))await openPublicProfile(peerId);else toast("This member is not currently available for private messaging.");});
+      row.append(profile);
+    }
+    row.append(del);list.append(row);
   });
 }
 function peerForChat(c){return c?.members.find(m=>m.user_id!==S.user.id)?.user_id||null;}
@@ -841,10 +848,11 @@ function renderActive(){
   $("layout").classList.toggle("show-home",!c);
   $("home-open").hidden=!c;
   $("leave-chat").hidden=!c||c.kind!=="group";
-  if(!c)return;
+  if(!c){$("chat-title").hidden=true;return;}
   $("chat-title").textContent=chatTitle(c);$("chat-subtitle").textContent=chatSub(c);
   const me=c.members.find(x=>x.user_id===S.user.id);
   const canManageGroup=c.kind==="group"&&(me?.role==="owner"||me?.role==="moderator");
+  $("chat-title").hidden=c.kind!=="direct";
   $("add-people").hidden=!canManageGroup;
   $("edit-group-photo").hidden=!(c.kind==="group"&&me?.role==="owner");
   $("group-settings-open").hidden=c.kind!=="group";
@@ -860,6 +868,7 @@ function renderDirectControls(){
   $("delete-selected").textContent="Delete selected ("+S.selectedMessageIds.size+")";
   if(!isDirect){$("chat-notice").hidden=true;$("message").disabled=false;$("message").placeholder="Write a message…";$("send").disabled=false;return;}
   const d=S.directStatus,blocked=!d?.can_message;
+  $("chat-title").hidden=!d?.can_message;
   $("block-user").disabled=!d||!!d.error;
   $("block-user").textContent=d?.i_blocked?"Unblock":"Block";
   $("message").disabled=blocked;$("send").disabled=blocked;
@@ -1365,12 +1374,26 @@ async function createGroupOrAdd(){
   $("people-create").disabled=false;
 }
 
+
+async function canViewMemberProfile(userId){
+  if(!userId||!S.user)return false;
+  if(userId===S.user.id)return true;
+  const shared=S.chats.filter(chat=>chat.members.some(member=>member.user_id===userId));
+  if(shared.some(chat=>chat.kind==="group"))return true;
+  const isFriend=S.friends.some(friend=>friend.friend_id===userId);
+  const direct=shared.find(chat=>chat.kind==="direct");
+  if(!direct&&!isFriend)return false;
+  const result=await db.rpc("get_direct_chat_status",{p_other_user_id:userId});
+  return !result.error&&!!result.data?.can_message;
+}
+
 function profileBannerClass(style){
   return "banner-"+(["violet","blue","mint","rose","amber","teal"].includes(style)?style:"violet");
 }
 async function openPublicProfile(userId){
   if(!userId||!S.user)return;
   if(userId===S.user.id){openProfile();return;}
+  if(!await canViewMemberProfile(userId)){toast("You can view profiles of members you can message or share a group chat with.");return;}
   $("member-profile-modal").hidden=false;
   $("member-profile-name").textContent="Loading profile…";
   $("member-profile-username").textContent="";
@@ -1515,7 +1538,10 @@ function renderGroupSettingsMembers(chat,owner,canManage){
     const profile=S.profiles[member.user_id]||{display_name:"Gather member",username:"member"};
     const roleLabel=member.role==="owner"?"Owner":member.role==="moderator"?"Moderator":"Member";
     const row=el("div","group-member-row");row.append(avatar(profile.display_name,profile.avatar_data));
-    const details=el("div","group-member-copy");details.append(el("strong","",profile.display_name),el("small","", "@"+profile.username+" · "+roleLabel));
+    const details=el("div","group-member-copy");
+    const profileLink=el("button","group-member-profile",profile.display_name);profileLink.type="button";
+    profileLink.addEventListener("click",()=>openPublicProfile(member.user_id));
+    details.append(profileLink,el("small","", "@"+profile.username+" · "+roleLabel));
     row.append(details);
     if(canManage&&member.user_id!==S.user.id&&member.role!=="owner"&&(owner||member.role==="member")){
       const actions=el("div","group-member-actions");
@@ -1860,6 +1886,7 @@ function wire(){
   $("add-people").addEventListener("click",()=>openPeople("add"));$("edit-group-photo").addEventListener("click",openGroupPhoto);$("group-settings-open").addEventListener("click",openGroupSettings);$("group-settings-save").addEventListener("click",saveGroupSettings);$("group-avatar-file").addEventListener("change",handleGroupAvatarFile);$("group-avatar-remove").addEventListener("click",removeGroupAvatar);$("group-avatar-save").addEventListener("click",saveGroupAvatar);$("leave-chat").addEventListener("click",()=>{if(S.active)leaveGroupChat(S.active);});$("requests-open").addEventListener("click",openRequests);$("friends-open").addEventListener("click",openFriends);$("friends-find").addEventListener("click",()=>{$("friends-modal").hidden=true;openPeople("friend");});$("block-user").addEventListener("click",toggleBlock);
   $("people-search").addEventListener("input",()=>{clearTimeout(S.timer);S.timer=setTimeout(searchPeople,220);});$("people-create").addEventListener("click",createGroupOrAdd);
   $("home-open").addEventListener("click",goHome);
+  $("chat-title").addEventListener("click",()=>{const chat=S.chats.find(item=>item.id===S.active);if(chat?.kind==="direct")openPublicProfile(peerForChat(chat));});
   $("settings-open").addEventListener("click",openSettings);
   $("notifications-open").addEventListener("click",openNotifications);
   $("notifications-mark-all").addEventListener("click",markAllNotificationsRead);
