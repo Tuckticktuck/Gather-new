@@ -53,6 +53,14 @@ function applyUIPreferences(){
   root.style.setProperty("--accent-avatar",`color-mix(in srgb,${accent.accent} 45%,#292d42)`);
   root.style.setProperty("--accent-avatar-text",`color-mix(in srgb,${accent.accent} 76%,white)`);
   root.style.setProperty("--accent-gradient-light",`color-mix(in srgb,${accent.accent} 76%,white)`);
+  root.style.setProperty("--accent-deep",`color-mix(in srgb,${accent.accent} 19%,#11131a)`);
+  root.style.setProperty("--accent-panel",`color-mix(in srgb,${accent.accent} 13%,#191b25)`);
+  root.style.setProperty("--accent-panel-raised",`color-mix(in srgb,${accent.accent} 17%,#1d202b)`);
+  root.style.setProperty("--accent-input",`color-mix(in srgb,${accent.accent} 10%,#11131a)`);
+  root.style.setProperty("--accent-chat",`color-mix(in srgb,${accent.accent} 25%,#11131a)`);
+  root.style.setProperty("--accent-chat-border",`color-mix(in srgb,${accent.accent} 42%,#191b25)`);
+  root.style.setProperty("--accent-muted",`color-mix(in srgb,${accent.accent} 30%,#9b9caf)`);
+  root.style.setProperty("--accent-contrast",`color-mix(in srgb,${accent.accent} 80%,white)`);
   root.style.setProperty("--font-scale",FONT_SCALES[S.preferences.fontSize]||"1");
   document.querySelectorAll("[data-accent]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.accent===S.preferences.accent)));
   document.querySelectorAll("[data-font-size]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.fontSize===S.preferences.fontSize)));
