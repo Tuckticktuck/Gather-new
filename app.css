@@ -543,3 +543,35 @@ input::placeholder,textarea::placeholder{color:var(--accent-muted)}
   .message-notification-dismiss{width:30px;height:30px;border-radius:10px}
   .notification-mode-choices{grid-template-columns:1fr}
 }
+
+
+/* Force the notification fill itself to follow the rounded card silhouette (Safari/iOS). */
+.message-notification{
+  position:relative;
+  border-radius:20px!important;
+  overflow:hidden!important;
+  background:linear-gradient(135deg,#292b3b 0%,#252738 100%) padding-box!important;
+  background-clip:padding-box!important;
+  -webkit-background-clip:padding-box!important;
+  -webkit-mask-image:-webkit-radial-gradient(white,black);
+  isolation:isolate;
+}
+.message-notification::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:-1;
+  border-radius:inherit;
+  background:inherit;
+  pointer-events:none;
+}
+.message-notification-open{
+  background:transparent!important;
+  border-radius:13px;
+}
+.message-notification-dismiss{
+  border-radius:12px!important;
+}
+@media(max-width:720px){
+  .message-notification{border-radius:18px!important}
+}
