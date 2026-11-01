@@ -121,14 +121,14 @@ label{display:grid;gap:7px;margin:13px 0;color:#d0cede;font-size:calc(11px * var
 
 /* Main home workspace: folders and lists use the large reading area. */
 .topbar-actions{display:flex;align-items:center;gap:10px}
-.sidebar-hint{margin:20px 4px;color:var(--muted);font-size:11px;line-height:1.6}
+.sidebar-hint{margin:20px 4px;color:var(--muted);font-size:calc(11px * var(--font-scale,1));line-height:1.6}
 .home-workspace{height:100%;min-height:0;display:flex;flex-direction:column;gap:17px;overflow:auto;padding:clamp(18px,3vw,34px)}
 .workspace-header{display:flex;align-items:flex-start;justify-content:space-between;gap:22px;padding-bottom:17px;border-bottom:1px solid var(--line)}
-.workspace-header h1{margin:0 0 7px;font-size:29px;font-weight:760;letter-spacing:-.7px}
-.workspace-subtitle{margin:0;max-width:520px;font-size:12px;line-height:1.6}
+.workspace-header h1{margin:0 0 7px;font-size:calc(29px * var(--font-scale,1));font-weight:760;letter-spacing:-.7px}
+.workspace-subtitle{margin:0;max-width:520px;font-size:calc(12px * var(--font-scale,1));line-height:1.6}
 .workspace-actions{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:7px;max-width:440px}
-.workspace-actions button{width:auto;min-height:38px;padding:9px 13px;font-size:11px}
-.workspace-search{display:block;max-width:560px;margin:0;color:var(--muted);font-size:10px;font-weight:650}
+.workspace-actions button{width:auto;min-height:38px;padding:9px 13px;font-size:calc(11px * var(--font-scale,1))}
+.workspace-search{display:block;max-width:560px;margin:0;color:var(--muted);font-size:calc(10px * var(--font-scale,1));font-weight:650}
 .workspace-search .search{margin:6px 0 0;background:#1d202b}
 .workspace-tabs{margin:0;max-width:720px;grid-template-columns:repeat(4,minmax(0,1fr))}
 .workspace-folder{flex:1;min-height:170px;padding:15px;border:1px solid var(--line);border-radius:15px;background:#191b25}
@@ -141,10 +141,10 @@ label{display:grid;gap:7px;margin:13px 0;color:#d0cede;font-size:calc(11px * var
 .chat-row .chat-item:hover{background:#292b39}
 .chat-row .chat-item.active{border:0;background:#302d3d}
 .chat-copy{flex:1;min-width:0}
-.chat-copy strong{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.chat-copy span{display:-webkit-box;white-space:normal;overflow-wrap:anywhere;word-break:break-word;line-height:1.4;max-height:2.8em;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-overflow:clip;font-size:11px}
+.chat-copy strong{font-size:calc(12px * var(--font-scale,1));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat-copy span{display:-webkit-box;white-space:normal;overflow-wrap:anywhere;word-break:break-word;line-height:1.4;max-height:2.8em;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-overflow:clip;font-size:calc(11px * var(--font-scale,1))}
 .chat-time{flex:none;padding:3px 2px 0 0}
-.conversation-delete{flex:none;min-width:54px;padding:8px 9px;border:1px solid #ef9aa333;border-radius:9px;color:#efb0b7;background:#34252d;font-size:10px;font-weight:700}
+.conversation-delete{flex:none;min-width:54px;padding:8px 9px;border:1px solid #ef9aa333;border-radius:9px;color:#efb0b7;background:#34252d;font-size:calc(10px * var(--font-scale,1));font-weight:700}
 .conversation-delete:hover{border-color:#ef9aa377;background:#482d36}
 #blocked-list .request-item{align-items:center;flex-wrap:nowrap}
 #blocked-list .request-actions{width:auto;padding-left:0;margin-left:auto}
@@ -152,14 +152,14 @@ label{display:grid;gap:7px;margin:13px 0;color:#d0cede;font-size:calc(11px * var
 .chat-row:focus-within{border-color:var(--accent-border)}
 .chat-item:focus-visible,.conversation-delete:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .settings-section{margin-top:20px}
-.settings-section h3{margin:0 0 10px;color:#aaaabd;font-size:11px;letter-spacing:1px;text-transform:uppercase}
+.settings-section h3{margin:0 0 10px;color:#aaaabd;font-size:calc(11px * var(--font-scale,1));letter-spacing:1px;text-transform:uppercase}
 .accent-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.accent-choice{display:flex;align-items:center;gap:8px;padding:10px;border:1px solid var(--line);border-radius:10px;color:var(--text);background:#222531;font-size:11px;text-align:left}
+.accent-choice{display:flex;align-items:center;gap:8px;padding:10px;border:1px solid var(--line);border-radius:10px;color:var(--text);background:#222531;font-size:calc(11px * var(--font-scale,1));text-align:left}
 .accent-choice[aria-pressed="true"],.font-choice[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
 .accent-swatch{width:18px;height:18px;flex:none;border-radius:50%;border:2px solid #ffffff44}
 .accent-swatch.lavender{background:#b6a9ff}.accent-swatch.blue{background:#9bcfff}.accent-swatch.mint{background:#9be2c4}.accent-swatch.rose{background:#ffb6ca}.accent-swatch.amber{background:#ffd48c}.accent-swatch.teal{background:#9be2e4}
 .font-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.font-choice{padding:10px;border:1px solid var(--line);border-radius:10px;color:var(--text);background:#222531;font-size:11px}
+.font-choice{padding:10px;border:1px solid var(--line);border-radius:10px;color:var(--text);background:#222531;font-size:calc(11px * var(--font-scale,1))}
 #settings-note{margin-top:17px}
 @media(max-width:1000px){
   .workspace-header{flex-direction:column}
@@ -167,30 +167,30 @@ label{display:grid;gap:7px;margin:13px 0;color:#d0cede;font-size:calc(11px * var
 }
 @media(max-width:720px){
   .topbar-actions{gap:6px}
-  .topbar-actions .home-button{padding:7px 8px;font-size:10px}
+  .topbar-actions .home-button{padding:7px 8px;font-size:calc(10px * var(--font-scale,1))}
   .home-workspace{gap:13px;padding:16px 12px 22px}
   .workspace-header{gap:13px;padding-bottom:13px}
-  .workspace-header h1{font-size:23px}
-  .workspace-subtitle{font-size:11px}
+  .workspace-header h1{font-size:calc(23px * var(--font-scale,1))}
+  .workspace-subtitle{font-size:calc(11px * var(--font-scale,1))}
   .workspace-actions{display:grid;grid-template-columns:1fr 1fr;width:100%;gap:6px}
-  .workspace-actions button{width:100%;min-width:0;padding:9px 6px;font-size:10px}
+  .workspace-actions button{width:100%;min-width:0;padding:9px 6px;font-size:calc(10px * var(--font-scale,1))}
   .workspace-tabs{width:100%;gap:3px}
-  .folder-tab{font-size:9px;padding:6px 3px;overflow-wrap:anywhere}
+  .folder-tab{font-size:calc(9px * var(--font-scale,1));padding:6px 3px;overflow-wrap:anywhere}
   .workspace-folder{padding:10px;min-height:135px}
   .workspace-chat-list{max-height:none;overflow:visible}
   .chat-row{gap:5px;padding:3px}
   .chat-row .chat-item{gap:8px;padding:8px 6px}
   .chat-row .chat-item .avatar{width:34px;height:34px;border-radius:10px}
-  .chat-copy strong{font-size:11px}
-  .chat-copy span{font-size:10px;line-height:1.35;max-height:2.7em;-webkit-line-clamp:2}
+  .chat-copy strong{font-size:calc(11px * var(--font-scale,1))}
+  .chat-copy span{font-size:calc(10px * var(--font-scale,1));line-height:1.35;max-height:2.7em;-webkit-line-clamp:2}
   .chat-time{display:none}
-  .conversation-delete{min-width:49px;padding:8px 6px;font-size:9px}
+  .conversation-delete{min-width:49px;padding:8px 6px;font-size:calc(9px * var(--font-scale,1))}
   .workspace-group-section{padding:10px}
   .accent-choices{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 
 @media(max-width:380px){
   .topbar-actions{gap:4px}
-  .topbar-actions .home-button{gap:4px;padding:6px 7px;font-size:9px}
+  .topbar-actions .home-button{gap:4px;padding:6px 7px;font-size:calc(9px * var(--font-scale,1))}
   .profile-pill #user-name{display:none}
 }
