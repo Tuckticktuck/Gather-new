@@ -293,7 +293,7 @@ input::placeholder,textarea::placeholder{color:var(--accent-muted)}
 .message-select input{appearance:auto;accent-color:var(--accent);width:18px;height:18px;flex:none;margin:0;padding:0;box-shadow:none}
 @media(max-width:720px){
   .chat-head{gap:7px;row-gap:7px}
-  #select-messages,#delete-selected,#block-user,#add-people{padding:7px 9px;font-size:calc(11px * var(--font-scale,1))}
+  #select-messages,#delete-selected,#block-user,#add-people,#edit-group-photo{padding:7px 9px;font-size:calc(11px * var(--font-scale,1))}
   .chat-head .chat-title{flex:1 1 80px}
 }
 
@@ -336,3 +336,7 @@ input::placeholder,textarea::placeholder{color:var(--accent-muted)}
   .profile-avatar-preview{width:64px;height:64px}
   .profile-photo-actions small{max-width:205px}
 }
+
+.group-photo-modal{max-width:460px}
+.group-photo-modal>p.tiny{margin:0 0 12px;line-height:1.55}
+#group-avatar-save{width:100%;margin-top:6px}
