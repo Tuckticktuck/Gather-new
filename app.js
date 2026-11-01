@@ -388,11 +388,16 @@ async function syncFriendPresence(){
       else if(!S.ownPresenceChannel){
         const ownChannel=db.channel("gather-presence:"+uid,{config:{private:true,presence:{key:uid}}});
         S.ownPresenceChannel=ownChannel;
-        ownChannel.subscribe(async state=>{
+        ownChannel.subscribe(async (state,error)=>{
           if(S.ownPresenceChannel!==ownChannel)return;
           if(state==="SUBSCRIBED"&&S.preferences.shareOnlineStatus){
-            try{await ownChannel.track({user_id:uid,online:true});}catch(error){console.warn("Online status could not be shared:",error.message);}
-          }else if(state==="CHANNEL_ERROR"||state==="TIMED_OUT")console.warn("Online status channel could not connect:",state);
+            try{
+              const result=await ownChannel.track({user_id:uid,online:true});
+              if(result!=="ok")console.warn("Online status tracking was not accepted:",result);
+            }catch(trackError){console.warn("Online status could not be shared:",trackError.message);}
+          }else if(state==="CHANNEL_ERROR"||state==="TIMED_OUT"||state==="CLOSED"){
+            console.warn("Online status channel could not connect:",error?.message||state);
+          }
         });
       }
       const friendIds=new Set(S.friends.map(friend=>friend.friend_id).filter(id=>id&&id!==uid));
@@ -405,10 +410,16 @@ async function syncFriendPresence(){
         S.friendPresenceChannels[friendId]=channel;
         const update=()=>setFriendPresence(friendId,channel);
         channel.on("presence",{event:"sync"},update).on("presence",{event:"join"},update).on("presence",{event:"leave"},update);
-        channel.subscribe(state=>{
+        channel.subscribe((state,error)=>{
           if(S.friendPresenceChannels[friendId]!==channel)return;
-          if(state==="SUBSCRIBED"){S.friendPresenceReady.add(friendId);S.friendPresenceErrors.delete(friendId);update();refreshFriendPresenceUI();}
-          else if(state==="CHANNEL_ERROR"||state==="TIMED_OUT"||state==="CLOSED"){S.friendPresenceReady.delete(friendId);S.onlineFriends.delete(friendId);S.friendPresenceErrors.add(friendId);refreshFriendPresenceUI();}
+          if(state==="SUBSCRIBED"){
+            S.friendPresenceReady.add(friendId);S.friendPresenceErrors.delete(friendId);
+            update();refreshFriendPresenceUI();
+          }else if(state==="CHANNEL_ERROR"||state==="TIMED_OUT"||state==="CLOSED"){
+            S.friendPresenceReady.delete(friendId);S.onlineFriends.delete(friendId);S.friendPresenceErrors.add(friendId);
+            console.warn("Friend online status could not connect:",error?.message||state);
+            refreshFriendPresenceUI();
+          }
         });
       });
       refreshFriendPresenceUI();
@@ -927,13 +938,13 @@ function subscribeMessageReads(conversationId){
     }).subscribe();
 }
 function renderTypingState(channel){
-  if(S.presenceChannel!==channel)return;
-  const state=channel.presenceState(),metas=Object.values(state).flatMap(p=>p.metas||[]);
+  if(S.presenceChannel!==channel||!S.user)return;
+  const state=channel.presenceState()||{};
+  const metas=Object.values(state).flatMap(entry=>Array.isArray(entry?.metas)?entry.metas:[]);
   const activeByUser=new Map();
   metas.forEach(meta=>{
-    if(!meta.typing||meta.user_id===S.user.id)return;
-    const key=meta.user_id||meta.display_name||"someone";
-    if(!activeByUser.has(key))activeByUser.set(key,meta.display_name||"Someone");
+    if(meta.typing!==true||!meta.user_id||meta.user_id===S.user.id)return;
+    if(!activeByUser.has(meta.user_id))activeByUser.set(meta.user_id,meta.display_name||"Someone");
   });
   const names=[...activeByUser.values()].sort((a,b)=>a.localeCompare(b));
   const indicator=$("typing-indicator"),nameList=$("typing-names");
@@ -944,29 +955,42 @@ function renderTypingState(channel){
 }
 async function subscribeChatPresence(conversationId){
   if(S.presenceChannel){db.removeChannel(S.presenceChannel);S.presenceChannel=null;}
-  S.presenceReady=false;clearTimeout(S.typingTimer);
+  S.presenceReady=false;S.typingActive=false;clearTimeout(S.typingTimer);
   try{await db.realtime.setAuth();}catch(e){console.warn("Private chat presence could not authenticate:",e.message);return;}
-  const channel=db.channel("gather-chat:"+conversationId,{config:{private:true,presence:{key:S.user.id}}});
+  if(S.active!==conversationId||!S.user)return;
+  const uid=S.user.id;
+  const channel=db.channel("gather-chat:"+conversationId,{config:{private:true,presence:{key:uid}}});
   S.presenceChannel=channel;
-  channel.on("presence",{event:"sync"},()=>renderTypingState(channel));
-  channel.subscribe(async state=>{
+  const refresh=()=>renderTypingState(channel);
+  channel
+    .on("presence",{event:"sync"},refresh)
+    .on("presence",{event:"join"},refresh)
+    .on("presence",{event:"leave"},refresh);
+  channel.subscribe(async (state,error)=>{
     if(S.presenceChannel!==channel)return;
     if(state==="SUBSCRIBED"){
       S.presenceReady=true;
       S.typingActive=false;
-      await channel.track({user_id:S.user.id,display_name:S.profile?.display_name||"Member",typing:false});
+      await setTyping(!!$("message").value.trim(),true);
+      refresh();
+    }else if(state==="CHANNEL_ERROR"||state==="TIMED_OUT"||state==="CLOSED"){
+      S.presenceReady=false;S.typingActive=false;
+      refresh();
+      console.warn("Chat typing presence could not connect:",error?.message||state);
     }
   });
 }
-async function setTyping(typing){
+async function setTyping(typing,force=false){
   const channel=S.presenceChannel;
   const next=!!typing;
-  if(!channel||!S.presenceReady||S.typingActive===next)return;
+  if(!channel||!S.presenceReady||(!force&&S.typingActive===next))return;
+  const previous=S.typingActive;
   S.typingActive=next;
   try{
-    await channel.track({user_id:S.user.id,display_name:S.profile?.display_name||"Member",typing:next});
+    const result=await channel.track({user_id:S.user.id,display_name:S.profile?.display_name||"Member",typing:next});
+    if(result!=="ok")throw new Error("Realtime returned "+String(result));
   }catch(e){
-    if(S.presenceChannel===channel)S.typingActive=!next;
+    if(S.presenceChannel===channel)S.typingActive=previous;
     console.warn("Typing status could not be updated:",e.message);
   }
 }
@@ -1575,6 +1599,8 @@ function wire(){
   $("password-form").addEventListener("submit",changePassword);
   $("send-form").addEventListener("submit",sendMessage);
   $("message").addEventListener("input",e=>{e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,120)+"px";handleTypingInput();});
+  $("message").addEventListener("blur",()=>{clearTimeout(S.typingTimer);setTyping(false);});
+  document.addEventListener("visibilitychange",()=>{if(document.hidden){clearTimeout(S.typingTimer);setTyping(false);}});
   $("messages").addEventListener("scroll",()=>{if($("messages").scrollTop<80)loadOlderMessages();});
   $("cancel-reply").addEventListener("click",cancelReply);
   $("search-messages-open").addEventListener("click",openMessageSearch);
