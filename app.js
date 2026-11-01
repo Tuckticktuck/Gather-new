@@ -15,7 +15,7 @@ const ACCENTS = {
 };
 const FONT_SCALES = {small:"0.9",normal:"1",large:"1.15"};
 const DEFAULT_PREFERENCES = {accent:"lavender",fontSize:"normal"};
-const S = { user:null, profile:null, profiles:{}, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), folder:"friends", preferences:{...DEFAULT_PREFERENCES}, requestChannel:null, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null };
+const S = { user:null, profile:null, profiles:{}, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", preferences:{...DEFAULT_PREFERENCES}, requestChannel:null, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function status(id, text, kind) { const n=$(id); n.textContent=text||""; n.className="status"+(kind?" "+kind:""); }
@@ -488,6 +488,10 @@ function renderActive(){
 function renderDirectControls(){
   const c=S.chats.find(x=>x.id===S.active),isDirect=c?.kind==="direct";
   $("block-user").hidden=!isDirect;
+  $("select-messages").hidden=false;
+  $("select-messages").textContent=S.selectingMessages?"Cancel":"Select";
+  $("delete-selected").hidden=!S.selectingMessages||S.selectedMessageIds.size===0;
+  $("delete-selected").textContent="Delete selected ("+S.selectedMessageIds.size+")";
   if(!isDirect){$("chat-notice").hidden=true;$("message").disabled=false;$("message").placeholder="Write a message…";$("send").disabled=false;return;}
   const d=S.directStatus,blocked=!d?.can_message;
   $("block-user").disabled=!d||!!d.error;
@@ -516,7 +520,7 @@ async function toggleBlock(){
   S.directStatus=null;await refreshDirectStatus();await loadRequests();await loadBlocked();toast(unblock?"Member unblocked.":"Member blocked.");
 }
 async function openChat(id){
-  S.active=id;S.directStatus=null;$("layout").classList.remove("show-home");$("layout").classList.add("show-chat");renderActive();await refreshDirectStatus();await loadMessages(id);
+  S.active=id;S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;$("layout").classList.remove("show-home");$("layout").classList.add("show-chat");renderActive();await refreshDirectStatus();await loadMessages(id);
   if(S.channel){await db.removeChannel(S.channel);S.channel=null;}
   S.channel=db.channel("chat-"+id).on("postgres_changes",{event:"INSERT",schema:"public",table:"messages",filter:"conversation_id=eq."+id},payload=>{
     if(S.active!==id||S.deletedMessageIds.has(payload.new.id)||S.messages.some(x=>x.id===payload.new.id))return;
@@ -535,7 +539,22 @@ function renderMessages(){
     const mine=m.sender_id===S.user.id,p=S.profiles[m.sender_id],row=el("div","message"+(mine?" mine":"")),bubble=el("div","bubble");
     const meta=el("div","meta");meta.append(el("strong","",mine?"You":(p?.display_name||"Member")),el("time","",new Date(m.created_at).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})));bubble.append(meta);
     bubble.append(el("div","body-text",m.body));
-    const del=el("button","delete-message","Delete");del.type="button";del.title="Move message to Deleted messages";del.setAttribute("aria-label","Delete message");del.addEventListener("click",()=>deleteMessage(m.id));bubble.append(del);
+    if(S.selectingMessages){
+      const pick=el("label","message-select");
+      const check=el("input");
+      check.type="checkbox";
+      check.checked=S.selectedMessageIds.has(m.id);
+      check.setAttribute("aria-label","Select this message");
+      check.addEventListener("change",()=>{
+        if(check.checked)S.selectedMessageIds.add(m.id);
+        else S.selectedMessageIds.delete(m.id);
+        renderMessages();
+        renderActive();
+      });
+      pick.append(check,el("span","","Select message"));
+      bubble.append(pick);
+      row.classList.toggle("selected",S.selectedMessageIds.has(m.id));
+    }
     row.append(bubble);list.append(row);
   });
   $("messages").scrollTop=$("messages").scrollHeight;
@@ -565,6 +584,24 @@ async function deleteConversationMessages(conversationId){
   renderMessages();await loadChats();
   if(S.folder==="deleted")await loadDeletedMessages();
   toast(ids.length+" messages moved to Deleted messages. You can restore them there.");
+}
+async function deleteSelectedMessages(){
+  const ids=[...S.selectedMessageIds].filter(id=>S.messages.some(m=>m.id===id));
+  if(!ids.length){toast("Select at least one message first.");return;}
+  if(!confirm("Move "+ids.length+" selected message"+(ids.length===1?"":"s")+" to Deleted messages? This only hides them from your view. Other members will still see them, and you can restore them later."))return;
+  for(let i=0;i<ids.length;i+=100){
+    const entries=ids.slice(i,i+100).map(message_id=>({user_id:S.user.id,message_id}));
+    const result=await db.from("user_deleted_messages").insert(entries);
+    if(result.error){toast("Some messages could not be deleted: "+result.error.message);await loadChats();return;}
+  }
+  ids.forEach(id=>S.deletedMessageIds.add(id));
+  S.messages=S.messages.filter(m=>!S.deletedMessageIds.has(m.id));
+  S.selectedMessageIds.clear();
+  S.selectingMessages=false;
+  renderMessages();
+  renderActive();
+  await loadChats();
+  toast(ids.length+" message"+(ids.length===1?"":"s")+" moved to Deleted messages.");
 }
 async function deleteMessage(id){
   if(!confirm("Move this message to Deleted messages? It will disappear only from your view. Other members will still see it, and you can restore it later."))return;
@@ -675,7 +712,7 @@ async function saveProfile(e){
 }
 function closeModals(){ $("people-modal").hidden=true;$("profile-modal").hidden=true;$("requests-modal").hidden=true;$("friends-modal").hidden=true;$("settings-modal").hidden=true; }
 function goHome(){
-  closeModals();S.active=null;S.messages=[];S.directStatus=null;
+  closeModals();S.active=null;S.messages=[];S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;
   if(S.channel){db.removeChannel(S.channel);S.channel=null;}
   $("layout").classList.remove("show-chat");$("layout").classList.add("show-home");renderChats();renderActive();
 }
@@ -704,6 +741,13 @@ function wire(){
   $("message").addEventListener("input",e=>{e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,120)+"px";});
   $("message").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing){e.preventDefault();$("send-form").requestSubmit();}});
   $("back").addEventListener("click",goHome);
+  $("select-messages").addEventListener("click",()=>{
+    S.selectingMessages=!S.selectingMessages;
+    S.selectedMessageIds.clear();
+    renderMessages();
+    renderActive();
+  });
+  $("delete-selected").addEventListener("click",deleteSelectedMessages);
   $("signout").addEventListener("click",async()=>{const r=await db.auth.signOut();if(r.error)toast(r.error.message);else closeModals();});
   document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",closeModals));
   ["people-modal","profile-modal","requests-modal","friends-modal","settings-modal"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target===$(id))closeModals();}));
