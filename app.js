@@ -329,6 +329,7 @@ function renderChats(){
     b.classList.toggle("active",active);b.setAttribute("aria-selected",String(active));
   });
   if(isStandard){
+    $("private-chat-heading").textContent=S.folder==="friends"?"Friends":"Non-friends";
     const friends=new Set(S.friends.map(x=>x.friend_id)),blockedIds=new Set(S.blockedUsers.map(x=>x.blocked_id));
     const chats=S.chats.filter(c=>{
       if(c.kind!=="direct")return false;
