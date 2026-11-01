@@ -13,7 +13,7 @@ const ACCENTS = {
   teal:{accent:"#9be2e4",strong:"#50b9be",ink:"#14373a",soft:"#234649",border:"#9be2e455"}
 };
 const FONT_SCALES = {small:"0.9",normal:"1",large:"1.15"};
-const DEFAULT_PREFERENCES = {accent:"lavender",fontSize:"normal",shareOnlineStatus:true,messageNotificationMode:"temporary"};
+const DEFAULT_PREFERENCES = {accent:"lavender",fontSize:"normal",messageNotificationMode:"temporary"};
 const S = { user:null, profile:null, profiles:{}, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, hasOlderMessages:false, loadingOlder:false, replyTo:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
@@ -28,7 +28,6 @@ function loadUIPreferences(saved){
   S.preferences={
     accent:ACCENTS[saved?.accent]?saved.accent:DEFAULT_PREFERENCES.accent,
     fontSize:FONT_SCALES[saved?.fontSize]?saved.fontSize:DEFAULT_PREFERENCES.fontSize,
-    shareOnlineStatus:saved?.shareOnlineStatus!==false,
     messageNotificationMode:saved?.messageNotificationMode==="persistent"?"persistent":"temporary"
   };
   applyUIPreferences();
@@ -62,7 +61,6 @@ function applyUIPreferences(){
   root.style.setProperty("--font-scale",FONT_SCALES[S.preferences.fontSize]||"1");
   document.querySelectorAll("[data-accent]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.accent===S.preferences.accent)));
   document.querySelectorAll("[data-font-size]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.fontSize===S.preferences.fontSize)));
-  const onlineToggle=$("share-online-status");if(onlineToggle)onlineToggle.checked=S.preferences.shareOnlineStatus;
   document.querySelectorAll("[data-notification-mode]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.notificationMode===S.preferences.messageNotificationMode)));
 }
 function saveUIPreferences(){
@@ -76,14 +74,12 @@ function saveUIPreferences(){
     if(S.user?.id!==userId)return;
     if(result.error){
       loadUIPreferences(S.profile?.preferences||DEFAULT_PREFERENCES);
-      syncFriendPresence();
       $("settings-note").textContent="Couldn't save settings. Please try again.";
       toast("Appearance settings were not saved: "+result.error.message);
       return;
     }
     S.profile.preferences=result.data.preferences;
-    $("settings-note").textContent="Saved to your account. Your theme and online-status choice follow you to other devices.";
-    syncFriendPresence();
+    $("settings-note").textContent="Saved to your account. Your appearance choices follow you to other devices.";
   },180);
 }
 function setAccent(accent){
@@ -197,13 +193,9 @@ function markChatRead(chatId,through=null){
 function showAuth() {
   clearMessageNotifications();
   $("password-recovery-modal").hidden=true;S.passwordRecovery=false;
-  stopFriendPresence();
   if(S.channel){db.removeChannel(S.channel);S.channel=null;}
   if(S.requestChannel){db.removeChannel(S.requestChannel);S.requestChannel=null;}
   if(S.readChannel){db.removeChannel(S.readChannel);S.readChannel=null;}
-  if(S.typingChannel){db.removeChannel(S.typingChannel);S.typingChannel=null;}
-  clearTimeout(S.typingTimer);clearTimeout(S.typingHeartbeatTimer);
-  S.typingReady=false;S.typingActive=false;clearRemoteTypers();
   S.user=null;S.profile=null;S.profiles={};S.chats=[];S.messages=[];S.messageReads={};S.replyTo=null;S.hasOlderMessages=false;S.requests=[];S.friendRequests=[];S.friends=[];S.blockedUsers=[];S.deletedMessages=[];S.deletedMessageIds=new Set();S.lastReadAt={};S.folder="friends";S.directStatus=null;S.active=null;S.messages=[];S.loadError=null;S.avatarChanged=false;S.pendingAvatarData=null;loadUIPreferences(DEFAULT_PREFERENCES);
   setChatLoadStatus("");$("auth").hidden=false;$("app").hidden=true;
 }
@@ -298,8 +290,7 @@ function chatTitle(c){
 function chatSub(c){
   if(c.kind==="group"){const names=c.members.map(m=>S.profiles[m.user_id]?.display_name||"Member");return c.members.length+" members"+(c.description?" · "+c.description:" · "+names.slice(0,3).join(", "));}
   const other=c.members.find(m=>m.user_id!==S.user.id),p=other&&S.profiles[other.user_id];
-  const presence="";
-  return p?"@"+p.username+presence:"Private conversation";
+  return p?"@"+p.username:"Private conversation";
 }
 async function loadChats(){
   if(!S.user)return false;
@@ -356,75 +347,6 @@ async function loadRequests(){
   }
   renderRequests();return true;
 }
-function setFriendPresence(friendId,channel){
-  if(S.friendPresenceChannels[friendId]!==channel)return;
-  let online=false;
-  try{const metas=Object.values(channel.presenceState()).flatMap(item=>item.metas||[]);online=metas.some(meta=>meta.user_id===friendId&&meta.online===true);}
-  catch(error){console.warn("Friend presence could not be read:",error.message);}
-  const wasOnline=S.onlineFriends.has(friendId);
-  if(online){S.onlineFriends.add(friendId);S.friendPresenceErrors.delete(friendId);}else S.onlineFriends.delete(friendId);
-  if(wasOnline!==online)refreshFriendPresenceUI();
-}
-function stopOwnOnlinePresence(){if(S.ownPresenceChannel){db.removeChannel(S.ownPresenceChannel);S.ownPresenceChannel=null;}}
-function stopFriendPresence(){
-  stopOwnOnlinePresence();
-  Object.values(S.friendPresenceChannels).forEach(channel=>db.removeChannel(channel));
-  S.friendPresenceChannels={};S.onlineFriends.clear();S.friendPresenceReady.clear();S.friendPresenceErrors.clear();
-}
-async function syncFriendPresence(){
-  if(!S.user)return;
-  if(S.friendPresenceSyncPromise){S.friendPresenceSyncQueued=true;return;}
-  const uid=S.user.id;
-  S.friendPresenceSyncPromise=(async()=>{
-    do{
-      S.friendPresenceSyncQueued=false;
-      try{await db.realtime.setAuth();}catch(error){console.warn("Friend presence could not authenticate:",error.message);return;}
-      if(S.user?.id!==uid)return;
-      if(!S.preferences.shareOnlineStatus)stopOwnOnlinePresence();
-      else if(!S.ownPresenceChannel){
-        const ownChannel=db.channel("gather-presence:"+uid,{config:{private:true,presence:{key:uid}}});
-        S.ownPresenceChannel=ownChannel;
-        ownChannel.subscribe(async (state,error)=>{
-          if(S.ownPresenceChannel!==ownChannel)return;
-          if(state==="SUBSCRIBED"&&S.preferences.shareOnlineStatus){
-            try{
-              const result=await ownChannel.track({user_id:uid,online:true});
-              if(result!=="ok")console.warn("Online status tracking was not accepted:",result);
-            }catch(trackError){console.warn("Online status could not be shared:",trackError.message);}
-          }else if(state==="CHANNEL_ERROR"||state==="TIMED_OUT"||state==="CLOSED"){
-            console.warn("Online status channel could not connect:",error?.message||state);
-          }
-        });
-      }
-      const friendIds=new Set(S.friends.map(friend=>friend.friend_id).filter(id=>id&&id!==uid));
-      Object.entries(S.friendPresenceChannels).forEach(([friendId,channel])=>{
-        if(!friendIds.has(friendId)){db.removeChannel(channel);delete S.friendPresenceChannels[friendId];S.onlineFriends.delete(friendId);S.friendPresenceReady.delete(friendId);S.friendPresenceErrors.delete(friendId);}
-      });
-      friendIds.forEach(friendId=>{
-        if(S.friendPresenceChannels[friendId])return;
-        const channel=db.channel("gather-presence:"+friendId,{config:{private:true,presence:{key:uid}}});
-        S.friendPresenceChannels[friendId]=channel;
-        const update=()=>setFriendPresence(friendId,channel);
-        channel.on("presence",{event:"sync"},update).on("presence",{event:"join"},update).on("presence",{event:"leave"},update);
-        channel.subscribe((state,error)=>{
-          if(S.friendPresenceChannels[friendId]!==channel)return;
-          if(state==="SUBSCRIBED"){
-            S.friendPresenceReady.add(friendId);S.friendPresenceErrors.delete(friendId);
-            update();refreshFriendPresenceUI();
-          }else if(state==="CHANNEL_ERROR"||state==="TIMED_OUT"||state==="CLOSED"){
-            S.friendPresenceReady.delete(friendId);S.onlineFriends.delete(friendId);S.friendPresenceErrors.add(friendId);
-            console.warn("Friend online status could not connect:",error?.message||state);
-            refreshFriendPresenceUI();
-          }
-        });
-      });
-      refreshFriendPresenceUI();
-    }while(S.friendPresenceSyncQueued);
-  })();
-  try{await S.friendPresenceSyncPromise;}finally{S.friendPresenceSyncPromise=null;}
-}
-function setShareOnlineStatus(enabled){S.preferences.shareOnlineStatus=!!enabled;if(!S.preferences.shareOnlineStatus)stopOwnOnlinePresence();saveUIPreferences();}
-
 async function loadFriends(){
   if(!S.user)return false;
   const [friendsResult,requestsResult]=await Promise.all([
@@ -453,7 +375,6 @@ async function loadFriends(){
   }
   $("friends-error").textContent="";
   renderFriends();renderChats();
-  syncFriendPresence();
   return true;
 }
 function subscribeRequests(){
@@ -463,8 +384,8 @@ function subscribeRequests(){
   S.requestChannel=db.channel("requests-"+uid)
     .on("postgres_changes",{event:"UPDATE",schema:"public",table:"profiles",filter:"id=eq."+uid},payload=>{
       const next=payload.new?.preferences;if(!next)return;
-      const changed=next.accent!==S.preferences.accent||next.fontSize!==S.preferences.fontSize||next.shareOnlineStatus!==S.preferences.shareOnlineStatus;
-      if(changed){S.profile.preferences=next;loadUIPreferences(next);syncFriendPresence();}
+      const changed=next.accent!==S.preferences.accent||next.fontSize!==S.preferences.fontSize||next.messageNotificationMode!==S.preferences.messageNotificationMode;
+      if(changed){S.profile.preferences=next;loadUIPreferences(next);}
     })
     .on("postgres_changes",{event:"INSERT",schema:"public",table:"conversation_requests",filter:"recipient_id=eq."+uid},payload=>{
       loadRequests();toast("You received a new chat request.");
@@ -603,11 +524,8 @@ function renderFriends(){
   if(!S.friends.length)list.append(el("p","muted tiny","You have not added any friends yet."));
   S.friends.forEach(f=>{
     const p=S.profiles[f.friend_id]||{id:f.friend_id,display_name:"Gather member",username:"member"};
-    const online=S.onlineFriends.has(f.friend_id),ready=S.friendPresenceReady.has(f.friend_id),unavailable=S.friendPresenceErrors.has(f.friend_id);
     const row=el("div","request-item");row.append(avatar(p.display_name,p.avatar_data));
-    const dot=el("span","friend-online-dot"+(online?" online":""));dot.title=online?"Online":"Offline";dot.setAttribute("aria-label",online?"Online":"Offline");row.append(dot);
-    const label=ready?(online?"Online":"Offline"):(unavailable?"Unavailable":"Checking…");
-    const copy=el("div","request-copy");copy.append(el("strong","",p.display_name),el("small","","@"+p.username+" · "+label));row.append(copy);
+    const copy=el("div","request-copy");copy.append(el("strong","",p.display_name),el("small","","@"+p.username));row.append(copy);
     const actions=el("div","request-actions");
     const message=el("button","request-accept","Message"),remove=el("button","request-decline","Remove");
     message.type=remove.type="button";
@@ -964,7 +882,6 @@ async function loadOlderMessages(){
   renderMessages(true);
 }
 async function openChat(id){
-  stopChatTyping();
   S.active=id;S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;
   S.messages=[];S.messageReads={};S.replyTo=null;S.hasOlderMessages=false;S.loadingOlder=false;renderReplyComposer();
   markChatRead(id,S.chats.find(c=>c.id===id)?.last?.created_at||null);
@@ -1185,7 +1102,7 @@ async function sendMessage(e){
   const reply=S.replyTo; $("send").disabled=true;
   const r=await db.from("messages").insert({conversation_id:conversationId,sender_id:S.user.id,body,reply_to_id:reply?.id||null}).select("id,conversation_id,sender_id,body,created_at,reply_to_id").single();
   $("send").disabled=false;if(r.error){toast("Message not sent: "+r.error.message);return;}
-  $("message").value="";$("message").style.height="auto";cancelReply();setTyping(false);
+  $("message").value="";$("message").style.height="auto";cancelReply();
   if(!S.messages.some(x=>x.id===r.data.id)){S.messages.push({...r.data,reply_preview:reply||null});renderMessages();}
   await loadChats();
 }
@@ -1479,7 +1396,7 @@ async function changePassword(e){
 }
 function closeModals(){ $("people-modal").hidden=true;$("profile-modal").hidden=true;$("requests-modal").hidden=true;$("friends-modal").hidden=true;$("settings-modal").hidden=true;$("group-photo-modal").hidden=true;$("group-settings-modal").hidden=true;$("message-search-modal").hidden=true;$("chat-actions-modal").hidden=true; }
 function goHome(){
-  closeModals();stopChatTyping();S.active=null;S.messages=[];S.messageReads={};S.replyTo=null;S.hasOlderMessages=false;S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;renderReplyComposer();
+  closeModals();S.active=null;S.messages=[];S.messageReads={};S.replyTo=null;S.hasOlderMessages=false;S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;renderReplyComposer();
   $("layout").classList.remove("show-chat");$("layout").classList.add("show-home");renderChats();renderActive();
 }
 function wire(){
