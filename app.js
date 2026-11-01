@@ -307,7 +307,7 @@ async function loadChats(){
   if(!ids.length){S.chats=[];S.profiles={};await loadUnreadCounts();renderChats();renderActive();return await loadRequests();}
   const [members,msgs,groupPics]=await Promise.all([
     db.from("conversation_members").select("conversation_id,user_id,role").in("conversation_id",ids),
-    db.from("messages").select("id,conversation_id,sender_id,body,created_at,attachment_path").in("conversation_id",ids).order("created_at",{ascending:false}).limit(1000),
+    db.from("messages").select("id,conversation_id,sender_id,body,created_at,edited_at,attachment_path").in("conversation_id",ids).order("created_at",{ascending:false}).limit(1000),
     db.from("group_avatars").select("conversation_id,image_data").in("conversation_id",ids)
   ]);
   if(members.error){S.loadError="Chat members could not be loaded: "+members.error.message;toast(S.loadError);return false;}
@@ -809,7 +809,7 @@ async function loadDeletedMessages(){
   const ids=(markers.data||[]).map(x=>x.message_id);
   S.deletedMessageIds=new Set(ids);
   if(!ids.length){S.deletedMessages=[];renderChats();return true;}
-  const messages=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,attachment_path").in("id",ids);
+  const messages=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,edited_at,attachment_path").in("id",ids);
   if(messages.error){toast("Deleted messages could not be loaded: "+messages.error.message);return false;}
   const byId=new Map((messages.data||[]).map(x=>[x.id,x]));
   S.deletedMessages=(markers.data||[]).flatMap(marker=>{
@@ -970,7 +970,7 @@ function cancelReply(){S.replyTo=null;renderReplyComposer();}
 async function loadOlderMessages(){
   if(!S.active||!S.hasOlderMessages||S.loadingOlder||!S.messages.length)return;
   const conversationId=S.active,oldest=S.messages[0].created_at;S.loadingOlder=true;
-  const result=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,reply_to_id,attachment_path").eq("conversation_id",conversationId).or("created_at.lt."+oldest+",and(created_at.eq."+oldest+",id.lt."+S.messages[0].id+")").order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
+  const result=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,edited_at,reply_to_id,attachment_path").eq("conversation_id",conversationId).or("created_at.lt."+oldest+",and(created_at.eq."+oldest+",id.lt."+S.messages[0].id+")").order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
   S.loadingOlder=false;
   if(result.error){toast("Older messages could not be loaded: "+result.error.message);return;}
   if(S.active!==conversationId)return;
@@ -1202,7 +1202,7 @@ async function searchConversationMessages(reset=true){
 async function openSearchResult(message){
   const conversationId=S.searchConversationId;$("message-search-modal").hidden=true;
   if(S.active!==conversationId)await openChat(conversationId);
-  const result=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,reply_to_id,attachment_path").eq("conversation_id",conversationId).lte("created_at",message.created_at).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
+  const result=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,edited_at,reply_to_id,attachment_path").eq("conversation_id",conversationId).lte("created_at",message.created_at).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
   if(result.error){toast("That message could not be opened: "+result.error.message);return;}
   if(S.active!==conversationId)return;
   const raw=result.data||[];S.hasOlderMessages=raw.length===300;
