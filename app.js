@@ -14,7 +14,7 @@ const ACCENTS = {
 };
 const FONT_SCALES = {small:"0.9",normal:"1",large:"1.15"};
 const DEFAULT_PREFERENCES = {accent:"lavender",fontSize:"normal",shareOnlineStatus:true,messageNotificationMode:"temporary"};
-const S = { user:null, profile:null, profiles:{}, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, onlineFriends:new Set(), friendPresenceReady:new Set(), friendPresenceErrors:new Set(), friendPresenceChannels:{}, ownPresenceChannel:null, friendPresenceSyncPromise:null, friendPresenceSyncQueued:false, pendingAvatarData:null, avatarChanged:false, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, presenceChannel:null, presenceReady:false, typingTimer:null, messageReads:{}, hasOlderMessages:false, loadingOlder:false, replyTo:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null };
+const S = { user:null, profile:null, profiles:{}, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, onlineFriends:new Set(), friendPresenceReady:new Set(), friendPresenceErrors:new Set(), friendPresenceChannels:{}, ownPresenceChannel:null, typingActive:false, friendPresenceSyncPromise:null, friendPresenceSyncQueued:false, pendingAvatarData:null, avatarChanged:false, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, presenceChannel:null, presenceReady:false, typingTimer:null, messageReads:{}, hasOlderMessages:false, loadingOlder:false, replyTo:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function status(id, text, kind) { const n=$(id); n.textContent=text||""; n.className="status"+(kind?" "+kind:""); }
@@ -929,9 +929,18 @@ function subscribeMessageReads(conversationId){
 function renderTypingState(channel){
   if(S.presenceChannel!==channel)return;
   const state=channel.presenceState(),metas=Object.values(state).flatMap(p=>p.metas||[]);
-  const names=[...new Set(metas.filter(x=>x.user_id!==S.user.id&&x.typing).map(x=>x.display_name||"Someone"))];
-  const indicator=$("typing-indicator");indicator.hidden=!names.length;
-  indicator.textContent=names.length===1?names[0]+" is typing…":names.length===2?names.join(" and ")+" are typing…":names.slice(0,2).join(", ")+" and others are typing…";
+  const activeByUser=new Map();
+  metas.forEach(meta=>{
+    if(!meta.typing||meta.user_id===S.user.id)return;
+    const key=meta.user_id||meta.display_name||"someone";
+    if(!activeByUser.has(key))activeByUser.set(key,meta.display_name||"Someone");
+  });
+  const names=[...activeByUser.values()].sort((a,b)=>a.localeCompare(b));
+  const indicator=$("typing-indicator"),nameList=$("typing-names");
+  if(!indicator||!nameList)return;
+  indicator.hidden=!names.length;
+  nameList.replaceChildren();
+  names.forEach(name=>nameList.append(el("span","typing-name",name)));
 }
 async function subscribeChatPresence(conversationId){
   if(S.presenceChannel){db.removeChannel(S.presenceChannel);S.presenceChannel=null;}
@@ -944,24 +953,39 @@ async function subscribeChatPresence(conversationId){
     if(S.presenceChannel!==channel)return;
     if(state==="SUBSCRIBED"){
       S.presenceReady=true;
+      S.typingActive=false;
       await channel.track({user_id:S.user.id,display_name:S.profile?.display_name||"Member",typing:false});
     }
   });
 }
 async function setTyping(typing){
-  const channel=S.presenceChannel;if(!channel||!S.presenceReady)return;
-  try{await channel.track({user_id:S.user.id,display_name:S.profile?.display_name||"Member",typing:!!typing});}catch(e){console.warn("Typing status could not be updated:",e.message);}
+  const channel=S.presenceChannel;
+  const next=!!typing;
+  if(!channel||!S.presenceReady||S.typingActive===next)return;
+  S.typingActive=next;
+  try{
+    await channel.track({user_id:S.user.id,display_name:S.profile?.display_name||"Member",typing:next});
+  }catch(e){
+    if(S.presenceChannel===channel)S.typingActive=!next;
+    console.warn("Typing status could not be updated:",e.message);
+  }
 }
 function handleTypingInput(){
   if(!S.active)return;
-  setTyping(true);clearTimeout(S.typingTimer);
+  clearTimeout(S.typingTimer);
+  const hasText=!!$("message").value.trim();
+  if(!hasText){setTyping(false);return;}
+  setTyping(true);
   S.typingTimer=setTimeout(()=>setTyping(false),1800);
 }
 function stopChatPresence(){
   clearTimeout(S.typingTimer);
   if(S.presenceChannel){db.removeChannel(S.presenceChannel);S.presenceChannel=null;}
   if(S.readChannel){db.removeChannel(S.readChannel);S.readChannel=null;}
-  S.presenceReady=false;$("typing-indicator").hidden=true;
+  S.presenceReady=false;S.typingActive=false;
+  const indicator=$("typing-indicator"),nameList=$("typing-names");
+  if(indicator)indicator.hidden=true;
+  if(nameList)nameList.replaceChildren();
 }
 function renderReplyComposer(){
   const box=$("reply-compose");box.hidden=!S.replyTo;
