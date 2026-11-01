@@ -719,7 +719,7 @@ function subscribeMessageReads(conversationId){
     }).subscribe();
 }
 function renderTypingState(channel){
-  if(S.active!==channel?.topic?.split(":").pop())return;
+  if(S.presenceChannel!==channel)return;
   const state=channel.presenceState(),metas=Object.values(state).flatMap(p=>p.metas||[]);
   const names=[...new Set(metas.filter(x=>x.user_id!==S.user.id&&x.typing).map(x=>x.display_name||"Someone"))];
   const indicator=$("typing-indicator");indicator.hidden=!names.length;
@@ -728,7 +728,7 @@ function renderTypingState(channel){
 async function subscribeChatPresence(conversationId){
   if(S.presenceChannel){db.removeChannel(S.presenceChannel);S.presenceChannel=null;}
   S.presenceReady=false;clearTimeout(S.typingTimer);
-  await db.realtime.setAuth();
+  try{await db.realtime.setAuth();}catch(e){console.warn("Private chat presence could not authenticate:",e.message);return;}
   const channel=db.channel("gather-chat:"+conversationId,{config:{private:true,presence:{key:S.user.id}}});
   S.presenceChannel=channel;
   channel.on("presence",{event:"sync"},()=>renderTypingState(channel));
@@ -771,7 +771,7 @@ function cancelReply(){S.replyTo=null;renderReplyComposer();}
 async function loadOlderMessages(){
   if(!S.active||!S.hasOlderMessages||S.loadingOlder||!S.messages.length)return;
   const conversationId=S.active,oldest=S.messages[0].created_at;S.loadingOlder=true;
-  const result=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,reply_to_id").eq("conversation_id",conversationId).lt("created_at",oldest).order("created_at",{ascending:false}).limit(300);
+  const result=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,reply_to_id").eq("conversation_id",conversationId).or("created_at.lt."+oldest+",and(created_at.eq."+oldest+",id.lt."+S.messages[0].id+")").order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
   S.loadingOlder=false;
   if(result.error){toast("Older messages could not be loaded: "+result.error.message);return;}
   if(S.active!==conversationId)return;
@@ -795,7 +795,7 @@ async function openChat(id){
   subscribeMessageReads(id);await subscribeChatPresence(id);
 }
 async function loadMessages(id){
-  const r=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,reply_to_id").eq("conversation_id",id).order("created_at",{ascending:false}).limit(300);
+  const r=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,reply_to_id").eq("conversation_id",id).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
   if(r.error){toast("Messages could not be loaded: "+r.error.message);return;}
   if(S.active!==id)return;
   const raw=r.data||[];S.hasOlderMessages=raw.length===300;
@@ -926,7 +926,7 @@ async function searchConversationMessages(reset=true){
   if(query!==S.searchQuery){S.searchQuery=query;S.searchOffset=0;$("message-search-results").replaceChildren();}
   status("message-search-status",S.searchOffset?"Loading more matches…":"Searching the conversation…");
   const conversationId=S.searchConversationId,from=S.searchOffset,to=from+99;
-  const result=await db.from("messages").select("id,sender_id,body,created_at").eq("conversation_id",conversationId).ilike("body","%"+query+"%").order("created_at",{ascending:false}).range(from,to);
+  const result=await db.from("messages").select("id,sender_id,body,created_at").eq("conversation_id",conversationId).ilike("body","%"+query+"%").order("created_at",{ascending:false}).order("id",{ascending:false}).range(from,to);
   if(result.error){status("message-search-status","Search failed: "+result.error.message,"error");return;}
   const rows=(result.data||[]).filter(m=>!S.deletedMessageIds.has(m.id));
   rows.forEach(m=>{
@@ -941,7 +941,7 @@ async function searchConversationMessages(reset=true){
 async function openSearchResult(message){
   const conversationId=S.searchConversationId;$("message-search-modal").hidden=true;
   if(S.active!==conversationId)await openChat(conversationId);
-  const result=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,reply_to_id").eq("conversation_id",conversationId).lte("created_at",message.created_at).order("created_at",{ascending:false}).limit(300);
+  const result=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,reply_to_id").eq("conversation_id",conversationId).lte("created_at",message.created_at).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
   if(result.error){toast("That message could not be opened: "+result.error.message);return;}
   if(S.active!==conversationId)return;
   const raw=result.data||[];S.hasOlderMessages=raw.length===300;
@@ -1053,6 +1053,7 @@ function openGroupSettings(){
   $("group-settings-description").disabled=!owner;
   $("group-settings-save").hidden=!owner;
   $("group-settings-note").textContent=owner?"Only group owners can edit group details and manage members.":"You can view group details and members. Only the owner can make changes.";
+  status("group-settings-status","");
   renderGroupSettingsMembers(chat,owner);
   $("group-settings-modal").hidden=false;
 }
