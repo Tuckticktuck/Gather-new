@@ -351,7 +351,10 @@ async function respondToRequest(id,accept){
 }
 function renderChatSection(kind,listId,countId,term,sourceChats=null){
   const list=$(listId);list.replaceChildren();
-  const chats=(sourceChats||S.chats.filter(c=>c.kind===kind)).filter(c=>(!c.hasMessages||!!c.last)&&(chatTitle(c)+" "+chatSub(c)).toLowerCase().includes(term));
+  const chats=(sourceChats||S.chats.filter(c=>c.kind===kind)).filter(c=>{
+    const searchable=[chatTitle(c),chatSub(c),c.last?.body||""].join(" ").toLowerCase();
+    return (!c.hasMessages||!!c.last)&&searchable.includes(term);
+  });
   $(countId).textContent=chats.length;
   if(!chats.length){
     const empty=term
@@ -574,12 +577,23 @@ async function deleteConversationMessages(conversationId){
     offset+=500;
   }
   if(!ids.length){toast("There are no visible messages to delete in this conversation.");return;}
+  const moved=[];
   for(let i=0;i<ids.length;i+=200){
-    const batch=ids.slice(i,i+200).map(message_id=>({user_id:S.user.id,message_id}));
+    const batchIds=ids.slice(i,i+200);
+    const batch=batchIds.map(message_id=>({user_id:S.user.id,message_id}));
     const inserted=await db.from("user_deleted_messages").insert(batch);
-    if(inserted.error){toast("Some messages could not be moved: "+inserted.error.message);await loadChats();if(S.folder==="deleted")await loadDeletedMessages();return;}
+    if(inserted.error){
+      moved.forEach(id=>S.deletedMessageIds.add(id));
+      if(S.active===conversationId)S.messages=S.messages.filter(m=>!S.deletedMessageIds.has(m.id));
+      renderMessages();
+      await loadChats();
+      if(S.folder==="deleted")await loadDeletedMessages();
+      toast(moved.length+" messages moved before the remaining batch failed: "+inserted.error.message);
+      return;
+    }
+    moved.push(...batchIds);
   }
-  ids.forEach(id=>S.deletedMessageIds.add(id));
+  moved.forEach(id=>S.deletedMessageIds.add(id));
   if(S.active===conversationId)S.messages=S.messages.filter(m=>!S.deletedMessageIds.has(m.id));
   renderMessages();await loadChats();
   if(S.folder==="deleted")await loadDeletedMessages();
@@ -589,11 +603,9 @@ async function deleteSelectedMessages(){
   const ids=[...S.selectedMessageIds].filter(id=>S.messages.some(m=>m.id===id));
   if(!ids.length){toast("Select at least one message first.");return;}
   if(!confirm("Move "+ids.length+" selected message"+(ids.length===1?"":"s")+" to Deleted messages? This only hides them from your view. Other members will still see them, and you can restore them later."))return;
-  for(let i=0;i<ids.length;i+=100){
-    const entries=ids.slice(i,i+100).map(message_id=>({user_id:S.user.id,message_id}));
-    const result=await db.from("user_deleted_messages").insert(entries);
-    if(result.error){toast("Some messages could not be deleted: "+result.error.message);await loadChats();return;}
-  }
+  const entries=ids.map(message_id=>({user_id:S.user.id,message_id}));
+  const result=await db.from("user_deleted_messages").insert(entries);
+  if(result.error){toast("Selected messages could not be deleted: "+result.error.message);return;}
   ids.forEach(id=>S.deletedMessageIds.add(id));
   S.messages=S.messages.filter(m=>!S.deletedMessageIds.has(m.id));
   S.selectedMessageIds.clear();
