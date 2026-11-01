@@ -93,7 +93,7 @@ label{display:grid;gap:7px;margin:13px 0;color:#d0cede;font-size:calc(11px * var
 .folder-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:5px 0 10px;padding:4px;border:1px solid var(--line);border-radius:11px;background:#11131a}
 .folder-tab{min-width:0;min-height:34px;padding:6px 3px;border:0;border-radius:8px;color:#a7a8ba;background:transparent;font-size:calc(9px * var(--font-scale,1));font-weight:700;line-height:1.2;overflow-wrap:anywhere}
 .folder-tab.active{color:var(--accent-ink);background:var(--accent)}
-.folder-tab:focus-visible{outline:2px solid #d3caff;outline-offset:2px}
+.folder-tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .folder-panel{display:flex;flex:1;flex-direction:column;min-height:100px;margin:0 0 10px}
 .folder-panel[hidden]{display:none!important}
 .folder-panel-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 7px 8px;color:#aaaabd;font-size:calc(10px * var(--font-scale,1));font-weight:750;letter-spacing:.8px;text-transform:uppercase}
