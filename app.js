@@ -132,16 +132,26 @@ async function respondToRequest(id,accept){
     $("requests-modal").hidden=true;toast("Request accepted. You can now message each other.");await loadChats();await openChat(r.data.conversation_id);
   }else{toast("Request declined.");await loadRequests();}
 }
-function renderChats(){
-  const list=$("chat-list");list.replaceChildren();const term=$("filter").value.trim().toLowerCase();
-  const chats=S.chats.filter(c=>(chatTitle(c)+" "+chatSub(c)).toLowerCase().includes(term));
-  $("chat-count").textContent=chats.length;
-  if(!chats.length){list.append(el("p","muted tiny",term?"No matching conversations.":"No chats yet. Start one using a username."));return;}
+function renderChatSection(kind,listId,countId,term){
+  const list=$(listId);list.replaceChildren();
+  const chats=S.chats.filter(c=>c.kind===kind&&(chatTitle(c)+" "+chatSub(c)).toLowerCase().includes(term));
+  $(countId).textContent=chats.length;
+  if(!chats.length){
+    const empty=term
+      ?(kind==="direct"?"No matching private messages.":"No matching group chats.")
+      :(kind==="direct"?"No private messages yet.":"No group chats yet.");
+    list.append(el("p","muted tiny section-empty",empty));return;
+  }
   chats.forEach(c=>{
     const b=el("button","chat-item"+(c.id===S.active?" active":""));b.type="button";b.append(avatar(chatTitle(c)));
     const copy=el("div","chat-copy");copy.append(el("strong","",chatTitle(c)),el("span","",c.last?c.last.body:chatSub(c)));b.append(copy,el("small","chat-time",dateLabel(c.last?.created_at||c.updated_at)));
     b.addEventListener("click",()=>openChat(c.id));list.append(b);
   });
+}
+function renderChats(){
+  const term=$("filter").value.trim().toLowerCase();
+  renderChatSection("direct","private-chat-list","private-chat-count",term);
+  renderChatSection("group","group-chat-list","group-chat-count",term);
 }
 function renderActive(){
   const c=S.chats.find(x=>x.id===S.active);$("empty").hidden=!!c;$("chat").hidden=!c;
@@ -300,7 +310,9 @@ function wire(){
     else status("auth-status","Signed in. Loading chats…","success");
     $("auth-submit").disabled=false;
   });
-  $("new-chat").addEventListener("click",()=>openPeople("direct"));$("empty-new").addEventListener("click",()=>openPeople("direct"));$("add-people").addEventListener("click",()=>openPeople("add"));$("requests-open").addEventListener("click",openRequests);$("block-user").addEventListener("click",toggleBlock);
+  $("new-private-chat").addEventListener("click",()=>openPeople("direct"));$("new-group-chat").addEventListener("click",()=>openPeople("group"));
+  $("empty-private").addEventListener("click",()=>openPeople("direct"));$("empty-group").addEventListener("click",()=>openPeople("group"));
+  $("add-people").addEventListener("click",()=>openPeople("add"));$("requests-open").addEventListener("click",openRequests);$("block-user").addEventListener("click",toggleBlock);
   $("people-search").addEventListener("input",()=>{clearTimeout(S.timer);S.timer=setTimeout(searchPeople,220);});$("people-create").addEventListener("click",createGroupOrAdd);
   $("filter").addEventListener("input",renderChats);$("profile-open").addEventListener("click",openProfile);$("profile-form").addEventListener("submit",saveProfile);
   $("send-form").addEventListener("submit",sendMessage);
