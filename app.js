@@ -470,6 +470,38 @@ function showMessageNotification(message,chat){
   }
 }
 
+
+function openAnnouncementComposer(){
+  if(!isFeedbackAdmin(S.user)){toast("Only the Gather administrator can send announcements.");return;}
+  $("announcement-title").value="";$("announcement-body").value="";
+  status("announcement-compose-status","");
+  $("announcement-compose-modal").hidden=false;$("announcement-title").focus();
+}
+async function publishAnnouncement(event){
+  event.preventDefault();
+  if(!isFeedbackAdmin(S.user)){status("announcement-compose-status","Only the Gather administrator can send announcements.","error");return;}
+  const title=$("announcement-title").value.trim(),body=$("announcement-body").value.trim();
+  if(!title||title.length>100||!body||body.length>2000){status("announcement-compose-status","Add a title and a message between 1 and 2,000 characters.","error");return;}
+  if(!confirm("Send this official announcement to everyone on Gather? It will appear as “Gather Admin” without showing your account identity."))return;
+  const button=$("announcement-publish");button.disabled=true;status("announcement-compose-status","Sending to all Gather members…");
+  const result=await db.from("admin_announcements").insert({title,body}).select("id").single();
+  button.disabled=false;
+  if(result.error){status("announcement-compose-status","Announcement could not be sent: "+result.error.message,"error");return;}
+  $("announcement-compose-modal").hidden=true;toast("Official announcement sent to Gather members.");
+  await loadNotifications();await openAnnouncement(result.data.id);
+}
+async function openAnnouncement(id){
+  if(!id||!S.user)return;
+  $("announcement-view-title").textContent="Loading announcement…";
+  $("announcement-view-body").textContent="";$("announcement-view-date").textContent="";
+  $("announcement-view-modal").hidden=false;
+  const result=await db.from("admin_announcements").select("id,title,body,created_at").eq("id",id).maybeSingle();
+  if(result.error||!result.data){$("announcement-view-title").textContent="Announcement unavailable";$("announcement-view-body").textContent="This announcement could not be loaded.";return;}
+  $("announcement-view-title").textContent=result.data.title;
+  $("announcement-view-body").textContent=result.data.body;
+  $("announcement-view-date").textContent=dateLabel(result.data.created_at);
+}
+
 function notificationUnreadCount(){
   return S.notifications.filter(item=>!item.read_at).length;
 }
@@ -479,7 +511,7 @@ function renderNotificationBadge(){
   $("notifications-mark-all").disabled=count===0;
 }
 function notificationKindLabel(kind){
-  return ({message:"New message",friend_request:"Friend request",chat_request:"Chat request",feedback_reply:"Feedback update",report:"Safety report"})[kind]||"Gather update";
+  return ({message:"New message",friend_request:"Friend request",chat_request:"Chat request",feedback_reply:"Feedback update",report:"Safety report",announcement:"Official admin announcement"})[kind]||"Gather update";
 }
 function renderNotifications(){
   const list=$("notifications-list");list.replaceChildren();
@@ -489,9 +521,11 @@ function renderNotifications(){
     S.notifications.forEach(item=>{
       const card=el("button","notification-center-item"+(item.read_at?"":" unread"));
       card.type="button";
-      const icon=el("span","notification-center-icon",item.kind==="message"?"✉":item.kind==="friend_request"?"＋":item.kind==="chat_request"?"↗":item.kind==="report"?"⚑":"•");
+      const icon=el("span","notification-center-icon",item.kind==="announcement"?"◎":item.kind==="message"?"✉":item.kind==="friend_request"?"＋":item.kind==="chat_request"?"↗":item.kind==="report"?"⚑":"•");
       const copy=el("span","notification-center-copy");
-      copy.append(el("strong","",item.title||notificationKindLabel(item.kind)),el("small","",item.body||notificationKindLabel(item.kind)),el("time","",dateLabel(item.created_at)));
+      const title=item.kind==="announcement"?"Gather Admin":(item.title||notificationKindLabel(item.kind));
+      const description=item.kind==="announcement"?"Official announcement · "+(item.body||"Open to read the full message."):(item.body||notificationKindLabel(item.kind));
+      copy.append(el("strong","",title),el("small","",description),el("time","",dateLabel(item.created_at)));
       card.append(icon,copy);
       if(!item.read_at)card.append(el("span","notification-unread-dot",""));
       card.addEventListener("click",()=>openNotification(item));
@@ -503,7 +537,7 @@ function renderNotifications(){
 }
 async function loadNotifications(){
   if(!S.user)return false;
-  const result=await db.from("notifications").select("id,recipient_id,actor_id,kind,title,body,conversation_id,message_id,feedback_thread_id,created_at,read_at").eq("recipient_id",S.user.id).order("created_at",{ascending:false}).limit(80);
+  const result=await db.from("notifications").select("id,recipient_id,actor_id,kind,title,body,conversation_id,message_id,feedback_thread_id,announcement_id,created_at,read_at").eq("recipient_id",S.user.id).order("created_at",{ascending:false}).limit(80);
   if(result.error){console.warn("Notifications could not be loaded:",result.error.message);return false;}
   S.notifications=result.data||[];renderNotifications();return true;
 }
@@ -548,6 +582,7 @@ async function openNotification(item){
   else if(item.kind==="chat_request")await openRequests();
   else if(item.kind==="feedback_reply")await openFeedback(isFeedbackAdmin(S.user));
   else if(item.kind==="report"&&isFeedbackAdmin(S.user))await openReportsAdmin();
+  else if(item.kind==="announcement"&&item.announcement_id)await openAnnouncement(item.announcement_id);
 }
 
 function subscribeMessages(){
@@ -1860,7 +1895,7 @@ async function updateFeedbackStatus(){
   toast("Feedback status updated.");
 }
 
-function closeModals(){ $("notifications-modal").hidden=true;$("member-profile-modal").hidden=true;$("report-modal").hidden=true;$("reports-admin-modal").hidden=true;$("people-modal").hidden=true;$("profile-modal").hidden=true;$("requests-modal").hidden=true;$("friends-modal").hidden=true;$("settings-modal").hidden=true;$("group-photo-modal").hidden=true;$("group-settings-modal").hidden=true;$("message-search-modal").hidden=true;$("chat-actions-modal").hidden=true;$("feedback-modal").hidden=true; }
+function closeModals(){ $("announcement-compose-modal").hidden=true;$("announcement-view-modal").hidden=true;$("notifications-modal").hidden=true;$("member-profile-modal").hidden=true;$("report-modal").hidden=true;$("reports-admin-modal").hidden=true;$("people-modal").hidden=true;$("profile-modal").hidden=true;$("requests-modal").hidden=true;$("friends-modal").hidden=true;$("settings-modal").hidden=true;$("group-photo-modal").hidden=true;$("group-settings-modal").hidden=true;$("message-search-modal").hidden=true;$("chat-actions-modal").hidden=true;$("feedback-modal").hidden=true; }
 function goHome(){
   clearPendingMessageImage();closeModals();S.active=null;S.messages=[];S.messageReads={};S.replyTo=null;S.hasOlderMessages=false;S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;renderReplyComposer();
   $("layout").classList.remove("show-chat");$("layout").classList.add("show-home");renderChats();renderActive();
@@ -1891,6 +1926,8 @@ function wire(){
   $("chat-title").addEventListener("click",()=>{const chat=S.chats.find(item=>item.id===S.active);if(chat?.kind==="direct")openPublicProfile(peerForChat(chat));});
   $("settings-open").addEventListener("click",openSettings);
   $("notifications-open").addEventListener("click",openNotifications);
+  $("announcement-send-open").addEventListener("click",()=>{$("settings-modal").hidden=true;openAnnouncementComposer();});
+  $("announcement-compose-form").addEventListener("submit",publishAnnouncement);
   $("notifications-mark-all").addEventListener("click",markAllNotificationsRead);
   $("report-form").addEventListener("submit",submitReport);
   $("member-profile-report").addEventListener("click",()=>{const userId=S.publicProfileId;$("member-profile-modal").hidden=true;openReport(userId);});
@@ -1934,7 +1971,7 @@ function wire(){
   $("delete-selected").addEventListener("click",deleteSelectedMessages);
   $("signout").addEventListener("click",async()=>{const r=await db.auth.signOut();if(r.error)toast(r.error.message);else closeModals();});
   document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",closeModals));
-  ["notifications-modal","member-profile-modal","report-modal","reports-admin-modal","people-modal","profile-modal","requests-modal","friends-modal","settings-modal","group-photo-modal","group-settings-modal","message-search-modal","chat-actions-modal","feedback-modal"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target===$(id))closeModals();}));
+  ["announcement-compose-modal","announcement-view-modal","notifications-modal","member-profile-modal","report-modal","reports-admin-modal","people-modal","profile-modal","requests-modal","friends-modal","settings-modal","group-photo-modal","group-settings-modal","message-search-modal","chat-actions-modal","feedback-modal"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target===$(id))closeModals();}));
   document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModals();});
 }
 async function boot(){
