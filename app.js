@@ -906,10 +906,19 @@ function renderMessages(preserveScroll=false){
       const actions=el("div","message-actions"),reply=el("button","message-reply","Reply");reply.type="button";reply.addEventListener("click",()=>beginReply(m));actions.append(reply);bubble.append(actions);
     }
     if(mine){
-      const readers=(S.messageReads[m.id]||[]).filter(r=>r.user_id!==S.user.id);
-      if(readers.length){
-        const names=[...new Set(readers.map(r=>S.profiles[r.user_id]?.display_name||"Member"))];
-        bubble.append(el("div","message-receipts",names.length===1?"Seen by "+names[0]:"Seen by "+names.slice(0,2).join(", ")+(names.length>2?" and "+(names.length-2)+" more":"")));
+      const activeChat=S.chats.find(chat=>chat.id===S.active);
+      const memberIds=new Set((activeChat?.members||[]).map(member=>member.user_id).filter(id=>id!==S.user.id));
+      const readers=[...new Map((S.messageReads[m.id]||[])
+        .filter(receipt=>receipt.user_id!==S.user.id&&memberIds.has(receipt.user_id))
+        .map(receipt=>[receipt.user_id,receipt])).values()];
+      if(activeChat?.kind==="direct"){
+        bubble.append(el("div","message-receipts"+(readers.length?" is-seen":" is-sent"),readers.length?"✓✓ Seen":"✓ Sent"));
+      }else if(readers.length){
+        const names=[...new Set(readers.map(receipt=>S.profiles[receipt.user_id]?.display_name||"Member"))];
+        const label=names.length===1?"✓✓ Seen by "+names[0]:"✓✓ Seen by "+names.slice(0,2).join(", ")+(names.length>2?" and "+(names.length-2)+" more":"");
+        bubble.append(el("div","message-receipts is-seen",label));
+      }else{
+        bubble.append(el("div","message-receipts is-sent","✓ Sent"));
       }
     }
     if(S.selectingMessages){
