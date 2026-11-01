@@ -70,7 +70,11 @@
       </div>
       <button id="friends-open" class="requests-button" type="button">Friends <span id="friends-count">0</span></button>
       <button id="requests-open" class="requests-button" type="button">Chat requests <span id="requests-count">0</span></button>
-      <div class="hide-tab-wrap"><div class="hide-tab-wrap"><button id="open-about-blank" class="requests-button about-blank-sidebar" type="button">Hide tab</button><p class="hide-tab-note">Please click this button when you are in school!!!</p>
+      <div class="hide-tab-wrap">
+        <button id="open-about-blank" class="requests-button about-blank-sidebar" type="button">Hide tab</button>
+        <button id="feedback-open" class="requests-button feedback-sidebar-button" type="button">Send feedback</button>
+        <p class="hide-tab-note">Please click this button when you are in school!!!</p>
+      </div>
       <p class="privacy">✦ Only members of a chat can read its messages.</p>
     </aside>
     <main class="main">
@@ -138,7 +142,7 @@
   </div></section>
   
   <section class="settings-section notification-settings-section"><h3>Message pop-ups</h3><p class="tiny muted">Choose how long new-message notifications from other conversations stay visible.</p><div class="notification-mode-choices" role="group" aria-label="Message notification duration"><button class="font-choice" type="button" data-notification-mode="temporary" aria-pressed="true">Temporary · 5 seconds</button><button class="font-choice" type="button" data-notification-mode="persistent" aria-pressed="false">Persistent · until dismissed</button></div></section>
-  <section class="settings-section"><h3>Feedback</h3><p class="tiny muted">Send a suggestion, report a problem, or follow up on a previous message.</p><div class="feedback-settings-actions"><button id="feedback-open" class="secondary-action" type="button">Send feedback</button><button id="feedback-admin-open" class="secondary-action" type="button" hidden>Admin inbox</button></div></section>
+  <section id="feedback-admin-settings-section" class="settings-section" hidden><h3>Administration</h3><p class="tiny muted">Review member feedback and manage replies.</p><button id="feedback-admin-open" class="secondary-action" type="button">Open admin inbox</button></section>
   <p id="settings-note" class="tiny muted">Your preferences are saved to your Gather account and follow you across devices.</p>
 </section></div>
 
