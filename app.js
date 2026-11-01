@@ -971,7 +971,7 @@ async function subscribeChatPresence(conversationId){
     if(state==="SUBSCRIBED"){
       S.presenceReady=true;
       S.typingActive=false;
-      await setTyping(!!$("message").value.trim(),true);
+      if($("message").value.trim())await setTyping(true,true);
       refresh();
     }else if(state==="CHANNEL_ERROR"||state==="TIMED_OUT"||state==="CLOSED"){
       S.presenceReady=false;S.typingActive=false;
