@@ -378,3 +378,13 @@ input::placeholder,textarea::placeholder{color:var(--accent-muted)}
 
 .message-search-modal{max-width:620px}
 @media(max-width:720px){.chat-head{column-gap:6px;row-gap:6px}.chat-head button{flex:0 0 auto}.group-member-row{align-items:flex-start}.group-member-actions{max-width:150px}}
+
+.chat-actions-modal{max-width:470px}
+.chat-actions-modal h2{margin-bottom:18px}
+.chat-action-section{margin-top:17px;padding-top:14px;border-top:1px solid var(--line)}
+.chat-action-section h3{margin:0 0 10px;color:var(--accent-text);font-size:calc(11px * var(--font-scale,1));letter-spacing:.04em;text-transform:uppercase}
+.chat-action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.chat-action{min-height:43px;text-align:left;white-space:normal}
+.chat-action-trigger{flex:none;white-space:nowrap}
+.chat-actions-trigger span{margin-left:5px;color:var(--accent-text)}
+@media(max-width:720px){.chat-head{flex-wrap:nowrap;min-height:64px}.chat-head .chat-title{flex:1 1 auto;min-width:0}.chat-actions-trigger{padding:7px 9px;font-size:calc(10px * var(--font-scale,1))}.chat-actions-modal{width:min(100%,470px)}}
