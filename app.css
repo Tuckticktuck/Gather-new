@@ -390,3 +390,12 @@ input::placeholder,textarea::placeholder{color:var(--accent-muted)}
 @media(max-width:720px){.chat-head{flex-wrap:nowrap;min-height:64px}.chat-head .chat-title{flex:1 1 auto;min-width:0}.chat-actions-trigger{padding:7px 9px;font-size:calc(10px * var(--font-scale,1))}.chat-actions-modal{width:min(100%,470px)}}
 
 .about-blank-sidebar{margin-top:8px}
+
+.friend-online-dot{flex:none;width:9px;height:9px;margin:0 1px;border:1px solid #87939a;border-radius:50%;background:transparent}
+.friend-online-dot.online{border-color:#54c78c;background:#54c78c;box-shadow:0 0 0 3px #54c78c22}
+.online-privacy-section{margin-top:18px;padding-top:15px;border-top:1px solid var(--line)}
+.online-status-setting{display:flex;align-items:flex-start;gap:10px;padding:11px;border:1px solid var(--line);border-radius:11px;background:var(--accent-panel);cursor:pointer}
+.online-status-setting input{flex:none;width:18px;height:18px;margin:2px 0 0;accent-color:var(--accent)}
+.online-status-setting span{display:grid;gap:4px}
+.online-status-setting strong{color:var(--text);font-size:calc(11px * var(--font-scale,1))}
+.online-status-setting small{color:var(--muted);font-size:calc(9px * var(--font-scale,1));line-height:1.5}
