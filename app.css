@@ -301,3 +301,28 @@ input::placeholder,textarea::placeholder{color:var(--accent-muted)}
   .chat-row .chat-item{min-width:0;flex:1 1 auto}
   .chat-row .chat-copy{min-width:0}
 }
+
+/* Account profile pictures and password management. */
+.avatar.has-picture{overflow:hidden;padding:0;background:var(--accent-panel-raised)}
+.avatar img{display:block;width:100%;height:100%;object-fit:cover;border-radius:inherit}
+.profile-modal{max-height:92vh}
+.profile-photo-editor{display:flex;align-items:center;gap:15px;margin:12px 0 19px;padding:12px;border:1px solid var(--accent-outline-soft);border-radius:13px;background:var(--accent-panel-raised)}
+.profile-avatar-preview{width:76px;height:76px;border-radius:50%;font-size:calc(25px * var(--font-scale,1))}
+.profile-photo-actions{display:grid;justify-items:start;gap:8px;min-width:0}
+.photo-upload-label{display:inline-flex!important;align-items:center;justify-content:center;width:auto!important;margin:0!important;padding:8px 11px;border:1px solid var(--accent-border);border-radius:9px;color:var(--accent-contrast);background:var(--accent-surface);font-size:calc(11px * var(--font-scale,1));font-weight:700;cursor:pointer}
+.photo-upload-label input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.profile-photo-actions .outline{padding:6px 9px;font-size:calc(10px * var(--font-scale,1))}
+.profile-photo-actions small{max-width:280px;color:var(--muted);font-size:calc(9px * var(--font-scale,1));line-height:1.5}
+.password-form{display:grid;gap:10px;margin-top:22px;padding-top:18px;border-top:1px solid var(--line)}
+.password-form h3{margin:0;color:var(--accent-contrast);font-size:calc(13px * var(--font-scale,1))}
+.password-form>p{margin:0}
+.password-form label{display:grid;gap:6px;color:#aaaabd;font-size:calc(10px * var(--font-scale,1));font-weight:650}
+.password-form label input{width:100%}
+.password-form .secondary-action{width:100%;min-height:39px}
+.password-form .auth-security-note{margin-top:4px;padding:9px;border:1px solid var(--accent-outline-soft);border-radius:9px;background:var(--accent-panel-raised);line-height:1.5}
+.auth-security-note{line-height:1.5}
+@media(max-width:500px){
+  .profile-photo-editor{align-items:flex-start;gap:11px;padding:10px}
+  .profile-avatar-preview{width:64px;height:64px}
+  .profile-photo-actions small{max-width:205px}
+}
