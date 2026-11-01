@@ -915,8 +915,21 @@ function renderMessages(preserveScroll=false){
         bubble.append(el("div","message-receipts"+(readers.length?" is-seen":" is-sent"),readers.length?"✓✓ Seen":"✓ Sent"));
       }else if(readers.length){
         const names=[...new Set(readers.map(receipt=>S.profiles[receipt.user_id]?.display_name||"Member"))];
-        const label=names.length===1?"✓✓ Seen by "+names[0]:"✓✓ Seen by "+names.slice(0,2).join(", ")+(names.length>2?" and "+(names.length-2)+" more":"");
-        bubble.append(el("div","message-receipts is-seen",label));
+        const receiptWrap=el("div","message-receipt-wrap");
+        const seenButton=el("button","message-receipts message-receipts-button is-seen","✓✓ Seen · "+names.length);
+        seenButton.type="button";
+        seenButton.setAttribute("aria-expanded","false");
+        seenButton.setAttribute("aria-label","Show the "+names.length+" group members who read this message");
+        const readerList=el("div","message-readers-list");
+        readerList.hidden=true;
+        names.forEach(name=>readerList.append(el("span","message-reader-name",name)));
+        seenButton.addEventListener("click",()=>{
+          const expanded=seenButton.getAttribute("aria-expanded")==="true";
+          seenButton.setAttribute("aria-expanded",String(!expanded));
+          readerList.hidden=expanded;
+        });
+        receiptWrap.append(seenButton,readerList);
+        bubble.append(receiptWrap);
       }else{
         bubble.append(el("div","message-receipts is-sent","✓ Sent"));
       }
