@@ -113,7 +113,7 @@
         <header class="chat-head"><button id="back" class="back" aria-label="Back">←</button><span id="chat-avatar" class="avatar">?</span><div class="chat-title"><strong id="chat-title"></strong><small id="chat-subtitle"></small></div><button id="chat-actions-open" class="outline chat-actions-trigger" type="button" aria-label="Open chat options" aria-haspopup="dialog">Chat options <span aria-hidden="true">⌄</span></button></header>
         <div id="messages" class="messages"></div>
         <p id="chat-notice" class="chat-notice" hidden></p>
-        <div id="typing-indicator" class="typing-indicator" aria-live="polite" hidden></div>
+        <div id="typing-indicator" class="typing-indicator" aria-live="polite" aria-atomic="true" hidden><strong class="typing-indicator-label">Typing</strong><div id="typing-names" class="typing-indicator-names"></div></div>
         <form id="send-form" class="composer"><div id="reply-compose" class="reply-compose" hidden><div><small id="reply-compose-label">Replying to</small><span id="reply-compose-text"></span></div><button id="cancel-reply" type="button" aria-label="Cancel reply">×</button></div><textarea id="message" rows="1" maxlength="4000" placeholder="Write a message…" aria-label="Write a message"></textarea><div><small>Enter to send · Shift + Enter for a new line</small><button id="send" type="submit" aria-label="Send">↑</button></div></form>
       </section>
     </main>
