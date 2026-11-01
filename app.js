@@ -43,6 +43,16 @@ function applyUIPreferences(){
   root.style.setProperty("--accent-ink",accent.ink);
   root.style.setProperty("--accent-soft",accent.soft);
   root.style.setProperty("--accent-border",accent.border);
+  root.style.setProperty("--accent-text",`color-mix(in srgb,${accent.accent} 74%,white)`);
+  root.style.setProperty("--accent-badge",`color-mix(in srgb,${accent.accent} 17%,#191b25)`);
+  root.style.setProperty("--accent-surface",`color-mix(in srgb,${accent.accent} 11%,#191b25)`);
+  root.style.setProperty("--accent-hover",`color-mix(in srgb,${accent.accent} 20%,#20222d)`);
+  root.style.setProperty("--accent-outline-soft",`color-mix(in srgb,${accent.accent} 20%,transparent)`);
+  root.style.setProperty("--accent-outline",`color-mix(in srgb,${accent.accent} 40%,transparent)`);
+  root.style.setProperty("--accent-outline-strong",`color-mix(in srgb,${accent.accent} 52%,transparent)`);
+  root.style.setProperty("--accent-avatar",`color-mix(in srgb,${accent.accent} 45%,#292d42)`);
+  root.style.setProperty("--accent-avatar-text",`color-mix(in srgb,${accent.accent} 76%,white)`);
+  root.style.setProperty("--accent-gradient-light",`color-mix(in srgb,${accent.accent} 76%,white)`);
   root.style.setProperty("--font-scale",FONT_SCALES[S.preferences.fontSize]||"1");
   document.querySelectorAll("[data-accent]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.accent===S.preferences.accent)));
   document.querySelectorAll("[data-font-size]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.fontSize===S.preferences.fontSize)));
@@ -461,6 +471,7 @@ function renderActive(){
   const c=S.chats.find(x=>x.id===S.active);$("empty").hidden=!!c;$("chat").hidden=!c;
   $("layout").classList.toggle("show-chat",!!c);
   $("layout").classList.toggle("show-home",!c);
+  $("home-open").hidden=!c;
   if(!c)return;
   $("chat-title").textContent=chatTitle(c);$("chat-subtitle").textContent=chatSub(c);$("chat-avatar").textContent=initials(chatTitle(c));
   const me=c.members.find(x=>x.user_id===S.user.id);$("add-people").hidden=!(c.kind==="group"&&me?.role==="owner");
