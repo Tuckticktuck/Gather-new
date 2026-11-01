@@ -849,7 +849,7 @@ async function fileToAvatarData(file){
   if(!file)return null;
   if(!["image/jpeg","image/png","image/webp"].includes(file.type))throw new Error("Choose a JPG, PNG, or WebP image.");
   if(file.size>20*1024*1024)throw new Error("Choose an image no larger than 20 MB.");
-  const objectUrl=URL.createObjectURL(file);
+  const objectUrl=window.URL.createObjectURL(file);
   try{
     const image=await new Promise((resolve,reject)=>{
       const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>reject(new Error("That image couldn't be opened."));img.src=objectUrl;
@@ -862,7 +862,7 @@ async function fileToAvatarData(file){
     if(data.length>500000)data=canvas.toDataURL("image/jpeg",0.68);
     if(data.length>500000)throw new Error("That picture is still too large. Try a simpler image.");
     return data;
-  }finally{URL.revokeObjectURL(objectUrl);}
+  }finally{window.URL.revokeObjectURL(objectUrl);}
 }
 async function handleAvatarFile(){
   const file=$("profile-avatar-file").files?.[0];if(!file)return;
