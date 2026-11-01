@@ -4,7 +4,7 @@ const URL = "https://xrwldphmeafiakittcof.supabase.co";
 const KEY = "sb_publishable_5Gws8f_CODwrHigG2U6Veg_bTRrBoeA";
 const $ = (id) => document.getElementById(id);
 const db = window.supabase.createClient(URL, KEY);
-const S = { user:null, profile:null, profiles:{}, chats:[], requests:[], requestChannel:null, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null };
+const S = { user:null, profile:null, profiles:{}, chats:[], requests:[], friendRequests:[], friends:[], requestChannel:null, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function status(id, text, kind) { const n=$(id); n.textContent=text||""; n.className="status"+(kind?" "+kind:""); }
@@ -20,7 +20,7 @@ function dateLabel(s) { if(!s)return ""; const d=new Date(s), now=new Date(); re
 function showAuth() {
   if(S.channel){db.removeChannel(S.channel);S.channel=null;}
   if(S.requestChannel){db.removeChannel(S.requestChannel);S.requestChannel=null;}
-  S.user=null;S.profile=null;S.profiles={};S.chats=[];S.requests=[];S.directStatus=null;S.active=null;S.messages=[];S.loadError=null;
+  S.user=null;S.profile=null;S.profiles={};S.chats=[];S.requests=[];S.friendRequests=[];S.friends=[];S.directStatus=null;S.active=null;S.messages=[];S.loadError=null;
   setChatLoadStatus("");$("auth").hidden=false;$("app").hidden=true;
 }
 function showApp(){ $("auth").hidden=true;$("app").hidden=false; }
@@ -55,6 +55,7 @@ async function signedIn(user,retry=false){
     const loaded=await loadChats();
     if(!loaded)throw new Error(S.loadError||"Please check your connection and try again.");
     setChatLoadStatus("");
+    if(!await loadFriends())console.warn("Gather friend list could not be loaded.");
   }catch(e){
     const reason=S.loadError||e.message||"An unexpected error occurred.";
     setChatLoadStatus("Couldn't finish loading Gather. "+reason,true);
@@ -104,6 +105,36 @@ async function loadRequests(){
   }
   renderRequests();return true;
 }
+async function loadFriends(){
+  if(!S.user)return false;
+  const [friendsResult,requestsResult]=await Promise.all([
+    db.from("friendships").select("friend_id,created_at").eq("user_id",S.user.id).order("created_at",{ascending:false}),
+    db.from("friend_requests").select("id,sender_id,recipient_id,status,created_at").or("sender_id.eq."+S.user.id+",recipient_id.eq."+S.user.id).order("created_at",{ascending:false}).limit(80)
+  ]);
+  if(friendsResult.error||requestsResult.error){
+    const reason=friendsResult.error?.message||requestsResult.error?.message||"Unknown database error";
+    console.error("Gather friends could not be loaded:",reason);
+    $("friends-error").textContent="Friends could not be loaded. "+reason;
+    return false;
+  }
+  S.friends=friendsResult.data||[];
+  S.friendRequests=requestsResult.data||[];
+  const ids=[...new Set([
+    ...S.friends.map(x=>x.friend_id),
+    ...S.friendRequests.flatMap(x=>[x.sender_id,x.recipient_id].filter(id=>id!==S.user.id))
+  ])];
+  if(ids.length){
+    const profiles=await db.from("profiles").select("id,username,display_name").in("id",ids);
+    if(profiles.error){
+      $("friends-error").textContent="Friend profiles could not be loaded. "+profiles.error.message;
+      return false;
+    }
+    profiles.data.forEach(x=>S.profiles[x.id]=x);
+  }
+  $("friends-error").textContent="";
+  renderFriends();
+  return true;
+}
 function subscribeRequests(){
   if(S.requestChannel){db.removeChannel(S.requestChannel);S.requestChannel=null;}
   if(!S.user)return;
@@ -118,6 +149,17 @@ function subscribeRequests(){
       else if(payload.new?.status==="declined")toast("A chat request was declined.");
     })
     .on("postgres_changes",{event:"UPDATE",schema:"public",table:"conversation_requests",filter:"recipient_id=eq."+uid},()=>loadRequests())
+    .on("postgres_changes",{event:"INSERT",schema:"public",table:"friend_requests",filter:"recipient_id=eq."+uid},()=>{
+      loadFriends();toast("You received a friend request.");
+    })
+    .on("postgres_changes",{event:"UPDATE",schema:"public",table:"friend_requests",filter:"sender_id=eq."+uid},payload=>{
+      loadFriends();
+      if(payload.new?.status==="accepted"){toast("Your friend request was accepted.");loadChats();}
+    })
+    .on("postgres_changes",{event:"UPDATE",schema:"public",table:"friend_requests",filter:"recipient_id=eq."+uid},()=>loadFriends())
+    .on("postgres_changes",{event:"*",schema:"public",table:"friendships",filter:"user_id=eq."+uid},()=>{
+      loadFriends();loadChats();
+    })
     .subscribe();
 }
 function renderRequests(){
@@ -132,6 +174,44 @@ function renderRequests(){
   ins.forEach(r=>incoming.append(requestRow(r,true)));
   outs.forEach(r=>outgoing.append(requestRow(r,false)));
 }
+function renderFriends(){
+  const list=$("friends-list"),incoming=$("friend-incoming"),outgoing=$("friend-outgoing");
+  if(!list||!incoming||!outgoing)return;
+  list.replaceChildren();incoming.replaceChildren();outgoing.replaceChildren();
+  const ins=S.friendRequests.filter(x=>x.recipient_id===S.user.id&&x.status==="pending");
+  const outs=S.friendRequests.filter(x=>x.sender_id===S.user.id&&x.status==="pending");
+  $("friends-count").textContent=S.friends.length;
+  $("friends-open").classList.toggle("has-requests",ins.length>0);
+  if(!S.friends.length)list.append(el("p","muted tiny","You have not added any friends yet."));
+  S.friends.forEach(f=>{
+    const p=S.profiles[f.friend_id]||{id:f.friend_id,display_name:"Gather member",username:"member"};
+    const row=el("div","request-item");row.append(avatar(p.display_name));
+    const copy=el("div","request-copy");copy.append(el("strong","",p.display_name),el("small","","@"+p.username));row.append(copy);
+    const actions=el("div","request-actions");
+    const message=el("button","request-accept","Message"),remove=el("button","request-decline","Remove");
+    message.type=remove.type="button";
+    message.addEventListener("click",async()=>{ $("friends-modal").hidden=true;await directChat(p); });
+    remove.addEventListener("click",()=>removeFriend(f.friend_id));
+    actions.append(message,remove);row.append(actions);list.append(row);
+  });
+  if(!ins.length)incoming.append(el("p","muted tiny","No new friend requests."));
+  if(!outs.length)outgoing.append(el("p","muted tiny","You have no pending sent requests."));
+  ins.forEach(r=>incoming.append(friendRequestRow(r,true)));
+  outs.forEach(r=>outgoing.append(friendRequestRow(r,false)));
+}
+function friendRequestRow(r,isIncoming){
+  const peerId=isIncoming?r.sender_id:r.recipient_id,p=S.profiles[peerId]||{display_name:"Gather member",username:"member"};
+  const row=el("div","request-item");row.append(avatar(p.display_name));
+  const copy=el("div","request-copy");copy.append(el("strong","",p.display_name),el("small","","@"+p.username));row.append(copy);
+  if(isIncoming){
+    const actions=el("div","request-actions"),accept=el("button","request-accept","Accept"),decline=el("button","request-decline","Decline");
+    accept.type=decline.type="button";
+    accept.addEventListener("click",()=>respondToFriendRequest(r.id,true));
+    decline.addEventListener("click",()=>respondToFriendRequest(r.id,false));
+    actions.append(accept,decline);row.append(actions);
+  }else row.append(el("span","request-pending","Pending"));
+  return row;
+}
 function requestRow(r,isIncoming){
   const peerId=isIncoming?r.sender_id:r.recipient_id,p=S.profiles[peerId]||{display_name:"Gather member",username:"member"};
   const row=el("div","request-item");row.append(avatar(p.display_name));
@@ -141,6 +221,39 @@ function requestRow(r,isIncoming){
     accept.type=decline.type="button";accept.addEventListener("click",()=>respondToRequest(r.id,true));decline.addEventListener("click",()=>respondToRequest(r.id,false));actions.append(accept,decline);row.append(actions);
   }else row.append(el("span","request-pending","Pending"));
   return row;
+}
+async function sendFriendRequest(p){
+  const r=await db.rpc("send_friend_request",{p_recipient_id:p.id});
+  if(r.error){status("people-status","Friend request could not be sent: "+r.error.message,"error");return;}
+  await loadFriends();
+  if(r.data?.status==="blocked")status("people-status","This member is unavailable for a friend request.","error");
+  else if(r.data?.status==="incoming"){
+    status("people-status","They already sent you a friend request. Accept it in Friends.","success");
+    $("people-modal").hidden=true;$("friends-modal").hidden=false;
+  }else if(r.data?.status==="friends")status("people-status","You are already friends.","success");
+  else status("people-status","Friend request sent. You will be friends after they accept.","success");
+  searchPeople();
+}
+async function respondToFriendRequest(id,accept){
+  const r=await db.rpc("respond_to_friend_request",{p_request_id:id,p_accept:accept});
+  if(r.error){toast("Friend request could not be updated: "+r.error.message);return;}
+  if(r.data?.status==="blocked"){toast("This request cannot be accepted because one of you has blocked the other.");await loadFriends();return;}
+  await loadFriends();
+  if(accept&&r.data?.conversation_id){
+    $("friends-modal").hidden=true;
+    toast("You are friends now. Private messaging is open.");
+    await loadChats();await openChat(r.data.conversation_id);
+  }else toast("Friend request declined.");
+}
+async function removeFriend(friendId){
+  if(!confirm("Remove this friend? Your existing private conversation will remain in your chat list."))return;
+  const r=await db.rpc("remove_friend",{p_friend_id:friendId});
+  if(r.error){toast("Friend could not be removed: "+r.error.message);return;}
+  await loadFriends();toast("Friend removed.");
+}
+async function openFriends(){
+  $("friends-modal").hidden=false;
+  await loadFriends();
 }
 async function respondToRequest(id,accept){
   const r=await db.rpc("respond_to_direct_chat_request",{p_request_id:id,p_accept:accept});
@@ -253,10 +366,10 @@ async function openPeople(mode){
   S.picker=mode;S.selected=new Set();$("people-modal").hidden=false;$("people-search").value="";
   $("people-results").replaceChildren(el("p","muted tiny","Type at least 2 characters."));
   $("group-wrap").hidden=mode!=="group";$("group-title").value="";
-  $("people-create").hidden=mode==="direct";$("people-create").textContent=mode==="group"?"Create group":"Add selected people";
-  $("people-title").textContent=mode==="group"?"Create a group":mode==="add"?"Add people":"Start a conversation";
-  $("people-desc").textContent=mode==="group"?"Name your group and choose who to invite.":"Find someone by their Gather username.";
-  status("people-status","");await loadRequests();$("people-search").focus();
+  $("people-create").hidden=mode==="direct"||mode==="friend";$("people-create").textContent=mode==="group"?"Create group":"Add selected people";
+  $("people-title").textContent=mode==="group"?"Create a group":mode==="add"?"Add people":mode==="friend"?"Find friends":"Start a conversation";
+  $("people-desc").textContent=mode==="group"?"Name your group and choose who to invite.":mode==="friend"?"Send a friend request. They must accept before you become friends, and then private messaging opens automatically.":"Find someone by their Gather username.";
+  status("people-status","");await loadRequests();if(mode==="friend")await loadFriends();$("people-search").focus();
 }
 async function searchPeople(){
   const term=$("people-search").value.trim().toLowerCase().replace(/[^a-z0-9_]/g,""),box=$("people-results");box.replaceChildren();
@@ -269,11 +382,23 @@ async function searchPeople(){
   if(!people.length){box.append(el("p","muted tiny","No matching members found."));return;}
   people.forEach(p=>{
     const b=el("button","person");b.type="button";b.append(avatar(p.display_name));
-    const copy=el("div","person-copy"),sent=S.requests.some(x=>x.sender_id===S.user.id&&x.recipient_id===p.id&&x.status==="pending");
-    copy.append(el("strong","",p.display_name),el("small","",sent?"@"+p.username+" · Request sent":"@"+p.username));b.append(copy);
-    if(S.picker!=="direct")b.append(el("span","",S.selected.has(p.id)?"✓":"＋"));
-    if(sent&&S.picker==="direct"){b.disabled=true;b.classList.add("person-disabled");}
-    else b.addEventListener("click",()=>S.picker==="direct"?directChat(p):(S.selected.has(p.id)?S.selected.delete(p.id):S.selected.add(p.id),searchPeople(),status("people-status",S.selected.size+" selected.")));
+    const copy=el("div","person-copy");copy.append(el("strong","",p.display_name));
+    if(S.picker==="friend"){
+      const isFriend=S.friends.some(x=>x.friend_id===p.id);
+      const incoming=S.friendRequests.find(x=>x.sender_id===p.id&&x.recipient_id===S.user.id&&x.status==="pending");
+      const outgoing=S.friendRequests.some(x=>x.sender_id===S.user.id&&x.recipient_id===p.id&&x.status==="pending");
+      copy.append(el("small","",isFriend?"@"+p.username+" · Friends":incoming?"@"+p.username+" · Request received":outgoing?"@"+p.username+" · Request sent":"@"+p.username+" · Add friend"));
+      b.append(copy);
+      if(isFriend||outgoing){b.disabled=true;b.classList.add("person-disabled");}
+      else if(incoming)b.addEventListener("click",()=>respondToFriendRequest(incoming.id,true));
+      else b.addEventListener("click",()=>sendFriendRequest(p));
+    }else{
+      const sent=S.requests.some(x=>x.sender_id===S.user.id&&x.recipient_id===p.id&&x.status==="pending");
+      copy.append(el("small","",sent?"@"+p.username+" · Request sent":"@"+p.username));b.append(copy);
+      if(S.picker!=="direct")b.append(el("span","",S.selected.has(p.id)?"✓":"＋"));
+      if(sent&&S.picker==="direct"){b.disabled=true;b.classList.add("person-disabled");}
+      else b.addEventListener("click",()=>S.picker==="direct"?directChat(p):(S.selected.has(p.id)?S.selected.delete(p.id):S.selected.add(p.id),searchPeople(),status("people-status",S.selected.size+" selected.")));
+    }
     box.append(b);
   });
 }
@@ -317,7 +442,7 @@ async function saveProfile(e){
   S.profile=r.data;S.profiles[S.user.id]=r.data;$("user-name").textContent=r.data.display_name;$("user-initial").textContent=initials(r.data.display_name);
   $("profile-modal").hidden=true;await loadChats();if(S.active)await loadMessages(S.active);toast("Profile updated.");
 }
-function closeModals(){ $("people-modal").hidden=true;$("profile-modal").hidden=true;$("requests-modal").hidden=true; }
+function closeModals(){ $("people-modal").hidden=true;$("profile-modal").hidden=true;$("requests-modal").hidden=true;$("friends-modal").hidden=true; }
 function goHome(){
   closeModals();S.active=null;S.messages=[];S.directStatus=null;
   if(S.channel){db.removeChannel(S.channel);S.channel=null;}
@@ -336,7 +461,7 @@ function wire(){
   $("new-private-chat").addEventListener("click",()=>openPeople("direct"));$("new-group-chat").addEventListener("click",()=>openPeople("group"));
   $("retry-load-chats").addEventListener("click",()=>{if(S.user&&!S.loading)signedIn(S.user,true);});
   $("empty-private").addEventListener("click",()=>openPeople("direct"));$("empty-group").addEventListener("click",()=>openPeople("group"));
-  $("add-people").addEventListener("click",()=>openPeople("add"));$("requests-open").addEventListener("click",openRequests);$("block-user").addEventListener("click",toggleBlock);
+  $("add-people").addEventListener("click",()=>openPeople("add"));$("requests-open").addEventListener("click",openRequests);$("friends-open").addEventListener("click",openFriends);$("friends-find").addEventListener("click",()=>{$("friends-modal").hidden=true;openPeople("friend");});$("block-user").addEventListener("click",toggleBlock);
   $("people-search").addEventListener("input",()=>{clearTimeout(S.timer);S.timer=setTimeout(searchPeople,220);});$("people-create").addEventListener("click",createGroupOrAdd);
   $("home-open").addEventListener("click",goHome);
   $("filter").addEventListener("input",renderChats);$("profile-open").addEventListener("click",openProfile);$("profile-form").addEventListener("submit",saveProfile);
@@ -346,7 +471,7 @@ function wire(){
   $("back").addEventListener("click",()=>{S.active=null;$("layout").classList.remove("show-chat");renderChats();renderActive();if(S.channel){db.removeChannel(S.channel);S.channel=null;}});
   $("signout").addEventListener("click",async()=>{const r=await db.auth.signOut();if(r.error)toast(r.error.message);else closeModals();});
   document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",closeModals));
-  ["people-modal","profile-modal","requests-modal"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target===$(id))closeModals();}));
+  ["people-modal","profile-modal","requests-modal","friends-modal"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target===$(id))closeModals();}));
   document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModals();});
 }
 async function boot(){
