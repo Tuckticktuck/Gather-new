@@ -4,7 +4,7 @@ const URL = "https://xrwldphmeafiakittcof.supabase.co";
 const KEY = "sb_publishable_5Gws8f_CODwrHigG2U6Veg_bTRrBoeA";
 const $ = (id) => document.getElementById(id);
 const db = window.supabase.createClient(URL, KEY);
-const S = { user:null, profile:null, profiles:{}, chats:[], requests:[], directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, timer:null };
+const S = { user:null, profile:null, profiles:{}, chats:[], requests:[], requestChannel:null, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, timer:null };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function status(id, text, kind) { const n=$(id); n.textContent=text||""; n.className="status"+(kind?" "+kind:""); }
@@ -14,6 +14,7 @@ function avatar(name) { return el("span","avatar",initials(name)); }
 function dateLabel(s) { if(!s)return ""; const d=new Date(s), now=new Date(); return d.toDateString()===now.toDateString()?d.toLocaleTimeString([],{hour:"numeric",minute:"2-digit"}):d.toLocaleDateString([],{month:"short",day:"numeric"}); }
 function showAuth() {
   if(S.channel){db.removeChannel(S.channel);S.channel=null;}
+  if(S.requestChannel){db.removeChannel(S.requestChannel);S.requestChannel=null;}
   S.user=null;S.profile=null;S.profiles={};S.chats=[];S.requests=[];S.directStatus=null;S.active=null;S.messages=[];
   $("auth").hidden=false;$("app").hidden=true;
 }
@@ -39,7 +40,7 @@ async function ensureProfile(user){
 async function signedIn(user){
   if(!user||S.loading===user.id)return; if(S.user&&S.user.id===user.id&&S.profile)return;
   S.loading=user.id;S.user=user;showApp();
-  try{S.profile=await ensureProfile(user);$("user-initial").textContent=initials(S.profile.display_name);$("user-name").textContent=S.profile.display_name;await loadChats();}
+  try{S.profile=await ensureProfile(user);$("user-initial").textContent=initials(S.profile.display_name);$("user-name").textContent=S.profile.display_name;subscribeRequests();await loadChats();}
   catch(e){toast("Profile could not be loaded: "+e.message);}
   finally{S.loading=null;}
 }
@@ -84,6 +85,22 @@ async function loadRequests(){
     p.data.forEach(x=>S.profiles[x.id]=x);
   }
   renderRequests();
+}
+function subscribeRequests(){
+  if(S.requestChannel){db.removeChannel(S.requestChannel);S.requestChannel=null;}
+  if(!S.user)return;
+  const uid=S.user.id;
+  S.requestChannel=db.channel("requests-"+uid)
+    .on("postgres_changes",{event:"INSERT",schema:"public",table:"conversation_requests",filter:"recipient_id=eq."+uid},payload=>{
+      loadRequests();toast("You received a new chat request.");
+    })
+    .on("postgres_changes",{event:"UPDATE",schema:"public",table:"conversation_requests",filter:"sender_id=eq."+uid},payload=>{
+      loadRequests();
+      if(payload.new?.status==="accepted"){toast("Your chat request was accepted.");loadChats();}
+      else if(payload.new?.status==="declined")toast("A chat request was declined.");
+    })
+    .on("postgres_changes",{event:"UPDATE",schema:"public",table:"conversation_requests",filter:"recipient_id=eq."+uid},()=>loadRequests())
+    .subscribe();
 }
 function renderRequests(){
   const incoming=$("incoming-requests"),outgoing=$("outgoing-requests");
