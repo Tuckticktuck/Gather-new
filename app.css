@@ -399,3 +399,17 @@ input::placeholder,textarea::placeholder{color:var(--accent-muted)}
 .online-status-setting span{display:grid;gap:4px}
 .online-status-setting strong{color:var(--text);font-size:calc(11px * var(--font-scale,1))}
 .online-status-setting small{color:var(--muted);font-size:calc(9px * var(--font-scale,1));line-height:1.5}
+
+
+/* Home workspace lists: let sections grow around their cards instead of overlapping. */
+.home-workspace>.workspace-folder,
+.home-workspace>.workspace-group-section{
+  flex:0 0 auto;
+  min-height:0;
+  width:100%;
+}
+.home-workspace .workspace-chat-list{
+  max-height:none;
+  min-height:0;
+  overflow:visible;
+}
