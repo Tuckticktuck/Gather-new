@@ -14,7 +14,7 @@ const ACCENTS = {
 };
 const FONT_SCALES = {small:"0.9",normal:"1",large:"1.15"};
 const DEFAULT_PREFERENCES = {accent:"lavender",fontSize:"normal",shareOnlineStatus:true};
-const S = { user:null, profile:null, profiles:{}, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, onlineFriends:new Set(), friendPresenceReady:new Set(), friendPresenceErrors:new Set(), friendPresenceChannels:{}, ownPresenceChannel:null, friendPresenceSyncPromise:null, friendPresenceSyncQueued:false, pendingAvatarData:null, avatarChanged:false, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, presenceChannel:null, presenceReady:false, typingTimer:null, messageReads:{}, hasOlderMessages:false, loadingOlder:false, replyTo:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null };
+const S = { user:null, profile:null, profiles:{}, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, onlineFriends:new Set(), friendPresenceReady:new Set(), friendPresenceErrors:new Set(), friendPresenceChannels:{}, ownPresenceChannel:null, friendPresenceSyncPromise:null, friendPresenceSyncQueued:false, pendingAvatarData:null, avatarChanged:false, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, presenceChannel:null, presenceReady:false, typingTimer:null, messageReads:{}, hasOlderMessages:false, loadingOlder:false, replyTo:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function status(id, text, kind) { const n=$(id); n.textContent=text||""; n.className="status"+(kind?" "+kind:""); }
@@ -144,10 +144,40 @@ function saveReadState(){
   if(!S.user)return;
   try{localStorage.setItem("gather_last_read_"+S.user.id,JSON.stringify(S.lastReadAt));}catch(e){}
 }
+function updateUnreadSummary(){
+  const total=Object.values(S.unreadCounts||{}).reduce((sum,value)=>sum+Number(value||0),0);
+  S.totalUnreadCount=total;
+  const sidebarBadge=$("sidebar-unread-count");
+  if(sidebarBadge){sidebarBadge.textContent=total>99?"99+":String(total);sidebarBadge.hidden=total===0;}
+  const workspaceSummary=$("workspace-unread-summary");
+  if(workspaceSummary){
+    workspaceSummary.textContent=total+" unread "+(total===1?"message":"messages")+" across your conversations";
+    workspaceSummary.hidden=total===0;
+  }
+}
+async function loadUnreadCounts(){
+  if(!S.user)return false;
+  const result=await db.rpc("get_my_unread_counts");
+  if(result.error){console.warn("Unread counts could not be loaded:",result.error.message);S.unreadCountsLoaded=false;updateUnreadSummary();return false;}
+  S.unreadCounts={};
+  (result.data||[]).forEach(row=>{
+    const count=Number(row.unread_count||0);
+    if(row.conversation_id&&count>0)S.unreadCounts[row.conversation_id]=count;
+  });
+  S.unreadCountsLoaded=true;updateUnreadSummary();return true;
+}
 function chatHasUnread(chat){
-  if(!chat?.last||chat.last.sender_id===S.user?.id)return false;
+  if(!chat)return false;
+  if(S.unreadCountsLoaded)return Number(S.unreadCounts[chat.id]||0)>0;
+  if(!chat.last||chat.last.sender_id===S.user?.id)return false;
   const lastAt=new Date(chat.last.created_at).getTime();
   return Number.isFinite(lastAt)&&lastAt>Number(S.lastReadAt[chat.id]||0);
+}
+async function markConversationRead(chatId){
+  if(!S.user||!chatId)return false;
+  const result=await db.rpc("mark_conversation_read",{p_conversation_id:chatId});
+  if(result.error){console.warn("Conversation read status could not be saved:",result.error.message);return false;}
+  await loadUnreadCounts();renderChats();return true;
 }
 function markChatRead(chatId,through=null){
   if(!chatId)return;
@@ -159,6 +189,7 @@ function markChatRead(chatId,through=null){
   saveReadState();
 }
 function showAuth() {
+  $("password-recovery-modal").hidden=true;S.passwordRecovery=false;
   stopFriendPresence();
   if(S.channel){db.removeChannel(S.channel);S.channel=null;}
   if(S.requestChannel){db.removeChannel(S.requestChannel);S.requestChannel=null;}
@@ -176,8 +207,44 @@ function authMode(mode){
   $("auth-title").textContent=signUp?"Make yourself at home.":"Welcome back.";
   $("auth-subtitle").textContent=signUp?"Create an account to start talking.":"Sign in to see your conversations.";
   $("auth-password-hint").textContent=signUp?"New passwords must be 12+ characters with uppercase and lowercase letters, a number, and a symbol.":"Sign in with your existing password. New Gather passwords must meet the stronger rules.";
-  $("auth-submit").textContent=signUp?"Create account":"Sign in";$("password").autocomplete=signUp?"new-password":"current-password";
+  $("auth-submit").textContent=signUp?"Create account":"Sign in";$("password").autocomplete=signUp?"new-password":"current-password";$("forgot-password").hidden=signUp;
   status("auth-status","");
+}
+function openPasswordRecovery(){
+  S.passwordRecovery=true;
+  $("recovery-new-password").value="";$("recovery-confirm-password").value="";
+  status("recovery-password-status","");
+  $("password-recovery-modal").hidden=false;
+  try{history.replaceState({},document.title,location.pathname+location.search);}catch(e){}
+}
+async function requestPasswordReset(){
+  const email=$("email").value.trim();
+  if(!email||!$("email").checkValidity()){
+    status("auth-status","Enter the email address on your Gather account first.","error");
+    $("email").focus();return;
+  }
+  const button=$("forgot-password");button.disabled=true;
+  status("auth-status","Sending password-reset email…");
+  const redirectTo=location.origin+location.pathname;
+  const result=await db.auth.resetPasswordForEmail(email,{redirectTo});
+  button.disabled=false;
+  if(result.error){status("auth-status","Password-reset email could not be sent: "+result.error.message,"error");return;}
+  status("auth-status","If a Gather account uses that email, password-reset instructions will arrive in its inbox. Check your spam folder too.","success");
+}
+async function completePasswordRecovery(e){
+  e.preventDefault();
+  const password=$("recovery-new-password").value,confirmation=$("recovery-confirm-password").value;
+  const weak=strongPasswordError(password);
+  if(weak){status("recovery-password-status",weak,"error");return;}
+  if(password!==confirmation){status("recovery-password-status","The passwords do not match.","error");return;}
+  const button=$("recovery-password-save");button.disabled=true;
+  status("recovery-password-status","Updating your password…");
+  const result=await db.auth.updateUser({password});
+  button.disabled=false;
+  if(result.error){status("recovery-password-status","Password could not be updated: "+result.error.message,"error");return;}
+  S.passwordRecovery=false;$("password-recovery-modal").hidden=true;
+  $("recovery-new-password").value="";$("recovery-confirm-password").value="";
+  toast("Your Gather password has been updated.");
 }
 async function ensureProfile(user){
   const found=await db.from("profiles").select("*").eq("id",user.id).maybeSingle();
@@ -235,7 +302,7 @@ async function loadChats(){
   const m=await db.from("conversation_members").select("conversation_id,role,conversations!inner(id,kind,title,description,updated_at)").eq("user_id",S.user.id);
   if(m.error){S.loadError="Chats could not be loaded: "+m.error.message;toast(S.loadError);return false;}
   const rows=m.data||[],ids=[...new Set(rows.map(x=>x.conversation_id))];
-  if(!ids.length){S.chats=[];S.profiles={};renderChats();renderActive();return await loadRequests();}
+  if(!ids.length){S.chats=[];S.profiles={};await loadUnreadCounts();renderChats();renderActive();return await loadRequests();}
   const [members,msgs,groupPics]=await Promise.all([
     db.from("conversation_members").select("conversation_id,user_id,role").in("conversation_id",ids),
     db.from("messages").select("id,conversation_id,sender_id,body,created_at").in("conversation_id",ids).order("created_at",{ascending:false}).limit(1000),
@@ -265,6 +332,7 @@ async function loadChats(){
     }
   });
   if(readStateChanged)saveReadState();
+  await loadUnreadCounts();
   renderChats();renderActive();return await loadRequests();
 }
 async function loadRequests(){
@@ -432,9 +500,14 @@ function subscribeMessages(){
       if(S.active===chat.id){
         const [withReply]=await attachReplyPreviews([message],chat.id);
         if(!S.messages.some(x=>x.id===message.id)){S.messages.push(withReply);S.messages.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at)||a.id.localeCompare(b.id));renderMessages();}
-        if(message.sender_id!==uid){markChatRead(chat.id,message.created_at);await markMessagesRead(chat.id,[message]);}
+        if(message.sender_id!==uid){markChatRead(chat.id,message.created_at);await markConversationRead(chat.id);}
+      }else{
+        await loadUnreadCounts();
       }
       S.chats.sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at));renderChats();
+    })
+    .on("postgres_changes",{event:"INSERT",schema:"public",table:"message_reads",filter:"user_id=eq."+uid},async()=>{
+      await loadUnreadCounts();renderChats();
     })
     .on("postgres_changes",{event:"*",schema:"public",table:"group_avatars"},payload=>{
       const conversationId=payload.new?.conversation_id||payload.old?.conversation_id;
@@ -567,7 +640,7 @@ function renderChatSection(kind,listId,countId,term,sourceChats=null){
     const row=el("div","chat-row");
     const peer=c.members.find(m=>m.user_id!==S.user.id),peerProfile=peer&&S.profiles[peer.user_id];
     const avatarImage=c.kind==="group"?c.avatar_data:peerProfile?.avatar_data;
-    const unread=chatHasUnread(c);
+    const unreadCount=Number(S.unreadCounts[c.id]||0),unread=unreadCount>0||chatHasUnread(c);
     const b=el("button","chat-item"+(c.id===S.active?" active":"")+(unread?" has-unread":""));b.type="button";b.append(avatar(chatTitle(c),avatarImage));
     const copy=el("div","chat-copy");
     copy.append(el("strong","",chatTitle(c)));
@@ -575,7 +648,7 @@ function renderChatSection(kind,listId,countId,term,sourceChats=null){
     if(c.last&&c.last.sender_id===S.user.id)preview="You: "+preview;
     else if(c.kind==="group"&&c.last)preview=(S.profiles[c.last.sender_id]?.display_name||"Member")+": "+preview;
     copy.append(el("span","",preview));
-    if(unread){const badge=el("small","unread-badge","New");badge.setAttribute("aria-label","Unread message");copy.append(badge);}
+    if(unread){const badge=el("small","unread-count-badge",unreadCount>0?(unreadCount>99?"99+":String(unreadCount)):"New");badge.setAttribute("aria-label",unreadCount>0?unreadCount+" unread messages":"Unread message");copy.append(badge);}
     b.append(copy,el("small","chat-time",dateLabel(c.last?.created_at||c.updated_at)));
     b.addEventListener("click",()=>openChat(c.id));
     const del=el("button","conversation-delete","Delete");del.type="button";del.title="Move all messages in this conversation to Deleted messages";
@@ -701,7 +774,8 @@ function renderActive(){
   if(!c)return;
   $("chat-title").textContent=chatTitle(c);$("chat-subtitle").textContent=chatSub(c);
   const me=c.members.find(x=>x.user_id===S.user.id);
-  $("add-people").hidden=!(c.kind==="group"&&me?.role==="owner");
+  const canManageGroup=c.kind==="group"&&(me?.role==="owner"||me?.role==="moderator");
+  $("add-people").hidden=!canManageGroup;
   $("edit-group-photo").hidden=!(c.kind==="group"&&me?.role==="owner");
   $("group-settings-open").hidden=c.kind!=="group";
   $("group-chat-actions").hidden=c.kind!=="group";
@@ -862,6 +936,7 @@ async function loadOlderMessages(){
   S.messages=[...withReplies.filter(m=>!existing.has(m.id)).reverse(),...S.messages];
   await loadMessageReads(conversationId,withReplies.map(m=>m.id));
   await markMessagesRead(conversationId,withReplies);
+  await loadUnreadCounts();renderChats();
   renderMessages(true);
 }
 async function openChat(id){
@@ -872,7 +947,7 @@ async function openChat(id){
   $("layout").classList.remove("show-home");$("layout").classList.add("show-chat");renderActive();
   await refreshDirectStatus();await loadMessages(id);
   if(S.active!==id)return;
-  subscribeMessageReads(id);await subscribeChatPresence(id);
+  subscribeMessageReads(id);await markConversationRead(id);await subscribeChatPresence(id);
 }
 async function loadMessages(id){
   const r=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,reply_to_id").eq("conversation_id",id).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
@@ -1173,33 +1248,56 @@ function openProfile(){
 function openGroupSettings(){
   const chat=S.chats.find(x=>x.id===S.active);
   if(!chat||chat.kind!=="group")return;
-  const owner=chat.members.some(x=>x.user_id===S.user.id&&x.role==="owner");
+  const myRole=chat.members.find(x=>x.user_id===S.user.id)?.role;
+  const owner=myRole==="owner",canManage=owner||myRole==="moderator";
   $("group-settings-title").value=chat.title||"";
   $("group-settings-description").value=chat.description||"";
-  $("group-settings-title").disabled=!owner;
-  $("group-settings-description").disabled=!owner;
-  $("group-settings-save").hidden=!owner;
-  $("group-settings-note").textContent=owner?"Only group owners can edit group details and manage members.":"You can view group details and members. Only the owner can make changes.";
+  $("group-settings-title").disabled=!canManage;
+  $("group-settings-description").disabled=!canManage;
+  $("group-settings-save").hidden=!canManage;
+  $("group-settings-note").textContent=owner
+    ?"Owners can edit group details, manage members, assign moderators, and transfer ownership."
+    :canManage
+      ?"Moderators can edit group details, add people, and remove regular members. Only the owner can assign moderators or transfer ownership."
+      :"You can view group details and members. Owners and moderators manage this group.";
   status("group-settings-status","");
-  renderGroupSettingsMembers(chat,owner);
+  renderGroupSettingsMembers(chat,owner,canManage);
   $("group-settings-modal").hidden=false;
 }
-function renderGroupSettingsMembers(chat,owner){
+function renderGroupSettingsMembers(chat,owner,canManage){
   const list=$("group-settings-members");list.replaceChildren();
-  chat.members.slice().sort((a,b)=>a.role==="owner"?-1:b.role==="owner"?1:(S.profiles[a.user_id]?.display_name||"").localeCompare(S.profiles[b.user_id]?.display_name||"")).forEach(member=>{
+  chat.members.slice().sort((a,b)=>{
+    const rank={owner:0,moderator:1,member:2};
+    return (rank[a.role]??3)-(rank[b.role]??3)||(S.profiles[a.user_id]?.display_name||"").localeCompare(S.profiles[b.user_id]?.display_name||"");
+  }).forEach(member=>{
     const profile=S.profiles[member.user_id]||{display_name:"Gather member",username:"member"};
+    const roleLabel=member.role==="owner"?"Owner":member.role==="moderator"?"Moderator":"Member";
     const row=el("div","group-member-row");row.append(avatar(profile.display_name,profile.avatar_data));
-    const details=el("div","group-member-copy");details.append(el("strong","",profile.display_name),el("small","", "@"+profile.username+(member.role==="owner"?" · Owner":"")));
+    const details=el("div","group-member-copy");details.append(el("strong","",profile.display_name),el("small","", "@"+profile.username+" · "+roleLabel));
     row.append(details);
-    if(owner&&member.role!=="owner"){
+    if(canManage&&member.user_id!==S.user.id&&member.role!=="owner"&&(owner||member.role==="member")){
       const actions=el("div","group-member-actions");
-      const promote=el("button","outline","Make owner");promote.type="button";promote.addEventListener("click",()=>transferGroupOwnership(member.user_id));
+      if(owner){
+        const roleButton=el("button","outline",member.role==="moderator"?"Demote":"Make moderator");
+        roleButton.type="button";
+        roleButton.addEventListener("click",()=>setGroupMemberRole(member.user_id,member.role==="moderator"?"member":"moderator"));
+        const promote=el("button","outline","Make owner");promote.type="button";promote.addEventListener("click",()=>transferGroupOwnership(member.user_id));
+        actions.append(roleButton,promote);
+      }
       const remove=el("button","outline group-remove","Remove");remove.type="button";remove.addEventListener("click",()=>removeGroupMember(member.user_id));
-      actions.append(promote,remove);row.append(actions);
+      actions.append(remove);row.append(actions);
     }
     list.append(row);
   });
   if(!chat.members.length)list.append(el("p","muted tiny","No members found."));
+}
+async function setGroupMemberRole(userId,role){
+  const chat=S.chats.find(x=>x.id===S.active);
+  if(!chat||chat.kind!=="group")return;
+  const result=await db.rpc("set_group_member_role",{p_conversation_id:chat.id,p_user_id:userId,p_role:role});
+  if(result.error){toast("Member role could not be changed: "+result.error.message);return;}
+  await loadChats();openGroupSettings();
+  toast(role==="moderator"?"Moderator added.":"Moderator role removed.");
 }
 async function saveGroupSettings(){
   const chat=S.chats.find(x=>x.id===S.active);
@@ -1362,6 +1460,9 @@ function goHome(){
 }
 function wire(){
   document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>authMode(b.dataset.mode)));
+  $("forgot-password").addEventListener("click",requestPasswordReset);
+  $("recovery-password-form").addEventListener("submit",completePasswordRecovery);
+  $("recovery-cancel").addEventListener("click",async()=>{const result=await db.auth.signOut();if(result.error)status("recovery-password-status",result.error.message,"error");else $("password-recovery-modal").hidden=true;});
   $("auth-form").addEventListener("submit",async e=>{
     e.preventDefault();const email=$("email").value.trim(),password=$("password").value,isNew=S.mode==="signup";$("auth-submit").disabled=true;status("auth-status",isNew?"Creating account…":"Signing in…");
     const weak=isNew?strongPasswordError(password):"";
@@ -1418,7 +1519,11 @@ async function boot(){
   if(!window.supabase?.createClient){status("auth-status","The chat library did not load. Refresh and try again.","error");return;}
   wire();
   loadUIPreferences(DEFAULT_PREFERENCES);
-  db.auth.onAuthStateChange((event,session)=>{setTimeout(()=>{if(session?.user)signedIn(session.user);else if(event==="SIGNED_OUT")showAuth();},0);});
+  db.auth.onAuthStateChange((event,session)=>{setTimeout(()=>{
+    if(event==="PASSWORD_RECOVERY"&&session?.user){signedIn(session.user);openPasswordRecovery();}
+    else if(session?.user)signedIn(session.user);
+    else if(event==="SIGNED_OUT")showAuth();
+  },0);});
   const session=await db.auth.getSession();if(session.error){status("auth-status",session.error.message,"error");return;}
   if(session.data.session?.user)await signedIn(session.data.session.user);else showAuth();
 }
