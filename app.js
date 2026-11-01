@@ -379,6 +379,11 @@ function subscribeRequests(){
   if(!S.user)return;
   const uid=S.user.id;
   S.requestChannel=db.channel("requests-"+uid)
+    .on("postgres_changes",{event:"UPDATE",schema:"public",table:"profiles",filter:"id=eq."+uid},payload=>{
+      const next=payload.new?.preferences;if(!next)return;
+      const changed=next.accent!==S.preferences.accent||next.fontSize!==S.preferences.fontSize||next.shareOnlineStatus!==S.preferences.shareOnlineStatus;
+      if(changed){S.profile.preferences=next;loadUIPreferences(next);syncFriendPresence();}
+    })
     .on("postgres_changes",{event:"INSERT",schema:"public",table:"conversation_requests",filter:"recipient_id=eq."+uid},payload=>{
       loadRequests();toast("You received a new chat request.");
     })
