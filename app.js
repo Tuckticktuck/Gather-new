@@ -531,9 +531,9 @@ async function openChat(id){
   }).subscribe();
 }
 async function loadMessages(id){
-  const r=await db.from("messages").select("id,conversation_id,sender_id,body,created_at").eq("conversation_id",id).order("created_at",{ascending:true}).limit(300);
+  const r=await db.from("messages").select("id,conversation_id,sender_id,body,created_at").eq("conversation_id",id).order("created_at",{ascending:false}).limit(300);
   if(r.error){toast("Messages could not be loaded: "+r.error.message);return;}
-  if(S.active!==id)return;S.messages=(r.data||[]).filter(m=>!S.deletedMessageIds.has(m.id));renderMessages();
+  if(S.active!==id)return;S.messages=(r.data||[]).filter(m=>!S.deletedMessageIds.has(m.id)).reverse();renderMessages();
 }
 function renderMessages(){
   const list=$("messages");list.replaceChildren();
