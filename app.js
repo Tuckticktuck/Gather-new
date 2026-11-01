@@ -625,6 +625,7 @@ function renderActive(){
   $("add-people").hidden=!(c.kind==="group"&&me?.role==="owner");
   $("edit-group-photo").hidden=!(c.kind==="group"&&me?.role==="owner");
   $("group-settings-open").hidden=c.kind!=="group";
+  $("group-chat-actions").hidden=c.kind!=="group";
   renderDirectControls();renderChats();
 }
 function renderDirectControls(){
