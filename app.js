@@ -1125,17 +1125,50 @@ function handleMessageImageFile(){
   const input=$("message-image-file"),file=input.files?.[0];if(!file)return;
   const allowed=["image/jpeg","image/png","image/webp","image/gif"];
   if(!allowed.includes(file.type)){clearPendingMessageImage();toast("Choose a JPG, PNG, WebP, or GIF image.");return;}
-  if(file.size>5*1024*1024){clearPendingMessageImage();toast("Choose an image smaller than 5 MB.");return;}
+  if(file.size>50*1024*1024){clearPendingMessageImage();toast("Choose an image smaller than 50 MB.");return;}
   if(S.pendingImageUrl)window.URL.revokeObjectURL(S.pendingImageUrl);
   S.pendingImageFile=file;S.pendingImageUrl=window.URL.createObjectURL(file);
   const preview=$("message-image-preview");preview.replaceChildren();
   const image=el("img","message-image-thumb");image.src=S.pendingImageUrl;image.alt="Selected image preview";
-  const details=el("div","message-image-details");details.append(el("strong","","Image ready to send"),el("small","",file.name));
+  const details=el("div","message-image-details");details.append(el("strong","","Image ready to send"),el("small","",file.name),el("small","message-image-progress","Ready to send"));
   const remove=el("button","message-image-remove","Remove");remove.type="button";remove.addEventListener("click",clearPendingMessageImage);
   preview.append(image,details,remove);preview.hidden=false;
 }
 function imageFileExtension(file){
   return {"image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/gif":"gif"}[file.type]||null;
+}
+async function uploadMessageImage(file,path){
+  if(!window.tus?.Upload)throw new Error("The large-image upload service did not load. Refresh Gather and try again.");
+  const sessionResult=await db.auth.getSession();
+  const token=sessionResult.data?.session?.access_token;
+  if(sessionResult.error||!token)throw new Error("Your Gather session expired. Please sign in again.");
+  const endpoint=URL.replace(".supabase.co",".storage.supabase.co")+"/storage/v1/upload/resumable";
+  await new Promise((resolve,reject)=>{
+    const upload=new window.tus.Upload(file,{
+      endpoint,
+      retryDelays:[0,3000,5000,10000,20000],
+      headers:{authorization:"Bearer "+token},
+      metadata:{
+        bucketName:"gather-message-images",
+        objectName:path,
+        contentType:file.type,
+        cacheControl:"3600"
+      },
+      uploadDataDuringCreation:true,
+      removeFingerprintOnSuccess:true,
+      chunkSize:6*1024*1024,
+      onError:error=>reject(error),
+      onProgress:(uploaded,total)=>{
+        const label=$("message-image-preview")?.querySelector(".message-image-progress");
+        if(label){
+          const percent=total?Math.min(100,Math.floor(uploaded/total*100)):0;
+          label.textContent="Uploading image · "+percent+"%";
+        }
+      },
+      onSuccess:()=>resolve()
+    });
+    upload.start();
+  });
 }
 async function sendMessage(e){
   e.preventDefault();
@@ -1147,11 +1180,11 @@ async function sendMessage(e){
   let attachmentPath=null;
   if(file){
     const extension=imageFileExtension(file);
-    if(!extension||file.size>5*1024*1024){send.disabled=false;toast("That image is not supported or is larger than 5 MB.");return;}
+    if(!extension||file.size>50*1024*1024){send.disabled=false;toast("That image is not supported or is larger than 50 MB.");return;}
     const unique=window.crypto?.randomUUID?window.crypto.randomUUID():(Date.now().toString(36)+"_"+Math.random().toString(36).slice(2));
     attachmentPath=conversationId+"/"+S.user.id+"_"+unique+"."+extension;
-    const upload=await db.storage.from("gather-message-images").upload(attachmentPath,file,{cacheControl:"3600",contentType:file.type,upsert:false});
-    if(upload.error){send.disabled=false;toast("Image upload failed: "+upload.error.message);return;}
+    try{await uploadMessageImage(file,attachmentPath);}
+    catch(error){send.disabled=false;toast("Image upload failed: "+(error?.message||"Please try again."));return;}
   }
   const r=await db.from("messages").insert({conversation_id:conversationId,sender_id:S.user.id,body,attachment_path:attachmentPath,reply_to_id:reply?.id||null}).select("id,conversation_id,sender_id,body,created_at,reply_to_id,attachment_path").single();
   if(r.error){
