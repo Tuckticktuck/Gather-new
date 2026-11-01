@@ -7,9 +7,9 @@
 <meta name="description" content="Private direct and group conversations.">
 <title>Gather — Private Chat</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="app.css?v=20261031-6">
+<link rel="stylesheet" href="app.css?v=20261101-1">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
-<script defer src="app.js?v=20261031-6"></script>
+<script defer src="app.js?v=20261101-1"></script>
 </head>
 <body>
 <section id="auth" class="auth-shell">
@@ -37,7 +37,10 @@
       <div class="brand"><span class="brand-icon">g</span><span>gather</span></div>
       <button id="home-open" class="home-button" type="button" aria-label="Return to home" title="Return to home"><span class="home-glyph" aria-hidden="true">⌂</span><span>Home</span></button>
     </div>
-    <button id="profile-open" class="profile-pill"><span id="user-initial" class="avatar">?</span><span id="user-name">Account</span><span>⌄</span></button>
+    <div class="topbar-actions">
+      <button id="settings-open" class="home-button" type="button" aria-label="Open settings"><span class="home-glyph" aria-hidden="true">⚙</span><span>Settings</span></button>
+      <button id="profile-open" class="profile-pill"><span id="user-initial" class="avatar">?</span><span id="user-name">Account</span><span>⌄</span></button>
+    </div>
   </header>
   <div id="layout" class="layout">
     <aside class="sidebar">
@@ -52,42 +55,45 @@
       </div>
       <button id="friends-open" class="requests-button" type="button">Friends <span id="friends-count">0</span></button>
       <button id="requests-open" class="requests-button" type="button">Chat requests <span id="requests-count">0</span></button>
-      <input id="filter" class="search" type="search" placeholder="Search conversations">
-      <nav class="folder-tabs" role="tablist" aria-label="Message folders">
-        <button class="folder-tab active" type="button" role="tab" aria-selected="true" data-folder="friends">Friends</button>
-        <button class="folder-tab" type="button" role="tab" aria-selected="false" data-folder="nonfriends">Non-friends</button>
-        <button class="folder-tab" type="button" role="tab" aria-selected="false" data-folder="blocked">Blocked</button>
-        <button class="folder-tab" type="button" role="tab" aria-selected="false" data-folder="deleted">Deleted messages</button>
-      </nav>
-      <section id="private-folder-panel" class="folder-panel">
-        <div class="folder-panel-heading"><strong id="private-chat-heading">Friends</strong><span id="private-chat-count" class="section-count">0</span></div>
-        <div id="private-chat-list" class="chat-list"><p class="muted tiny">Your conversations will appear here.</p></div>
-      </section>
-      <section id="blocked-panel" class="folder-panel" hidden>
-        <p class="folder-panel-note">People you have blocked. You can unblock them here.</p>
-        <div class="folder-panel-heading"><strong>Blocked members</strong><span id="blocked-count" class="section-count">0</span></div>
-        <div id="blocked-list" class="chat-list"><p class="muted tiny">You have not blocked anyone.</p></div>
-      </section>
-      <section id="deleted-panel" class="folder-panel" hidden>
-        <p class="folder-panel-note">Messages you delete are hidden only from your view. Restore them to put them back in the conversation.</p>
-        <div class="folder-panel-heading"><strong>Deleted messages</strong><span id="deleted-count" class="section-count">0</span></div>
-        <div id="deleted-list" class="chat-list"><p class="muted tiny">No deleted messages.</p></div>
-      </section>
-      <details class="chat-section" open>
-        <summary><span>Group chats</span><span id="group-chat-count" class="section-count">0</span></summary>
-        <div id="group-chat-list" class="chat-list"><p class="muted tiny">Your group chats will appear here.</p></div>
-      </details>
+      <p class="sidebar-hint">Your folders and conversations are shown in the main workspace.</p>
       <p class="privacy">✦ Only members of a chat can read its messages.</p>
     </aside>
     <main class="main">
-      <section id="empty" class="empty">
-        <div class="empty-mark">g</div><p class="eyebrow">A LITTLE MORE CONNECTED</p>
-        <h2>Your conversations, all in one place.</h2>
-        <p class="muted">Choose a chat, start a private conversation with a request, or create a group.</p>
-        <div class="empty-actions">
-          <button id="empty-private" class="primary" type="button">＋ New private message</button>
-          <button id="empty-group" class="secondary-action" type="button">＋ Create group chat</button>
-        </div>
+      <section id="empty" class="home-workspace">
+        <header class="workspace-header">
+          <div><p class="eyebrow">YOUR SPACE</p><h1>Your conversations</h1><p class="muted workspace-subtitle">Find a conversation, manage your connections, or pick up where you left off.</p></div>
+          <div class="workspace-actions">
+            <button id="empty-private" class="primary" type="button">＋ New private message</button>
+            <button id="empty-group" class="secondary-action" type="button">＋ Create group chat</button>
+            <button id="home-friends-open" class="secondary-action" type="button">Friends</button>
+            <button id="home-requests-open" class="secondary-action" type="button">Chat requests</button>
+          </div>
+        </header>
+        <label class="workspace-search">Search conversations<input id="filter" class="search" type="search" placeholder="Search by name or message"></label>
+        <nav class="folder-tabs workspace-tabs" role="tablist" aria-label="Message folders">
+          <button class="folder-tab active" type="button" role="tab" aria-selected="true" data-folder="friends">Friends</button>
+          <button class="folder-tab" type="button" role="tab" aria-selected="false" data-folder="nonfriends">Non-friends</button>
+          <button class="folder-tab" type="button" role="tab" aria-selected="false" data-folder="blocked">Blocked</button>
+          <button class="folder-tab" type="button" role="tab" aria-selected="false" data-folder="deleted">Deleted messages</button>
+        </nav>
+        <section id="private-folder-panel" class="folder-panel workspace-folder">
+          <div class="folder-panel-heading"><strong id="private-chat-heading">Friends</strong><span id="private-chat-count" class="section-count">0</span></div>
+          <div id="private-chat-list" class="workspace-chat-list"><p class="muted tiny">Your conversations will appear here.</p></div>
+        </section>
+        <section id="blocked-panel" class="folder-panel workspace-folder" hidden>
+          <p class="folder-panel-note">People you have blocked. You can open their chat history or unblock them here.</p>
+          <div class="folder-panel-heading"><strong>Blocked members</strong><span id="blocked-count" class="section-count">0</span></div>
+          <div id="blocked-list" class="workspace-chat-list"><p class="muted tiny">You have not blocked anyone.</p></div>
+        </section>
+        <section id="deleted-panel" class="folder-panel workspace-folder" hidden>
+          <p class="folder-panel-note">Messages you delete are hidden only from your view. Restore them to put them back in the conversation.</p>
+          <div class="folder-panel-heading"><strong>Deleted messages</strong><span id="deleted-count" class="section-count">0</span></div>
+          <div id="deleted-list" class="workspace-chat-list"><p class="muted tiny">No deleted messages.</p></div>
+        </section>
+        <section class="workspace-group-section">
+          <div class="folder-panel-heading"><strong>Group chats</strong><span id="group-chat-count" class="section-count">0</span></div>
+          <div id="group-chat-list" class="workspace-chat-list"><p class="muted tiny">Your group chats will appear here.</p></div>
+        </section>
       </section>
       <section id="chat" class="chat" hidden>
         <header class="chat-head"><button id="back" class="back" aria-label="Back">←</button><span id="chat-avatar" class="avatar">?</span><div class="chat-title"><strong id="chat-title"></strong><small id="chat-subtitle"></small></div><button id="add-people" class="outline" hidden>＋ Add people</button><button id="block-user" class="outline" hidden>Block</button></header>
@@ -99,6 +105,23 @@
   </div>
 </section>
 
+<div id="settings-modal" class="overlay" hidden><section class="modal settings-modal">
+  <button class="close" data-close aria-label="Close">×</button><p class="eyebrow">MAKE IT YOURS</p><h2>Settings</h2><p class="muted tiny">Choose an accent color and a text size for this browser.</p>
+  <section class="settings-section"><h3>Accent color</h3><div class="accent-choices" role="group" aria-label="Accent color">
+    <button class="accent-choice" type="button" data-accent="lavender" aria-pressed="false"><span class="accent-swatch lavender"></span><span>Lavender</span></button>
+    <button class="accent-choice" type="button" data-accent="blue" aria-pressed="false"><span class="accent-swatch blue"></span><span>Ocean blue</span></button>
+    <button class="accent-choice" type="button" data-accent="mint" aria-pressed="false"><span class="accent-swatch mint"></span><span>Mint</span></button>
+    <button class="accent-choice" type="button" data-accent="rose" aria-pressed="false"><span class="accent-swatch rose"></span><span>Rose</span></button>
+    <button class="accent-choice" type="button" data-accent="amber" aria-pressed="false"><span class="accent-swatch amber"></span><span>Amber</span></button>
+    <button class="accent-choice" type="button" data-accent="teal" aria-pressed="false"><span class="accent-swatch teal"></span><span>Teal</span></button>
+  </div></section>
+  <section class="settings-section"><h3>Font size</h3><div class="font-choices" role="group" aria-label="Font size">
+    <button class="font-choice" type="button" data-font-size="small" aria-pressed="false">Small</button>
+    <button class="font-choice" type="button" data-font-size="normal" aria-pressed="false">Normal</button>
+    <button class="font-choice" type="button" data-font-size="large" aria-pressed="false">Large</button>
+  </div></section>
+  <p id="settings-note" class="tiny muted">These preferences are saved on this device and browser.</p>
+</section></div>
 <div id="people-modal" class="overlay" hidden><section class="modal">
   <button class="close" data-close aria-label="Close">×</button><p class="eyebrow">MAKE A CONNECTION</p><h2 id="people-title">Start a conversation</h2><p id="people-desc" class="muted tiny">Find someone by username. A request is sent first; messages open after they accept.</p>
   <label id="group-wrap" hidden>Group name<input id="group-title" maxlength="60" placeholder="Name your group"></label>
