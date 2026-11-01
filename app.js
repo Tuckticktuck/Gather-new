@@ -426,7 +426,7 @@ async function loadBlocked(){
 }
 async function loadDeletedMessages(){
   if(!S.user)return false;
-  const markers=await db.from("user_deleted_messages").select("message_id,deleted_at").eq("user_id",S.user.id).order("deleted_at",{ascending:false}).limit(250);
+  const markers=await db.from("user_deleted_messages").select("message_id,deleted_at").eq("user_id",S.user.id).order("deleted_at",{ascending:false}).limit(1000);
   if(markers.error){toast("Deleted messages could not be loaded: "+markers.error.message);return false;}
   const ids=(markers.data||[]).map(x=>x.message_id);
   S.deletedMessageIds=new Set(ids);
