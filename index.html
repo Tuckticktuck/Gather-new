@@ -39,6 +39,7 @@
   <div id="layout" class="layout">
     <aside class="sidebar">
       <div class="side-title"><div><p class="eyebrow">YOUR SPACE</p><h2>Messages</h2></div><button id="new-chat" class="plus" aria-label="New conversation">＋</button></div>
+      <button id="requests-open" class="requests-button" type="button">Chat requests <span id="requests-count">0</span></button>
       <input id="filter" class="search" type="search" placeholder="Search conversations">
       <p class="list-label">RECENT <span id="chat-count">0</span></p>
       <div id="chat-list" class="chat-list"><p class="muted tiny">Your conversations will appear here.</p></div>
@@ -52,8 +53,9 @@
         <button id="empty-new" class="primary">Start a conversation ↗</button>
       </section>
       <section id="chat" class="chat" hidden>
-        <header class="chat-head"><button id="back" class="back" aria-label="Back">←</button><span id="chat-avatar" class="avatar">?</span><div class="chat-title"><strong id="chat-title"></strong><small id="chat-subtitle"></small></div><button id="add-people" class="outline" hidden>＋ Add people</button></header>
+        <header class="chat-head"><button id="back" class="back" aria-label="Back">←</button><span id="chat-avatar" class="avatar">?</span><div class="chat-title"><strong id="chat-title"></strong><small id="chat-subtitle"></small></div><button id="add-people" class="outline" hidden>＋ Add people</button><button id="block-user" class="outline" hidden>Block</button></header>
         <div id="messages" class="messages"></div>
+        <p id="chat-notice" class="chat-notice" hidden></p>
         <form id="send-form" class="composer"><textarea id="message" rows="1" maxlength="4000" placeholder="Write a message…" aria-label="Write a message"></textarea><div><small>Enter to send · Shift + Enter for a new line</small><button id="send" type="submit" aria-label="Send">↑</button></div></form>
       </section>
     </main>
@@ -66,6 +68,12 @@
   <label>Find people<input id="people-search" type="search" placeholder="Search username"></label>
   <div id="people-results" class="people-results"><p class="muted tiny">Type at least 2 characters.</p></div>
   <p id="people-status" class="status"></p><button id="people-create" class="primary" hidden>Create group</button>
+</section></div>
+
+<div id="requests-modal" class="overlay" hidden><section class="modal requests-modal">
+  <button class="close" data-close aria-label="Close">×</button><p class="eyebrow">PRIVATE CONNECTIONS</p><h2>Chat requests</h2><p class="muted tiny">Accept a request to open a private conversation. You can ignore or decline requests you do not want to accept.</p>
+  <div class="request-section"><h3>Received</h3><div id="incoming-requests" class="request-list"><p class="muted tiny">No new requests.</p></div></div>
+  <div class="request-section"><h3>Sent</h3><div id="outgoing-requests" class="request-list"><p class="muted tiny">You have no pending sent requests.</p></div></div>
 </section></div>
 
 <div id="profile-modal" class="overlay" hidden><section class="modal">
