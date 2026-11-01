@@ -75,3 +75,16 @@ label{display:grid;gap:7px;margin:13px 0;color:#d0cede;font-size:11px;font-weigh
 .home-glyph{color:var(--accent);font-size:18px;line-height:1}
 @media(max-width:720px){.topbar-left{gap:9px}.home-button{padding:7px 9px;font-size:10px}}
 @media(max-width:380px){.topbar-left{gap:6px}.home-button{gap:4px;padding:7px 7px}.topbar .brand{gap:6px;font-size:16px}.topbar .brand-icon{width:29px;height:29px;font-size:20px}}
+
+/* Friend request and friends-list layout. */
+#friends-find{margin-top:4px}
+#friends-error{margin:6px 0;color:#ef9aa3;overflow-wrap:anywhere}
+#friends-error:empty{display:none}
+#friends-modal .request-section{margin-top:19px}
+#friends-modal .request-item{min-width:0}
+#friends-modal .request-actions{flex:none}
+#friends-modal .request-actions button{white-space:nowrap}
+@media(max-width:720px){
+  #friends-modal .request-actions{width:auto;padding-left:0;margin-left:auto}
+  #friends-modal .request-item{align-items:center;flex-wrap:nowrap}
+}
