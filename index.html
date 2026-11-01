@@ -7,10 +7,10 @@
 <meta name="description" content="Private direct and group conversations.">
 <title>Gather</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="app.css?v=20261101-36">
+<link rel="stylesheet" href="app.css?v=20261101-37">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script defer src="app.js?v=20261101-36"></script>
+<script defer src="app.js?v=20261101-37"></script>
 </head>
 <body>
 <section id="auth" class="auth-shell">
@@ -144,11 +144,28 @@
   
   <section class="settings-section notification-settings-section"><h3>Message pop-ups</h3><p class="tiny muted">Choose how long new-message notifications from other conversations stay visible.</p><div class="notification-mode-choices" role="group" aria-label="Message notification duration"><button class="font-choice" type="button" data-notification-mode="temporary" aria-pressed="true">Temporary · 5 seconds</button><button class="font-choice" type="button" data-notification-mode="persistent" aria-pressed="false">Persistent · until dismissed</button></div></section>
   <section id="security-settings-section" class="settings-section"><h3>Privacy and security</h3><p class="tiny muted">Manage the sessions that are signed in to your Gather account.</p><button id="signout-other-sessions" class="secondary-action" type="button">Sign out other devices</button><p id="session-security-status" class="tiny muted" role="status"></p><button id="request-account-deletion" class="danger-action" type="button">Request account deletion</button><p class="tiny muted">Deletion requests go to Gather support for review. Your account is not removed automatically.</p></section>
-  <section id="feedback-admin-settings-section" class="settings-section" hidden><h3>Administration</h3><p class="tiny muted">Review member feedback and manage replies.</p><button id="feedback-admin-open" class="secondary-action" type="button">Open admin inbox</button><button id="reports-admin-open" class="secondary-action" type="button">Review reports</button></section>
+  <section id="feedback-admin-settings-section" class="settings-section" hidden><h3>Administration</h3><p class="tiny muted">Review member feedback and manage replies.</p><button id="feedback-admin-open" class="secondary-action" type="button">Open admin inbox</button><button id="reports-admin-open" class="secondary-action" type="button">Review reports</button><button id="announcement-send-open" class="primary" type="button">Send announcement to everyone</button></section>
   <p id="settings-note" class="tiny muted">Your preferences are saved to your Gather account and follow you across devices.</p>
 </section></div>
 
 
+
+<div id="announcement-compose-modal" class="overlay" hidden><section class="modal announcement-modal" role="dialog" aria-modal="true" aria-labelledby="announcement-compose-title">
+  <button class="close" data-close aria-label="Close">×</button>
+  <p class="eyebrow">GATHER ADMIN</p><h2 id="announcement-compose-title">Send an announcement</h2>
+  <p class="tiny muted">This message goes to everyone on Gather. Recipients see “Gather Admin” as the sender; your account name and profile are not shown.</p>
+  <form id="announcement-compose-form">
+    <label>Announcement title<input id="announcement-title" maxlength="100" required placeholder="A quick update"></label>
+    <label>Message<textarea id="announcement-body" rows="6" maxlength="2000" required placeholder="Write a clear, neutral message for everyone…"></textarea></label>
+    <p id="announcement-compose-status" class="status" role="status"></p><button id="announcement-publish" class="primary" type="submit">Send to everyone</button>
+  </form>
+</section></div>
+<div id="announcement-view-modal" class="overlay" hidden><section class="modal announcement-view-modal" role="dialog" aria-modal="true" aria-labelledby="announcement-view-title">
+  <button class="close" data-close aria-label="Close">×</button>
+  <div class="announcement-sender"><span class="announcement-admin-mark">◎</span><span><strong>Gather Admin</strong><small>Official announcement</small></span></div>
+  <h2 id="announcement-view-title"></h2><p id="announcement-view-date" class="tiny muted"></p>
+  <div id="announcement-view-body" class="announcement-view-body"></div>
+</section></div>
 <div id="notifications-modal" class="overlay" hidden><section class="modal notifications-modal" role="dialog" aria-modal="true" aria-labelledby="notifications-title">
   <button class="close" data-close aria-label="Close">×</button><p class="eyebrow">YOUR UPDATES</p><h2 id="notifications-title">Notifications</h2>
   <div class="notifications-toolbar"><span id="notifications-summary" class="tiny muted">Your recent activity.</span><button id="notifications-mark-all" class="outline" type="button">Mark all read</button></div>
