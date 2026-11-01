@@ -234,3 +234,42 @@ label{display:grid;gap:7px;margin:13px 0;color:#d0cede;font-size:calc(11px * var
   #settings-open,#home-open{width:34px;height:34px;min-width:34px}
   .profile-pill #user-name{display:none}
 }
+
+/* Full accent-color theme: the selected hue tints the whole app, with deeper surfaces for contrast. */
+:root{
+  --accent-deep:#171823;--accent-panel:#1a1b26;--accent-panel-raised:#1e202c;
+  --accent-input:#13141d;--accent-chat:#20212d;--accent-chat-border:#343646;
+  --accent-muted:#aaa5bd;--accent-contrast:#ded7ff;
+}
+body{background:var(--accent-deep)}
+.topbar,.sidebar{background:var(--accent-panel);border-color:var(--accent-outline-soft)}
+.main{background:var(--accent-deep)}
+.chat-head{background:var(--accent-panel);border-color:var(--accent-outline-soft)}
+.chat,.messages{background:transparent}
+.composer{background:var(--accent-panel-raised);border-color:var(--accent-chat-border)}
+.composer textarea{background:transparent;color:var(--text)}
+input,textarea{background:var(--accent-input);border-color:var(--accent-chat-border)}
+.search{background:var(--accent-panel-raised)}
+.profile-pill,.back,.outline,.group-action,.secondary-action,.chat-item:hover,
+.person,.request-item,.new-chat-action.group-action,.toast,.close{
+  background:var(--accent-panel-raised);border-color:var(--accent-chat-border)
+}
+.privacy,.chat-section,.workspace-folder,.workspace-group-section{background:var(--accent-panel)}
+.chat-item.active,.folder-tab.active,.tab.active{background:var(--accent-soft)}
+.bubble{background:var(--accent-chat);border-color:var(--accent-chat-border)}
+.mine .bubble{background:var(--accent-chat);border-color:var(--accent-chat-border)}
+.chat-notice{background:color-mix(in srgb,var(--accent) 15%,#251c23);border-color:color-mix(in srgb,var(--accent) 35%,#3a252d)}
+.modal,.auth-card{background:var(--accent-panel);border-color:var(--accent-outline-soft)}
+.overlay{background:color-mix(in srgb,var(--accent-deep) 86%,black)}
+.tabs{background:var(--accent-deep)}
+input::placeholder,textarea::placeholder{color:var(--accent-muted)}
+.profile-pill,.outline,.requests-button,.secondary-action,.group-action{color:var(--accent-contrast)}
+.chat-time,.meta time,.chat-title small,.chat-copy span{color:var(--accent-muted)}
+.chat-item.active,.person:hover,.request-item:hover{border-color:var(--accent-outline)}
+.composer:focus-within{border-color:var(--accent-outline)}
+.composer textarea:focus{background:transparent}
+@media(max-width:720px){
+  .chat-head{background:var(--accent-panel)}
+  .messages{background:var(--accent-deep)}
+  .composer{background:var(--accent-panel-raised)}
+}
