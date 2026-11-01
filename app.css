@@ -273,3 +273,16 @@ input::placeholder,textarea::placeholder{color:var(--accent-muted)}
   .messages{background:var(--accent-deep)}
   .composer{background:var(--accent-panel-raised)}
 }
+
+/* Message selection: one Select control, then checkboxes and one bulk action. */
+.chat-head{flex-wrap:wrap}
+#select-messages,#delete-selected{flex:none}
+#delete-selected{color:var(--accent-ink);background:var(--accent);border-color:transparent}
+.message.selected .bubble{outline:2px solid var(--accent);outline-offset:2px}
+.message-select{display:flex;align-items:center;justify-content:flex-start;gap:8px;width:max-content;max-width:100%;margin:10px 0 0;padding:7px 10px;border:1px solid var(--accent-outline);border-radius:8px;color:var(--accent-contrast);background:var(--accent-surface);font-size:calc(12px * var(--font-scale,1));cursor:pointer}
+.message-select input{appearance:auto;accent-color:var(--accent);width:18px;height:18px;flex:none;margin:0;padding:0;box-shadow:none}
+@media(max-width:720px){
+  .chat-head{gap:7px;row-gap:7px}
+  #select-messages,#delete-selected,#block-user,#add-people{padding:7px 9px;font-size:calc(11px * var(--font-scale,1))}
+  .chat-head .chat-title{flex:1 1 80px}
+}
