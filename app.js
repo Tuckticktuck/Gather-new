@@ -355,7 +355,7 @@ function subscribeMessages(){
       chat.hasMessages=true;
       if(S.active===chat.id){
         const [withReply]=await attachReplyPreviews([message],chat.id);
-        if(!S.messages.some(x=>x.id===message.id)){S.messages.push(withReply);S.messages.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));renderMessages();}
+        if(!S.messages.some(x=>x.id===message.id)){S.messages.push(withReply);S.messages.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at)||a.id.localeCompare(b.id));renderMessages();}
         if(message.sender_id!==uid){markChatRead(chat.id,message.created_at);await markMessagesRead(chat.id,[message]);}
       }
       S.chats.sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at));renderChats();
