@@ -7,9 +7,9 @@
 <meta name="description" content="Private direct and group conversations.">
 <title>Gather</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="app.css?v=20261101-23">
+<link rel="stylesheet" href="app.css?v=20261101-24">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
-<script defer src="app.js?v=20261101-25"></script>
+<script defer src="app.js?v=20261101-26"></script>
 </head>
 <body>
 <section id="auth" class="auth-shell">
@@ -27,10 +27,23 @@
     <label>Password<input id="password" type="password" required minlength="8" autocomplete="current-password" placeholder="At least 8 characters"></label>
     <p id="auth-status" class="status" role="status"></p>
     <button id="auth-submit" class="primary" type="submit">Sign in</button>
+    <button id="forgot-password" class="auth-link-button" type="button">Forgot password?</button>
     <p id="auth-password-hint" class="tiny muted">Only signed-in members of a conversation can read its messages. New passwords must be strong and unique.</p>
     <p class="tiny muted auth-security-note">This project is on Supabase Free, where leaked-password blocking isn't available. Use a password you don't reuse on other sites.</p>
   </form>
 </section>
+
+<div id="password-recovery-modal" class="overlay" hidden><section class="modal reset-password-modal" role="dialog" aria-modal="true" aria-labelledby="recovery-title">
+  <p class="eyebrow">ACCOUNT RECOVERY</p><h2 id="recovery-title">Choose a new password</h2>
+  <p class="tiny muted">Create a strong, unique password for your Gather account. You must use the link sent to your account email to reach this screen.</p>
+  <form id="recovery-password-form">
+    <label>New password<input id="recovery-new-password" type="password" autocomplete="new-password" minlength="12" required></label>
+    <label>Confirm new password<input id="recovery-confirm-password" type="password" autocomplete="new-password" minlength="12" required></label>
+    <p id="recovery-password-status" class="status" role="status"></p>
+    <button id="recovery-password-save" class="primary" type="submit">Update password</button>
+  </form>
+  <button id="recovery-cancel" class="outline recovery-cancel" type="button">Cancel and sign out</button>
+</section></div>
 
 <section id="app" hidden>
   <header class="topbar">
@@ -45,7 +58,7 @@
   </header>
   <div id="layout" class="layout">
     <aside class="sidebar">
-      <div class="side-title"><div><p class="eyebrow">YOUR SPACE</p><h2>Messages</h2></div></div>
+      <div class="side-title"><div><p class="eyebrow">YOUR SPACE</p><h2>Messages</h2></div><span id="sidebar-unread-count" class="unread-total-badge" hidden>0</span></div>
       <div class="new-chat-actions">
         <button id="new-private-chat" class="new-chat-action direct-action" type="button">＋ New private message</button>
         <button id="new-group-chat" class="new-chat-action group-action" type="button">＋ Create group chat</button>
@@ -62,7 +75,7 @@
     <main class="main">
       <section id="empty" class="home-workspace">
         <header class="workspace-header">
-          <div><p class="eyebrow">YOUR SPACE</p><h1>Your conversations</h1><p class="muted workspace-subtitle">Find a conversation, manage your connections, or pick up where you left off.</p></div>
+          <div><p class="eyebrow">YOUR SPACE</p><h1>Your conversations</h1><p class="muted workspace-subtitle">Find a conversation, manage your connections, or pick up where you left off.</p><p id="workspace-unread-summary" class="workspace-unread-summary" hidden></p></div>
           <div class="workspace-actions">
             <button id="empty-private" class="primary" type="button">＋ New private message</button>
             <button id="empty-group" class="secondary-action" type="button">＋ Create group chat</button>
