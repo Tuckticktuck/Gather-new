@@ -14,7 +14,7 @@ const ACCENTS = {
 };
 const FONT_SCALES = {small:"0.9",normal:"1",large:"1.15"};
 const DEFAULT_PREFERENCES = {accent:"lavender",fontSize:"normal",shareOnlineStatus:true,messageNotificationMode:"temporary"};
-const S = { user:null, profile:null, profiles:{}, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, onlineFriends:new Set(), friendPresenceReady:new Set(), friendPresenceErrors:new Set(), friendPresenceChannels:{}, ownPresenceChannel:null, typingActive:false, friendPresenceSyncPromise:null, friendPresenceSyncQueued:false, pendingAvatarData:null, avatarChanged:false, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, presenceChannel:null, presenceReady:false, typingTimer:null, messageReads:{}, hasOlderMessages:false, loadingOlder:false, replyTo:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null };
+const S = { user:null, profile:null, profiles:{}, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, onlineFriends:new Set(), friendPresenceReady:new Set(), friendPresenceErrors:new Set(), friendPresenceChannels:{}, ownPresenceChannel:null, typingActive:false, friendPresenceSyncPromise:null, friendPresenceSyncQueued:false, pendingAvatarData:null, avatarChanged:false, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, typingChannel:null, typingReady:false, typingTimer:null, typingHeartbeatTimer:null, remoteTypers:new Map(), messageReads:{}, hasOlderMessages:false, loadingOlder:false, replyTo:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function status(id, text, kind) { const n=$(id); n.textContent=text||""; n.className="status"+(kind?" "+kind:""); }
@@ -201,8 +201,9 @@ function showAuth() {
   if(S.channel){db.removeChannel(S.channel);S.channel=null;}
   if(S.requestChannel){db.removeChannel(S.requestChannel);S.requestChannel=null;}
   if(S.readChannel){db.removeChannel(S.readChannel);S.readChannel=null;}
-  if(S.presenceChannel){db.removeChannel(S.presenceChannel);S.presenceChannel=null;}
-  clearTimeout(S.typingTimer);S.presenceReady=false;
+  if(S.typingChannel){db.removeChannel(S.typingChannel);S.typingChannel=null;}
+  clearTimeout(S.typingTimer);clearTimeout(S.typingHeartbeatTimer);
+  S.typingReady=false;S.typingActive=false;clearRemoteTypers();
   S.user=null;S.profile=null;S.profiles={};S.chats=[];S.messages=[];S.messageReads={};S.replyTo=null;S.hasOlderMessages=false;S.requests=[];S.friendRequests=[];S.friends=[];S.blockedUsers=[];S.deletedMessages=[];S.deletedMessageIds=new Set();S.lastReadAt={};S.folder="friends";S.directStatus=null;S.active=null;S.messages=[];S.loadError=null;S.avatarChanged=false;S.pendingAvatarData=null;loadUIPreferences(DEFAULT_PREFERENCES);
   setChatLoadStatus("");$("auth").hidden=false;$("app").hidden=true;
 }
@@ -937,62 +938,101 @@ function subscribeMessageReads(conversationId){
       renderMessages();
     }).subscribe();
 }
-function renderTypingState(channel){
-  if(S.presenceChannel!==channel||!S.user)return;
-  const state=channel.presenceState()||{};
-  const metas=Object.values(state).flatMap(entry=>Array.isArray(entry?.metas)?entry.metas:[]);
-  const activeByUser=new Map();
-  metas.forEach(meta=>{
-    if(meta.typing!==true||!meta.user_id||meta.user_id===S.user.id)return;
-    if(!activeByUser.has(meta.user_id))activeByUser.set(meta.user_id,meta.display_name||"Someone");
-  });
-  const names=[...activeByUser.values()].sort((a,b)=>a.localeCompare(b));
+function clearRemoteTypers(){
+  S.remoteTypers.forEach(entry=>clearTimeout(entry.timer));
+  S.remoteTypers.clear();
+  renderTypingState();
+}
+function renderTypingState(){
+  const names=[...S.remoteTypers.values()].map(entry=>entry.name).sort((a,b)=>a.localeCompare(b));
   const indicator=$("typing-indicator"),nameList=$("typing-names");
   if(!indicator||!nameList)return;
   indicator.hidden=!names.length;
   nameList.replaceChildren();
   names.forEach(name=>nameList.append(el("span","typing-name",name)));
 }
-async function subscribeChatPresence(conversationId){
-  if(S.presenceChannel){db.removeChannel(S.presenceChannel);S.presenceChannel=null;}
-  S.presenceReady=false;S.typingActive=false;clearTimeout(S.typingTimer);
-  try{await db.realtime.setAuth();}catch(e){console.warn("Private chat presence could not authenticate:",e.message);return;}
+function receiveTypingBroadcast(channel,event){
+  if(S.typingChannel!==channel||!S.user)return;
+  const data=event?.payload;
+  const userId=data?.user_id;
+  if(!userId||userId===S.user.id)return;
+  const existing=S.remoteTypers.get(userId);
+  if(existing)clearTimeout(existing.timer);
+  if(data.typing===true){
+    const entry={name:data.display_name||"Someone",timer:null};
+    entry.timer=setTimeout(()=>{
+      if(S.remoteTypers.get(userId)!==entry)return;
+      S.remoteTypers.delete(userId);
+      renderTypingState();
+    },5200);
+    S.remoteTypers.set(userId,entry);
+  }else{
+    S.remoteTypers.delete(userId);
+  }
+  renderTypingState();
+}
+async function sendTypingBroadcast(typing,channel=S.typingChannel){
+  if(!channel||S.typingChannel!==channel||!S.typingReady)return;
+  try{
+    const result=await channel.send({
+      type:"broadcast",
+      event:"typing",
+      payload:{
+        user_id:S.user.id,
+        display_name:S.profile?.display_name||"Member",
+        typing:!!typing
+      }
+    });
+    if(result!=="ok")console.warn("Typing broadcast was not accepted:",result);
+  }catch(error){
+    console.warn("Typing status could not be broadcast:",error.message||error);
+  }
+}
+function scheduleTypingHeartbeat(){
+  clearTimeout(S.typingHeartbeatTimer);
+  if(!S.typingActive||!S.typingReady)return;
+  S.typingHeartbeatTimer=setTimeout(async()=>{
+    const channel=S.typingChannel;
+    if(!channel||!S.typingReady||!S.typingActive)return;
+    await sendTypingBroadcast(true,channel);
+    scheduleTypingHeartbeat();
+  },2400);
+}
+async function subscribeChatTyping(conversationId){
+  if(S.typingChannel){db.removeChannel(S.typingChannel);S.typingChannel=null;}
+  S.typingReady=false;S.typingActive=false;
+  clearTimeout(S.typingTimer);clearTimeout(S.typingHeartbeatTimer);clearRemoteTypers();
+  try{await db.realtime.setAuth();}catch(error){console.warn("Private chat typing could not authenticate:",error.message);return;}
   if(S.active!==conversationId||!S.user)return;
   const uid=S.user.id;
-  const channel=db.channel("gather-chat:"+conversationId,{config:{private:true,presence:{key:uid}}});
-  S.presenceChannel=channel;
-  const refresh=()=>renderTypingState(channel);
-  channel
-    .on("presence",{event:"sync"},refresh)
-    .on("presence",{event:"join"},refresh)
-    .on("presence",{event:"leave"},refresh);
-  channel.subscribe(async (state,error)=>{
-    if(S.presenceChannel!==channel)return;
+  const channel=db.channel("gather-chat:"+conversationId,{config:{private:true,broadcast:{self:false}}});
+  S.typingChannel=channel;
+  channel.on("broadcast",{event:"typing"},event=>receiveTypingBroadcast(channel,event));
+  channel.subscribe(async(state,error)=>{
+    if(S.typingChannel!==channel)return;
     if(state==="SUBSCRIBED"){
-      S.presenceReady=true;
+      S.typingReady=true;
       S.typingActive=false;
-      if($("message").value.trim())await setTyping(true,true);
-      refresh();
+      if($("message").value.trim())await setTyping(true);
     }else if(state==="CHANNEL_ERROR"||state==="TIMED_OUT"||state==="CLOSED"){
-      S.presenceReady=false;S.typingActive=false;
-      refresh();
-      console.warn("Chat typing presence could not connect:",error?.message||state);
+      S.typingReady=false;S.typingActive=false;
+      clearTimeout(S.typingHeartbeatTimer);
+      console.warn("Chat typing channel could not connect:",error?.message||state);
     }
   });
 }
-async function setTyping(typing,force=false){
-  const channel=S.presenceChannel;
+async function setTyping(typing){
+  const channel=S.typingChannel;
   const next=!!typing;
-  if(!channel||!S.presenceReady||(!force&&S.typingActive===next))return;
-  const previous=S.typingActive;
-  S.typingActive=next;
-  try{
-    const result=await channel.track({user_id:S.user.id,display_name:S.profile?.display_name||"Member",typing:next});
-    if(result!=="ok")throw new Error("Realtime returned "+String(result));
-  }catch(e){
-    if(S.presenceChannel===channel)S.typingActive=previous;
-    console.warn("Typing status could not be updated:",e.message);
+  if(!channel||!S.typingReady)return;
+  if(S.typingActive===next){
+    if(next)scheduleTypingHeartbeat();
+    return;
   }
+  S.typingActive=next;
+  if(next)scheduleTypingHeartbeat();
+  else clearTimeout(S.typingHeartbeatTimer);
+  await sendTypingBroadcast(next,channel);
 }
 function handleTypingInput(){
   if(!S.active)return;
@@ -1002,14 +1042,11 @@ function handleTypingInput(){
   setTyping(true);
   S.typingTimer=setTimeout(()=>setTyping(false),1800);
 }
-function stopChatPresence(){
-  clearTimeout(S.typingTimer);
-  if(S.presenceChannel){db.removeChannel(S.presenceChannel);S.presenceChannel=null;}
-  if(S.readChannel){db.removeChannel(S.readChannel);S.readChannel=null;}
-  S.presenceReady=false;S.typingActive=false;
-  const indicator=$("typing-indicator"),nameList=$("typing-names");
-  if(indicator)indicator.hidden=true;
-  if(nameList)nameList.replaceChildren();
+function stopChatTyping(){
+  clearTimeout(S.typingTimer);clearTimeout(S.typingHeartbeatTimer);
+  if(S.typingChannel){db.removeChannel(S.typingChannel);S.typingChannel=null;}
+  S.typingReady=false;S.typingActive=false;
+  clearRemoteTypers();
 }
 function renderReplyComposer(){
   const box=$("reply-compose");box.hidden=!S.replyTo;
@@ -1042,14 +1079,14 @@ async function loadOlderMessages(){
   renderMessages(true);
 }
 async function openChat(id){
-  stopChatPresence();
+  stopChatTyping();
   S.active=id;S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;
   S.messages=[];S.messageReads={};S.replyTo=null;S.hasOlderMessages=false;S.loadingOlder=false;renderReplyComposer();
   markChatRead(id,S.chats.find(c=>c.id===id)?.last?.created_at||null);
   $("layout").classList.remove("show-home");$("layout").classList.add("show-chat");renderActive();
   await refreshDirectStatus();await loadMessages(id);
   if(S.active!==id)return;
-  subscribeMessageReads(id);await markConversationRead(id);await subscribeChatPresence(id);
+  subscribeMessageReads(id);await markConversationRead(id);await subscribeChatTyping(id);
 }
 async function loadMessages(id){
   const r=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,reply_to_id").eq("conversation_id",id).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
@@ -1557,7 +1594,7 @@ async function changePassword(e){
 }
 function closeModals(){ $("people-modal").hidden=true;$("profile-modal").hidden=true;$("requests-modal").hidden=true;$("friends-modal").hidden=true;$("settings-modal").hidden=true;$("group-photo-modal").hidden=true;$("group-settings-modal").hidden=true;$("message-search-modal").hidden=true;$("chat-actions-modal").hidden=true; }
 function goHome(){
-  closeModals();stopChatPresence();S.active=null;S.messages=[];S.messageReads={};S.replyTo=null;S.hasOlderMessages=false;S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;renderReplyComposer();
+  closeModals();stopChatTyping();S.active=null;S.messages=[];S.messageReads={};S.replyTo=null;S.hasOlderMessages=false;S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;renderReplyComposer();
   $("layout").classList.remove("show-chat");$("layout").classList.add("show-home");renderChats();renderActive();
 }
 function wire(){
