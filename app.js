@@ -142,6 +142,7 @@ function authMode(mode){
   $("name-wrap").hidden=!signUp;$("name").required=signUp;
   $("auth-title").textContent=signUp?"Make yourself at home.":"Welcome back.";
   $("auth-subtitle").textContent=signUp?"Create an account to start talking.":"Sign in to see your conversations.";
+  $("auth-password-hint").textContent=signUp?"New passwords must be 12+ characters with uppercase and lowercase letters, a number, and a symbol.":"Sign in with your existing password. New Gather passwords must meet the stronger rules.";
   $("auth-submit").textContent=signUp?"Create account":"Sign in";$("password").autocomplete=signUp?"new-password":"current-password";
   status("auth-status","");
 }
@@ -862,6 +863,8 @@ function wire(){
   document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>authMode(b.dataset.mode)));
   $("auth-form").addEventListener("submit",async e=>{
     e.preventDefault();const email=$("email").value.trim(),password=$("password").value,isNew=S.mode==="signup";$("auth-submit").disabled=true;status("auth-status",isNew?"Creating account…":"Signing in…");
+    const weak=isNew?strongPasswordError(password):"";
+    if(weak){status("auth-status",weak+" Use a unique password you don't use on other sites.","error");$("auth-submit").disabled=false;return;}
     const r=isNew?await db.auth.signUp({email,password,options:{data:{display_name:$("name").value.trim()},emailRedirectTo:location.origin}}):await db.auth.signInWithPassword({email,password});
     if(r.error)status("auth-status",r.error.message,"error");
     else if(isNew&&!r.data.session)status("auth-status","Account created. Check your email for the confirmation link, then sign in here.","success");
@@ -879,6 +882,13 @@ function wire(){
   document.querySelectorAll("[data-font-size]").forEach(b=>b.addEventListener("click",()=>setFontSize(b.dataset.fontSize)));
   $("home-friends-open").addEventListener("click",openFriends);$("home-requests-open").addEventListener("click",openRequests);
   $("filter").addEventListener("input",renderChats);document.querySelectorAll("[data-folder]").forEach(b=>b.addEventListener("click",()=>selectFolder(b.dataset.folder)));$("profile-open").addEventListener("click",openProfile);$("profile-form").addEventListener("submit",saveProfile);
+  $("profile-avatar-file").addEventListener("change",handleAvatarFile);
+  $("avatar-remove").addEventListener("click",()=>{
+    S.pendingAvatarData=null;S.avatarChanged=true;
+    paintAvatar($("profile-avatar-preview"),S.profile.display_name,null);
+    status("profile-status","The picture will be removed when you save changes.","success");
+  });
+  $("password-form").addEventListener("submit",changePassword);
   $("send-form").addEventListener("submit",sendMessage);
   $("message").addEventListener("input",e=>{e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,120)+"px";});
   $("message").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing){e.preventDefault();$("send-form").requestSubmit();}});
@@ -898,7 +908,7 @@ function wire(){
 async function boot(){
   if(!window.supabase?.createClient){status("auth-status","The chat library did not load. Refresh and try again.","error");return;}
   wire();
-  loadUIPreferences();
+  loadUIPreferences(DEFAULT_PREFERENCES);
   db.auth.onAuthStateChange((event,session)=>{setTimeout(()=>{if(session?.user)signedIn(session.user);else if(event==="SIGNED_OUT")showAuth();},0);});
   const session=await db.auth.getSession();if(session.error){status("auth-status",session.error.message,"error");return;}
   if(session.data.session?.user)await signedIn(session.data.session.user);else showAuth();
