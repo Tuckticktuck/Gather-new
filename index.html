@@ -9,7 +9,7 @@
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="stylesheet" href="app.css?v=20261101-11">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
-<script defer src="app.js?v=20261101-14"></script>
+<script defer src="app.js?v=20261101-15"></script>
 </head>
 <body>
 <section id="auth" class="auth-shell">
@@ -96,7 +96,7 @@
         </section>
       </section>
       <section id="chat" class="chat" hidden>
-        <header class="chat-head"><button id="back" class="back" aria-label="Back">←</button><span id="chat-avatar" class="avatar">?</span><div class="chat-title"><strong id="chat-title"></strong><small id="chat-subtitle"></small></div><button id="add-people" class="outline" hidden>＋ Add people</button><button id="block-user" class="outline" hidden>Block</button><button id="select-messages" class="outline" type="button">Select</button><button id="delete-selected" class="outline" type="button" hidden>Delete selected</button></header>
+        <header class="chat-head"><button id="back" class="back" aria-label="Back">←</button><span id="chat-avatar" class="avatar">?</span><div class="chat-title"><strong id="chat-title"></strong><small id="chat-subtitle"></small></div><button id="add-people" class="outline" hidden>＋ Add people</button><button id="leave-chat" class="outline" type="button" hidden>Leave group</button><button id="block-user" class="outline" hidden>Block</button><button id="select-messages" class="outline" type="button">Select</button><button id="delete-selected" class="outline" type="button" hidden>Delete selected</button></header>
         <div id="messages" class="messages"></div>
         <p id="chat-notice" class="chat-notice" hidden></p>
         <form id="send-form" class="composer"><textarea id="message" rows="1" maxlength="4000" placeholder="Write a message…" aria-label="Write a message"></textarea><div><small>Enter to send · Shift + Enter for a new line</small><button id="send" type="submit" aria-label="Send">↑</button></div></form>
