@@ -255,7 +255,7 @@ async function directChat(p){
   const r=await db.rpc("send_direct_chat_request",{p_recipient_id:p.id});
   if(r.error){status("people-status","Request could not be sent: "+r.error.message,"error");return;}
   if(r.data?.status==="existing"&&r.data.conversation_id){$("people-modal").hidden=true;await loadChats();await openChat(r.data.conversation_id);return;}
-  if(r.data?.status==="blocked"){status("people-status","A private chat request cannot be sent because blocking is active between these accounts.","error");return;}
+  if(r.data?.status==="blocked"){status("people-status","This member is not available for a new private chat request.","error");return;}
   $("people-modal").hidden=true;await loadRequests();
   if(r.data?.status==="incoming"){toast("They already sent you a request. Review it in Chat requests.");$("requests-modal").hidden=false;}
   else toast("Chat request sent. You can message each other after they accept.");
