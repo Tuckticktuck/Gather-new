@@ -13,8 +13,8 @@ const ACCENTS = {
   teal:{accent:"#9be2e4",strong:"#50b9be",ink:"#14373a",soft:"#234649",border:"#9be2e455"}
 };
 const FONT_SCALES = {small:"0.9",normal:"1",large:"1.15"};
-const DEFAULT_PREFERENCES = {accent:"lavender",fontSize:"normal"};
-const S = { user:null, profile:null, profiles:{}, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, pendingAvatarData:null, avatarChanged:false, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, presenceChannel:null, presenceReady:false, typingTimer:null, messageReads:{}, hasOlderMessages:false, loadingOlder:false, replyTo:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null };
+const DEFAULT_PREFERENCES = {accent:"lavender",fontSize:"normal",shareOnlineStatus:true};
+const S = { user:null, profile:null, profiles:{}, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, onlineFriends:new Set(), friendPresenceReady:new Set(), friendPresenceErrors:new Set(), friendPresenceChannels:{}, ownPresenceChannel:null, friendPresenceSyncPromise:null, friendPresenceSyncQueued:false, pendingAvatarData:null, avatarChanged:false, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, presenceChannel:null, presenceReady:false, typingTimer:null, messageReads:{}, hasOlderMessages:false, loadingOlder:false, replyTo:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function status(id, text, kind) { const n=$(id); n.textContent=text||""; n.className="status"+(kind?" "+kind:""); }
@@ -27,7 +27,8 @@ function setChatLoadStatus(message,retry=false){
 function loadUIPreferences(saved){
   S.preferences={
     accent:ACCENTS[saved?.accent]?saved.accent:DEFAULT_PREFERENCES.accent,
-    fontSize:FONT_SCALES[saved?.fontSize]?saved.fontSize:DEFAULT_PREFERENCES.fontSize
+    fontSize:FONT_SCALES[saved?.fontSize]?saved.fontSize:DEFAULT_PREFERENCES.fontSize,
+    shareOnlineStatus:saved?.shareOnlineStatus!==false
   };
   applyUIPreferences();
 }
@@ -60,6 +61,7 @@ function applyUIPreferences(){
   root.style.setProperty("--font-scale",FONT_SCALES[S.preferences.fontSize]||"1");
   document.querySelectorAll("[data-accent]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.accent===S.preferences.accent)));
   document.querySelectorAll("[data-font-size]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.fontSize===S.preferences.fontSize)));
+  const onlineToggle=$("share-online-status");if(onlineToggle)onlineToggle.checked=S.preferences.shareOnlineStatus;
 }
 function saveUIPreferences(){
   applyUIPreferences();
@@ -72,12 +74,14 @@ function saveUIPreferences(){
     if(S.user?.id!==userId)return;
     if(result.error){
       loadUIPreferences(S.profile?.preferences||DEFAULT_PREFERENCES);
+      syncFriendPresence();
       $("settings-note").textContent="Couldn't save settings. Please try again.";
       toast("Appearance settings were not saved: "+result.error.message);
       return;
     }
     S.profile.preferences=result.data.preferences;
-    $("settings-note").textContent="Saved to your account. Your theme follows you to other devices.";
+    $("settings-note").textContent="Saved to your account. Your theme and online-status choice follow you to other devices.";
+    syncFriendPresence();
   },180);
 }
 function setAccent(accent){
@@ -155,6 +159,7 @@ function markChatRead(chatId,through=null){
   saveReadState();
 }
 function showAuth() {
+  stopFriendPresence();
   if(S.channel){db.removeChannel(S.channel);S.channel=null;}
   if(S.requestChannel){db.removeChannel(S.requestChannel);S.requestChannel=null;}
   if(S.readChannel){db.removeChannel(S.readChannel);S.readChannel=null;}
@@ -217,7 +222,9 @@ function chatTitle(c){
 }
 function chatSub(c){
   if(c.kind==="group"){const names=c.members.map(m=>S.profiles[m.user_id]?.display_name||"Member");return c.members.length+" members"+(c.description?" · "+c.description:" · "+names.slice(0,3).join(", "));}
-  const other=c.members.find(m=>m.user_id!==S.user.id),p=other&&S.profiles[other.user_id];return p?"@"+p.username:"Private conversation";
+  const other=c.members.find(m=>m.user_id!==S.user.id),p=other&&S.profiles[other.user_id];
+  const presence=other&&S.friendPresenceReady.has(other.user_id)?(S.onlineFriends.has(other.user_id)?" · Online":" · Offline"):"";
+  return p?"@"+p.username+presence:"Private conversation";
 }
 async function loadChats(){
   if(!S.user)return false;
@@ -273,6 +280,69 @@ async function loadRequests(){
   }
   renderRequests();return true;
 }
+function refreshFriendPresenceUI(){
+  renderFriends();renderChats();
+  const active=S.chats.find(x=>x.id===S.active);
+  if(active?.kind==="direct")$("chat-subtitle").textContent=chatSub(active);
+}
+function setFriendPresence(friendId,channel){
+  if(S.friendPresenceChannels[friendId]!==channel)return;
+  let online=false;
+  try{const metas=Object.values(channel.presenceState()).flatMap(item=>item.metas||[]);online=metas.some(meta=>meta.user_id===friendId&&meta.online===true);}
+  catch(error){console.warn("Friend presence could not be read:",error.message);}
+  const wasOnline=S.onlineFriends.has(friendId);
+  if(online){S.onlineFriends.add(friendId);S.friendPresenceErrors.delete(friendId);}else S.onlineFriends.delete(friendId);
+  if(wasOnline!==online)refreshFriendPresenceUI();
+}
+function stopOwnOnlinePresence(){if(S.ownPresenceChannel){db.removeChannel(S.ownPresenceChannel);S.ownPresenceChannel=null;}}
+function stopFriendPresence(){
+  stopOwnOnlinePresence();
+  Object.values(S.friendPresenceChannels).forEach(channel=>db.removeChannel(channel));
+  S.friendPresenceChannels={};S.onlineFriends.clear();S.friendPresenceReady.clear();S.friendPresenceErrors.clear();
+}
+async function syncFriendPresence(){
+  if(!S.user)return;
+  if(S.friendPresenceSyncPromise){S.friendPresenceSyncQueued=true;return;}
+  const uid=S.user.id;
+  S.friendPresenceSyncPromise=(async()=>{
+    do{
+      S.friendPresenceSyncQueued=false;
+      try{await db.realtime.setAuth();}catch(error){console.warn("Friend presence could not authenticate:",error.message);return;}
+      if(S.user?.id!==uid)return;
+      if(!S.preferences.shareOnlineStatus)stopOwnOnlinePresence();
+      else if(!S.ownPresenceChannel){
+        const ownChannel=db.channel("gather-presence:"+uid,{config:{private:true,presence:{key:uid}}});
+        S.ownPresenceChannel=ownChannel;
+        ownChannel.subscribe(async state=>{
+          if(S.ownPresenceChannel!==ownChannel)return;
+          if(state==="SUBSCRIBED"&&S.preferences.shareOnlineStatus){
+            try{await ownChannel.track({user_id:uid,online:true});}catch(error){console.warn("Online status could not be shared:",error.message);}
+          }else if(state==="CHANNEL_ERROR"||state==="TIMED_OUT")console.warn("Online status channel could not connect:",state);
+        });
+      }
+      const friendIds=new Set(S.friends.map(friend=>friend.friend_id).filter(id=>id&&id!==uid));
+      Object.entries(S.friendPresenceChannels).forEach(([friendId,channel])=>{
+        if(!friendIds.has(friendId)){db.removeChannel(channel);delete S.friendPresenceChannels[friendId];S.onlineFriends.delete(friendId);S.friendPresenceReady.delete(friendId);S.friendPresenceErrors.delete(friendId);}
+      });
+      friendIds.forEach(friendId=>{
+        if(S.friendPresenceChannels[friendId])return;
+        const channel=db.channel("gather-presence:"+friendId,{config:{private:true,presence:{key:uid}}});
+        S.friendPresenceChannels[friendId]=channel;
+        const update=()=>setFriendPresence(friendId,channel);
+        channel.on("presence",{event:"sync"},update).on("presence",{event:"join"},update).on("presence",{event:"leave"},update);
+        channel.subscribe(state=>{
+          if(S.friendPresenceChannels[friendId]!==channel)return;
+          if(state==="SUBSCRIBED"){S.friendPresenceReady.add(friendId);S.friendPresenceErrors.delete(friendId);update();refreshFriendPresenceUI();}
+          else if(state==="CHANNEL_ERROR"||state==="TIMED_OUT"||state==="CLOSED"){S.friendPresenceReady.delete(friendId);S.onlineFriends.delete(friendId);S.friendPresenceErrors.add(friendId);refreshFriendPresenceUI();}
+        });
+      });
+      refreshFriendPresenceUI();
+    }while(S.friendPresenceSyncQueued);
+  })();
+  try{await S.friendPresenceSyncPromise;}finally{S.friendPresenceSyncPromise=null;}
+}
+function setShareOnlineStatus(enabled){S.preferences.shareOnlineStatus=!!enabled;if(!S.preferences.shareOnlineStatus)stopOwnOnlinePresence();saveUIPreferences();}
+
 async function loadFriends(){
   if(!S.user)return false;
   const [friendsResult,requestsResult]=await Promise.all([
@@ -301,6 +371,7 @@ async function loadFriends(){
   }
   $("friends-error").textContent="";
   renderFriends();renderChats();
+  syncFriendPresence();
   return true;
 }
 function subscribeRequests(){
@@ -393,8 +464,11 @@ function renderFriends(){
   if(!S.friends.length)list.append(el("p","muted tiny","You have not added any friends yet."));
   S.friends.forEach(f=>{
     const p=S.profiles[f.friend_id]||{id:f.friend_id,display_name:"Gather member",username:"member"};
+    const online=S.onlineFriends.has(f.friend_id),ready=S.friendPresenceReady.has(f.friend_id),unavailable=S.friendPresenceErrors.has(f.friend_id);
     const row=el("div","request-item");row.append(avatar(p.display_name,p.avatar_data));
-    const copy=el("div","request-copy");copy.append(el("strong","",p.display_name),el("small","","@"+p.username));row.append(copy);
+    const dot=el("span","friend-online-dot"+(online?" online":""));dot.title=online?"Online":"Offline";dot.setAttribute("aria-label",online?"Online":"Offline");row.append(dot);
+    const label=ready?(online?"Online":"Offline"):(unavailable?"Unavailable":"Checking…");
+    const copy=el("div","request-copy");copy.append(el("strong","",p.display_name),el("small","","@"+p.username+" · "+label));row.append(copy);
     const actions=el("div","request-actions");
     const message=el("button","request-accept","Message"),remove=el("button","request-decline","Remove");
     message.type=remove.type="button";
@@ -1282,6 +1356,7 @@ function wire(){
   $("settings-open").addEventListener("click",openSettings);
   document.querySelectorAll("[data-accent]").forEach(b=>b.addEventListener("click",()=>setAccent(b.dataset.accent)));
   document.querySelectorAll("[data-font-size]").forEach(b=>b.addEventListener("click",()=>setFontSize(b.dataset.fontSize)));
+  $("share-online-status").addEventListener("change",e=>setShareOnlineStatus(e.target.checked));
   $("home-friends-open").addEventListener("click",openFriends);$("home-requests-open").addEventListener("click",openRequests);$("open-about-blank").addEventListener("click",openAboutBlank);
   $("filter").addEventListener("input",renderChats);document.querySelectorAll("[data-folder]").forEach(b=>b.addEventListener("click",()=>selectFolder(b.dataset.folder)));$("profile-open").addEventListener("click",openProfile);$("profile-form").addEventListener("submit",saveProfile);
   $("profile-avatar-file").addEventListener("change",handleAvatarFile);
