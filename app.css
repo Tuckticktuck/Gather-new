@@ -635,7 +635,11 @@ input::placeholder,textarea::placeholder{color:var(--accent-muted)}
   justify-content:center;
   width:100%;
   min-height:46px;
-  margin:0;
+  margin-top:auto;
+  margin-right:0;
+  margin-bottom:0;
+  margin-left:0;
+  flex:0 0 auto;
   padding:11px 14px;
   border:1px solid var(--accent-outline-soft);
   border-radius:11px;
