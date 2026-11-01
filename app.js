@@ -1438,12 +1438,15 @@ async function openReportsAdmin(){
   list.replaceChildren();
   if(result.error){list.append(el("p","status error","Reports could not be loaded: "+result.error.message));return;}
   if(!result.data?.length){list.append(el("p","muted tiny","There are no reports to review."));return;}
+  const profilesResult=await fetchProfileRecords([...new Set(result.data.flatMap(report=>[report.reporter_id,report.target_user_id]))]);
+  const reportProfiles=new Map((profilesResult.data||[]).map(profile=>[profile.id,profile]));
   for(const report of result.data){
     const card=el("article","admin-report-card");
     const heading=el("div","admin-report-heading");
     heading.append(el("strong","",report.reason.replaceAll("_"," ")),el("small","",dateLabel(report.created_at)));
     const text=el("p","admin-report-details",report.details||(report.message_id?"A message was reported.":"An account was reported."));
-    const meta=el("small","muted", "Reporter: "+report.reporter_id.slice(0,8)+" · Reported account: "+report.target_user_id.slice(0,8));
+    const reporter=reportProfiles.get(report.reporter_id),target=reportProfiles.get(report.target_user_id);
+    const meta=el("small","muted", "From: "+(reporter?.display_name||"Member")+" (@"+(reporter?.username||"unknown")+") · About: "+(target?.display_name||"Member")+" (@"+(target?.username||"unknown")+")");
     const select=el("select","admin-report-status");["new","reviewing","resolved"].forEach(value=>{const option=el("option","",value==="new"?"New":value==="reviewing"?"Reviewing":"Resolved");option.value=value;select.append(option);});select.value=report.status;
     select.addEventListener("change",async()=>{select.disabled=true;const update=await db.from("reports").update({status:select.value}).eq("id",report.id);select.disabled=false;if(update.error)toast("Report status could not be updated.");else toast("Report status updated.");});
     card.append(heading,text,meta,select);list.append(card);
