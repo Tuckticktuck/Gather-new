@@ -7,9 +7,9 @@
 <meta name="description" content="Private direct and group conversations.">
 <title>Gather — Private Chat</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="app.css?v=20261101-16">
+<link rel="stylesheet" href="app.css?v=20261101-17">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
-<script defer src="app.js?v=20261101-19"></script>
+<script defer src="app.js?v=20261101-20"></script>
 </head>
 <body>
 <section id="auth" class="auth-shell">
@@ -96,7 +96,7 @@
         </section>
       </section>
       <section id="chat" class="chat" hidden>
-        <header class="chat-head"><button id="back" class="back" aria-label="Back">←</button><span id="chat-avatar" class="avatar">?</span><div class="chat-title"><strong id="chat-title"></strong><small id="chat-subtitle"></small></div><button id="add-people" class="outline" hidden>＋ Add people</button><button id="edit-group-photo" class="outline" type="button" hidden>Edit photo</button><button id="group-settings-open" class="outline" type="button" hidden>Group settings</button><button id="search-messages-open" class="outline" type="button">Search</button><button id="leave-chat" class="outline" type="button" hidden>Leave group</button><button id="block-user" class="outline" hidden>Block</button><button id="select-messages" class="outline" type="button">Select</button><button id="delete-selected" class="outline" type="button" hidden>Delete selected</button></header>
+        <header class="chat-head"><button id="back" class="back" aria-label="Back">←</button><span id="chat-avatar" class="avatar">?</span><div class="chat-title"><strong id="chat-title"></strong><small id="chat-subtitle"></small></div><button id="chat-actions-open" class="outline chat-actions-trigger" type="button" aria-label="Open chat options" aria-haspopup="dialog">Chat options <span aria-hidden="true">⌄</span></button></header>
         <div id="messages" class="messages"></div>
         <p id="chat-notice" class="chat-notice" hidden></p>
         <div id="typing-indicator" class="typing-indicator" aria-live="polite" hidden></div>
@@ -202,6 +202,22 @@
   <label>Search this conversation<input id="message-search-input" type="search" placeholder="Find a word or phrase"></label>
   <p id="message-search-status" class="status"></p><div id="message-search-results" class="message-search-results"><p class="muted tiny">Search all messages in this conversation.</p></div>
   <button id="message-search-more" class="secondary-action" type="button" hidden>Load more results</button>
+</section></div>
+<div id="chat-actions-modal" class="overlay" hidden><section class="modal chat-actions-modal" role="dialog" aria-modal="true" aria-labelledby="chat-actions-title">
+  <button class="close" data-close aria-label="Close">×</button>
+  <p class="eyebrow">CONVERSATION</p><h2 id="chat-actions-title">Chat options</h2>
+  <section class="chat-action-section" id="group-chat-actions"><h3>Group</h3><div class="chat-action-grid">
+    <button id="add-people" class="outline chat-action" type="button" hidden>＋ Add people</button>
+    <button id="edit-group-photo" class="outline chat-action" type="button" hidden>Edit photo</button>
+    <button id="group-settings-open" class="outline chat-action" type="button" hidden>Group settings</button>
+    <button id="leave-chat" class="outline chat-action" type="button" hidden>Leave group</button>
+  </div></section>
+  <section class="chat-action-section"><h3>Messages</h3><div class="chat-action-grid">
+    <button id="search-messages-open" class="outline chat-action" type="button">Search messages</button>
+    <button id="block-user" class="outline chat-action" type="button" hidden>Block</button>
+    <button id="select-messages" class="outline chat-action" type="button">Select messages</button>
+    <button id="delete-selected" class="outline chat-action" type="button" hidden>Delete selected</button>
+  </div></section>
 </section></div>
 <div id="toast" class="toast" role="status"></div>
 </body>
