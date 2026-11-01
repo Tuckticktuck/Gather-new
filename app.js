@@ -766,16 +766,91 @@ async function createGroupOrAdd(){
   $("people-create").disabled=false;
 }
 function openProfile(){
-  if(!S.profile)return;$("profile-name").value=S.profile.display_name;$("profile-username").value=S.profile.username;
-  status("profile-status","");$("profile-modal").hidden=false;
+  if(!S.profile)return;
+  $("profile-name").value=S.profile.display_name;$("profile-username").value=S.profile.username;
+  $("current-password").value="";$("new-password").value="";$("confirm-password").value="";
+  status("profile-status","");status("password-status","");
+  S.pendingAvatarData=null;S.avatarChanged=false;
+  paintAvatar($("profile-avatar-preview"),S.profile.display_name,S.profile.avatar_data);
+  $("profile-avatar-file").value="";
+  $("profile-modal").hidden=false;
+}
+async function fileToAvatarData(file){
+  if(!file)return null;
+  if(!["image/jpeg","image/png","image/webp"].includes(file.type))throw new Error("Choose a JPG, PNG, or WebP image.");
+  if(file.size>5*1024*1024)throw new Error("Choose an image smaller than 5 MB.");
+  const objectUrl=URL.createObjectURL(file);
+  try{
+    const image=await new Promise((resolve,reject)=>{
+      const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>reject(new Error("That image couldn't be opened."));img.src=objectUrl;
+    });
+    const side=256,canvas=document.createElement("canvas");canvas.width=side;canvas.height=side;
+    const context=canvas.getContext("2d");if(!context)throw new Error("This browser couldn't prepare the image.");
+    const crop=Math.min(image.naturalWidth,image.naturalHeight);
+    context.drawImage(image,(image.naturalWidth-crop)/2,(image.naturalHeight-crop)/2,crop,crop,0,0,side,side);
+    let data=canvas.toDataURL("image/jpeg",0.82);
+    if(data.length>500000)data=canvas.toDataURL("image/jpeg",0.68);
+    if(data.length>500000)throw new Error("That picture is still too large. Try a simpler image.");
+    return data;
+  }finally{URL.revokeObjectURL(objectUrl);}
+}
+async function handleAvatarFile(){
+  const file=$("profile-avatar-file").files?.[0];if(!file)return;
+  try{
+    status("profile-status","Preparing your picture…");
+    S.pendingAvatarData=await fileToAvatarData(file);S.avatarChanged=true;
+    paintAvatar($("profile-avatar-preview"),S.profile.display_name,S.pendingAvatarData);
+    status("profile-status","Picture ready. Press Save changes to apply it.","success");
+  }catch(e){
+    $("profile-avatar-file").value="";S.pendingAvatarData=null;S.avatarChanged=false;
+    paintAvatar($("profile-avatar-preview"),S.profile.display_name,S.profile.avatar_data);
+    status("profile-status",e.message||"Picture couldn't be prepared.","error");
+  }
 }
 async function saveProfile(e){
-  e.preventDefault();const display_name=$("profile-name").value.trim(),username=$("profile-username").value.trim().toLowerCase();
+  e.preventDefault();
+  const display_name=$("profile-name").value.trim(),username=$("profile-username").value.trim().toLowerCase();
   if(!display_name||!/^[a-z0-9_]{3,24}$/.test(username)){status("profile-status","Check the name and username format.","error");return;}
+  const save=$("profile-save");save.disabled=true;
   const r=await db.from("profiles").update({display_name,username}).eq("id",S.user.id).select("*").single();
-  if(r.error){status("profile-status",r.error.message,"error");return;}
-  S.profile=r.data;S.profiles[S.user.id]=r.data;$("user-name").textContent=r.data.display_name;$("user-initial").textContent=initials(r.data.display_name);
-  $("profile-modal").hidden=true;await loadChats();if(S.active)await loadMessages(S.active);toast("Profile updated.");
+  if(r.error){save.disabled=false;status("profile-status",r.error.message,"error");return;}
+  S.profile={...r.data,avatar_data:S.profile.avatar_data||null};
+  if(S.avatarChanged){
+    const picture=S.pendingAvatarData
+      ?await db.from("profile_avatars").upsert({user_id:S.user.id,image_data:S.pendingAvatarData,updated_at:new Date().toISOString()},{onConflict:"user_id"})
+      :await db.from("profile_avatars").delete().eq("user_id",S.user.id);
+    if(picture.error){
+      save.disabled=false;S.profiles[S.user.id]=S.profile;
+      status("profile-status","Your name was saved, but the picture was not: "+picture.error.message,"error");return;
+    }
+    S.profile.avatar_data=S.pendingAvatarData||null;
+  }
+  S.profiles[S.user.id]=S.profile;
+  $("user-name").textContent=S.profile.display_name;syncOwnAvatar();
+  S.pendingAvatarData=null;S.avatarChanged=false;$("profile-modal").hidden=true;save.disabled=false;
+  await loadChats();if(S.active)await loadMessages(S.active);toast("Profile updated.");
+}
+function strongPasswordError(password){
+  if(password.length<12)return "Use at least 12 characters.";
+  if(!/[a-z]/.test(password)||!/[A-Z]/.test(password)||!/[0-9]/.test(password)||!/[^A-Za-z0-9]/.test(password))
+    return "Include uppercase and lowercase letters, a number, and a symbol.";
+  return "";
+}
+async function changePassword(e){
+  e.preventDefault();
+  const current=$("current-password").value,newPassword=$("new-password").value,confirmPassword=$("confirm-password").value;
+  const weak=strongPasswordError(newPassword);
+  if(weak){status("password-status",weak,"error");return;}
+  if(newPassword!==confirmPassword){status("password-status","The new passwords don't match.","error");return;}
+  if(newPassword===current){status("password-status","Choose a different password from your current one.","error");return;}
+  const button=$("password-save");button.disabled=true;status("password-status","Checking your current password…");
+  const check=await db.auth.signInWithPassword({email:S.user.email,password:current});
+  if(check.error){button.disabled=false;status("password-status","Current password wasn't accepted. Please try again.","error");return;}
+  const update=await db.auth.updateUser({password:newPassword});
+  button.disabled=false;
+  if(update.error){status("password-status","Password wasn't changed: "+update.error.message,"error");return;}
+  $("current-password").value="";$("new-password").value="";$("confirm-password").value="";
+  status("password-status","Password updated successfully.","success");
 }
 function closeModals(){ $("people-modal").hidden=true;$("profile-modal").hidden=true;$("requests-modal").hidden=true;$("friends-modal").hidden=true;$("settings-modal").hidden=true; }
 function goHome(){
