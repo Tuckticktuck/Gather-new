@@ -4,7 +4,7 @@ const URL = "https://xrwldphmeafiakittcof.supabase.co";
 const KEY = "sb_publishable_5Gws8f_CODwrHigG2U6Veg_bTRrBoeA";
 const $ = (id) => document.getElementById(id);
 const db = window.supabase.createClient(URL, KEY);
-const S = { user:null, profile:null, profiles:{}, chats:[], active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, timer:null };
+const S = { user:null, profile:null, profiles:{}, chats:[], requests:[], directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, timer:null };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function status(id, text, kind) { const n=$(id); n.textContent=text||""; n.className="status"+(kind?" "+kind:""); }
@@ -14,7 +14,7 @@ function avatar(name) { return el("span","avatar",initials(name)); }
 function dateLabel(s) { if(!s)return ""; const d=new Date(s), now=new Date(); return d.toDateString()===now.toDateString()?d.toLocaleTimeString([],{hour:"numeric",minute:"2-digit"}):d.toLocaleDateString([],{month:"short",day:"numeric"}); }
 function showAuth() {
   if(S.channel){db.removeChannel(S.channel);S.channel=null;}
-  S.user=null;S.profile=null;S.profiles={};S.chats=[];S.active=null;S.messages=[];
+  S.user=null;S.profile=null;S.profiles={};S.chats=[];S.requests=[];S.directStatus=null;S.active=null;S.messages=[];
   $("auth").hidden=false;$("app").hidden=true;
 }
 function showApp(){ $("auth").hidden=true;$("app").hidden=false; }
@@ -56,7 +56,7 @@ async function loadChats(){
   const m=await db.from("conversation_members").select("conversation_id,role,conversations!inner(id,kind,title,updated_at)").eq("user_id",S.user.id);
   if(m.error){toast("Chats could not be loaded: "+m.error.message);return;}
   const rows=m.data||[],ids=[...new Set(rows.map(x=>x.conversation_id))];
-  if(!ids.length){S.chats=[];S.profiles={};renderChats();renderActive();return;}
+  if(!ids.length){S.chats=[];S.profiles={};renderChats();renderActive();await loadRequests();return;}
   const [members,msgs]=await Promise.all([
     db.from("conversation_members").select("conversation_id,user_id,role").in("conversation_id",ids),
     db.from("messages").select("conversation_id,body,created_at").in("conversation_id",ids).order("created_at",{ascending:false}).limit(300)
@@ -70,7 +70,50 @@ async function loadChats(){
   (msgs.data||[]).forEach(x=>{if(!last[x.conversation_id])last[x.conversation_id]=x;});
   S.chats=rows.map(x=>({...x.conversations,members:byChat[x.conversation_id]||[],last:last[x.conversation_id]||null}))
     .sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at));
-  renderChats();renderActive();
+  renderChats();renderActive();await loadRequests();
+}
+async function loadRequests(){
+  if(!S.user)return;
+  const r=await db.from("conversation_requests").select("id,sender_id,recipient_id,status,created_at").or("sender_id.eq."+S.user.id+",recipient_id.eq."+S.user.id).order("created_at",{ascending:false}).limit(60);
+  if(r.error){toast("Chat requests could not be loaded: "+r.error.message);return;}
+  S.requests=r.data||[];
+  const ids=[...new Set(S.requests.flatMap(x=>[x.sender_id,x.recipient_id]).filter(id=>id!==S.user.id))];
+  if(ids.length){
+    const p=await db.from("profiles").select("id,username,display_name").in("id",ids);
+    if(p.error){toast("Request profiles could not be loaded: "+p.error.message);return;}
+    p.data.forEach(x=>S.profiles[x.id]=x);
+  }
+  renderRequests();
+}
+function renderRequests(){
+  const incoming=$("incoming-requests"),outgoing=$("outgoing-requests");
+  incoming.replaceChildren();outgoing.replaceChildren();
+  const ins=S.requests.filter(x=>x.recipient_id===S.user.id&&x.status==="pending");
+  const outs=S.requests.filter(x=>x.sender_id===S.user.id&&x.status==="pending");
+  $("requests-count").textContent=ins.length;
+  $("requests-open").classList.toggle("has-requests",ins.length>0);
+  if(!ins.length)incoming.append(el("p","muted tiny","No new requests."));
+  if(!outs.length)outgoing.append(el("p","muted tiny","You have no pending sent requests."));
+  ins.forEach(r=>incoming.append(requestRow(r,true)));
+  outs.forEach(r=>outgoing.append(requestRow(r,false)));
+}
+function requestRow(r,isIncoming){
+  const peerId=isIncoming?r.sender_id:r.recipient_id,p=S.profiles[peerId]||{display_name:"Gather member",username:"member"};
+  const row=el("div","request-item");row.append(avatar(p.display_name));
+  const copy=el("div","request-copy");copy.append(el("strong","",p.display_name),el("small","","@"+p.username));row.append(copy);
+  if(isIncoming){
+    const actions=el("div","request-actions"),accept=el("button","request-accept","Accept"),decline=el("button","request-decline","Decline");
+    accept.type=decline.type="button";accept.addEventListener("click",()=>respondToRequest(r.id,true));decline.addEventListener("click",()=>respondToRequest(r.id,false));actions.append(accept,decline);row.append(actions);
+  }else row.append(el("span","request-pending","Pending"));
+  return row;
+}
+async function respondToRequest(id,accept){
+  const r=await db.rpc("respond_to_direct_chat_request",{p_request_id:id,p_accept:accept});
+  if(r.error){toast("Request could not be updated: "+r.error.message);return;}
+  if(r.data?.status==="blocked"){toast("This request cannot be accepted because private messaging is blocked.");await loadRequests();return;}
+  if(accept&&r.data?.conversation_id){
+    $("requests-modal").hidden=true;toast("Request accepted. You can now message each other.");await loadChats();await openChat(r.data.conversation_id);
+  }else{toast("Request declined.");await loadRequests();}
 }
 function renderChats(){
   const list=$("chat-list");list.replaceChildren();const term=$("filter").value.trim().toLowerCase();
@@ -88,10 +131,40 @@ function renderActive(){
   if(!c)return;
   $("chat-title").textContent=chatTitle(c);$("chat-subtitle").textContent=chatSub(c);$("chat-avatar").textContent=initials(chatTitle(c));
   const me=c.members.find(x=>x.user_id===S.user.id);$("add-people").hidden=!(c.kind==="group"&&me?.role==="owner");
-  renderChats();
+  renderDirectControls();renderChats();
+}
+function renderDirectControls(){
+  const c=S.chats.find(x=>x.id===S.active),isDirect=c?.kind==="direct";
+  $("block-user").hidden=!isDirect;
+  if(!isDirect){$("chat-notice").hidden=true;$("message").disabled=false;$("message").placeholder="Write a message…";$("send").disabled=false;return;}
+  const d=S.directStatus,blocked=!d?.can_message;
+  $("block-user").disabled=!d||!!d.error;
+  $("block-user").textContent=d?.i_blocked?"Unblock":"Block";
+  $("message").disabled=blocked;$("send").disabled=blocked;
+  $("message").placeholder=blocked?"Private messaging unavailable":"Write a message…";
+  $("chat-notice").hidden=!blocked;
+  $("chat-notice").textContent=!d?"Checking private chat permissions…":d.error?"Could not verify chat permissions. Refresh the page and try again.":d.i_blocked?"You blocked this member. Unblock them to send private messages. Your previous messages remain visible.":"Private messaging is unavailable in this conversation. Your previous messages remain visible.";
+}
+async function refreshDirectStatus(){
+  const c=S.chats.find(x=>x.id===S.active),peer=c?.members.find(m=>m.user_id!==S.user.id);
+  if(!c||c.kind!=="direct"||!peer){S.directStatus=null;renderDirectControls();return;}
+  const r=await db.rpc("get_direct_chat_status",{p_other_user_id:peer.user_id});
+  S.directStatus=r.error?{i_blocked:false,can_message:false,error:r.error.message}:(r.data||{i_blocked:false,can_message:false,error:"No status returned"});
+  renderDirectControls();
+}
+async function toggleBlock(){
+  const c=S.chats.find(x=>x.id===S.active),peer=c?.members.find(m=>m.user_id!==S.user.id);
+  if(!peer||c.kind!=="direct"||!S.directStatus)return;
+  const unblock=!!S.directStatus.i_blocked;
+  if(!unblock&&!confirm("Block this member? They will not be able to send you private messages, and you will not be able to send them private messages. Your chat history will remain visible."))return;
+  const r=unblock
+    ?await db.from("user_blocks").delete().eq("blocker_id",S.user.id).eq("blocked_id",peer.user_id)
+    :await db.from("user_blocks").insert({blocker_id:S.user.id,blocked_id:peer.user_id});
+  if(r.error){toast((unblock?"Could not unblock: ":"Could not block: ")+r.error.message);return;}
+  S.directStatus=null;await refreshDirectStatus();await loadRequests();toast(unblock?"Member unblocked.":"Member blocked.");
 }
 async function openChat(id){
-  S.active=id;$("layout").classList.add("show-chat");renderActive();await loadMessages(id);
+  S.active=id;S.directStatus=null;$("layout").classList.add("show-chat");renderActive();await refreshDirectStatus();await loadMessages(id);
   if(S.channel){await db.removeChannel(S.channel);S.channel=null;}
   S.channel=db.channel("chat-"+id).on("postgres_changes",{event:"INSERT",schema:"public",table:"messages",filter:"conversation_id=eq."+id},payload=>{
     if(S.active!==id||S.messages.some(x=>x.id===payload.new.id))return;
@@ -123,6 +196,7 @@ async function deleteMessage(id){
 }
 async function sendMessage(e){
   e.preventDefault();const body=$("message").value.trim();if(!body||!S.active)return;
+  const activeChat=S.chats.find(x=>x.id===S.active);if(activeChat?.kind==="direct"&&!S.directStatus?.can_message){toast("Private messaging is unavailable in this conversation.");return;}
   $("send").disabled=true;
   const r=await db.from("messages").insert({conversation_id:S.active,sender_id:S.user.id,body}).select("id,conversation_id,sender_id,body,created_at").single();
   $("send").disabled=false;if(r.error){toast("Message not sent: "+r.error.message);return;}
@@ -130,14 +204,14 @@ async function sendMessage(e){
   if(!S.messages.some(x=>x.id===r.data.id)){S.messages.push(r.data);renderMessages();}
   await loadChats();
 }
-function openPeople(mode){
+async function openPeople(mode){
   S.picker=mode;S.selected=new Set();$("people-modal").hidden=false;$("people-search").value="";
   $("people-results").replaceChildren(el("p","muted tiny","Type at least 2 characters."));
   $("group-wrap").hidden=mode!=="group";$("group-title").value="";
   $("people-create").hidden=mode==="direct";$("people-create").textContent=mode==="group"?"Create group":"Add selected people";
   $("people-title").textContent=mode==="group"?"Create a group":mode==="add"?"Add people":"Start a conversation";
   $("people-desc").textContent=mode==="group"?"Name your group and choose who to invite.":"Find someone by their Gather username.";
-  status("people-status","");$("people-search").focus();
+  status("people-status","");await loadRequests();$("people-search").focus();
 }
 async function searchPeople(){
   const term=$("people-search").value.trim().toLowerCase().replace(/[^a-z0-9_]/g,""),box=$("people-results");box.replaceChildren();
@@ -150,24 +224,31 @@ async function searchPeople(){
   if(!people.length){box.append(el("p","muted tiny","No matching members found."));return;}
   people.forEach(p=>{
     const b=el("button","person");b.type="button";b.append(avatar(p.display_name));
-    const copy=el("div","person-copy");copy.append(el("strong","",p.display_name),el("small","","@"+p.username));b.append(copy);
+    const copy=el("div","person-copy"),sent=S.requests.some(x=>x.sender_id===S.user.id&&x.recipient_id===p.id&&x.status==="pending");
+    copy.append(el("strong","",p.display_name),el("small","",sent?"@"+p.username+" · Request sent":"@"+p.username));b.append(copy);
     if(S.picker!=="direct")b.append(el("span","",S.selected.has(p.id)?"✓":"＋"));
-    b.addEventListener("click",()=>S.picker==="direct"?directChat(p):(S.selected.has(p.id)?S.selected.delete(p.id):S.selected.add(p.id),searchPeople(),status("people-status",S.selected.size+" selected.")));
+    if(sent&&S.picker==="direct"){b.disabled=true;b.classList.add("person-disabled");}
+    else b.addEventListener("click",()=>S.picker==="direct"?directChat(p):(S.selected.has(p.id)?S.selected.delete(p.id):S.selected.add(p.id),searchPeople(),status("people-status",S.selected.size+" selected.")));
     box.append(b);
   });
 }
 async function directChat(p){
   const existing=S.chats.find(c=>c.kind==="direct"&&c.members.length===2&&c.members.some(m=>m.user_id===p.id)&&c.members.some(m=>m.user_id===S.user.id));
   if(existing){$("people-modal").hidden=true;await openChat(existing.id);return;}
-  await createChat("direct",null,[p.id]);
+  const r=await db.rpc("send_direct_chat_request",{p_recipient_id:p.id});
+  if(r.error){status("people-status","Request could not be sent: "+r.error.message,"error");return;}
+  if(r.data?.status==="existing"&&r.data.conversation_id){$("people-modal").hidden=true;await loadChats();await openChat(r.data.conversation_id);return;}
+  if(r.data?.status==="blocked"){status("people-status","A private chat request cannot be sent because blocking is active between these accounts.","error");return;}
+  $("people-modal").hidden=true;await loadRequests();
+  if(r.data?.status==="incoming"){toast("They already sent you a request. Review it in Chat requests.");$("requests-modal").hidden=false;}
+  else toast("Chat request sent. You can message each other after they accept.");
 }
+async function openRequests(){$("requests-modal").hidden=false;await loadRequests();}
 async function createChat(kind,title,ids){
   const id=crypto.randomUUID();
-  // Do not request the inserted row here: RLS only exposes conversations to members,
-  // and the creator is added as a member immediately after this insert.
+  // The creator is added as the first member immediately after this insert.
   const c=await db.from("conversations").insert({id,kind,title,created_by:S.user.id});
   if(c.error){status("people-status",c.error.message,"error");return;}
-  const id=c.data.id;
   const owner=await db.from("conversation_members").insert({conversation_id:id,user_id:S.user.id,role:"owner"});
   if(owner.error){status("people-status",owner.error.message,"error");return;}
   const other=await db.from("conversation_members").insert(ids.map(user_id=>({conversation_id:id,user_id,role:"member"})));
@@ -198,7 +279,7 @@ async function saveProfile(e){
   S.profile=r.data;S.profiles[S.user.id]=r.data;$("user-name").textContent=r.data.display_name;$("user-initial").textContent=initials(r.data.display_name);
   $("profile-modal").hidden=true;await loadChats();if(S.active)await loadMessages(S.active);toast("Profile updated.");
 }
-function closeModals(){ $("people-modal").hidden=true;$("profile-modal").hidden=true; }
+function closeModals(){ $("people-modal").hidden=true;$("profile-modal").hidden=true;$("requests-modal").hidden=true; }
 function wire(){
   document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>authMode(b.dataset.mode)));
   $("auth-form").addEventListener("submit",async e=>{
@@ -209,7 +290,7 @@ function wire(){
     else status("auth-status","Signed in. Loading chats…","success");
     $("auth-submit").disabled=false;
   });
-  $("new-chat").addEventListener("click",()=>openPeople("direct"));$("empty-new").addEventListener("click",()=>openPeople("direct"));$("add-people").addEventListener("click",()=>openPeople("add"));
+  $("new-chat").addEventListener("click",()=>openPeople("direct"));$("empty-new").addEventListener("click",()=>openPeople("direct"));$("add-people").addEventListener("click",()=>openPeople("add"));$("requests-open").addEventListener("click",openRequests);$("block-user").addEventListener("click",toggleBlock);
   $("people-search").addEventListener("input",()=>{clearTimeout(S.timer);S.timer=setTimeout(searchPeople,220);});$("people-create").addEventListener("click",createGroupOrAdd);
   $("filter").addEventListener("input",renderChats);$("profile-open").addEventListener("click",openProfile);$("profile-form").addEventListener("submit",saveProfile);
   $("send-form").addEventListener("submit",sendMessage);
@@ -218,7 +299,7 @@ function wire(){
   $("back").addEventListener("click",()=>{S.active=null;$("layout").classList.remove("show-chat");renderChats();renderActive();if(S.channel){db.removeChannel(S.channel);S.channel=null;}});
   $("signout").addEventListener("click",async()=>{const r=await db.auth.signOut();if(r.error)toast(r.error.message);else closeModals();});
   document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",closeModals));
-  ["people-modal","profile-modal"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target===$(id))closeModals();}));
+  ["people-modal","profile-modal","requests-modal"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target===$(id))closeModals();}));
   document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModals();});
 }
 async function boot(){
