@@ -388,3 +388,6 @@ input::placeholder,textarea::placeholder{color:var(--accent-muted)}
 .chat-action-trigger{flex:none;white-space:nowrap}
 .chat-actions-trigger span{margin-left:5px;color:var(--accent-text)}
 @media(max-width:720px){.chat-head{flex-wrap:nowrap;min-height:64px}.chat-head .chat-title{flex:1 1 auto;min-width:0}.chat-actions-trigger{padding:7px 9px;font-size:calc(10px * var(--font-scale,1))}.chat-actions-modal{width:min(100%,470px)}}
+
+.about-blank-note{flex:1 1 100%;max-width:440px;margin:0;color:var(--muted);font-size:calc(9px * var(--font-scale,1));line-height:1.5;text-align:right}
+@media(max-width:720px){.about-blank-note{max-width:none;text-align:left}}
