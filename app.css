@@ -56,3 +56,8 @@ label{display:grid;gap:7px;margin:13px 0;color:#d0cede;font-size:11px;font-weigh
   .chat-section{margin-top:13px}
   .empty-actions{grid-template-columns:1fr;width:min(100%,300px)}
 }
+
+/* Keep each conversation list independently scrollable in the sidebar. */
+.chat-section{display:flex;flex:1;flex-direction:column;min-height:72px}
+.chat-section:not([open]){flex:0 0 auto;min-height:0}
+.chat-section[open] .chat-list{flex:1;min-height:0;overflow:auto}
