@@ -661,7 +661,7 @@ function renderBlockedUsers(term){
 }
 function renderDeletedMessages(term){
   const list=$("deleted-list");list.replaceChildren();
-  const items=S.deletedMessages.filter(x=>(x.body+" "+x.sender_name+" "+x.conversation_title).toLowerCase().includes(term));
+  const items=S.deletedMessages.filter(x=>((x.body||(x.attachment_path?"Image attachment":""))+" "+x.sender_name+" "+x.conversation_title).toLowerCase().includes(term));
   $("deleted-count").textContent=items.length;
   if(!items.length){list.append(el("p","muted tiny section-empty",term?"No matching deleted messages.":"No deleted messages. Messages you hide will appear here."));return;}
   items.forEach(item=>{
@@ -670,7 +670,7 @@ function renderDeletedMessages(term){
     const copy=el("div","deleted-copy");
     copy.append(el("strong","",item.sender_name));
     copy.append(el("small","",item.conversation_title+" · "+dateLabel(item.created_at)));
-    copy.append(el("p","deleted-preview",item.body));
+    copy.append(el("p","deleted-preview",item.body||(item.attachment_path?"Image attachment":"")));
     const restore=el("button","request-accept","Restore");restore.type="button";
     restore.addEventListener("click",()=>restoreMessage(item.message_id));
     row.append(copy,restore);list.append(row);
@@ -1116,7 +1116,7 @@ async function openSearchResult(message){
   },50);
 }
 function clearPendingMessageImage(){
-  if(S.pendingImageUrl){URL.revokeObjectURL(S.pendingImageUrl);S.pendingImageUrl=null;}
+  if(S.pendingImageUrl){window.URL.revokeObjectURL(S.pendingImageUrl);S.pendingImageUrl=null;}
   S.pendingImageFile=null;
   const input=$("message-image-file");if(input)input.value="";
   const preview=$("message-image-preview");if(preview){preview.hidden=true;preview.replaceChildren();}
@@ -1127,7 +1127,7 @@ function handleMessageImageFile(){
   if(!allowed.includes(file.type)){clearPendingMessageImage();toast("Choose a JPG, PNG, WebP, or GIF image.");return;}
   if(file.size>5*1024*1024){clearPendingMessageImage();toast("Choose an image smaller than 5 MB.");return;}
   if(S.pendingImageUrl)URL.revokeObjectURL(S.pendingImageUrl);
-  S.pendingImageFile=file;S.pendingImageUrl=URL.createObjectURL(file);
+  S.pendingImageFile=file;S.pendingImageUrl=window.URL.createObjectURL(file);
   const preview=$("message-image-preview");preview.replaceChildren();
   const image=el("img","message-image-thumb");image.src=S.pendingImageUrl;image.alt="Selected image preview";
   const details=el("div","message-image-details");details.append(el("strong","","Image ready to send"),el("small","",file.name));
