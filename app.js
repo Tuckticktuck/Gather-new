@@ -318,6 +318,11 @@ async function saveProfile(e){
   $("profile-modal").hidden=true;await loadChats();if(S.active)await loadMessages(S.active);toast("Profile updated.");
 }
 function closeModals(){ $("people-modal").hidden=true;$("profile-modal").hidden=true;$("requests-modal").hidden=true; }
+function goHome(){
+  closeModals();S.active=null;S.messages=[];S.directStatus=null;
+  if(S.channel){db.removeChannel(S.channel);S.channel=null;}
+  $("layout").classList.remove("show-chat");renderChats();renderActive();
+}
 function wire(){
   document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>authMode(b.dataset.mode)));
   $("auth-form").addEventListener("submit",async e=>{
@@ -333,6 +338,7 @@ function wire(){
   $("empty-private").addEventListener("click",()=>openPeople("direct"));$("empty-group").addEventListener("click",()=>openPeople("group"));
   $("add-people").addEventListener("click",()=>openPeople("add"));$("requests-open").addEventListener("click",openRequests);$("block-user").addEventListener("click",toggleBlock);
   $("people-search").addEventListener("input",()=>{clearTimeout(S.timer);S.timer=setTimeout(searchPeople,220);});$("people-create").addEventListener("click",createGroupOrAdd);
+  $("home-open").addEventListener("click",goHome);
   $("filter").addEventListener("input",renderChats);$("profile-open").addEventListener("click",openProfile);$("profile-form").addEventListener("submit",saveProfile);
   $("send-form").addEventListener("submit",sendMessage);
   $("message").addEventListener("input",e=>{e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,120)+"px";});
