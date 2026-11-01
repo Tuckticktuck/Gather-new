@@ -522,9 +522,16 @@ async function deleteConversationMessages(conversationId){
   const conversation=S.chats.find(c=>c.id===conversationId);
   if(!conversation)return;
   if(!confirm("Move all messages in this conversation to Deleted messages for your account? Other members will still see them, and you can restore them one at a time."))return;
-  const result=await db.from("messages").select("id").eq("conversation_id",conversationId).limit(1000);
-  if(result.error){toast("Conversation messages could not be loaded: "+result.error.message);return;}
-  const ids=(result.data||[]).map(x=>x.id).filter(id=>!S.deletedMessageIds.has(id));
+  const ids=[];
+  let offset=0;
+  while(true){
+    const page=await db.from("messages").select("id").eq("conversation_id",conversationId).order("created_at",{ascending:true}).range(offset,offset+499);
+    if(page.error){toast("Conversation messages could not be loaded: "+page.error.message);return;}
+    const rows=page.data||[];
+    ids.push(...rows.map(x=>x.id).filter(id=>!S.deletedMessageIds.has(id)));
+    if(rows.length<500)break;
+    offset+=500;
+  }
   if(!ids.length){toast("There are no visible messages to delete in this conversation.");return;}
   for(let i=0;i<ids.length;i+=200){
     const batch=ids.slice(i,i+200).map(message_id=>({user_id:S.user.id,message_id}));
