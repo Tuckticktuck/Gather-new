@@ -7,10 +7,10 @@
 <meta name="description" content="Private direct and group conversations.">
 <title>Gather</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="app.css?v=20261101-33">
+<link rel="stylesheet" href="app.css?v=20261101-34">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script defer src="app.js?v=20261101-33"></script>
+<script defer src="app.js?v=20261101-34"></script>
 </head>
 <body>
 <section id="auth" class="auth-shell">
@@ -116,7 +116,7 @@
         </section>
       </section>
       <section id="chat" class="chat" hidden>
-        <header class="chat-head"><button id="back" class="back" aria-label="Back">←</button><span id="chat-avatar" class="avatar">?</span><div class="chat-title"><strong id="chat-title"></strong><small id="chat-subtitle"></small></div><button id="chat-actions-open" class="outline chat-actions-trigger" type="button" aria-label="Open chat options" aria-haspopup="dialog">Chat options <span aria-hidden="true">⌄</span></button></header>
+        <header class="chat-head"><button id="back" class="back" aria-label="Back">←</button><span id="chat-avatar" class="avatar">?</span><div class="chat-title"><button id="chat-title" class="chat-title-profile" type="button" hidden></button><small id="chat-subtitle"></small></div><button id="chat-actions-open" class="outline chat-actions-trigger" type="button" aria-label="Open chat options" aria-haspopup="dialog">Chat options <span aria-hidden="true">⌄</span></button></header>
         <div id="messages" class="messages"></div>
         <p id="chat-notice" class="chat-notice" hidden></p>
         
