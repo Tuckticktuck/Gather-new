@@ -7,10 +7,10 @@
 <meta name="description" content="Private direct and group conversations.">
 <title>Gather</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="app.css?v=20261101-31">
+<link rel="stylesheet" href="app.css?v=20261101-32">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script defer src="app.js?v=20261101-31"></script>
+<script defer src="app.js?v=20261101-32"></script>
 </head>
 <body>
 <section id="auth" class="auth-shell">
@@ -53,6 +53,7 @@
       <button id="home-open" class="home-button" type="button" aria-label="Return to home" title="Return to home"><span class="home-glyph" aria-hidden="true">⌂</span><span>Home</span></button>
     </div>
     <div class="topbar-actions">
+      <button id="notifications-open" class="home-button notification-open" type="button" aria-label="Open notifications"><span class="home-glyph" aria-hidden="true">♢</span><span>Notifications</span><span id="notification-badge" class="notification-badge" hidden>0</span></button>
       <button id="settings-open" class="home-button" type="button" aria-label="Open settings"><span class="home-glyph" aria-hidden="true">⚙</span><span>Settings</span></button>
       <button id="profile-open" class="profile-pill"><span id="user-initial" class="avatar">?</span><span id="user-name">Account</span><span>⌄</span></button>
     </div>
@@ -142,10 +143,17 @@
   </div></section>
   
   <section class="settings-section notification-settings-section"><h3>Message pop-ups</h3><p class="tiny muted">Choose how long new-message notifications from other conversations stay visible.</p><div class="notification-mode-choices" role="group" aria-label="Message notification duration"><button class="font-choice" type="button" data-notification-mode="temporary" aria-pressed="true">Temporary · 5 seconds</button><button class="font-choice" type="button" data-notification-mode="persistent" aria-pressed="false">Persistent · until dismissed</button></div></section>
-  <section id="feedback-admin-settings-section" class="settings-section" hidden><h3>Administration</h3><p class="tiny muted">Review member feedback and manage replies.</p><button id="feedback-admin-open" class="secondary-action" type="button">Open admin inbox</button></section>
+  <section id="security-settings-section" class="settings-section"><h3>Privacy and security</h3><p class="tiny muted">Manage the sessions that are signed in to your Gather account.</p><button id="signout-other-sessions" class="secondary-action" type="button">Sign out other devices</button><p id="session-security-status" class="tiny muted" role="status"></p><button id="request-account-deletion" class="danger-action" type="button">Request account deletion</button><p class="tiny muted">Deletion requests go to Gather support for review. Your account is not removed automatically.</p></section>
+  <section id="feedback-admin-settings-section" class="settings-section" hidden><h3>Administration</h3><p class="tiny muted">Review member feedback and manage replies.</p><button id="feedback-admin-open" class="secondary-action" type="button">Open admin inbox</button><button id="reports-admin-open" class="secondary-action" type="button">Review reports</button></section>
   <p id="settings-note" class="tiny muted">Your preferences are saved to your Gather account and follow you across devices.</p>
 </section></div>
 
+
+<div id="notifications-modal" class="overlay" hidden><section class="modal notifications-modal" role="dialog" aria-modal="true" aria-labelledby="notifications-title">
+  <button class="close" data-close aria-label="Close">×</button><p class="eyebrow">YOUR UPDATES</p><h2 id="notifications-title">Notifications</h2>
+  <div class="notifications-toolbar"><span id="notifications-summary" class="tiny muted">Your recent activity.</span><button id="notifications-mark-all" class="outline" type="button">Mark all read</button></div>
+  <div id="notifications-list" class="notifications-list"><p class="muted tiny">Loading notifications…</p></div>
+</section></div>
 <div id="feedback-modal" class="overlay" hidden><section class="modal feedback-modal">
   <button class="close" data-close aria-label="Close">×</button>
   <p id="feedback-modal-eyebrow" class="eyebrow">FEEDBACK AND SUPPORT</p>
@@ -180,6 +188,15 @@
   </div>
 </section></div>
 
+
+<div id="report-modal" class="overlay" hidden><section class="modal report-modal" role="dialog" aria-modal="true" aria-labelledby="report-title">
+  <button class="close" data-close aria-label="Close">×</button><p class="eyebrow">KEEP GATHER SAFE</p><h2 id="report-title">Report content</h2>
+  <p id="report-description" class="tiny muted">Reports are private and reviewed by the Gather administrator.</p>
+  <form id="report-form"><label>Reason<select id="report-reason" required><option value="harassment">Harassment or bullying</option><option value="spam">Spam</option><option value="inappropriate">Inappropriate content</option><option value="impersonation">Impersonation</option><option value="other">Other</option></select></label>
+    <label>Additional details <small class="muted">Optional, up to 1,000 characters</small><textarea id="report-details" rows="4" maxlength="1000" placeholder="Add context that may help us review this report…"></textarea></label>
+    <p id="report-status" class="status" role="status"></p><button id="report-submit" class="primary" type="submit">Submit report</button>
+  </form>
+</section></div>
 <div id="people-modal" class="overlay" hidden><section class="modal">
   <button class="close" data-close aria-label="Close">×</button><p class="eyebrow">MAKE A CONNECTION</p><h2 id="people-title">Start a conversation</h2><p id="people-desc" class="muted tiny">Find someone by username. A request is sent first; messages open after they accept.</p>
   <label id="group-wrap" hidden>Group name<input id="group-title" maxlength="60" placeholder="Name your group"></label>
@@ -203,6 +220,15 @@
   <div class="request-section"><h3>Sent</h3><div id="outgoing-requests" class="request-list"><p class="muted tiny">You have no pending sent requests.</p></div></div>
 </section></div>
 
+
+<div id="member-profile-modal" class="overlay" hidden><section class="modal member-profile-modal" role="dialog" aria-modal="true" aria-labelledby="member-profile-name">
+  <button class="close" data-close aria-label="Close">×</button><div id="member-profile-banner" class="member-profile-banner banner-violet"></div>
+  <div class="member-profile-main"><span id="member-profile-avatar" class="avatar member-profile-avatar">?</span>
+    <h2 id="member-profile-name"></h2><p id="member-profile-username" class="tiny muted"></p><p id="member-profile-pronouns" class="member-profile-pronouns"></p>
+    <p id="member-profile-bio" class="member-profile-bio"></p><p id="member-profile-mutuals" class="tiny muted"></p>
+    <button id="member-profile-report" class="outline" type="button">Report this account</button>
+  </div>
+</section></div>
 <div id="profile-modal" class="overlay" hidden><section class="modal profile-modal">
   <button class="close" data-close aria-label="Close">×</button><p class="eyebrow">YOUR ACCOUNT</p><h2>Profile settings</h2>
   <form id="profile-form">
@@ -216,6 +242,9 @@
     </div>
     <label>Display name<input id="profile-name" maxlength="50" required></label>
     <label>Username<input id="profile-username" minlength="3" maxlength="24" pattern="[a-z0-9_]{3,24}" required><small>3–24 lowercase letters, numbers, or underscores.</small></label>
+    <label>Bio <small class="muted">Up to 160 characters</small><textarea id="profile-bio" rows="3" maxlength="160" placeholder="A little about you…"></textarea></label>
+    <label>Pronouns <small class="muted">Optional</small><input id="profile-pronouns" maxlength="35" placeholder="e.g. they/them"></label>
+    <label>Profile banner<select id="profile-banner-style"><option value="violet">Violet</option><option value="blue">Ocean blue</option><option value="mint">Mint</option><option value="rose">Rose</option><option value="amber">Amber</option><option value="teal">Teal</option></select></label>
     <p id="profile-status" class="status"></p>
     <button id="profile-save" class="primary" type="submit">Save changes</button>
   </form>
@@ -275,6 +304,11 @@
     <button id="select-messages" class="outline chat-action" type="button">Select messages</button>
     <button id="delete-selected" class="outline chat-action" type="button" hidden>Delete selected</button>
   </div></section>
+</section></div>
+
+<div id="reports-admin-modal" class="overlay" hidden><section class="modal reports-admin-modal" role="dialog" aria-modal="true" aria-labelledby="reports-admin-title">
+  <button class="close" data-close aria-label="Close">×</button><p class="eyebrow">GATHER ADMIN</p><h2 id="reports-admin-title">Member reports</h2><p class="tiny muted">Private reports submitted by Gather members.</p>
+  <div id="reports-admin-list" class="reports-admin-list"><p class="muted tiny">Loading reports…</p></div>
 </section></div>
 <div id="toast" class="toast" role="status"></div>
 <div id="message-notifications" class="message-notifications" role="status" aria-live="polite" aria-atomic="false" hidden></div>
