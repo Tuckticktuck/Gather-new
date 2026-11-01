@@ -244,23 +244,16 @@ async function directChat(p){
   else toast("Chat request sent. You can message each other after they accept.");
 }
 async function openRequests(){$("requests-modal").hidden=false;await loadRequests();}
-async function createChat(kind,title,ids){
-  const id=crypto.randomUUID();
-  // The creator is added as the first member immediately after this insert.
-  const c=await db.from("conversations").insert({id,kind,title,created_by:S.user.id});
-  if(c.error){status("people-status",c.error.message,"error");return;}
-  const owner=await db.from("conversation_members").insert({conversation_id:id,user_id:S.user.id,role:"owner"});
-  if(owner.error){status("people-status",owner.error.message,"error");return;}
-  const other=await db.from("conversation_members").insert(ids.map(user_id=>({conversation_id:id,user_id,role:"member"})));
-  if(other.error){await db.from("conversations").delete().eq("id",id);status("people-status",other.error.message,"error");return;}
-  $("people-modal").hidden=true;toast(kind==="group"?"Group created.":"Conversation created.");await loadChats();await openChat(id);
-}
+
 async function createGroupOrAdd(){
   const ids=[...S.selected];if(!ids.length){status("people-status","Choose at least one person first.","error");return;}
   $("people-create").disabled=true;
   if(S.picker==="group"){
     const title=$("group-title").value.trim();if(!title){status("people-status","Enter a group name.","error");$("people-create").disabled=false;return;}
-    await createChat("group",title,ids);
+    if(ids.length<2){status("people-status","Choose at least two other people for a group chat.","error");$("people-create").disabled=false;return;}
+    const created=await db.rpc("create_group_chat",{p_title:title,p_member_ids:ids});
+    if(created.error)status("people-status",created.error.message,"error");
+    else{$("people-modal").hidden=true;toast("Group created.");await loadChats();await openChat(created.data);}
   }else{
     const r=await db.from("conversation_members").insert(ids.map(user_id=>({conversation_id:S.active,user_id,role:"member"})));
     if(r.error)status("people-status",r.error.message,"error");else{$("people-modal").hidden=true;toast("People added.");await loadChats();}
