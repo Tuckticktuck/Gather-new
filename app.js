@@ -14,7 +14,7 @@ const ACCENTS = {
 };
 const FONT_SCALES = {small:"0.9",normal:"1",large:"1.15"};
 const DEFAULT_PREFERENCES = {accent:"lavender",fontSize:"normal"};
-const S = { user:null, profile:null, profiles:{}, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, pendingAvatarData:null, avatarChanged:false, requestChannel:null, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null };
+const S = { user:null, profile:null, profiles:{}, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, pendingAvatarData:null, avatarChanged:false, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function status(id, text, kind) { const n=$(id); n.textContent=text||""; n.className="status"+(kind?" "+kind:""); }
@@ -226,9 +226,10 @@ async function loadChats(){
   if(m.error){S.loadError="Chats could not be loaded: "+m.error.message;toast(S.loadError);return false;}
   const rows=m.data||[],ids=[...new Set(rows.map(x=>x.conversation_id))];
   if(!ids.length){S.chats=[];S.profiles={};renderChats();renderActive();return await loadRequests();}
-  const [members,msgs]=await Promise.all([
+  const [members,msgs,groupPics]=await Promise.all([
     db.from("conversation_members").select("conversation_id,user_id,role").in("conversation_id",ids),
-    db.from("messages").select("id,conversation_id,sender_id,body,created_at").in("conversation_id",ids).order("created_at",{ascending:false}).limit(1000)
+    db.from("messages").select("id,conversation_id,sender_id,body,created_at").in("conversation_id",ids).order("created_at",{ascending:false}).limit(1000),
+    db.from("group_avatars").select("conversation_id,image_data").in("conversation_id",ids)
   ]);
   if(members.error){S.loadError="Chat members could not be loaded: "+members.error.message;toast(S.loadError);return false;}
   const userIds=[...new Set(members.data.map(x=>x.user_id))];
@@ -236,12 +237,15 @@ async function loadChats(){
   if(p.error){S.loadError="Member profiles could not be loaded: "+p.error.message;toast(S.loadError);return false;}
   S.profiles={};p.data.forEach(x=>S.profiles[x.id]=x);
   if(S.profile)S.profiles[S.user.id]=S.profile;
+  const groupAvatarByChat={};
+  if(groupPics.error)console.warn("Gather group pictures could not be loaded:",groupPics.error.message);
+  else (groupPics.data||[]).forEach(x=>groupAvatarByChat[x.conversation_id]=x.image_data);
   const byChat={},last={},hasMessages={};members.data.forEach(x=>(byChat[x.conversation_id]??=[]).push(x));
   (msgs.data||[]).forEach(x=>{
     hasMessages[x.conversation_id]=true;
     if(!S.deletedMessageIds.has(x.id)&&!last[x.conversation_id])last[x.conversation_id]=x;
   });
-  S.chats=rows.map(x=>({...x.conversations,members:byChat[x.conversation_id]||[],last:last[x.conversation_id]||null,hasMessages:!!hasMessages[x.conversation_id]}))
+  S.chats=rows.map(x=>({...x.conversations,avatar_data:groupAvatarByChat[x.conversation_id]||null,members:byChat[x.conversation_id]||[],last:last[x.conversation_id]||null,hasMessages:!!hasMessages[x.conversation_id]}))
     .sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at));
   let readStateChanged=false;
   S.chats.forEach(chat=>{
@@ -359,6 +363,14 @@ function subscribeMessages(){
       }
       S.chats.sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at));
       renderChats();
+    })
+    .on("postgres_changes",{event:"*",schema:"public",table:"group_avatars"},payload=>{
+      const conversationId=payload.new?.conversation_id||payload.old?.conversation_id;
+      const chat=S.chats.find(x=>x.id===conversationId);
+      if(!chat||chat.kind!=="group")return;
+      chat.avatar_data=payload.eventType==="DELETE"?null:(payload.new?.image_data||null);
+      renderChats();
+      if(S.active===conversationId)renderActive();
     })
     .subscribe();
 }
@@ -479,8 +491,9 @@ function renderChatSection(kind,listId,countId,term,sourceChats=null){
   chats.forEach(c=>{
     const row=el("div","chat-row");
     const peer=c.members.find(m=>m.user_id!==S.user.id),peerProfile=peer&&S.profiles[peer.user_id];
+    const avatarImage=c.kind==="group"?c.avatar_data:peerProfile?.avatar_data;
     const unread=chatHasUnread(c);
-    const b=el("button","chat-item"+(c.id===S.active?" active":"")+(unread?" has-unread":""));b.type="button";b.append(avatar(chatTitle(c),peerProfile?.avatar_data));
+    const b=el("button","chat-item"+(c.id===S.active?" active":"")+(unread?" has-unread":""));b.type="button";b.append(avatar(chatTitle(c),avatarImage));
     const copy=el("div","chat-copy");
     copy.append(el("strong","",chatTitle(c)));
     let preview=c.last?c.last.body:chatSub(c);
@@ -604,14 +617,17 @@ async function unblockUser(userId){
 function renderActive(){
   const c=S.chats.find(x=>x.id===S.active);$("empty").hidden=!!c;$("chat").hidden=!c;
   const peer=c?.members.find(m=>m.user_id!==S.user.id),peerProfile=peer&&S.profiles[peer.user_id];
-  paintAvatar($("chat-avatar"),chatTitle(c||{kind:"direct",members:[]}),peerProfile?.avatar_data);
+  const avatarImage=c?.kind==="group"?c.avatar_data:peerProfile?.avatar_data;
+  paintAvatar($("chat-avatar"),chatTitle(c||{kind:"direct",members:[]}),avatarImage);
   $("layout").classList.toggle("show-chat",!!c);
   $("layout").classList.toggle("show-home",!c);
   $("home-open").hidden=!c;
   $("leave-chat").hidden=!c||c.kind!=="group";
   if(!c)return;
-  $("chat-title").textContent=chatTitle(c);$("chat-subtitle").textContent=chatSub(c);$("chat-avatar").textContent=initials(chatTitle(c));
-  const me=c.members.find(x=>x.user_id===S.user.id);$("add-people").hidden=!(c.kind==="group"&&me?.role==="owner");
+  $("chat-title").textContent=chatTitle(c);$("chat-subtitle").textContent=chatSub(c);
+  const me=c.members.find(x=>x.user_id===S.user.id);
+  $("add-people").hidden=!(c.kind==="group"&&me?.role==="owner");
+  $("edit-group-photo").hidden=!(c.kind==="group"&&me?.role==="owner");
   renderDirectControls();renderChats();
 }
 function renderDirectControls(){
@@ -868,6 +884,56 @@ function openProfile(){
   $("profile-avatar-file").value="";
   $("profile-modal").hidden=false;
 }
+function openGroupPhoto(){
+  const chat=S.chats.find(x=>x.id===S.active);
+  const me=chat?.members.find(x=>x.user_id===S.user.id);
+  if(!chat||chat.kind!=="group"||me?.role!=="owner"){toast("Only the group owner can change this photo.");return;}
+  S.groupAvatarConversationId=chat.id;S.pendingGroupAvatarData=chat.avatar_data||null;S.groupAvatarChanged=false;
+  paintAvatar($("group-avatar-preview"),chatTitle(chat),chat.avatar_data||null);
+  $("group-avatar-file").value="";$("group-avatar-remove").hidden=!chat.avatar_data;
+  $("group-avatar-save").hidden=true;status("group-avatar-status","");
+  $("group-photo-modal").hidden=false;
+}
+async function handleGroupAvatarFile(){
+  const file=$("group-avatar-file").files?.[0];if(!file)return;
+  try{
+    status("group-avatar-status","Preparing group photo…");
+    S.pendingGroupAvatarData=await fileToAvatarData(file);S.groupAvatarChanged=true;
+    const chat=S.chats.find(x=>x.id===S.groupAvatarConversationId);
+    paintAvatar($("group-avatar-preview"),chatTitle(chat||{kind:"group",title:"Group"}),S.pendingGroupAvatarData);
+    $("group-avatar-remove").hidden=false;$("group-avatar-save").hidden=false;
+    status("group-avatar-status","Photo ready. Save to share it with the group.","success");
+  }catch(e){
+    $("group-avatar-file").value="";S.pendingGroupAvatarData=null;S.groupAvatarChanged=false;
+    const chat=S.chats.find(x=>x.id===S.groupAvatarConversationId);
+    paintAvatar($("group-avatar-preview"),chatTitle(chat||{kind:"group",title:"Group"}),chat?.avatar_data||null);
+    $("group-avatar-save").hidden=true;
+    status("group-avatar-status",e.message||"Group photo could not be prepared.","error");
+  }
+}
+function removeGroupAvatar(){
+  const chat=S.chats.find(x=>x.id===S.groupAvatarConversationId);
+  S.pendingGroupAvatarData=null;S.groupAvatarChanged=true;
+  paintAvatar($("group-avatar-preview"),chatTitle(chat||{kind:"group",title:"Group"}),null);
+  $("group-avatar-remove").hidden=true;$("group-avatar-save").hidden=false;
+  status("group-avatar-status","The group photo will be removed when you save.","success");
+}
+async function saveGroupAvatar(){
+  const conversationId=S.groupAvatarConversationId;
+  const chat=S.chats.find(x=>x.id===conversationId);
+  const me=chat?.members.find(x=>x.user_id===S.user.id);
+  if(!chat||chat.kind!=="group"||me?.role!=="owner"){status("group-avatar-status","Only the group owner can change this photo.","error");return;}
+  if(!S.groupAvatarChanged)return;
+  const button=$("group-avatar-save");button.disabled=true;
+  const result=S.pendingGroupAvatarData
+    ?await db.from("group_avatars").upsert({conversation_id:conversationId,image_data:S.pendingGroupAvatarData,updated_at:new Date().toISOString()},{onConflict:"conversation_id"})
+    :await db.from("group_avatars").delete().eq("conversation_id",conversationId);
+  button.disabled=false;
+  if(result.error){status("group-avatar-status","Group photo could not be saved: "+result.error.message,"error");return;}
+  chat.avatar_data=S.pendingGroupAvatarData||null;
+  S.pendingGroupAvatarData=null;S.groupAvatarChanged=false;S.groupAvatarConversationId=null;
+  $("group-photo-modal").hidden=true;renderChats();renderActive();toast("Group photo updated.");
+}
 async function fileToAvatarData(file){
   if(!file)return null;
   if(!["image/jpeg","image/png","image/webp"].includes(file.type))throw new Error("Choose a JPG, PNG, or WebP image.");
@@ -945,7 +1011,7 @@ async function changePassword(e){
   $("current-password").value="";$("new-password").value="";$("confirm-password").value="";
   status("password-status","Password updated successfully.","success");
 }
-function closeModals(){ $("people-modal").hidden=true;$("profile-modal").hidden=true;$("requests-modal").hidden=true;$("friends-modal").hidden=true;$("settings-modal").hidden=true; }
+function closeModals(){ $("people-modal").hidden=true;$("profile-modal").hidden=true;$("requests-modal").hidden=true;$("friends-modal").hidden=true;$("settings-modal").hidden=true;$("group-photo-modal").hidden=true; }
 function goHome(){
   closeModals();S.active=null;S.messages=[];S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;
   $("layout").classList.remove("show-chat");$("layout").classList.add("show-home");renderChats();renderActive();
@@ -965,7 +1031,7 @@ function wire(){
   $("new-private-chat").addEventListener("click",()=>openPeople("direct"));$("new-group-chat").addEventListener("click",()=>openPeople("group"));
   $("retry-load-chats").addEventListener("click",()=>{if(S.user&&!S.loading)signedIn(S.user,true);});
   $("empty-private").addEventListener("click",()=>openPeople("direct"));$("empty-group").addEventListener("click",()=>openPeople("group"));
-  $("add-people").addEventListener("click",()=>openPeople("add"));$("leave-chat").addEventListener("click",()=>{if(S.active)leaveGroupChat(S.active);});$("requests-open").addEventListener("click",openRequests);$("friends-open").addEventListener("click",openFriends);$("friends-find").addEventListener("click",()=>{$("friends-modal").hidden=true;openPeople("friend");});$("block-user").addEventListener("click",toggleBlock);
+  $("add-people").addEventListener("click",()=>openPeople("add"));$("edit-group-photo").addEventListener("click",openGroupPhoto);$("group-avatar-file").addEventListener("change",handleGroupAvatarFile);$("group-avatar-remove").addEventListener("click",removeGroupAvatar);$("group-avatar-save").addEventListener("click",saveGroupAvatar);$("leave-chat").addEventListener("click",()=>{if(S.active)leaveGroupChat(S.active);});$("requests-open").addEventListener("click",openRequests);$("friends-open").addEventListener("click",openFriends);$("friends-find").addEventListener("click",()=>{$("friends-modal").hidden=true;openPeople("friend");});$("block-user").addEventListener("click",toggleBlock);
   $("people-search").addEventListener("input",()=>{clearTimeout(S.timer);S.timer=setTimeout(searchPeople,220);});$("people-create").addEventListener("click",createGroupOrAdd);
   $("home-open").addEventListener("click",goHome);
   $("settings-open").addEventListener("click",openSettings);
@@ -993,7 +1059,7 @@ function wire(){
   $("delete-selected").addEventListener("click",deleteSelectedMessages);
   $("signout").addEventListener("click",async()=>{const r=await db.auth.signOut();if(r.error)toast(r.error.message);else closeModals();});
   document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",closeModals));
-  ["people-modal","profile-modal","requests-modal","friends-modal","settings-modal"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target===$(id))closeModals();}));
+  ["people-modal","profile-modal","requests-modal","friends-modal","settings-modal","group-photo-modal"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target===$(id))closeModals();}));
   document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModals();});
 }
 async function boot(){
