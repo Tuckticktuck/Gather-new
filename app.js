@@ -1458,7 +1458,7 @@ async function signOutOtherSessions(){
   const result=await db.auth.signOut({scope:"others"});
   button.disabled=false;
   if(result.error){$("session-security-status").textContent="Other sessions could not be signed out: "+result.error.message;return;}
-  $("session-security-status").textContent="Other Gather sessions have been signed out. This device remains signed in.";
+  $("session-security-status").textContent="Other sessions have been revoked. Their existing access tokens may remain valid until they expire; this device stays signed in.";
 }
 async function requestAccountDeletion(){
   const ok=confirm("Send a private request to Gather support to delete your account? This will not sign you out or delete anything automatically.");
