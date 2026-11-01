@@ -1126,7 +1126,7 @@ function handleMessageImageFile(){
   const allowed=["image/jpeg","image/png","image/webp","image/gif"];
   if(!allowed.includes(file.type)){clearPendingMessageImage();toast("Choose a JPG, PNG, WebP, or GIF image.");return;}
   if(file.size>5*1024*1024){clearPendingMessageImage();toast("Choose an image smaller than 5 MB.");return;}
-  if(S.pendingImageUrl)URL.revokeObjectURL(S.pendingImageUrl);
+  if(S.pendingImageUrl)window.URL.revokeObjectURL(S.pendingImageUrl);
   S.pendingImageFile=file;S.pendingImageUrl=window.URL.createObjectURL(file);
   const preview=$("message-image-preview");preview.replaceChildren();
   const image=el("img","message-image-thumb");image.src=S.pendingImageUrl;image.alt="Selected image preview";
