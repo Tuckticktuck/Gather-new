@@ -608,10 +608,10 @@ function renderActive(){
   $("layout").classList.toggle("show-chat",!!c);
   $("layout").classList.toggle("show-home",!c);
   $("home-open").hidden=!c;
+  $("leave-chat").hidden=!c||c.kind!=="group";
   if(!c)return;
   $("chat-title").textContent=chatTitle(c);$("chat-subtitle").textContent=chatSub(c);$("chat-avatar").textContent=initials(chatTitle(c));
   const me=c.members.find(x=>x.user_id===S.user.id);$("add-people").hidden=!(c.kind==="group"&&me?.role==="owner");
-  $("leave-chat").hidden=c.kind!=="group";
   renderDirectControls();renderChats();
 }
 function renderDirectControls(){
