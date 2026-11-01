@@ -680,8 +680,12 @@ async function loadMessages(id){
 function renderMessages(){
   const list=$("messages");list.replaceChildren();
   if(!S.messages.length){list.append(el("p","muted tiny","This is the beginning of the conversation. Say hello."));return;}
-  S.messages.forEach(m=>{
-    const mine=m.sender_id===S.user.id,p=S.profiles[m.sender_id],row=el("div","message"+(mine?" mine":"")),bubble=el("div","bubble");
+  S.messages.forEach((m,index)=>{
+    const mine=m.sender_id===S.user.id,p=S.profiles[m.sender_id];
+    const samePrevious=S.messages[index-1]?.sender_id===m.sender_id;
+    const sameNext=S.messages[index+1]?.sender_id===m.sender_id;
+    const grouping=samePrevious?(sameNext?" group-middle":" group-last"):(sameNext?" group-first":"");
+    const row=el("div","message"+(mine?" mine":"")+grouping+(samePrevious?" group-continued":"" )),bubble=el("div","bubble");
     const meta=el("div","meta");meta.append(el("strong","",mine?"You":(p?.display_name||"Member")),el("time","",new Date(m.created_at).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})));bubble.append(meta);
     bubble.append(el("div","body-text",m.body));
     if(S.selectingMessages){
