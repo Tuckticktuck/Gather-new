@@ -490,3 +490,8 @@ input::placeholder,textarea::placeholder{color:var(--accent-muted)}
   .message-image-picker{padding:7px 8px}
   .message-image{max-height:300px}
 }
+
+
+/* Resumable image upload progress. */
+.message-image-progress{display:block;color:var(--accent-text)!important;font-weight:700}
+.message-image-picker{white-space:nowrap}
