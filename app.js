@@ -133,7 +133,7 @@ async function loadChats(){
   if(!ids.length){S.chats=[];S.profiles={};renderChats();renderActive();return await loadRequests();}
   const [members,msgs]=await Promise.all([
     db.from("conversation_members").select("conversation_id,user_id,role").in("conversation_id",ids),
-    db.from("messages").select("id,conversation_id,body,created_at").in("conversation_id",ids).order("created_at",{ascending:false}).limit(300)
+    db.from("messages").select("id,conversation_id,body,created_at").in("conversation_id",ids).order("created_at",{ascending:false}).limit(1000)
   ]);
   if(members.error){S.loadError="Chat members could not be loaded: "+members.error.message;toast(S.loadError);return false;}
   const userIds=[...new Set(members.data.map(x=>x.user_id))];
