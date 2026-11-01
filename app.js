@@ -165,6 +165,17 @@ function subscribeRequests(){
     .on("postgres_changes",{event:"*",schema:"public",table:"friendships",filter:"user_id=eq."+uid},()=>{
       loadFriends();loadChats();
     })
+    .on("postgres_changes",{event:"INSERT",schema:"public",table:"user_deleted_messages",filter:"user_id=eq."+uid},payload=>{
+      const messageId=payload.new?.message_id;
+      if(messageId){S.deletedMessageIds.add(messageId);S.messages=S.messages.filter(x=>x.id!==messageId);renderMessages();}
+      loadChats();if(S.folder==="deleted")loadDeletedMessages();
+    })
+    .on("postgres_changes",{event:"DELETE",schema:"public",table:"user_deleted_messages"},payload=>{
+      if(payload.old?.user_id!==uid||!payload.old?.message_id)return;
+      S.deletedMessageIds.delete(payload.old.message_id);
+      if(S.active)loadMessages(S.active);
+      loadChats();if(S.folder==="deleted")loadDeletedMessages();
+    })
     .subscribe();
 }
 function renderRequests(){
@@ -437,12 +448,11 @@ async function loadMessages(id){
 function renderMessages(){
   const list=$("messages");list.replaceChildren();
   if(!S.messages.length){list.append(el("p","muted tiny","This is the beginning of the conversation. Say hello."));return;}
-  const c=S.chats.find(x=>x.id===S.active),me=c?.members.find(x=>x.user_id===S.user.id);
   S.messages.forEach(m=>{
     const mine=m.sender_id===S.user.id,p=S.profiles[m.sender_id],row=el("div","message"+(mine?" mine":"")),bubble=el("div","bubble");
     const meta=el("div","meta");meta.append(el("strong","",mine?"You":(p?.display_name||"Member")),el("time","",new Date(m.created_at).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})));bubble.append(meta);
     bubble.append(el("div","body-text",m.body));
-    if(mine||me?.role==="owner"){const del=el("button","delete-message","Delete");del.type="button";del.title="Move message to Deleted messages";del.setAttribute("aria-label","Delete message");del.addEventListener("click",()=>deleteMessage(m.id));bubble.append(del);}
+    const del=el("button","delete-message","Delete");del.type="button";del.title="Move message to Deleted messages";del.setAttribute("aria-label","Delete message");del.addEventListener("click",()=>deleteMessage(m.id));bubble.append(del);
     row.append(bubble);list.append(row);
   });
   $("messages").scrollTop=$("messages").scrollHeight;
