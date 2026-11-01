@@ -13,8 +13,8 @@ const ACCENTS = {
   teal:{accent:"#9be2e4",strong:"#50b9be",ink:"#14373a",soft:"#234649",border:"#9be2e455"}
 };
 const FONT_SCALES = {small:"0.9",normal:"1",large:"1.15"};
-const DEFAULT_PREFERENCES = {accent:"lavender",fontSize:"normal",shareOnlineStatus:true};
-const S = { user:null, profile:null, profiles:{}, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, onlineFriends:new Set(), friendPresenceReady:new Set(), friendPresenceErrors:new Set(), friendPresenceChannels:{}, ownPresenceChannel:null, friendPresenceSyncPromise:null, friendPresenceSyncQueued:false, pendingAvatarData:null, avatarChanged:false, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, presenceChannel:null, presenceReady:false, typingTimer:null, messageReads:{}, hasOlderMessages:false, loadingOlder:false, replyTo:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null };
+const DEFAULT_PREFERENCES = {accent:"lavender",fontSize:"normal",shareOnlineStatus:true,messageNotificationMode:"temporary"};
+const S = { user:null, profile:null, profiles:{}, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, onlineFriends:new Set(), friendPresenceReady:new Set(), friendPresenceErrors:new Set(), friendPresenceChannels:{}, ownPresenceChannel:null, friendPresenceSyncPromise:null, friendPresenceSyncQueued:false, pendingAvatarData:null, avatarChanged:false, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, presenceChannel:null, presenceReady:false, typingTimer:null, messageReads:{}, hasOlderMessages:false, loadingOlder:false, replyTo:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function status(id, text, kind) { const n=$(id); n.textContent=text||""; n.className="status"+(kind?" "+kind:""); }
@@ -28,7 +28,8 @@ function loadUIPreferences(saved){
   S.preferences={
     accent:ACCENTS[saved?.accent]?saved.accent:DEFAULT_PREFERENCES.accent,
     fontSize:FONT_SCALES[saved?.fontSize]?saved.fontSize:DEFAULT_PREFERENCES.fontSize,
-    shareOnlineStatus:saved?.shareOnlineStatus!==false
+    shareOnlineStatus:saved?.shareOnlineStatus!==false,
+    messageNotificationMode:saved?.messageNotificationMode==="persistent"?"persistent":"temporary"
   };
   applyUIPreferences();
 }
@@ -62,6 +63,7 @@ function applyUIPreferences(){
   document.querySelectorAll("[data-accent]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.accent===S.preferences.accent)));
   document.querySelectorAll("[data-font-size]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.fontSize===S.preferences.fontSize)));
   const onlineToggle=$("share-online-status");if(onlineToggle)onlineToggle.checked=S.preferences.shareOnlineStatus;
+  document.querySelectorAll("[data-notification-mode]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.notificationMode===S.preferences.messageNotificationMode)));
 }
 function saveUIPreferences(){
   applyUIPreferences();
@@ -91,6 +93,10 @@ function setAccent(accent){
 function setFontSize(size){
   if(!FONT_SCALES[size])return;
   S.preferences.fontSize=size;saveUIPreferences();
+}
+function setMessageNotificationMode(mode){
+  if(mode!=="temporary"&&mode!=="persistent")return;
+  S.preferences.messageNotificationMode=mode;saveUIPreferences();
 }
 function openSettings(){
   applyUIPreferences();$("settings-modal").hidden=false;
@@ -189,6 +195,7 @@ function markChatRead(chatId,through=null){
   saveReadState();
 }
 function showAuth() {
+  clearMessageNotifications();
   $("password-recovery-modal").hidden=true;S.passwordRecovery=false;
   stopFriendPresence();
   if(S.channel){db.removeChannel(S.channel);S.channel=null;}
@@ -485,6 +492,52 @@ function subscribeRequests(){
     })
     .subscribe();
 }
+function dismissMessageNotification(messageId){
+  const id=String(messageId||"");
+  if(!id)return;
+  if(S.notificationTimers[id]){clearTimeout(S.notificationTimers[id]);delete S.notificationTimers[id];}
+  const card=$("message-notification-"+id);
+  if(card)card.remove();
+  const container=$("message-notifications");
+  if(container)container.hidden=container.childElementCount===0;
+}
+function clearMessageNotifications(){
+  Object.values(S.notificationTimers||{}).forEach(timer=>clearTimeout(timer));
+  S.notificationTimers={};
+  const container=$("message-notifications");
+  if(container){container.replaceChildren();container.hidden=true;}
+}
+function showMessageNotification(message,chat){
+  if(!message||!chat||!S.user||message.sender_id===S.user.id||S.active===chat.id)return;
+  const container=$("message-notifications");
+  if(!container||$("message-notification-"+message.id))return;
+  const card=el("article","message-notification");
+  card.id="message-notification-"+message.id;
+  card.dataset.notificationId=message.id;
+  const open=el("button","message-notification-open");
+  open.type="button";
+  open.setAttribute("aria-label","Open conversation "+chatTitle(chat));
+  const heading=el("span","message-notification-heading");
+  heading.append(el("strong","",chatTitle(chat)));
+  const sender=S.profiles[message.sender_id]?.display_name||"A group member";
+  heading.append(el("small","",chat.kind==="group"?sender+" sent a message":"New message"));
+  const preview=el("span","message-notification-preview",message.body||"Sent a message");
+  open.append(heading,preview);
+  open.addEventListener("click",()=>{
+    dismissMessageNotification(message.id);
+    openChat(chat.id);
+  });
+  const dismiss=el("button","message-notification-dismiss","×");
+  dismiss.type="button";
+  dismiss.setAttribute("aria-label","Dismiss notification");
+  dismiss.addEventListener("click",()=>dismissMessageNotification(message.id));
+  card.append(open,dismiss);
+  container.prepend(card);
+  container.hidden=false;
+  if(S.preferences.messageNotificationMode!=="persistent"){
+    S.notificationTimers[message.id]=setTimeout(()=>dismissMessageNotification(message.id),5000);
+  }
+}
 function subscribeMessages(){
   if(S.channel){db.removeChannel(S.channel);S.channel=null;}
   if(!S.user)return;
@@ -502,6 +555,7 @@ function subscribeMessages(){
         if(!S.messages.some(x=>x.id===message.id)){S.messages.push(withReply);S.messages.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at)||a.id.localeCompare(b.id));renderMessages();}
         if(message.sender_id!==uid){markChatRead(chat.id,message.created_at);await markConversationRead(chat.id);}
       }else{
+        if(message.sender_id!==uid)showMessageNotification(message,chat);
         await loadUnreadCounts();
       }
       S.chats.sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at));renderChats();
@@ -1484,6 +1538,7 @@ function wire(){
   $("settings-open").addEventListener("click",openSettings);
   document.querySelectorAll("[data-accent]").forEach(b=>b.addEventListener("click",()=>setAccent(b.dataset.accent)));
   document.querySelectorAll("[data-font-size]").forEach(b=>b.addEventListener("click",()=>setFontSize(b.dataset.fontSize)));
+  document.querySelectorAll("[data-notification-mode]").forEach(b=>b.addEventListener("click",()=>setMessageNotificationMode(b.dataset.notificationMode)));
   $("share-online-status").addEventListener("change",e=>setShareOnlineStatus(e.target.checked));
   $("home-friends-open").addEventListener("click",openFriends);$("home-requests-open").addEventListener("click",openRequests);$("open-about-blank").addEventListener("click",openAboutBlank);
   $("filter").addEventListener("input",renderChats);document.querySelectorAll("[data-folder]").forEach(b=>b.addEventListener("click",()=>selectFolder(b.dataset.folder)));$("profile-open").addEventListener("click",openProfile);$("profile-form").addEventListener("submit",saveProfile);
