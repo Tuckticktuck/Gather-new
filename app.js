@@ -197,7 +197,7 @@ function showAuth() {
   if(S.channel){db.removeChannel(S.channel);S.channel=null;}
   if(S.requestChannel){db.removeChannel(S.requestChannel);S.requestChannel=null;}
   if(S.readChannel){db.removeChannel(S.readChannel);S.readChannel=null;}
-  S.user=null;S.profile=null;S.feedbackAdminView=false;$("feedback-admin-open").hidden=true;S.profiles={};S.chats=[];S.messages=[];S.messageReads={};S.replyTo=null;S.hasOlderMessages=false;S.requests=[];S.friendRequests=[];S.friends=[];S.blockedUsers=[];S.deletedMessages=[];S.deletedMessageIds=new Set();S.lastReadAt={};S.folder="friends";S.directStatus=null;S.active=null;S.messages=[];S.loadError=null;S.avatarChanged=false;S.pendingAvatarData=null;loadUIPreferences(DEFAULT_PREFERENCES);
+  S.user=null;S.profile=null;S.feedbackAdminView=false;$("feedback-admin-open").hidden=true;$("feedback-admin-settings-section").hidden=true;S.profiles={};S.chats=[];S.messages=[];S.messageReads={};S.replyTo=null;S.hasOlderMessages=false;S.requests=[];S.friendRequests=[];S.friends=[];S.blockedUsers=[];S.deletedMessages=[];S.deletedMessageIds=new Set();S.lastReadAt={};S.folder="friends";S.directStatus=null;S.active=null;S.messages=[];S.loadError=null;S.avatarChanged=false;S.pendingAvatarData=null;loadUIPreferences(DEFAULT_PREFERENCES);
   setChatLoadStatus("");$("auth").hidden=false;$("app").hidden=true;
 }
 function showApp(){ $("auth").hidden=true;$("app").hidden=false; }
@@ -259,7 +259,7 @@ async function ensureProfile(user){
 async function signedIn(user,retry=false){
   if(!user||S.loading===user.id)return;
   if(!retry&&S.user&&S.user.id===user.id&&S.profile)return;
-  S.loading=user.id;S.user=user;S.loadError=null;$("feedback-admin-open").hidden=!isFeedbackAdmin(user);showApp();setChatLoadStatus("Loading your chats…");
+  S.loading=user.id;S.user=user;S.loadError=null;$("feedback-admin-open").hidden=!isFeedbackAdmin(user);$("feedback-admin-settings-section").hidden=!isFeedbackAdmin(user);showApp();setChatLoadStatus("Loading your chats…");
   try{
     S.profile=await ensureProfile(user);
     if(S.user?.id!==user.id)return;
@@ -1650,7 +1650,7 @@ function wire(){
   $("people-search").addEventListener("input",()=>{clearTimeout(S.timer);S.timer=setTimeout(searchPeople,220);});$("people-create").addEventListener("click",createGroupOrAdd);
   $("home-open").addEventListener("click",goHome);
   $("settings-open").addEventListener("click",openSettings);
-  $("feedback-open").addEventListener("click",()=>{$("settings-modal").hidden=true;openFeedback(false);});
+  $("feedback-open").addEventListener("click",()=>openFeedback(false));
   $("feedback-admin-open").addEventListener("click",()=>{$("settings-modal").hidden=true;openFeedback(true);});
   $("feedback-new").addEventListener("click",showFeedbackNewForm);
   $("feedback-refresh").addEventListener("click",async()=>{const keep=S.activeFeedbackThreadId;await loadFeedbackThreads();if(keep&&S.feedbackThreads.some(thread=>thread.id===keep))await selectFeedbackThread(keep);});
