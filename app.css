@@ -423,3 +423,13 @@ input::placeholder,textarea::placeholder{color:var(--accent-muted)}
 .message-readers-list{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:5px;max-width:100%}
 .message-readers-list[hidden]{display:none}
 .message-reader-name{padding:4px 8px;border:1px solid var(--accent-outline-soft);border-radius:999px;color:var(--accent-text);background:var(--accent-surface);font-size:calc(9px * var(--font-scale,1));line-height:1.3}
+
+.unread-total-badge{display:inline-flex;align-items:center;justify-content:center;min-width:25px;height:25px;padding:0 7px;border-radius:999px;color:var(--accent-ink);background:var(--accent);font-size:calc(10px * var(--font-scale,1));font-weight:850}
+.workspace-unread-summary{margin:7px 0 0;color:var(--accent-text);font-size:calc(10px * var(--font-scale,1));font-weight:700}
+.unread-count-badge{display:inline-flex!important;align-items:center;justify-content:center;align-self:flex-start;width:max-content;min-width:20px;margin-top:5px;padding:2px 7px;border-radius:999px;color:var(--accent-ink);background:var(--accent);font-size:calc(9px * var(--font-scale,1));font-weight:850;line-height:1.4}
+.auth-link-button{display:block;width:max-content;margin:10px auto 0;padding:7px 10px;border:0;color:var(--accent-text);background:transparent;font-size:calc(11px * var(--font-scale,1));font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.auth-link-button:hover{color:var(--accent)}
+.reset-password-modal{max-width:460px}
+.reset-password-modal>p.tiny{line-height:1.55;margin-bottom:16px}
+#recovery-password-save{width:100%;margin-top:8px}
+.recovery-cancel{width:100%;margin-top:10px}
