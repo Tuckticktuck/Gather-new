@@ -137,7 +137,7 @@ async function loadFriends(){
     profiles.data.forEach(x=>S.profiles[x.id]=x);
   }
   $("friends-error").textContent="";
-  renderFriends();
+  renderFriends();renderChats();
   return true;
 }
 function subscribeRequests(){
@@ -254,7 +254,7 @@ async function removeFriend(friendId){
   if(!confirm("Remove this friend? Your existing private conversation will remain in your chat list."))return;
   const r=await db.rpc("remove_friend",{p_friend_id:friendId});
   if(r.error){toast("Friend could not be removed: "+r.error.message);return;}
-  await loadFriends();toast("Friend removed.");
+  await loadFriends();renderChats();toast("Friend removed.");
 }
 async function openFriends(){
   $("friends-modal").hidden=false;
@@ -442,7 +442,7 @@ function renderMessages(){
     const mine=m.sender_id===S.user.id,p=S.profiles[m.sender_id],row=el("div","message"+(mine?" mine":"")),bubble=el("div","bubble");
     const meta=el("div","meta");meta.append(el("strong","",mine?"You":(p?.display_name||"Member")),el("time","",new Date(m.created_at).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})));bubble.append(meta);
     bubble.append(el("div","body-text",m.body));
-    if(mine||me?.role==="owner"){const del=el("button","delete-message","×");del.type="button";del.title="Move message to Deleted messages";del.setAttribute("aria-label","Delete message");del.addEventListener("click",()=>deleteMessage(m.id));bubble.append(del);}
+    if(mine||me?.role==="owner"){const del=el("button","delete-message","Delete");del.type="button";del.title="Move message to Deleted messages";del.setAttribute("aria-label","Delete message");del.addEventListener("click",()=>deleteMessage(m.id));bubble.append(del);}
     row.append(bubble);list.append(row);
   });
   $("messages").scrollTop=$("messages").scrollHeight;
