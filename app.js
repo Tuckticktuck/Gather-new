@@ -4,19 +4,24 @@ const URL = "https://xrwldphmeafiakittcof.supabase.co";
 const KEY = "sb_publishable_5Gws8f_CODwrHigG2U6Veg_bTRrBoeA";
 const $ = (id) => document.getElementById(id);
 const db = window.supabase.createClient(URL, KEY);
-const S = { user:null, profile:null, profiles:{}, chats:[], requests:[], requestChannel:null, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, timer:null };
+const S = { user:null, profile:null, profiles:{}, chats:[], requests:[], requestChannel:null, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function status(id, text, kind) { const n=$(id); n.textContent=text||""; n.className="status"+(kind?" "+kind:""); }
 function toast(text) { $("toast").textContent=text; $("toast").classList.add("show"); clearTimeout(toast.t); toast.t=setTimeout(()=>$("toast").classList.remove("show"),3000); }
+function setChatLoadStatus(message,retry=false){
+  const box=$("chat-load-status");if(!box)return;
+  box.hidden=!message;box.classList.toggle("error",retry);
+  $("chat-load-message").textContent=message||"";$("retry-load-chats").hidden=!retry;
+}
 function initials(s) { return (String(s||"?").trim()[0]||"?").toUpperCase(); }
 function avatar(name) { return el("span","avatar",initials(name)); }
 function dateLabel(s) { if(!s)return ""; const d=new Date(s), now=new Date(); return d.toDateString()===now.toDateString()?d.toLocaleTimeString([],{hour:"numeric",minute:"2-digit"}):d.toLocaleDateString([],{month:"short",day:"numeric"}); }
 function showAuth() {
   if(S.channel){db.removeChannel(S.channel);S.channel=null;}
   if(S.requestChannel){db.removeChannel(S.requestChannel);S.requestChannel=null;}
-  S.user=null;S.profile=null;S.profiles={};S.chats=[];S.requests=[];S.directStatus=null;S.active=null;S.messages=[];
-  $("auth").hidden=false;$("app").hidden=true;
+  S.user=null;S.profile=null;S.profiles={};S.chats=[];S.requests=[];S.directStatus=null;S.active=null;S.messages=[];S.loadError=null;
+  setChatLoadStatus("");$("auth").hidden=false;$("app").hidden=true;
 }
 function showApp(){ $("auth").hidden=true;$("app").hidden=false; }
 function authMode(mode){
@@ -37,12 +42,24 @@ async function ensureProfile(user){
   const created=await db.from("profiles").insert({id:user.id,username,display_name}).select("*").single();
   if(created.error)throw created.error;return created.data;
 }
-async function signedIn(user){
-  if(!user||S.loading===user.id)return; if(S.user&&S.user.id===user.id&&S.profile)return;
-  S.loading=user.id;S.user=user;showApp();
-  try{S.profile=await ensureProfile(user);$("user-initial").textContent=initials(S.profile.display_name);$("user-name").textContent=S.profile.display_name;subscribeRequests();await loadChats();}
-  catch(e){toast("Profile could not be loaded: "+e.message);}
-  finally{S.loading=null;}
+async function signedIn(user,retry=false){
+  if(!user||S.loading===user.id)return;
+  if(!retry&&S.user&&S.user.id===user.id&&S.profile)return;
+  S.loading=user.id;S.user=user;S.loadError=null;showApp();setChatLoadStatus("Loading your chats…");
+  try{
+    S.profile=await ensureProfile(user);
+    if(S.user?.id!==user.id)return;
+    $("user-initial").textContent=initials(S.profile.display_name);
+    $("user-name").textContent=S.profile.display_name;
+    subscribeRequests();
+    const loaded=await loadChats();
+    if(!loaded)throw new Error(S.loadError||"Please check your connection and try again.");
+    setChatLoadStatus("");
+  }catch(e){
+    const reason=S.loadError||e.message||"An unexpected error occurred.";
+    setChatLoadStatus("Couldn't finish loading Gather. "+reason,true);
+    console.error("Gather startup failed:",e);
+  }finally{if(S.loading===user.id)S.loading=null;}
 }
 function chatTitle(c){
   if(c.kind==="group")return c.title||"Group chat";
@@ -53,38 +70,39 @@ function chatSub(c){
   const other=c.members.find(m=>m.user_id!==S.user.id),p=other&&S.profiles[other.user_id];return p?"@"+p.username:"Private conversation";
 }
 async function loadChats(){
-  if(!S.user)return;
+  if(!S.user)return false;
+  S.loadError=null;
   const m=await db.from("conversation_members").select("conversation_id,role,conversations!inner(id,kind,title,updated_at)").eq("user_id",S.user.id);
-  if(m.error){toast("Chats could not be loaded: "+m.error.message);return;}
+  if(m.error){S.loadError="Chats could not be loaded: "+m.error.message;toast(S.loadError);return false;}
   const rows=m.data||[],ids=[...new Set(rows.map(x=>x.conversation_id))];
-  if(!ids.length){S.chats=[];S.profiles={};renderChats();renderActive();await loadRequests();return;}
+  if(!ids.length){S.chats=[];S.profiles={};renderChats();renderActive();return await loadRequests();}
   const [members,msgs]=await Promise.all([
     db.from("conversation_members").select("conversation_id,user_id,role").in("conversation_id",ids),
     db.from("messages").select("conversation_id,body,created_at").in("conversation_id",ids).order("created_at",{ascending:false}).limit(300)
   ]);
-  if(members.error){toast("Members could not be loaded: "+members.error.message);return;}
+  if(members.error){S.loadError="Chat members could not be loaded: "+members.error.message;toast(S.loadError);return false;}
   const userIds=[...new Set(members.data.map(x=>x.user_id))];
   const p=await db.from("profiles").select("id,username,display_name").in("id",userIds);
-  if(p.error){toast("Profiles could not be loaded: "+p.error.message);return;}
+  if(p.error){S.loadError="Member profiles could not be loaded: "+p.error.message;toast(S.loadError);return false;}
   S.profiles={};p.data.forEach(x=>S.profiles[x.id]=x);
   const byChat={},last={};members.data.forEach(x=>(byChat[x.conversation_id]??=[]).push(x));
   (msgs.data||[]).forEach(x=>{if(!last[x.conversation_id])last[x.conversation_id]=x;});
   S.chats=rows.map(x=>({...x.conversations,members:byChat[x.conversation_id]||[],last:last[x.conversation_id]||null}))
     .sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at));
-  renderChats();renderActive();await loadRequests();
+  renderChats();renderActive();return await loadRequests();
 }
 async function loadRequests(){
-  if(!S.user)return;
+  if(!S.user)return false;
   const r=await db.from("conversation_requests").select("id,sender_id,recipient_id,status,created_at").or("sender_id.eq."+S.user.id+",recipient_id.eq."+S.user.id).order("created_at",{ascending:false}).limit(60);
-  if(r.error){toast("Chat requests could not be loaded: "+r.error.message);return;}
+  if(r.error){S.loadError="Chat requests could not be loaded: "+r.error.message;toast(S.loadError);return false;}
   S.requests=r.data||[];
   const ids=[...new Set(S.requests.flatMap(x=>[x.sender_id,x.recipient_id]).filter(id=>id!==S.user.id))];
   if(ids.length){
     const p=await db.from("profiles").select("id,username,display_name").in("id",ids);
-    if(p.error){toast("Request profiles could not be loaded: "+p.error.message);return;}
+    if(p.error){S.loadError="Request profiles could not be loaded: "+p.error.message;toast(S.loadError);return false;}
     p.data.forEach(x=>S.profiles[x.id]=x);
   }
-  renderRequests();
+  renderRequests();return true;
 }
 function subscribeRequests(){
   if(S.requestChannel){db.removeChannel(S.requestChannel);S.requestChannel=null;}
@@ -307,10 +325,11 @@ function wire(){
     const r=isNew?await db.auth.signUp({email,password,options:{data:{display_name:$("name").value.trim()},emailRedirectTo:location.origin}}):await db.auth.signInWithPassword({email,password});
     if(r.error)status("auth-status",r.error.message,"error");
     else if(isNew&&!r.data.session)status("auth-status","Account created. Check your email for the confirmation link, then sign in here.","success");
-    else status("auth-status","Signed in. Loading chats…","success");
+    else {status("auth-status","Signed in. Loading chats…","success");if(r.data.session?.user)await signedIn(r.data.session.user);}
     $("auth-submit").disabled=false;
   });
   $("new-private-chat").addEventListener("click",()=>openPeople("direct"));$("new-group-chat").addEventListener("click",()=>openPeople("group"));
+  $("retry-load-chats").addEventListener("click",()=>{if(S.user&&!S.loading)signedIn(S.user,true);});
   $("empty-private").addEventListener("click",()=>openPeople("direct"));$("empty-group").addEventListener("click",()=>openPeople("group"));
   $("add-people").addEventListener("click",()=>openPeople("add"));$("requests-open").addEventListener("click",openRequests);$("block-user").addEventListener("click",toggleBlock);
   $("people-search").addEventListener("input",()=>{clearTimeout(S.timer);S.timer=setTimeout(searchPeople,220);});$("people-create").addEventListener("click",createGroupOrAdd);
@@ -327,7 +346,7 @@ function wire(){
 async function boot(){
   if(!window.supabase?.createClient){status("auth-status","The chat library did not load. Refresh and try again.","error");return;}
   wire();
-  db.auth.onAuthStateChange((event,session)=>{if(session?.user)signedIn(session.user);else if(event==="SIGNED_OUT")showAuth();});
+  db.auth.onAuthStateChange((event,session)=>{setTimeout(()=>{if(session?.user)signedIn(session.user);else if(event==="SIGNED_OUT")showAuth();},0);});
   const session=await db.auth.getSession();if(session.error){status("auth-status",session.error.message,"error");return;}
   if(session.data.session?.user)await signedIn(session.data.session.user);else showAuth();
 }
