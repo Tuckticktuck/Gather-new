@@ -14,7 +14,7 @@ const ACCENTS = {
 };
 const FONT_SCALES = {small:"0.9",normal:"1",large:"1.15"};
 const DEFAULT_PREFERENCES = {accent:"lavender",fontSize:"normal",messageNotificationMode:"temporary"};
-const S = { user:null, profile:null, profiles:{}, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, hasOlderMessages:false, loadingOlder:false, replyTo:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null };
+const S = { user:null, profile:null, profiles:{}, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, hasOlderMessages:false, loadingOlder:false, replyTo:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function status(id, text, kind) { const n=$(id); n.textContent=text||""; n.className="status"+(kind?" "+kind:""); }
@@ -118,7 +118,7 @@ function avatar(name,imageData=null){
 async function fetchProfileRecords(ids){
   const unique=[...new Set((ids||[]).filter(Boolean))];
   if(!unique.length)return {data:[],error:null};
-  const profiles=await db.from("profiles").select("id,username,display_name").in("id",unique);
+  const profiles=await db.from("profiles").select("id,username,display_name,bio,pronouns,banner_style").in("id",unique);
   if(profiles.error)return {data:null,error:profiles.error};
   const records=(profiles.data||[]).map(p=>({...p,avatar_data:null}));
   const pictures=await db.from("profile_avatars").select("user_id,image_data").in("user_id",unique);
@@ -197,7 +197,8 @@ function showAuth() {
   if(S.channel){db.removeChannel(S.channel);S.channel=null;}
   if(S.requestChannel){db.removeChannel(S.requestChannel);S.requestChannel=null;}
   if(S.readChannel){db.removeChannel(S.readChannel);S.readChannel=null;}
-  S.user=null;S.profile=null;S.feedbackAdminView=false;$("feedback-admin-open").hidden=true;$("feedback-admin-settings-section").hidden=true;S.profiles={};S.chats=[];S.messages=[];S.messageReads={};S.replyTo=null;S.hasOlderMessages=false;S.requests=[];S.friendRequests=[];S.friends=[];S.blockedUsers=[];S.deletedMessages=[];S.deletedMessageIds=new Set();S.lastReadAt={};S.folder="friends";S.directStatus=null;S.active=null;S.messages=[];S.loadError=null;S.avatarChanged=false;S.pendingAvatarData=null;loadUIPreferences(DEFAULT_PREFERENCES);
+  if(S.notificationChannel){db.removeChannel(S.notificationChannel);S.notificationChannel=null;}
+  S.user=null;S.profile=null;S.notifications=[];S.feedbackAdminView=false;$("feedback-admin-open").hidden=true;$("feedback-admin-settings-section").hidden=true;S.profiles={};S.chats=[];S.messages=[];S.messageReads={};S.replyTo=null;S.hasOlderMessages=false;S.requests=[];S.friendRequests=[];S.friends=[];S.blockedUsers=[];S.deletedMessages=[];S.deletedMessageIds=new Set();S.lastReadAt={};S.folder="friends";S.directStatus=null;S.active=null;S.messages=[];S.loadError=null;S.avatarChanged=false;S.pendingAvatarData=null;loadUIPreferences(DEFAULT_PREFERENCES);
   setChatLoadStatus("");$("auth").hidden=false;$("app").hidden=true;
 }
 function showApp(){ $("auth").hidden=true;$("app").hidden=false; }
@@ -274,6 +275,7 @@ async function signedIn(user,retry=false){
     const loaded=await loadChats();
     if(!loaded)throw new Error(S.loadError||"Please check your connection and try again.");
     subscribeMessages();
+    await loadNotifications();subscribeNotifications();
     setChatLoadStatus("");
     if(!await loadFriends())console.warn("Gather friend list could not be loaded.");
     if(!await loadBlocked())console.warn("Gather blocked list could not be loaded.");
@@ -467,6 +469,87 @@ function showMessageNotification(message,chat){
     S.notificationTimers[message.id]=setTimeout(()=>dismissMessageNotification(message.id),5000);
   }
 }
+
+function notificationUnreadCount(){
+  return S.notifications.filter(item=>!item.read_at).length;
+}
+function renderNotificationBadge(){
+  const badge=$("notification-badge");if(!badge)return;
+  const count=notificationUnreadCount();badge.textContent=count>99?"99+":String(count);badge.hidden=count===0;
+  $("notifications-mark-all").disabled=count===0;
+}
+function notificationKindLabel(kind){
+  return ({message:"New message",friend_request:"Friend request",chat_request:"Chat request",feedback_reply:"Feedback update",report:"Safety report"})[kind]||"Gather update";
+}
+function renderNotifications(){
+  const list=$("notifications-list");list.replaceChildren();
+  if(!S.notifications.length){
+    list.append(el("p","muted tiny","You're all caught up. New messages and requests will appear here."));
+  }else{
+    S.notifications.forEach(item=>{
+      const card=el("button","notification-center-item"+(item.read_at?"":" unread"));
+      card.type="button";
+      const icon=el("span","notification-center-icon",item.kind==="message"?"✉":item.kind==="friend_request"?"＋":item.kind==="chat_request"?"↗":item.kind==="report"?"⚑":"•");
+      const copy=el("span","notification-center-copy");
+      copy.append(el("strong","",item.title||notificationKindLabel(item.kind)),el("small","",item.body||notificationKindLabel(item.kind)),el("time","",dateLabel(item.created_at)));
+      card.append(icon,copy);
+      if(!item.read_at)card.append(el("span","notification-unread-dot",""));
+      card.addEventListener("click",()=>openNotification(item));
+      list.append(card);
+    });
+  }
+  $("notifications-summary").textContent=notificationUnreadCount()+" unread · Latest "+S.notifications.length+" updates";
+  renderNotificationBadge();
+}
+async function loadNotifications(){
+  if(!S.user)return false;
+  const result=await db.from("notifications").select("id,recipient_id,actor_id,kind,title,body,conversation_id,message_id,feedback_thread_id,created_at,read_at").eq("recipient_id",S.user.id).order("created_at",{ascending:false}).limit(80);
+  if(result.error){console.warn("Notifications could not be loaded:",result.error.message);return false;}
+  S.notifications=result.data||[];renderNotifications();return true;
+}
+function subscribeNotifications(){
+  if(S.notificationChannel){db.removeChannel(S.notificationChannel);S.notificationChannel=null;}
+  if(!S.user)return;
+  const uid=S.user.id;
+  S.notificationChannel=db.channel("notifications-"+uid)
+    .on("postgres_changes",{event:"INSERT",schema:"public",table:"notifications",filter:"recipient_id=eq."+uid},async payload=>{
+      if(payload.new?.recipient_id!==S.user?.id)return;
+      await loadNotifications();
+      const item=S.notifications.find(x=>x.id===payload.new.id);
+      if(item&&$("notifications-modal")?.hidden)toast(item.title||"You have a new Gather notification.");
+    }).subscribe();
+}
+async function markNotificationRead(id){
+  const at=new Date().toISOString();
+  const result=await db.from("notifications").update({read_at:at}).eq("id",id).eq("recipient_id",S.user.id);
+  if(result.error){console.warn("Notification could not be marked read:",result.error.message);return false;}
+  const item=S.notifications.find(x=>x.id===id);if(item)item.read_at=at;
+  renderNotifications();return true;
+}
+async function markAllNotificationsRead(){
+  if(!S.user)return;
+  const button=$("notifications-mark-all");button.disabled=true;
+  const result=await db.from("notifications").update({read_at:new Date().toISOString()}).eq("recipient_id",S.user.id).is("read_at",null);
+  if(result.error){toast("Notifications could not be marked read: "+result.error.message);button.disabled=false;return;}
+  S.notifications.forEach(item=>{if(!item.read_at)item.read_at=new Date().toISOString();});
+  renderNotifications();toast("All notifications marked as read.");
+}
+function openNotifications(){
+  $("notifications-modal").hidden=false;
+  loadNotifications();
+}
+async function openNotification(item){
+  await markNotificationRead(item.id);
+  $("notifications-modal").hidden=true;
+  if(item.kind==="message"){
+    if(item.conversation_id&&S.chats.some(chat=>chat.id===item.conversation_id))await openChat(item.conversation_id);
+    else toast("That conversation is no longer available.");
+  }else if(item.kind==="friend_request")await openFriends();
+  else if(item.kind==="chat_request")await openRequests();
+  else if(item.kind==="feedback_reply")await openFeedback(isFeedbackAdmin(S.user));
+  else if(item.kind==="report"&&isFeedbackAdmin(S.user))await openReportsAdmin();
+}
+
 function subscribeMessages(){
   if(S.channel){db.removeChannel(S.channel);S.channel=null;}
   if(!S.user)return;
@@ -488,6 +571,13 @@ function subscribeMessages(){
         await loadUnreadCounts();
       }
       S.chats.sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at));renderChats();
+    })
+    .on("postgres_changes",{event:"UPDATE",schema:"public",table:"messages"},payload=>{
+      const updated=payload.new;if(!updated?.id)return;
+      const index=S.messages.findIndex(message=>message.id===updated.id);
+      if(index>=0){S.messages[index]={...S.messages[index],...updated};renderMessages(true);}
+      const chat=S.chats.find(item=>item.id===updated.conversation_id);
+      if(chat?.last?.id===updated.id)chat.last={...chat.last,...updated};
     })
     .on("postgres_changes",{event:"INSERT",schema:"public",table:"message_reads",filter:"user_id=eq."+uid},async()=>{
       await loadUnreadCounts();renderChats();
@@ -905,7 +995,7 @@ async function openChat(id){
   subscribeMessageReads(id);await markConversationRead(id);
 }
 async function loadMessages(id){
-  const r=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,reply_to_id,attachment_path").eq("conversation_id",id).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
+  const r=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,edited_at,reply_to_id,attachment_path").eq("conversation_id",id).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
   if(r.error){toast("Messages could not be loaded: "+r.error.message);return;}
   if(S.active!==id)return;
   const raw=r.data||[];S.hasOlderMessages=raw.length===300;
@@ -925,7 +1015,11 @@ function renderMessages(preserveScroll=false){
     const grouping=samePrevious?(sameNext?" group-middle":" group-last"):(sameNext?" group-first":"");
     const row=el("div","message"+(mine?" mine":"")+grouping+(samePrevious?" group-continued":""));row.dataset.messageId=m.id;
     const bubble=el("div","bubble"),meta=el("div","meta");
-    meta.append(el("strong","",mine?"You":(p?.display_name||"Member")),el("time","",new Date(m.created_at).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})));bubble.append(meta);
+    if(mine)meta.append(el("strong","","You"));
+    else {const author=el("button","message-profile-link",p?.display_name||"Member");author.type="button";author.addEventListener("click",()=>openPublicProfile(m.sender_id));meta.append(author);}
+    meta.append(el("time","",new Date(m.created_at).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})));
+    if(m.edited_at)meta.append(el("small","message-edited-label","edited"));
+    bubble.append(meta);
     if(m.reply_to_id){
       const quote=el("div","reply-preview"),target=m.reply_preview;
       const quoteName=target?.sender_id?(target.sender_id===S.user.id?"You":(S.profiles[target.sender_id]?.display_name||"Member")):"Reply";
@@ -940,7 +1034,10 @@ function renderMessages(preserveScroll=false){
     }
     if(m.body)bubble.append(el("div","body-text",m.body));
     if(!S.selectingMessages){
-      const actions=el("div","message-actions"),reply=el("button","message-reply","Reply");reply.type="button";reply.addEventListener("click",()=>beginReply(m));actions.append(reply);bubble.append(actions);
+      const actions=el("div","message-actions"),reply=el("button","message-reply","Reply");reply.type="button";reply.addEventListener("click",()=>beginReply(m));actions.append(reply);
+      if(mine&&m.body){const edit=el("button","message-edit","Edit");edit.type="button";edit.addEventListener("click",()=>editOwnMessage(m));actions.append(edit);}
+      if(!mine&&m.sender_id){const report=el("button","message-report","Report");report.type="button";report.addEventListener("click",()=>openReport(m.sender_id,m.id));actions.append(report);}
+      bubble.append(actions);
     }
     if(mine){
       const activeChat=S.chats.find(chat=>chat.id===S.active);
@@ -1187,7 +1284,7 @@ async function sendMessage(e){
     try{await uploadMessageImage(file,attachmentPath);}
     catch(error){send.disabled=false;toast("Image upload failed: "+(error?.message||"Please try again."));return;}
   }
-  const r=await db.from("messages").insert({conversation_id:conversationId,sender_id:S.user.id,body,attachment_path:attachmentPath,reply_to_id:reply?.id||null}).select("id,conversation_id,sender_id,body,created_at,reply_to_id,attachment_path").single();
+  const r=await db.from("messages").insert({conversation_id:conversationId,sender_id:S.user.id,body,attachment_path:attachmentPath,reply_to_id:reply?.id||null}).select("id,conversation_id,sender_id,body,created_at,edited_at,reply_to_id,attachment_path").single();
   if(r.error){
     if(attachmentPath){const cleanup=await db.storage.from("gather-message-images").remove([attachmentPath]);if(cleanup.error)console.warn("Unused image cleanup failed:",cleanup.error.message);}
     send.disabled=false;toast("Message not sent: "+r.error.message);return;
@@ -1267,9 +1364,119 @@ async function createGroupOrAdd(){
   }
   $("people-create").disabled=false;
 }
+
+function profileBannerClass(style){
+  return "banner-"+(["violet","blue","mint","rose","amber","teal"].includes(style)?style:"violet");
+}
+async function openPublicProfile(userId){
+  if(!userId||!S.user)return;
+  if(userId===S.user.id){openProfile();return;}
+  $("member-profile-modal").hidden=false;
+  $("member-profile-name").textContent="Loading profile…";
+  $("member-profile-username").textContent="";
+  $("member-profile-pronouns").textContent="";
+  $("member-profile-bio").textContent="";
+  $("member-profile-mutuals").textContent="";
+  const existing=S.profiles[userId];
+  const result=await db.from("profiles").select("id,username,display_name,bio,pronouns,banner_style").eq("id",userId).maybeSingle();
+  if(result.error||!result.data){$("member-profile-name").textContent="Profile unavailable";return;}
+  const profile={...result.data,avatar_data:existing?.avatar_data||null};
+  const picture=await db.from("profile_avatars").select("image_data").eq("user_id",userId).maybeSingle();
+  profile.avatar_data=picture.error?null:(picture.data?.image_data||null);
+  S.profiles[userId]=profile;S.publicProfileId=userId;
+  $("member-profile-name").textContent=profile.display_name;
+  $("member-profile-username").textContent="@"+profile.username;
+  $("member-profile-pronouns").textContent=profile.pronouns||"";
+  $("member-profile-pronouns").hidden=!profile.pronouns;
+  $("member-profile-bio").textContent=profile.bio||"No bio added yet.";
+  $("member-profile-banner").className="member-profile-banner "+profileBannerClass(profile.banner_style);
+  paintAvatar($("member-profile-avatar"),profile.display_name,profile.avatar_data);
+  $("member-profile-report").hidden=false;
+  const mutual=await db.rpc("get_mutual_friend_count",{p_user_id:userId});
+  $("member-profile-mutuals").textContent=mutual.error?"":Number(mutual.data||0)+" mutual friend"+(Number(mutual.data)===1?"":"s");
+}
+function openReport(userId,messageId=null){
+  if(!userId||userId===S.user?.id)return;
+  S.reportTargetUserId=userId;S.reportTargetMessageId=messageId;
+  $("report-title").textContent=messageId?"Report message":"Report account";
+  $("report-description").textContent=messageId
+    ?"Tell us why this message should be reviewed. Reports are private."
+    :"Tell us why this account should be reviewed. Reports are private.";
+  $("report-reason").value="harassment";$("report-details").value="";
+  $("report-status").textContent="";$("report-modal").hidden=false;
+}
+async function submitReport(event){
+  event.preventDefault();
+  if(!S.reportTargetUserId||!S.user)return;
+  const button=$("report-submit");button.disabled=true;
+  status("report-status","Submitting private report…");
+  const result=await db.from("reports").insert({
+    reporter_id:S.user.id,target_user_id:S.reportTargetUserId,message_id:S.reportTargetMessageId,
+    reason:$("report-reason").value,details:$("report-details").value.trim()
+  });
+  button.disabled=false;
+  if(result.error){status("report-status","Report could not be submitted: "+result.error.message,"error");return;}
+  $("report-modal").hidden=true;toast("Your report was submitted privately for review.");
+  S.reportTargetUserId=null;S.reportTargetMessageId=null;
+}
+async function editOwnMessage(message){
+  if(!message||message.sender_id!==S.user?.id||!message.body)return;
+  const next=prompt("Edit your message:",message.body);
+  if(next===null)return;
+  const body=next.trim();
+  if(!body||body.length>4000){toast("Messages must contain 1–4,000 characters.");return;}
+  if(body===message.body)return;
+  const result=await db.from("messages").update({body,edited_at:new Date().toISOString()}).eq("id",message.id).eq("sender_id",S.user.id).select("id,body,edited_at").maybeSingle();
+  if(result.error||!result.data){toast("Message could not be edited: "+(result.error?.message||"Permission denied."));return;}
+  Object.assign(message,result.data);renderMessages(true);toast("Message updated.");
+}
+async function openReportsAdmin(){
+  if(!isFeedbackAdmin(S.user)){toast("Only the administrator can review reports.");return;}
+  $("reports-admin-modal").hidden=false;
+  const list=$("reports-admin-list");list.replaceChildren(el("p","muted tiny","Loading reports…"));
+  const result=await db.from("reports").select("id,reporter_id,target_user_id,message_id,reason,details,status,created_at").order("created_at",{ascending:false}).limit(100);
+  list.replaceChildren();
+  if(result.error){list.append(el("p","status error","Reports could not be loaded: "+result.error.message));return;}
+  if(!result.data?.length){list.append(el("p","muted tiny","There are no reports to review."));return;}
+  for(const report of result.data){
+    const card=el("article","admin-report-card");
+    const heading=el("div","admin-report-heading");
+    heading.append(el("strong","",report.reason.replaceAll("_"," ")),el("small","",dateLabel(report.created_at)));
+    const text=el("p","admin-report-details",report.details||(report.message_id?"A message was reported.":"An account was reported."));
+    const meta=el("small","muted", "Reporter: "+report.reporter_id.slice(0,8)+" · Reported account: "+report.target_user_id.slice(0,8));
+    const select=el("select","admin-report-status");["new","reviewing","resolved"].forEach(value=>{const option=el("option","",value==="new"?"New":value==="reviewing"?"Reviewing":"Resolved");option.value=value;select.append(option);});select.value=report.status;
+    select.addEventListener("change",async()=>{select.disabled=true;const update=await db.from("reports").update({status:select.value}).eq("id",report.id);select.disabled=false;if(update.error)toast("Report status could not be updated.");else toast("Report status updated.");});
+    card.append(heading,text,meta,select);list.append(card);
+  }
+}
+async function signOutOtherSessions(){
+  const button=$("signout-other-sessions");button.disabled=true;
+  $("session-security-status").textContent="Signing out other devices…";
+  const result=await db.auth.signOut({scope:"others"});
+  button.disabled=false;
+  if(result.error){$("session-security-status").textContent="Other sessions could not be signed out: "+result.error.message;return;}
+  $("session-security-status").textContent="Other Gather sessions have been signed out. This device remains signed in.";
+}
+async function requestAccountDeletion(){
+  const ok=confirm("Send a private request to Gather support to delete your account? This will not sign you out or delete anything automatically.");
+  if(!ok)return;
+  const button=$("request-account-deletion");button.disabled=true;
+  const result=await db.rpc("create_feedback_thread",{
+    p_subject:"Account deletion request",
+    p_message:"I am requesting help with deleting my Gather account. Please reply with the next steps."
+  });
+  button.disabled=false;
+  if(result.error){toast("Account deletion request could not be sent: "+result.error.message);return;}
+  $("settings-modal").hidden=true;
+  await openFeedback(false);
+  await selectFeedbackThread(result.data);
+  toast("Your account deletion request was sent privately to Gather support.");
+}
+
 function openProfile(){
   if(!S.profile)return;
   $("profile-name").value=S.profile.display_name;$("profile-username").value=S.profile.username;
+  $("profile-bio").value=S.profile.bio||"";$("profile-pronouns").value=S.profile.pronouns||"";$("profile-banner-style").value=S.profile.banner_style||"violet";
   $("current-password").value="";$("new-password").value="";$("confirm-password").value="";
   status("profile-status","");status("password-status","");
   S.pendingAvatarData=null;S.avatarChanged=false;
@@ -1443,9 +1650,10 @@ async function handleAvatarFile(){
 async function saveProfile(e){
   e.preventDefault();
   const display_name=$("profile-name").value.trim(),username=$("profile-username").value.trim().toLowerCase();
+  const bio=$("profile-bio").value.trim(),pronouns=$("profile-pronouns").value.trim(),banner_style=$("profile-banner-style").value;
   if(!display_name||!/^[a-z0-9_]{3,24}$/.test(username)){status("profile-status","Check the name and username format.","error");return;}
   const save=$("profile-save");save.disabled=true;
-  const r=await db.from("profiles").update({display_name,username}).eq("id",S.user.id).select("*").single();
+  const r=await db.from("profiles").update({display_name,username,bio,pronouns,banner_style}).eq("id",S.user.id).select("*").single();
   if(r.error){save.disabled=false;status("profile-status",r.error.message,"error");return;}
   S.profile={...r.data,avatar_data:S.profile.avatar_data||null};
   if(S.avatarChanged){
@@ -1621,7 +1829,7 @@ async function updateFeedbackStatus(){
   toast("Feedback status updated.");
 }
 
-function closeModals(){ $("people-modal").hidden=true;$("profile-modal").hidden=true;$("requests-modal").hidden=true;$("friends-modal").hidden=true;$("settings-modal").hidden=true;$("group-photo-modal").hidden=true;$("group-settings-modal").hidden=true;$("message-search-modal").hidden=true;$("chat-actions-modal").hidden=true;$("feedback-modal").hidden=true; }
+function closeModals(){ $("notifications-modal").hidden=true;$("member-profile-modal").hidden=true;$("report-modal").hidden=true;$("reports-admin-modal").hidden=true;$("people-modal").hidden=true;$("profile-modal").hidden=true;$("requests-modal").hidden=true;$("friends-modal").hidden=true;$("settings-modal").hidden=true;$("group-photo-modal").hidden=true;$("group-settings-modal").hidden=true;$("message-search-modal").hidden=true;$("chat-actions-modal").hidden=true;$("feedback-modal").hidden=true; }
 function goHome(){
   clearPendingMessageImage();closeModals();S.active=null;S.messages=[];S.messageReads={};S.replyTo=null;S.hasOlderMessages=false;S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;renderReplyComposer();
   $("layout").classList.remove("show-chat");$("layout").classList.add("show-home");renderChats();renderActive();
@@ -1650,6 +1858,13 @@ function wire(){
   $("people-search").addEventListener("input",()=>{clearTimeout(S.timer);S.timer=setTimeout(searchPeople,220);});$("people-create").addEventListener("click",createGroupOrAdd);
   $("home-open").addEventListener("click",goHome);
   $("settings-open").addEventListener("click",openSettings);
+  $("notifications-open").addEventListener("click",openNotifications);
+  $("notifications-mark-all").addEventListener("click",markAllNotificationsRead);
+  $("report-form").addEventListener("submit",submitReport);
+  $("member-profile-report").addEventListener("click",()=>{const userId=S.publicProfileId;$("member-profile-modal").hidden=true;openReport(userId);});
+  $("reports-admin-open").addEventListener("click",()=>{$("settings-modal").hidden=true;openReportsAdmin();});
+  $("signout-other-sessions").addEventListener("click",signOutOtherSessions);
+  $("request-account-deletion").addEventListener("click",requestAccountDeletion);
   $("feedback-open").addEventListener("click",()=>openFeedback(false));
   $("feedback-admin-open").addEventListener("click",()=>{$("settings-modal").hidden=true;openFeedback(true);});
   $("feedback-new").addEventListener("click",showFeedbackNewForm);
@@ -1687,7 +1902,7 @@ function wire(){
   $("delete-selected").addEventListener("click",deleteSelectedMessages);
   $("signout").addEventListener("click",async()=>{const r=await db.auth.signOut();if(r.error)toast(r.error.message);else closeModals();});
   document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",closeModals));
-  ["people-modal","profile-modal","requests-modal","friends-modal","settings-modal","group-photo-modal","group-settings-modal","message-search-modal","chat-actions-modal","feedback-modal"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target===$(id))closeModals();}));
+  ["notifications-modal","member-profile-modal","report-modal","reports-admin-modal","people-modal","profile-modal","requests-modal","friends-modal","settings-modal","group-photo-modal","group-settings-modal","message-search-modal","chat-actions-modal","feedback-modal"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target===$(id))closeModals();}));
   document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModals();});
 }
 async function boot(){
