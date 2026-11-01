@@ -7,9 +7,9 @@
 <meta name="description" content="Private direct and group conversations.">
 <title>Gather — Private Chat</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="app.css?v=20261031-2">
+<link rel="stylesheet" href="app.css?v=20261031-3">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
-<script defer src="app.js?v=20261031-2"></script>
+<script defer src="app.js?v=20261031-3"></script>
 </head>
 <body>
 <section id="auth" class="auth-shell">
@@ -50,6 +50,7 @@
         <span id="chat-load-message"></span>
         <button id="retry-load-chats" type="button" hidden>Retry</button>
       </div>
+      <button id="friends-open" class="requests-button" type="button">Friends <span id="friends-count">0</span></button>
       <button id="requests-open" class="requests-button" type="button">Chat requests <span id="requests-count">0</span></button>
       <input id="filter" class="search" type="search" placeholder="Search conversations">
       <details class="chat-section" open>
@@ -88,6 +89,15 @@
   <label>Find people<input id="people-search" type="search" placeholder="Search username"></label>
   <div id="people-results" class="people-results"><p class="muted tiny">Type at least 2 characters.</p></div>
   <p id="people-status" class="status"></p><button id="people-create" class="primary" hidden>Create group</button>
+</section></div>
+
+<div id="friends-modal" class="overlay" hidden><section class="modal requests-modal">
+  <button class="close" data-close aria-label="Close">×</button><p class="eyebrow">YOUR CONNECTIONS</p><h2>Friends</h2><p class="muted tiny">Friend requests need to be accepted. Once you are friends, private messaging opens automatically.</p>
+  <p id="friends-error" class="status error"></p>
+  <button id="friends-find" class="primary" type="button">＋ Find friends</button>
+  <div class="request-section"><h3>Your friends</h3><div id="friends-list" class="request-list"><p class="muted tiny">You have not added any friends yet.</p></div></div>
+  <div class="request-section"><h3>Received requests</h3><div id="friend-incoming" class="request-list"><p class="muted tiny">No new friend requests.</p></div></div>
+  <div class="request-section"><h3>Sent requests</h3><div id="friend-outgoing" class="request-list"><p class="muted tiny">You have no pending sent requests.</p></div></div>
 </section></div>
 
 <div id="requests-modal" class="overlay" hidden><section class="modal requests-modal">
