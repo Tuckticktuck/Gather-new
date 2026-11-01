@@ -7,9 +7,9 @@
 <meta name="description" content="Private direct and group conversations.">
 <title>Gather — Private Chat</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="app.css?v=20261031-3">
+<link rel="stylesheet" href="app.css?v=20261031-4">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
-<script defer src="app.js?v=20261031-3"></script>
+<script defer src="app.js?v=20261031-4"></script>
 </head>
 <body>
 <section id="auth" class="auth-shell">
@@ -53,10 +53,26 @@
       <button id="friends-open" class="requests-button" type="button">Friends <span id="friends-count">0</span></button>
       <button id="requests-open" class="requests-button" type="button">Chat requests <span id="requests-count">0</span></button>
       <input id="filter" class="search" type="search" placeholder="Search conversations">
-      <details class="chat-section" open>
-        <summary><span>Private messages</span><span id="private-chat-count" class="section-count">0</span></summary>
-        <div id="private-chat-list" class="chat-list"><p class="muted tiny">Your private messages will appear here.</p></div>
-      </details>
+      <nav class="folder-tabs" role="tablist" aria-label="Message folders">
+        <button class="folder-tab active" type="button" role="tab" aria-selected="true" data-folder="friends">Friends</button>
+        <button class="folder-tab" type="button" role="tab" aria-selected="false" data-folder="nonfriends">Non-friends</button>
+        <button class="folder-tab" type="button" role="tab" aria-selected="false" data-folder="blocked">Blocked</button>
+        <button class="folder-tab" type="button" role="tab" aria-selected="false" data-folder="deleted">Deleted messages</button>
+      </nav>
+      <section id="private-folder-panel" class="folder-panel">
+        <div class="folder-panel-heading"><strong id="private-chat-heading">Friends</strong><span id="private-chat-count" class="section-count">0</span></div>
+        <div id="private-chat-list" class="chat-list"><p class="muted tiny">Your conversations will appear here.</p></div>
+      </section>
+      <section id="blocked-panel" class="folder-panel" hidden>
+        <p class="folder-panel-note">People you have blocked. You can unblock them here.</p>
+        <div class="folder-panel-heading"><strong>Blocked members</strong><span id="blocked-count" class="section-count">0</span></div>
+        <div id="blocked-list" class="chat-list"><p class="muted tiny">You have not blocked anyone.</p></div>
+      </section>
+      <section id="deleted-panel" class="folder-panel" hidden>
+        <p class="folder-panel-note">Messages you delete are hidden only from your view. Restore them to put them back in the conversation.</p>
+        <div class="folder-panel-heading"><strong>Deleted messages</strong><span id="deleted-count" class="section-count">0</span></div>
+        <div id="deleted-list" class="chat-list"><p class="muted tiny">No deleted messages.</p></div>
+      </section>
       <details class="chat-section" open>
         <summary><span>Group chats</span><span id="group-chat-count" class="section-count">0</span></summary>
         <div id="group-chat-list" class="chat-list"><p class="muted tiny">Your group chats will appear here.</p></div>
