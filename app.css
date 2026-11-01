@@ -627,3 +627,29 @@ input::placeholder,textarea::placeholder{color:var(--accent-muted)}
   .feedback-message{width:min(94%,520px)}
   .feedback-detail-head{flex-wrap:wrap}
 }
+
+/* Sidebar shortcut placed with the Hide tab control. */
+.requests-button.feedback-sidebar-button{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  min-height:46px;
+  margin:0;
+  padding:11px 14px;
+  border:1px solid var(--accent-outline-soft);
+  border-radius:11px;
+  color:var(--accent-text);
+  background:var(--accent-panel);
+  font-size:calc(12px * var(--font-scale,1));
+  font-weight:700;
+  transition:background .16s,border-color .16s,transform .16s;
+}
+.requests-button.feedback-sidebar-button:hover{
+  border-color:var(--accent-outline);
+  background:var(--accent-hover);
+  transform:translateY(-1px);
+}
+@media(max-width:720px){
+  .requests-button.feedback-sidebar-button{min-height:44px}
+}
