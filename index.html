@@ -43,6 +43,10 @@
         <button id="new-private-chat" class="new-chat-action direct-action" type="button">＋ New private message</button>
         <button id="new-group-chat" class="new-chat-action group-action" type="button">＋ Create group chat</button>
       </div>
+      <div id="chat-load-status" class="chat-load-status" role="status" aria-live="polite" hidden>
+        <span id="chat-load-message"></span>
+        <button id="retry-load-chats" type="button" hidden>Retry</button>
+      </div>
       <button id="requests-open" class="requests-button" type="button">Chat requests <span id="requests-count">0</span></button>
       <input id="filter" class="search" type="search" placeholder="Search conversations">
       <details class="chat-section" open>
