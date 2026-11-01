@@ -204,9 +204,10 @@ async function loadChats(){
   ]);
   if(members.error){S.loadError="Chat members could not be loaded: "+members.error.message;toast(S.loadError);return false;}
   const userIds=[...new Set(members.data.map(x=>x.user_id))];
-  const p=await db.from("profiles").select("id,username,display_name").in("id",userIds);
+  const p=await fetchProfileRecords(userIds);
   if(p.error){S.loadError="Member profiles could not be loaded: "+p.error.message;toast(S.loadError);return false;}
   S.profiles={};p.data.forEach(x=>S.profiles[x.id]=x);
+  if(S.profile)S.profiles[S.user.id]=S.profile;
   const byChat={},last={},hasMessages={};members.data.forEach(x=>(byChat[x.conversation_id]??=[]).push(x));
   (msgs.data||[]).forEach(x=>{
     hasMessages[x.conversation_id]=true;
@@ -223,7 +224,7 @@ async function loadRequests(){
   S.requests=r.data||[];
   const ids=[...new Set(S.requests.flatMap(x=>[x.sender_id,x.recipient_id]).filter(id=>id!==S.user.id))];
   if(ids.length){
-    const p=await db.from("profiles").select("id,username,display_name").in("id",ids);
+    const p=await fetchProfileRecords(ids);
     if(p.error){S.loadError="Request profiles could not be loaded: "+p.error.message;toast(S.loadError);return false;}
     p.data.forEach(x=>S.profiles[x.id]=x);
   }
@@ -248,7 +249,7 @@ async function loadFriends(){
     ...S.friendRequests.flatMap(x=>[x.sender_id,x.recipient_id].filter(id=>id!==S.user.id))
   ])];
   if(ids.length){
-    const profiles=await db.from("profiles").select("id,username,display_name").in("id",ids);
+    const profiles=await fetchProfileRecords(ids);
     if(profiles.error){
       $("friends-error").textContent="Friend profiles could not be loaded. "+profiles.error.message;
       return false;
@@ -320,7 +321,7 @@ function renderFriends(){
   if(!S.friends.length)list.append(el("p","muted tiny","You have not added any friends yet."));
   S.friends.forEach(f=>{
     const p=S.profiles[f.friend_id]||{id:f.friend_id,display_name:"Gather member",username:"member"};
-    const row=el("div","request-item");row.append(avatar(p.display_name));
+    const row=el("div","request-item");row.append(avatar(p.display_name,p.avatar_data));
     const copy=el("div","request-copy");copy.append(el("strong","",p.display_name),el("small","","@"+p.username));row.append(copy);
     const actions=el("div","request-actions");
     const message=el("button","request-accept","Message"),remove=el("button","request-decline","Remove");
@@ -336,7 +337,7 @@ function renderFriends(){
 }
 function friendRequestRow(r,isIncoming){
   const peerId=isIncoming?r.sender_id:r.recipient_id,p=S.profiles[peerId]||{display_name:"Gather member",username:"member"};
-  const row=el("div","request-item");row.append(avatar(p.display_name));
+  const row=el("div","request-item");row.append(avatar(p.display_name,p.avatar_data));
   const copy=el("div","request-copy");copy.append(el("strong","",p.display_name),el("small","","@"+p.username));row.append(copy);
   if(isIncoming){
     const actions=el("div","request-actions"),accept=el("button","request-accept","Accept"),decline=el("button","request-decline","Decline");
@@ -349,7 +350,7 @@ function friendRequestRow(r,isIncoming){
 }
 function requestRow(r,isIncoming){
   const peerId=isIncoming?r.sender_id:r.recipient_id,p=S.profiles[peerId]||{display_name:"Gather member",username:"member"};
-  const row=el("div","request-item");row.append(avatar(p.display_name));
+  const row=el("div","request-item");row.append(avatar(p.display_name,p.avatar_data));
   const copy=el("div","request-copy");copy.append(el("strong","",p.display_name),el("small","","@"+p.username));row.append(copy);
   if(isIncoming){
     const actions=el("div","request-actions"),accept=el("button","request-accept","Accept"),decline=el("button","request-decline","Decline");
@@ -413,7 +414,8 @@ function renderChatSection(kind,listId,countId,term,sourceChats=null){
   }
   chats.forEach(c=>{
     const row=el("div","chat-row");
-    const b=el("button","chat-item"+(c.id===S.active?" active":""));b.type="button";b.append(avatar(chatTitle(c)));
+    const peer=c.members.find(m=>m.user_id!==S.user.id),peerProfile=peer&&S.profiles[peer.user_id];
+    const b=el("button","chat-item"+(c.id===S.active?" active":""));b.type="button";b.append(avatar(chatTitle(c),peerProfile?.avatar_data));
     const copy=el("div","chat-copy");copy.append(el("strong","",chatTitle(c)),el("span","",c.last?c.last.body:chatSub(c)));b.append(copy,el("small","chat-time",dateLabel(c.last?.created_at||c.updated_at)));
     b.addEventListener("click",()=>openChat(c.id));
     const del=el("button","conversation-delete","Delete");del.type="button";del.title="Move all messages in this conversation to Deleted messages";
@@ -432,7 +434,7 @@ function renderBlockedUsers(term){
   if(!blocked.length){list.append(el("p","muted tiny section-empty",term?"No matching blocked members.":"You have not blocked anyone."));return;}
   blocked.forEach(item=>{
     const p=S.profiles[item.blocked_id]||{display_name:"Gather member",username:"member"};
-    const row=el("div","request-item");row.append(avatar(p.display_name));
+    const row=el("div","request-item");row.append(avatar(p.display_name,p.avatar_data));
     const copy=el("div","request-copy");copy.append(el("strong","",p.display_name),el("small","","@"+p.username));row.append(copy);
     const actions=el("div","request-actions");
     const history=S.chats.find(c=>c.kind==="direct"&&c.members.some(m=>m.user_id===item.blocked_id)&&c.members.some(m=>m.user_id===S.user.id));
@@ -452,7 +454,7 @@ function renderDeletedMessages(term){
   if(!items.length){list.append(el("p","muted tiny section-empty",term?"No matching deleted messages.":"No deleted messages. Messages you hide will appear here."));return;}
   items.forEach(item=>{
     const row=el("div","deleted-item");
-    row.append(avatar(item.sender_name));
+    row.append(avatar(item.sender_name,S.profiles[item.sender_id]?.avatar_data));
     const copy=el("div","deleted-copy");
     copy.append(el("strong","",item.sender_name));
     copy.append(el("small","",item.conversation_title+" · "+dateLabel(item.created_at)));
@@ -491,7 +493,7 @@ async function loadBlocked(){
   S.blockedUsers=r.data||[];
   const ids=S.blockedUsers.map(x=>x.blocked_id).filter(id=>!S.profiles[id]);
   if(ids.length){
-    const p=await db.from("profiles").select("id,username,display_name").in("id",ids);
+    const p=await fetchProfileRecords(ids);
     if(p.error){console.error("Blocked member profiles could not be loaded:",p.error.message);return false;}
     p.data.forEach(x=>S.profiles[x.id]=x);
   }
@@ -529,6 +531,8 @@ async function unblockUser(userId){
 }
 function renderActive(){
   const c=S.chats.find(x=>x.id===S.active);$("empty").hidden=!!c;$("chat").hidden=!c;
+  const peer=c?.members.find(m=>m.user_id!==S.user.id),peerProfile=peer&&S.profiles[peer.user_id];
+  paintAvatar($("chat-avatar"),chatTitle(c||{kind:"direct",members:[]}),peerProfile?.avatar_data);
   $("layout").classList.toggle("show-chat",!!c);
   $("layout").classList.toggle("show-home",!c);
   $("home-open").hidden=!c;
@@ -704,13 +708,15 @@ async function searchPeople(){
   const term=$("people-search").value.trim().toLowerCase().replace(/[^a-z0-9_]/g,""),box=$("people-results");box.replaceChildren();
   if(term.length<2){box.append(el("p","muted tiny","Type at least 2 characters."));return;}
   box.append(el("p","muted tiny","Searching…"));
-  const r=await db.from("profiles").select("id,username,display_name").ilike("username","%"+term+"%").limit(15);box.replaceChildren();
-  if(r.error){box.append(el("p","muted tiny",r.error.message));return;}
-  let people=(r.data||[]).filter(p=>p.id!==S.user.id);
+  const raw=await db.from("profiles").select("id,username,display_name").ilike("username","%"+term+"%").limit(15);box.replaceChildren();
+  if(raw.error){box.append(el("p","muted tiny",raw.error.message));return;}
+  const records=await fetchProfileRecords((raw.data||[]).map(p=>p.id));
+  if(records.error){box.append(el("p","muted tiny",records.error.message));return;}
+  let people=(records.data||[]).filter(p=>p.id!==S.user.id);
   if(S.picker==="add"){const c=S.chats.find(x=>x.id===S.active),ids=new Set((c?.members||[]).map(x=>x.user_id));people=people.filter(p=>!ids.has(p.id));}
   if(!people.length){box.append(el("p","muted tiny","No matching members found."));return;}
   people.forEach(p=>{
-    const b=el("button","person");b.type="button";b.append(avatar(p.display_name));
+    const b=el("button","person");b.type="button";b.append(avatar(p.display_name,p.avatar_data));
     const copy=el("div","person-copy");copy.append(el("strong","",p.display_name));
     if(S.picker==="friend"){
       const isFriend=S.friends.some(x=>x.friend_id===p.id);
