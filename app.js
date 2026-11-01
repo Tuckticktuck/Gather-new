@@ -4,7 +4,7 @@ const URL = "https://xrwldphmeafiakittcof.supabase.co";
 const KEY = "sb_publishable_5Gws8f_CODwrHigG2U6Veg_bTRrBoeA";
 const $ = (id) => document.getElementById(id);
 const db = window.supabase.createClient(URL, KEY);
-const S = { user:null, profile:null, profiles:{}, chats:[], requests:[], friendRequests:[], friends:[], requestChannel:null, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null };
+const S = { user:null, profile:null, profiles:{}, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), folder:"friends", requestChannel:null, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function status(id, text, kind) { const n=$(id); n.textContent=text||""; n.className="status"+(kind?" "+kind:""); }
@@ -20,7 +20,7 @@ function dateLabel(s) { if(!s)return ""; const d=new Date(s), now=new Date(); re
 function showAuth() {
   if(S.channel){db.removeChannel(S.channel);S.channel=null;}
   if(S.requestChannel){db.removeChannel(S.requestChannel);S.requestChannel=null;}
-  S.user=null;S.profile=null;S.profiles={};S.chats=[];S.requests=[];S.friendRequests=[];S.friends=[];S.directStatus=null;S.active=null;S.messages=[];S.loadError=null;
+  S.user=null;S.profile=null;S.profiles={};S.chats=[];S.requests=[];S.friendRequests=[];S.friends=[];S.blockedUsers=[];S.deletedMessages=[];S.deletedMessageIds=new Set();S.folder="friends";S.directStatus=null;S.active=null;S.messages=[];S.loadError=null;
   setChatLoadStatus("");$("auth").hidden=false;$("app").hidden=true;
 }
 function showApp(){ $("auth").hidden=true;$("app").hidden=false; }
@@ -56,6 +56,8 @@ async function signedIn(user,retry=false){
     if(!loaded)throw new Error(S.loadError||"Please check your connection and try again.");
     setChatLoadStatus("");
     if(!await loadFriends())console.warn("Gather friend list could not be loaded.");
+    if(!await loadBlocked())console.warn("Gather blocked list could not be loaded.");
+    renderChats();
   }catch(e){
     const reason=S.loadError||e.message||"An unexpected error occurred.";
     setChatLoadStatus("Couldn't finish loading Gather. "+reason,true);
@@ -73,13 +75,16 @@ function chatSub(c){
 async function loadChats(){
   if(!S.user)return false;
   S.loadError=null;
+  const hidden=await db.from("user_deleted_messages").select("message_id").eq("user_id",S.user.id);
+  if(hidden.error){S.loadError="Deleted-message settings could not be loaded: "+hidden.error.message;toast(S.loadError);return false;}
+  S.deletedMessageIds=new Set((hidden.data||[]).map(x=>x.message_id));
   const m=await db.from("conversation_members").select("conversation_id,role,conversations!inner(id,kind,title,updated_at)").eq("user_id",S.user.id);
   if(m.error){S.loadError="Chats could not be loaded: "+m.error.message;toast(S.loadError);return false;}
   const rows=m.data||[],ids=[...new Set(rows.map(x=>x.conversation_id))];
   if(!ids.length){S.chats=[];S.profiles={};renderChats();renderActive();return await loadRequests();}
   const [members,msgs]=await Promise.all([
     db.from("conversation_members").select("conversation_id,user_id,role").in("conversation_id",ids),
-    db.from("messages").select("conversation_id,body,created_at").in("conversation_id",ids).order("created_at",{ascending:false}).limit(300)
+    db.from("messages").select("id,conversation_id,body,created_at").in("conversation_id",ids).order("created_at",{ascending:false}).limit(300)
   ]);
   if(members.error){S.loadError="Chat members could not be loaded: "+members.error.message;toast(S.loadError);return false;}
   const userIds=[...new Set(members.data.map(x=>x.user_id))];
@@ -87,7 +92,7 @@ async function loadChats(){
   if(p.error){S.loadError="Member profiles could not be loaded: "+p.error.message;toast(S.loadError);return false;}
   S.profiles={};p.data.forEach(x=>S.profiles[x.id]=x);
   const byChat={},last={};members.data.forEach(x=>(byChat[x.conversation_id]??=[]).push(x));
-  (msgs.data||[]).forEach(x=>{if(!last[x.conversation_id])last[x.conversation_id]=x;});
+  (msgs.data||[]).forEach(x=>{if(!S.deletedMessageIds.has(x.id)&&!last[x.conversation_id])last[x.conversation_id]=x;});
   S.chats=rows.map(x=>({...x.conversations,members:byChat[x.conversation_id]||[],last:last[x.conversation_id]||null}))
     .sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at));
   renderChats();renderActive();return await loadRequests();
@@ -263,14 +268,14 @@ async function respondToRequest(id,accept){
     $("requests-modal").hidden=true;toast("Request accepted. You can now message each other.");await loadChats();await openChat(r.data.conversation_id);
   }else{toast("Request declined.");await loadRequests();}
 }
-function renderChatSection(kind,listId,countId,term){
+function renderChatSection(kind,listId,countId,term,sourceChats=null){
   const list=$(listId);list.replaceChildren();
-  const chats=S.chats.filter(c=>c.kind===kind&&(chatTitle(c)+" "+chatSub(c)).toLowerCase().includes(term));
+  const chats=(sourceChats||S.chats.filter(c=>c.kind===kind)).filter(c=>(chatTitle(c)+" "+chatSub(c)).toLowerCase().includes(term));
   $(countId).textContent=chats.length;
   if(!chats.length){
     const empty=term
-      ?(kind==="direct"?"No matching private messages.":"No matching group chats.")
-      :(kind==="direct"?"No private messages yet.":"No group chats yet.");
+      ?(kind==="direct"?"No matching conversations.":"No matching group chats.")
+      :(kind==="direct"?"No conversations in this tab yet.":"No group chats yet.");
     list.append(el("p","muted tiny section-empty",empty));return;
   }
   chats.forEach(c=>{
@@ -279,10 +284,104 @@ function renderChatSection(kind,listId,countId,term){
     b.addEventListener("click",()=>openChat(c.id));list.append(b);
   });
 }
+function peerForChat(c){return c?.members.find(m=>m.user_id!==S.user.id)?.user_id||null;}
+function renderBlockedUsers(term){
+  const list=$("blocked-list");list.replaceChildren();
+  const blocked=S.blockedUsers.filter(x=>{
+    const p=S.profiles[x.blocked_id]||{};
+    return ((p.display_name||"")+" "+(p.username||"")).toLowerCase().includes(term);
+  });
+  $("blocked-count").textContent=blocked.length;
+  if(!blocked.length){list.append(el("p","muted tiny section-empty",term?"No matching blocked members.":"You have not blocked anyone."));return;}
+  blocked.forEach(item=>{
+    const p=S.profiles[item.blocked_id]||{display_name:"Gather member",username:"member"};
+    const row=el("div","request-item");row.append(avatar(p.display_name));
+    const copy=el("div","request-copy");copy.append(el("strong","",p.display_name),el("small","","@"+p.username));row.append(copy);
+    const actions=el("div","request-actions"),unblock=el("button","request-accept","Unblock");
+    unblock.type="button";unblock.addEventListener("click",()=>unblockUser(item.blocked_id));
+    actions.append(unblock);row.append(actions);list.append(row);
+  });
+}
+function renderDeletedMessages(term){
+  const list=$("deleted-list");list.replaceChildren();
+  const items=S.deletedMessages.filter(x=>(x.body+" "+x.sender_name+" "+x.conversation_title).toLowerCase().includes(term));
+  $("deleted-count").textContent=items.length;
+  if(!items.length){list.append(el("p","muted tiny section-empty",term?"No matching deleted messages.":"No deleted messages. Messages you hide will appear here."));return;}
+  items.forEach(item=>{
+    const row=el("div","deleted-item");
+    row.append(avatar(item.sender_name));
+    const copy=el("div","deleted-copy");
+    copy.append(el("strong","",item.sender_name));
+    copy.append(el("small","",item.conversation_title+" · "+dateLabel(item.created_at)));
+    copy.append(el("p","deleted-preview",item.body));
+    const restore=el("button","request-accept","Restore");restore.type="button";
+    restore.addEventListener("click",()=>restoreMessage(item.message_id));
+    row.append(copy,restore);list.append(row);
+  });
+}
 function renderChats(){
   const term=$("filter").value.trim().toLowerCase();
-  renderChatSection("direct","private-chat-list","private-chat-count",term);
+  const standard=$("private-folder-panel"),blocked=$("blocked-panel"),deleted=$("deleted-panel");
+  const isStandard=S.folder==="friends"||S.folder==="nonfriends";
+  standard.hidden=!isStandard;blocked.hidden=S.folder!=="blocked";deleted.hidden=S.folder!=="deleted";
+  document.querySelectorAll("[data-folder]").forEach(b=>{
+    const active=b.dataset.folder===S.folder;
+    b.classList.toggle("active",active);b.setAttribute("aria-selected",String(active));
+  });
+  if(isStandard){
+    const friends=new Set(S.friends.map(x=>x.friend_id)),blockedIds=new Set(S.blockedUsers.map(x=>x.blocked_id));
+    const chats=S.chats.filter(c=>{
+      if(c.kind!=="direct")return false;
+      const peer=peerForChat(c);if(!peer||blockedIds.has(peer))return false;
+      return S.folder==="friends"?friends.has(peer):!friends.has(peer);
+    });
+    renderChatSection("direct","private-chat-list","private-chat-count",term,chats);
+  }else if(S.folder==="blocked")renderBlockedUsers(term);
+  else renderDeletedMessages(term);
   renderChatSection("group","group-chat-list","group-chat-count",term);
+}
+async function loadBlocked(){
+  if(!S.user)return false;
+  const r=await db.from("user_blocks").select("blocked_id,created_at").eq("blocker_id",S.user.id).order("created_at",{ascending:false});
+  if(r.error){console.error("Blocked members could not be loaded:",r.error.message);return false;}
+  S.blockedUsers=r.data||[];
+  const ids=S.blockedUsers.map(x=>x.blocked_id).filter(id=>!S.profiles[id]);
+  if(ids.length){
+    const p=await db.from("profiles").select("id,username,display_name").in("id",ids);
+    if(p.error){console.error("Blocked member profiles could not be loaded:",p.error.message);return false;}
+    p.data.forEach(x=>S.profiles[x.id]=x);
+  }
+  renderChats();return true;
+}
+async function loadDeletedMessages(){
+  if(!S.user)return false;
+  const markers=await db.from("user_deleted_messages").select("message_id,deleted_at").eq("user_id",S.user.id).order("deleted_at",{ascending:false}).limit(250);
+  if(markers.error){toast("Deleted messages could not be loaded: "+markers.error.message);return false;}
+  const ids=(markers.data||[]).map(x=>x.message_id);
+  S.deletedMessageIds=new Set(ids);
+  if(!ids.length){S.deletedMessages=[];renderChats();return true;}
+  const messages=await db.from("messages").select("id,conversation_id,sender_id,body,created_at").in("id",ids);
+  if(messages.error){toast("Deleted messages could not be loaded: "+messages.error.message);return false;}
+  const byId=new Map((messages.data||[]).map(x=>[x.id,x]));
+  S.deletedMessages=(markers.data||[]).flatMap(marker=>{
+    const m=byId.get(marker.message_id);if(!m)return [];
+    const chat=S.chats.find(c=>c.id===m.conversation_id);
+    return [{...m,message_id:m.id,deleted_at:marker.deleted_at,sender_name:m.sender_id===S.user.id?"You":(S.profiles[m.sender_id]?.display_name||"Member"),conversation_title:chat?chatTitle(chat):"Conversation"}];
+  });
+  renderChats();return true;
+}
+async function selectFolder(folder){
+  if(!["friends","nonfriends","blocked","deleted"].includes(folder))return;
+  S.folder=folder;renderChats();
+  if(folder==="blocked")await loadBlocked();
+  if(folder==="deleted")await loadDeletedMessages();
+}
+async function unblockUser(userId){
+  const r=await db.from("user_blocks").delete().eq("blocker_id",S.user.id).eq("blocked_id",userId);
+  if(r.error){toast("Could not unblock: "+r.error.message);return;}
+  await loadBlocked();
+  if(S.active){S.directStatus=null;await refreshDirectStatus();}
+  toast("Member unblocked.");
 }
 function renderActive(){
   const c=S.chats.find(x=>x.id===S.active);$("empty").hidden=!!c;$("chat").hidden=!c;
@@ -319,20 +418,20 @@ async function toggleBlock(){
     ?await db.from("user_blocks").delete().eq("blocker_id",S.user.id).eq("blocked_id",peer.user_id)
     :await db.from("user_blocks").insert({blocker_id:S.user.id,blocked_id:peer.user_id});
   if(r.error){toast((unblock?"Could not unblock: ":"Could not block: ")+r.error.message);return;}
-  S.directStatus=null;await refreshDirectStatus();await loadRequests();toast(unblock?"Member unblocked.":"Member blocked.");
+  S.directStatus=null;await refreshDirectStatus();await loadRequests();await loadBlocked();toast(unblock?"Member unblocked.":"Member blocked.");
 }
 async function openChat(id){
   S.active=id;S.directStatus=null;$("layout").classList.add("show-chat");renderActive();await refreshDirectStatus();await loadMessages(id);
   if(S.channel){await db.removeChannel(S.channel);S.channel=null;}
   S.channel=db.channel("chat-"+id).on("postgres_changes",{event:"INSERT",schema:"public",table:"messages",filter:"conversation_id=eq."+id},payload=>{
-    if(S.active!==id||S.messages.some(x=>x.id===payload.new.id))return;
+    if(S.active!==id||S.deletedMessageIds.has(payload.new.id)||S.messages.some(x=>x.id===payload.new.id))return;
     S.messages.push(payload.new);renderMessages();loadChats();
   }).subscribe();
 }
 async function loadMessages(id){
   const r=await db.from("messages").select("id,conversation_id,sender_id,body,created_at").eq("conversation_id",id).order("created_at",{ascending:true}).limit(300);
   if(r.error){toast("Messages could not be loaded: "+r.error.message);return;}
-  if(S.active!==id)return;S.messages=r.data||[];renderMessages();
+  if(S.active!==id)return;S.messages=(r.data||[]).filter(m=>!S.deletedMessageIds.has(m.id));renderMessages();
 }
 function renderMessages(){
   const list=$("messages");list.replaceChildren();
@@ -342,15 +441,27 @@ function renderMessages(){
     const mine=m.sender_id===S.user.id,p=S.profiles[m.sender_id],row=el("div","message"+(mine?" mine":"")),bubble=el("div","bubble");
     const meta=el("div","meta");meta.append(el("strong","",mine?"You":(p?.display_name||"Member")),el("time","",new Date(m.created_at).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})));bubble.append(meta);
     bubble.append(el("div","body-text",m.body));
-    if(mine||me?.role==="owner"){const del=el("button","delete-message","×");del.type="button";del.title="Delete message";del.addEventListener("click",()=>deleteMessage(m.id));bubble.append(del);}
+    if(mine||me?.role==="owner"){const del=el("button","delete-message","×");del.type="button";del.title="Move message to Deleted messages";del.setAttribute("aria-label","Delete message");del.addEventListener("click",()=>deleteMessage(m.id));bubble.append(del);}
     row.append(bubble);list.append(row);
   });
   $("messages").scrollTop=$("messages").scrollHeight;
 }
 async function deleteMessage(id){
-  if(!confirm("Delete this message?"))return;
-  const r=await db.from("messages").delete().eq("id",id);if(r.error){toast("Delete failed: "+r.error.message);return;}
-  S.messages=S.messages.filter(x=>x.id!==id);renderMessages();await loadChats();
+  if(!confirm("Move this message to Deleted messages? It will disappear only from your view. Other members will still see it, and you can restore it later."))return;
+  const r=await db.from("user_deleted_messages").insert({user_id:S.user.id,message_id:id});
+  if(r.error){toast("Message could not be moved to Deleted messages: "+r.error.message);return;}
+  S.deletedMessageIds.add(id);S.messages=S.messages.filter(x=>x.id!==id);
+  renderMessages();await loadChats();
+  if(S.folder==="deleted")await loadDeletedMessages();
+  toast("Message moved to Deleted messages. You can restore it there.");
+}
+async function restoreMessage(messageId){
+  const r=await db.from("user_deleted_messages").delete().eq("user_id",S.user.id).eq("message_id",messageId);
+  if(r.error){toast("Message could not be restored: "+r.error.message);return;}
+  S.deletedMessageIds.delete(messageId);
+  await loadChats();await loadDeletedMessages();
+  if(S.active){const active=S.chats.find(x=>x.id===S.active);if(active)await loadMessages(S.active);}
+  toast("Message restored to your conversation.");
 }
 async function sendMessage(e){
   e.preventDefault();const body=$("message").value.trim();if(!body||!S.active)return;
@@ -464,7 +575,7 @@ function wire(){
   $("add-people").addEventListener("click",()=>openPeople("add"));$("requests-open").addEventListener("click",openRequests);$("friends-open").addEventListener("click",openFriends);$("friends-find").addEventListener("click",()=>{$("friends-modal").hidden=true;openPeople("friend");});$("block-user").addEventListener("click",toggleBlock);
   $("people-search").addEventListener("input",()=>{clearTimeout(S.timer);S.timer=setTimeout(searchPeople,220);});$("people-create").addEventListener("click",createGroupOrAdd);
   $("home-open").addEventListener("click",goHome);
-  $("filter").addEventListener("input",renderChats);$("profile-open").addEventListener("click",openProfile);$("profile-form").addEventListener("submit",saveProfile);
+  $("filter").addEventListener("input",renderChats);document.querySelectorAll("[data-folder]").forEach(b=>b.addEventListener("click",()=>selectFolder(b.dataset.folder)));$("profile-open").addEventListener("click",openProfile);$("profile-form").addEventListener("submit",saveProfile);
   $("send-form").addEventListener("submit",sendMessage);
   $("message").addEventListener("input",e=>{e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,120)+"px";});
   $("message").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing){e.preventDefault();$("send-form").requestSubmit();}});
