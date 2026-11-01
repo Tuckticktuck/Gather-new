@@ -779,7 +779,7 @@ function openProfile(){
 async function fileToAvatarData(file){
   if(!file)return null;
   if(!["image/jpeg","image/png","image/webp"].includes(file.type))throw new Error("Choose a JPG, PNG, or WebP image.");
-  if(file.size>5*1024*1024)throw new Error("Choose an image smaller than 5 MB.");
+  if(file.size>20*1024*1024)throw new Error("Choose an image no larger than 20 MB.");
   const objectUrl=URL.createObjectURL(file);
   try{
     const image=await new Promise((resolve,reject)=>{
