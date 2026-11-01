@@ -745,3 +745,18 @@ input::placeholder,textarea::placeholder{color:var(--accent-muted)}
 
 /* Consecutive messages show the sender only on the first bubble. */
 .message.group-continued .meta.meta-continued{margin-bottom:3px}
+
+/* Official Gather Admin broadcasts. */
+.announcement-modal{width:min(100%,560px)}
+.announcement-modal form{display:grid;gap:11px}
+.announcement-modal form label{display:grid;gap:6px}
+.announcement-modal textarea{resize:vertical;min-height:130px}
+.announcement-modal #announcement-publish{width:100%}
+.announcement-view-modal{width:min(100%,560px)}
+.announcement-sender{display:flex;align-items:center;gap:10px;margin:5px 0 17px;padding:11px 12px;border:1px solid var(--accent-outline-soft);border-radius:12px;background:var(--accent-panel)}
+.announcement-admin-mark{display:grid;place-items:center;width:38px;height:38px;border-radius:12px;color:var(--accent-contrast);background:var(--accent);font-size:19px;font-weight:850}
+.announcement-sender>span:last-child{display:grid;gap:3px}
+.announcement-sender strong{color:var(--accent-text);font-size:calc(11px * var(--font-scale,1))}
+.announcement-sender small{color:var(--muted);font-size:calc(9px * var(--font-scale,1))}
+.announcement-view-body{margin-top:15px;padding-top:15px;border-top:1px solid var(--line);font-size:calc(12px * var(--font-scale,1));line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:720px){.announcement-modal,.announcement-view-modal{max-height:calc(100dvh - 24px);overflow:auto}}
