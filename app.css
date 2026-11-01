@@ -188,3 +188,9 @@ label{display:grid;gap:7px;margin:13px 0;color:#d0cede;font-size:calc(11px * var
   .workspace-group-section{padding:10px}
   .accent-choices{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+
+@media(max-width:380px){
+  .topbar-actions{gap:4px}
+  .topbar-actions .home-button{gap:4px;padding:6px 7px;font-size:9px}
+  .profile-pill #user-name{display:none}
+}
