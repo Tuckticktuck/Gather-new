@@ -611,6 +611,7 @@ function renderActive(){
   if(!c)return;
   $("chat-title").textContent=chatTitle(c);$("chat-subtitle").textContent=chatSub(c);$("chat-avatar").textContent=initials(chatTitle(c));
   const me=c.members.find(x=>x.user_id===S.user.id);$("add-people").hidden=!(c.kind==="group"&&me?.role==="owner");
+  $("leave-chat").hidden=c.kind!=="group";
   renderDirectControls();renderChats();
 }
 function renderDirectControls(){
@@ -635,6 +636,24 @@ async function refreshDirectStatus(){
   const r=await db.rpc("get_direct_chat_status",{p_other_user_id:peer.user_id});
   S.directStatus=r.error?{i_blocked:false,can_message:false,error:r.error.message}:(r.data||{i_blocked:false,can_message:false,error:"No status returned"});
   renderDirectControls();
+}
+async function leaveGroupChat(conversationId){
+  const chat=S.chats.find(c=>c.id===conversationId);
+  if(!chat||chat.kind!=="group")return;
+  const title=chatTitle(chat);
+  if(!confirm("Leave \""+title+"\"? You will be removed from this group and will no longer receive its messages unless someone adds you again. The group and its messages will remain for other members."))return;
+  const button=$("leave-chat");button.disabled=true;
+  const result=await db.rpc("leave_group_chat",{p_conversation_id:conversationId});
+  button.disabled=false;
+  if(result.error){toast("Could not leave group: "+result.error.message);return;}
+  if(result.data?.status!=="left"){toast("You could not leave this group. Please refresh and try again.");return;}
+  if(S.active===conversationId){
+    S.active=null;S.messages=[];S.directStatus=null;
+    S.selectingMessages=false;S.selectedMessageIds.clear();
+    renderActive();
+  }
+  await loadChats();
+  toast("You left "+title+".");
 }
 async function toggleBlock(){
   const c=S.chats.find(x=>x.id===S.active),peer=c?.members.find(m=>m.user_id!==S.user.id);
@@ -942,7 +961,7 @@ function wire(){
   $("new-private-chat").addEventListener("click",()=>openPeople("direct"));$("new-group-chat").addEventListener("click",()=>openPeople("group"));
   $("retry-load-chats").addEventListener("click",()=>{if(S.user&&!S.loading)signedIn(S.user,true);});
   $("empty-private").addEventListener("click",()=>openPeople("direct"));$("empty-group").addEventListener("click",()=>openPeople("group"));
-  $("add-people").addEventListener("click",()=>openPeople("add"));$("requests-open").addEventListener("click",openRequests);$("friends-open").addEventListener("click",openFriends);$("friends-find").addEventListener("click",()=>{$("friends-modal").hidden=true;openPeople("friend");});$("block-user").addEventListener("click",toggleBlock);
+  $("add-people").addEventListener("click",()=>openPeople("add"));$("leave-chat").addEventListener("click",()=>{if(S.active)leaveGroupChat(S.active);});$("requests-open").addEventListener("click",openRequests);$("friends-open").addEventListener("click",openFriends);$("friends-find").addEventListener("click",()=>{$("friends-modal").hidden=true;openPeople("friend");});$("block-user").addEventListener("click",toggleBlock);
   $("people-search").addEventListener("input",()=>{clearTimeout(S.timer);S.timer=setTimeout(searchPeople,220);});$("people-create").addEventListener("click",createGroupOrAdd);
   $("home-open").addEventListener("click",goHome);
   $("settings-open").addEventListener("click",openSettings);
