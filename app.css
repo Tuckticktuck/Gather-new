@@ -710,3 +710,9 @@ input::placeholder,textarea::placeholder{color:var(--accent-muted)}
   .notification-center-item{padding:10px;gap:8px}
   .member-profile-main{padding:0 19px 20px}
 }
+
+@media(max-width:720px){
+  .topbar-actions .notification-open span:nth-child(2){display:none}
+  .topbar-actions .notification-open{min-width:37px;justify-content:center;gap:5px}
+  .notification-badge{position:absolute;top:-5px;right:-5px;border:1px solid var(--accent-panel)}
+}
