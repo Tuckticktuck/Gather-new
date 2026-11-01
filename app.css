@@ -740,3 +740,5 @@ input::placeholder,textarea::placeholder{color:var(--accent-muted)}
   .conversation-profile{padding:7px 8px}
   .request-actions{gap:5px}
 }
+
+.chat-title .chat-title-profile{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:calc(12px * var(--font-scale,1))}
