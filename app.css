@@ -716,3 +716,27 @@ input::placeholder,textarea::placeholder{color:var(--accent-muted)}
   .topbar-actions .notification-open{min-width:37px;justify-content:center;gap:5px}
   .notification-badge{position:absolute;top:-5px;right:-5px;border:1px solid var(--accent-panel)}
 }
+
+/* Discoverable profile access anywhere a member can chat. */
+.chat-title-profile{
+  display:inline-flex;align-items:center;max-width:100%;padding:0;border:0;
+  color:var(--text);background:transparent;font:inherit;font-weight:800;
+  text-align:left;cursor:pointer;
+}
+.chat-title-profile:hover{color:var(--accent-text);text-decoration:underline;text-underline-offset:3px}
+.conversation-profile{
+  align-self:center;flex:none;padding:8px 10px;border:1px solid var(--accent-outline-soft);
+  border-radius:9px;color:var(--accent-text);background:var(--accent-panel);
+  font-size:calc(10px * var(--font-scale,1));font-weight:700;
+}
+.conversation-profile:hover,.friend-profile-button:hover{border-color:var(--accent-outline);background:var(--accent-hover)}
+.friend-profile-button{padding:7px 9px;font-size:calc(9px * var(--font-scale,1))}
+.group-member-profile{
+  padding:0;border:0;color:var(--text);background:transparent;font:inherit;
+  font-weight:750;text-align:left;cursor:pointer;
+}
+.group-member-profile:hover{color:var(--accent-text);text-decoration:underline;text-underline-offset:3px}
+@media(max-width:720px){
+  .conversation-profile{padding:7px 8px}
+  .request-actions{gap:5px}
+}
