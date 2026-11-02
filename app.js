@@ -1726,7 +1726,7 @@ async function loadPinnedMessages(cid){
   if(S.active!==cid)return;
   const pins=r.data||[],ids=pins.map(x=>x.message_id),m=ids.length?await db.from("messages").select("id,body,attachment_path").in("id",ids):{data:[]};
   if(S.active!==cid)return;
-  const map=new Map((m.data||[]).map(x=>[x.id,x]));S.pinnedMessages=pins.map(x=>({...x,message:map.get(x.id)||null}));
+  const map=new Map((m.data||[]).map(x=>[x.id,x]));S.pinnedMessages=pins.map(x=>({...x,message:map.get(x.message_id)||null}));
 }
 async function loadSavedMessageIds(){
   if(!S.user)return;const r=await db.from("saved_messages").select("message_id").eq("user_id",S.user.id).limit(1000);
