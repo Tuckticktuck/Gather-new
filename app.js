@@ -15,7 +15,7 @@ const ACCENTS = {
 const FONT_SCALES = {small:"0.9",normal:"1",large:"1.15"};
 const MESSAGE_REACTION_EMOJIS = ["👍","❤️","😂","😮","😢","🎉"];
 const DEFAULT_PREFERENCES = {accent:"lavender",fontSize:"normal",theme:"dark",messageNotificationMode:"temporary",groupUnreadMessages:false,shareOnlineStatus:true};
-const S = { user:null, profile:null, profiles:{}, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, reactionSelectionMode:false, selectedReactionMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, mediaRecorder:null, voiceStream:null, voiceChunks:[], voiceBlob:null, voiceObjectUrl:null, voiceTimer:null, voiceDiscarding:false, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map() };
+const S = { user:null, profile:null, profiles:{}, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, reactionSelectionMode:false, selectedReactionMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map() };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function status(id, text, kind) { const n=$(id); n.textContent=text||""; n.className="status"+(kind?" "+kind:""); }
@@ -254,7 +254,7 @@ function showAuth() {
   if(S.notificationChannel){db.removeChannel(S.notificationChannel);S.notificationChannel=null;}
   if(S.announcementChannel){db.removeChannel(S.announcementChannel);S.announcementChannel=null;}
   S.announcements=[];renderHomeAnnouncement();
-  S.user=null;S.profile=null;S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.savedMessageIds=new Set();S.forwardMessage=null;cancelVoiceRecording(false);S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.reactionSelectionMode=false;S.selectedReactionMessageId=null;S.openMessageMenuId=null;S.notifications=[];S.feedbackAdminView=false;$("feedback-admin-open").hidden=true;$("feedback-admin-settings-section").hidden=true;S.profiles={};S.chats=[];S.messages=[];S.messageReads={};S.replyTo=null;S.hasOlderMessages=false;S.requests=[];S.friendRequests=[];S.friends=[];S.blockedUsers=[];S.deletedMessages=[];S.deletedMessageIds=new Set();S.lastReadAt={};S.folder="friends";S.directStatus=null;S.active=null;S.messages=[];S.loadError=null;S.avatarChanged=false;S.pendingAvatarData=null;loadUIPreferences(DEFAULT_PREFERENCES);
+  S.user=null;S.profile=null;S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.savedMessageIds=new Set();S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.reactionSelectionMode=false;S.selectedReactionMessageId=null;S.openMessageMenuId=null;S.notifications=[];S.feedbackAdminView=false;$("feedback-admin-open").hidden=true;$("feedback-admin-settings-section").hidden=true;S.profiles={};S.chats=[];S.messages=[];S.messageReads={};S.replyTo=null;S.hasOlderMessages=false;S.requests=[];S.friendRequests=[];S.friends=[];S.blockedUsers=[];S.deletedMessages=[];S.deletedMessageIds=new Set();S.lastReadAt={};S.folder="friends";S.directStatus=null;S.active=null;S.messages=[];S.loadError=null;S.avatarChanged=false;S.pendingAvatarData=null;loadUIPreferences(DEFAULT_PREFERENCES);
   setChatLoadStatus("");$("auth").hidden=false;$("app").hidden=true;
 }
 function showApp(){ $("auth").hidden=true;$("app").hidden=false; }
@@ -364,7 +364,7 @@ async function loadChats(){
   if(!ids.length){S.chats=[];S.profiles={};await loadUnreadCounts();renderChats();renderActive();return await loadRequests();}
   const [members,msgs,groupPics]=await Promise.all([
     db.from("conversation_members").select("conversation_id,user_id,role").in("conversation_id",ids),
-    db.from("messages").select("id,conversation_id,sender_id,body,created_at,edited_at,attachment_path,audio_path,forwarded_from_id").in("conversation_id",ids).order("created_at",{ascending:false}).limit(1000),
+    db.from("messages").select("id,conversation_id,sender_id,body,created_at,edited_at,attachment_path,forwarded_from_id").in("conversation_id",ids).order("created_at",{ascending:false}).limit(1000),
     db.from("group_avatars").select("conversation_id,image_data").in("conversation_id",ids)
   ]);
   if(members.error){S.loadError="Chat members could not be loaded: "+members.error.message;toast(S.loadError);return false;}
@@ -649,7 +649,7 @@ function showMessageNotification(message,chat){
   heading.append(el("strong","",chatTitle(chat)));
   const sender=S.profiles[message.sender_id]?.display_name||"A group member";
   heading.append(el("small","",chat.kind==="group"?sender+" sent a message":"New message"));
-  const preview=el("span","message-notification-preview",message.body||(message.audio_path?"Sent a voice message":message.attachment_path?"Sent an image":"Sent a message"));
+  const preview=el("span","message-notification-preview",message.body||(message.attachment_path?"Sent an image":"Sent a message"));
   open.append(heading,preview);
   open.addEventListener("click",()=>{
     dismissMessageNotification(message.id);
@@ -1262,7 +1262,7 @@ async function loadDeletedMessages(){
   const ids=(markers.data||[]).map(x=>x.message_id);
   S.deletedMessageIds=new Set(ids);
   if(!ids.length){S.deletedMessages=[];renderChats();return true;}
-  const messages=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,edited_at,attachment_path,audio_path,forwarded_from_id").in("id",ids);
+  const messages=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,edited_at,attachment_path,forwarded_from_id").in("id",ids);
   if(messages.error){toast("Deleted messages could not be loaded: "+messages.error.message);return false;}
   const byId=new Map((messages.data||[]).map(x=>[x.id,x]));
   S.deletedMessages=(markers.data||[]).flatMap(marker=>{
@@ -1376,7 +1376,7 @@ async function attachReplyPreviews(rows,conversationId){
   let messages=rows||[];
   const ids=[...new Set(messages.map(m=>m.reply_to_id).filter(id=>id&&!S.deletedMessageIds.has(id)))];
   if(ids.length){
-    const result=await db.from("messages").select("id,sender_id,body,attachment_path,audio_path").eq("conversation_id",conversationId).in("id",ids);
+    const result=await db.from("messages").select("id,sender_id,body,attachment_path").eq("conversation_id",conversationId).in("id",ids);
     if(result.error)console.warn("Reply previews could not be loaded:",result.error.message);
     const byId=new Map((result.data||[]).map(m=>[m.id,m]));
     messages=messages.map(m=>({...m,reply_preview:m.reply_to_id?(S.deletedMessageIds.has(m.reply_to_id)?{body:"Message hidden"}:(byId.get(m.reply_to_id)||{body:"Original message unavailable"})):null}));
@@ -1390,8 +1390,6 @@ async function attachReplyPreviews(rows,conversationId){
     const byPath=new Map((result.data||[]).filter(x=>x.signedUrl).map(x=>[x.path,x.signedUrl]));
     messages=messages.map(m=>({...m,image_url:m.attachment_path?(byPath.get(m.attachment_path)||null):null}));
   }
-  const audioPaths=[...new Set(messages.map(m=>m.audio_path).filter(Boolean))];
-  if(audioPaths.length){const ar=await db.storage.from("gather-voice-messages").createSignedUrls(audioPaths,3600);if(ar.error)console.warn(ar.error.message);const map=new Map((ar.data||[]).filter(x=>x.signedUrl).map(x=>[x.path,x.signedUrl]));messages=messages.map(m=>({...m,audio_url:m.audio_path?(map.get(m.audio_path)||null):null}));}
   return messages;
 }
 async function loadMessageReads(conversationId,messageIds){
@@ -1441,7 +1439,7 @@ function cancelReply(){S.replyTo=null;renderReplyComposer();}
 async function loadOlderMessages(){
   if(!S.active||!S.hasOlderMessages||S.loadingOlder||!S.messages.length)return;
   const conversationId=S.active,oldest=S.messages[0].created_at;S.loadingOlder=true;
-  const result=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,edited_at,reply_to_id,attachment_path,audio_path,forwarded_from_id").eq("conversation_id",conversationId).or("created_at.lt."+oldest+",and(created_at.eq."+oldest+",id.lt."+S.messages[0].id+")").order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
+  const result=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,edited_at,reply_to_id,attachment_path,forwarded_from_id").eq("conversation_id",conversationId).or("created_at.lt."+oldest+",and(created_at.eq."+oldest+",id.lt."+S.messages[0].id+")").order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
   S.loadingOlder=false;
   if(result.error){toast("Older messages could not be loaded: "+result.error.message);return;}
   if(S.active!==conversationId)return;
@@ -1539,7 +1537,7 @@ function subscribeTyping(conversationId){
 
 async function openChat(id){
   closeTypingChannel();
-  clearPendingMessageImage();cancelVoiceRecording(false);
+  clearPendingMessageImage();
   S.active=id;S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;
   S.messages=[];S.messageReads={};S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.reactionSelectionMode=false;S.selectedReactionMessageId=null;S.openMessageMenuId=null;S.replyTo=null;S.hasOlderMessages=false;S.loadingOlder=false;renderReplyComposer();
   markChatRead(id,S.chats.find(c=>c.id===id)?.last?.created_at||null);
@@ -1550,7 +1548,7 @@ async function openChat(id){
   subscribeMessageReads(id);subscribePollVotes(id);await markConversationRead(id);
 }
 async function loadMessages(id){
-  const r=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,edited_at,reply_to_id,attachment_path,audio_path,forwarded_from_id").eq("conversation_id",id).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
+  const r=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,edited_at,reply_to_id,attachment_path,forwarded_from_id").eq("conversation_id",id).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
   if(r.error){toast("Messages could not be loaded: "+r.error.message);return;}
   if(S.active!==id)return;
   const raw=r.data||[];S.hasOlderMessages=raw.length===300;
@@ -1692,7 +1690,7 @@ async function toggleMessageReaction(messageId,emoji){
 }
 
 
-function messagePreviewText(m){return m?.body||(m?.audio_path?"Voice message":m?.attachment_path?"Photo":"Message");}
+function messagePreviewText(m){return m?.body||(m?.attachment_path?"Photo":"Message");}
 async function loadMessagePolls(cid,ids){
   ids=[...new Set((ids||[]).filter(Boolean))];if(!S.user||S.active!==cid||!ids.length)return;
   const p=await db.from("message_polls").select("id,message_id,conversation_id,created_by,question,created_at").eq("conversation_id",cid).in("message_id",ids);
@@ -1712,7 +1710,7 @@ async function loadPinnedMessages(cid){
   if(!S.user||S.active!==cid)return;
   const r=await db.from("message_pins").select("conversation_id,message_id,pinned_by,created_at").eq("conversation_id",cid).order("created_at",{ascending:false});
   if(r.error){console.warn("Pins failed:",r.error.message);return;}
-  const pins=r.data||[],ids=pins.map(x=>x.message_id),m=ids.length?await db.from("messages").select("id,body,attachment_path,audio_path").in("id",ids):{data:[]};
+  const pins=r.data||[],ids=pins.map(x=>x.message_id),m=ids.length?await db.from("messages").select("id,body,attachment_path").in("id",ids):{data:[]};
   const map=new Map((m.data||[]).map(x=>[x.id,x]));S.pinnedMessages=pins.map(x=>({...x,message:map.get(x.message_id)||null}));
 }
 async function loadSavedMessageIds(){
@@ -1768,7 +1766,7 @@ async function toggleSavedMessage(m){
   renderMessages(true);if(!$("saved-messages-modal").hidden)await renderSavedMessages();toast(saved?"Removed from saved messages.":"Message saved.");
 }
 async function copyMessage(m){
-  const value=m.body||(m.audio_path?"Voice message":m.attachment_path?"Photo":"Message");
+  const value=m.body||(m.attachment_path?"Photo":"Message");
   try{await navigator.clipboard.writeText(value);toast("Message copied.");}
   catch(e){const t=el("textarea");t.value=value;t.style.position="fixed";document.body.append(t);t.select();const ok=document.execCommand("copy");t.remove();toast(ok?"Message copied.":"Could not copy this message.");}
 }
@@ -1781,19 +1779,26 @@ function renderForwardDestinations(){
 async function duplicateStoredAttachment(bucket,path,cid){
   const d=await db.storage.from(bucket).download(path);if(d.error)throw new Error(d.error.message);
   const ext=(path.split(".").pop()||"bin").toLowerCase().replace(/[^a-z0-9]/g,"").slice(0,8)||"bin",key=crypto.randomUUID?crypto.randomUUID():Date.now().toString(36);
-  const target=cid+"/"+S.user.id+"_"+key+"."+ext,put=await db.storage.from(bucket).upload(target,d.data,{contentType:d.data.type||(bucket==="gather-voice-messages"?"audio/webm":"application/octet-stream"),cacheControl:"3600",upsert:false});
+  const target=cid+"/"+S.user.id+"_"+key+"."+ext,put=await db.storage.from(bucket).upload(target,d.data,{contentType:d.data.type||"application/octet-stream",cacheControl:"3600",upsert:false});
   if(put.error)throw new Error(put.error.message);return target;
 }
 async function forwardMessageToConversation(cid){
   const m=S.forwardMessage,c=S.chats.find(x=>x.id===cid);if(!m||!c||!S.user)return;
-  if(c.kind==="direct"){const s=await db.rpc("get_direct_chat_status",{p_other_user_id:peerForChat(c)});if(s.error||!s.data?.can_message){toast("Private messaging is unavailable in that conversation.");return;}}
-  const b=$("forward-message-list").querySelector('[data-destination="'+cid+'"]');if(b)b.disabled=true;let image=null,audio=null;
+  if(c.kind==="direct"){
+    const s=await db.rpc("get_direct_chat_status",{p_other_user_id:peerForChat(c)});
+    if(s.error||!s.data?.can_message){toast("Private messaging is unavailable in that conversation.");return;}
+  }
+  const b=$("forward-message-list").querySelector('[data-destination="'+cid+'"]');if(b)b.disabled=true;
+  let image=null;
   try{
     if(m.attachment_path)image=await duplicateStoredAttachment("gather-message-images",m.attachment_path,cid);
-    if(m.audio_path)audio=await duplicateStoredAttachment("gather-voice-messages",m.audio_path,cid);
-    const r=await db.from("messages").insert({conversation_id:cid,sender_id:S.user.id,body:m.body||"",attachment_path:image,audio_path:audio,forwarded_from_id:m.id}).select("id").single();
-    if(r.error)throw new Error(r.error.message);$("forward-message-modal").hidden=true;S.forwardMessage=null;await loadChats();toast("Message forwarded.");
-  }catch(e){if(image)await db.storage.from("gather-message-images").remove([image]);if(audio)await db.storage.from("gather-voice-messages").remove([audio]);if(b)b.disabled=false;toast("Forward failed: "+e.message);}
+    const r=await db.from("messages").insert({conversation_id:cid,sender_id:S.user.id,body:m.body||"",attachment_path:image,forwarded_from_id:m.id}).select("id").single();
+    if(r.error)throw new Error(r.error.message);
+    $("forward-message-modal").hidden=true;S.forwardMessage=null;await loadChats();toast("Message forwarded.");
+  }catch(e){
+    if(image){const cleanup=await db.storage.from("gather-message-images").remove([image]);if(cleanup.error)console.warn("Forwarded image cleanup failed:",cleanup.error.message);}
+    if(b)b.disabled=false;toast("Forward failed: "+e.message);
+  }
 }
 async function renderSavedMessages(){
   const list=$("saved-message-list");list.replaceChildren(el("p","muted tiny","Loading saved messages…"));
@@ -1801,7 +1806,7 @@ async function renderSavedMessages(){
   if(marks.error){list.replaceChildren(el("p","status error",marks.error.message));return;}
   const rows=(marks.data||[]).filter(x=>!S.deletedMessageIds.has(x.message_id));if(!rows.length){list.replaceChildren(el("p","muted tiny","You have not saved any messages yet."));return;}
   S.savedMessageIds=new Set((marks.data||[]).map(x=>x.message_id));
-  const r=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,attachment_path,audio_path").in("id",rows.map(x=>x.message_id));
+  const r=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,attachment_path").in("id",rows.map(x=>x.message_id));
   if(r.error){list.replaceChildren(el("p","status error",r.error.message));return;}
   const enriched=[];for(const cid of [...new Set((r.data||[]).map(x=>x.conversation_id))])enriched.push(...await attachReplyPreviews((r.data||[]).filter(x=>x.conversation_id===cid),cid));
   const map=new Map(enriched.map(x=>[x.id,x]));list.replaceChildren();
@@ -1844,52 +1849,6 @@ async function submitPoll(e){
   if(o.error){await db.from("messages").delete().eq("id",m.data.id);b.disabled=false;status("poll-status",o.error.message,"error");return;}
   $("poll-create-modal").hidden=true;b.disabled=false;await loadMessages(cid);await loadChats();toast("Poll created.");
 }
-function openVoiceRecorder(){
-  closeComposerMoreMenu();if(!S.active){toast("Open a conversation first.");return;}const c=S.chats.find(x=>x.id===S.active);
-  if(c?.kind==="direct"&&!S.directStatus?.can_message){toast("Private messaging is unavailable.");return;}
-  $("voice-record-modal").hidden=false;$("voice-record-status").textContent="Your microphone is used only while recording.";
-  $("voice-record-start").hidden=false;$("voice-record-start").disabled=false;$("voice-record-stop").hidden=true;$("voice-record-send").hidden=true;$("voice-record-preview").hidden=true;$("voice-record-time").textContent="0:00";
-}
-function voiceMimeChoice(){return window.MediaRecorder?.isTypeSupported?["audio/mp4","audio/webm;codecs=opus","audio/webm","audio/ogg;codecs=opus","audio/ogg"].find(x=>MediaRecorder.isTypeSupported(x))||"":"";}
-async function startVoiceRecording(){
-  if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){$("voice-record-status").textContent="Voice recording is not supported in this browser.";return;}
-  const start=$("voice-record-start");start.disabled=true;
-  try{
-    const stream=await navigator.mediaDevices.getUserMedia({audio:true});if($("voice-record-modal").hidden){stream.getTracks().forEach(x=>x.stop());return;}
-    const mime=voiceMimeChoice(),rec=mime?new MediaRecorder(stream,{mimeType:mime}):new MediaRecorder(stream);S.voiceStream=stream;S.mediaRecorder=rec;S.voiceChunks=[];S.voiceBlob=null;S.voiceDiscarding=false;S.voiceStartedAt=Date.now();
-    rec.ondataavailable=e=>{if(e.data?.size)S.voiceChunks.push(e.data);};
-    rec.onerror=e=>{console.warn(e.error||e);$("voice-record-status").textContent="Recording stopped because of a microphone error.";cancelVoiceRecording(false);};
-    rec.onstop=()=>{
-      if(S.voiceDiscarding){stopVoiceTracks();return;}const type=rec.mimeType||S.voiceChunks[0]?.type||"audio/webm";S.voiceBlob=new Blob(S.voiceChunks,{type});S.voiceChunks=[];stopVoiceTracks();
-      if(S.voiceBlob.size<400){$("voice-record-status").textContent="Recording was too short.";start.hidden=false;start.disabled=false;$("voice-record-stop").hidden=true;return;}
-      if(S.voiceObjectUrl)URL.revokeObjectURL(S.voiceObjectUrl);S.voiceObjectUrl=URL.createObjectURL(S.voiceBlob);$("voice-record-preview").src=S.voiceObjectUrl;$("voice-record-preview").hidden=false;
-      $("voice-record-status").textContent="Recording ready to send.";start.hidden=false;start.disabled=false;$("voice-record-stop").hidden=true;$("voice-record-send").hidden=false;
-    };
-    rec.start(250);start.hidden=true;$("voice-record-stop").hidden=false;$("voice-record-send").hidden=true;$("voice-record-status").textContent="Recording…";
-    S.voiceTimer=setInterval(()=>{const n=Math.floor((Date.now()-S.voiceStartedAt)/1000);$("voice-record-time").textContent=Math.floor(n/60)+":"+String(n%60).padStart(2,"0");if(n>=120)stopVoiceRecording();},250);
-  }catch(e){start.disabled=false;$("voice-record-status").textContent=e?.name==="NotAllowedError"?"Microphone permission was denied.":"The microphone could not be started.";}
-}
-function stopVoiceTracks(){if(S.voiceTimer){clearInterval(S.voiceTimer);S.voiceTimer=null;}if(S.voiceStream){S.voiceStream.getTracks().forEach(x=>x.stop());S.voiceStream=null;}}
-function stopVoiceRecording(){if(S.mediaRecorder&&S.mediaRecorder.state!=="inactive")S.mediaRecorder.stop();stopVoiceTracks();}
-function cancelVoiceRecording(closeModal=true){
-  S.voiceDiscarding=true;stopVoiceTracks();if(S.mediaRecorder&&S.mediaRecorder.state!=="inactive"){try{S.mediaRecorder.stop();}catch(e){}}
-  S.mediaRecorder=null;S.voiceChunks=[];S.voiceBlob=null;S.voiceStartedAt=0;if(S.voiceObjectUrl){URL.revokeObjectURL(S.voiceObjectUrl);S.voiceObjectUrl=null;}
-  const preview=$("voice-record-preview");if(preview){preview.pause?.();preview.removeAttribute("src");preview.hidden=true;}
-  if($("voice-record-start")){$("voice-record-start").hidden=false;$("voice-record-start").disabled=false;}if($("voice-record-stop"))$("voice-record-stop").hidden=true;if($("voice-record-send"))$("voice-record-send").hidden=true;if(closeModal&&$("voice-record-modal"))$("voice-record-modal").hidden=true;
-}
-async function sendVoiceMessage(){
-  if(!S.voiceBlob||!S.active)return;const cid=S.active,c=S.chats.find(x=>x.id===cid);if(c?.kind==="direct"&&!S.directStatus?.can_message){toast("Private messaging is unavailable.");return;}
-  const mime=(S.voiceBlob.type||"audio/webm").split(";")[0].toLowerCase(),ext={"audio/mp4":"m4a","audio/webm":"webm","audio/ogg":"ogg","audio/wav":"wav","audio/x-wav":"wav","audio/aac":"aac","audio/mpeg":"mp3"}[mime];
-  if(!ext){toast("Unsupported audio format.");return;}if(S.voiceBlob.size>25*1024*1024){toast("Voice messages must be under 25 MB.");return;}
-  const b=$("voice-record-send");b.disabled=true;$("voice-record-status").textContent="Uploading voice message…";
-  const id=crypto.randomUUID?crypto.randomUUID():Date.now().toString(36),path=cid+"/"+S.user.id+"_"+id+"."+ext;
-  const upload=await db.storage.from("gather-voice-messages").upload(path,S.voiceBlob,{contentType:mime,cacheControl:"3600",upsert:false});
-  if(upload.error){b.disabled=false;$("voice-record-status").textContent=upload.error.message;return;}
-  const sent=await db.from("messages").insert({conversation_id:cid,sender_id:S.user.id,body:"",attachment_path:null,audio_path:path}).select("id").single();
-  if(sent.error){await db.storage.from("gather-voice-messages").remove([path]);b.disabled=false;$("voice-record-status").textContent=sent.error.message;return;}
-  cancelVoiceRecording(true);await loadMessages(cid);await loadChats();toast("Voice message sent.");
-}
-
 function renderMessages(preserveScroll=false){
   const list=$("messages"),previousHeight=list.scrollHeight,previousTop=list.scrollTop;list.replaceChildren();
   const activeChat=S.chats.find(chat=>chat.id===S.active);
@@ -1975,10 +1934,9 @@ function renderMessages(preserveScroll=false){
       const quote=el("div","reply-preview"),target=m.reply_preview;
       const quoteName=target?.sender_id?(target.sender_id===S.user.id?"You":(S.profiles[target.sender_id]?.display_name||"Member")):"Reply";
       if(showSenderNames)quote.append(el("strong","",quoteName));
-      quote.append(el("span","",target?.body||(target?.audio_path?"Sent a voice message":target?.attachment_path?"Sent an image":"Original message unavailable.")));
+      quote.append(el("span","",target?.body||(target?.attachment_path?"Sent an image":"Original message unavailable.")));
       bubble.append(quote);
     }
-    if(m.audio_path){if(m.audio_url){const audio=el("audio","voice-message-player");audio.controls=true;audio.preload="metadata";audio.src=m.audio_url;audio.setAttribute("aria-label","Voice message");bubble.append(audio);}else bubble.append(el("p","message-image-unavailable","Voice message unavailable"));}
     if(m.attachment_path){
       if(m.image_url){
         const link=el("a","message-image-link");
@@ -2817,10 +2775,10 @@ async function updateFeedbackStatus(){
   toast("Feedback status updated.");
 }
 
-function closeModals(){ if($("voice-record-modal")&&!$("voice-record-modal").hidden)cancelVoiceRecording(false); $("announcement-compose-modal").hidden=true;$("announcement-view-modal").hidden=true;$("announcements-page-modal").hidden=true;$("notifications-modal").hidden=true;$("member-profile-modal").hidden=true;$("report-modal").hidden=true;$("reports-admin-modal").hidden=true;$("people-modal").hidden=true;$("profile-modal").hidden=true;$("requests-modal").hidden=true;$("friends-modal").hidden=true;$("settings-modal").hidden=true;$("group-photo-modal").hidden=true;$("group-settings-modal").hidden=true;$("message-search-modal").hidden=true;$("poll-create-modal").hidden=true;$("voice-record-modal").hidden=true;$("forward-message-modal").hidden=true;$("saved-messages-modal").hidden=true;$("chat-actions-modal").hidden=true;$("feedback-modal").hidden=true; }
+function closeModals(){ $("announcement-compose-modal").hidden=true;$("announcement-view-modal").hidden=true;$("announcements-page-modal").hidden=true;$("notifications-modal").hidden=true;$("member-profile-modal").hidden=true;$("report-modal").hidden=true;$("reports-admin-modal").hidden=true;$("people-modal").hidden=true;$("profile-modal").hidden=true;$("requests-modal").hidden=true;$("friends-modal").hidden=true;$("settings-modal").hidden=true;$("group-photo-modal").hidden=true;$("group-settings-modal").hidden=true;$("message-search-modal").hidden=true;$("poll-create-modal").hidden=true;$("forward-message-modal").hidden=true;$("saved-messages-modal").hidden=true;$("chat-actions-modal").hidden=true;$("feedback-modal").hidden=true; }
 function goHome(){
   closeTypingChannel();
-  clearPendingMessageImage();cancelVoiceRecording(false);closeModals();S.active=null;S.messages=[];S.messageReads={};S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.replyTo=null;S.hasOlderMessages=false;S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;renderReplyComposer();
+  clearPendingMessageImage();closeModals();S.active=null;S.messages=[];S.messageReads={};S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.replyTo=null;S.hasOlderMessages=false;S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;renderReplyComposer();
   $("layout").classList.remove("show-chat");$("layout").classList.add("show-home");renderChats();renderActive();
 }
 function closeComposerMoreMenu(){
@@ -2895,7 +2853,7 @@ function wire(){
     status("profile-status","The picture will be removed when you save changes.","success");
   });
   $("password-form").addEventListener("submit",changePassword);
-  $("send-form").addEventListener("submit",sendMessage);$("message-image-file").addEventListener("change",handleMessageImageFile);$("composer-more-trigger").addEventListener("click",event=>{event.stopPropagation();toggleComposerMoreMenu();});$("composer-more-menu").addEventListener("click",event=>event.stopPropagation());$("message-react-mode").addEventListener("click",()=>{closeComposerMoreMenu();beginMessageReactionSelection();});$("message-create-poll").addEventListener("click",openPollComposer);$("voice-message-open").addEventListener("click",openVoiceRecorder);$("poll-form").addEventListener("submit",submitPoll);$("poll-add-option").addEventListener("click",addPollOptionInput);$("poll-cancel").addEventListener("click",()=>$("poll-create-modal").hidden=true);$("voice-record-start").addEventListener("click",startVoiceRecording);$("voice-record-stop").addEventListener("click",stopVoiceRecording);$("voice-record-send").addEventListener("click",sendVoiceMessage);$("voice-record-cancel").addEventListener("click",()=>cancelVoiceRecording(true));$("saved-messages-open").addEventListener("click",openSavedMessages);document.addEventListener("click",event=>{const wrap=$("composer-more-wrap");if(wrap&&!wrap.contains(event.target))closeComposerMoreMenu();});$("message-reaction-cancel").addEventListener("click",cancelMessageReactionSelection);
+  $("send-form").addEventListener("submit",sendMessage);$("message-image-file").addEventListener("change",handleMessageImageFile);$("composer-more-trigger").addEventListener("click",event=>{event.stopPropagation();toggleComposerMoreMenu();});$("composer-more-menu").addEventListener("click",event=>event.stopPropagation());$("message-react-mode").addEventListener("click",()=>{closeComposerMoreMenu();beginMessageReactionSelection();});$("message-create-poll").addEventListener("click",openPollComposer);$("poll-form").addEventListener("submit",submitPoll);$("poll-add-option").addEventListener("click",addPollOptionInput);$("poll-cancel").addEventListener("click",()=>$("poll-create-modal").hidden=true);$("saved-messages-open").addEventListener("click",openSavedMessages);document.addEventListener("click",event=>{const wrap=$("composer-more-wrap");if(wrap&&!wrap.contains(event.target))closeComposerMoreMenu();});$("message-reaction-cancel").addEventListener("click",cancelMessageReactionSelection);
   $("message").addEventListener("input",e=>{e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,120)+"px";updateLocalTyping();});
   $("message").addEventListener("blur",()=>stopTyping(true));
   $("share-online-status").addEventListener("change",event=>{
@@ -2921,7 +2879,7 @@ function wire(){
   $("delete-selected").addEventListener("click",deleteSelectedMessages);
   $("signout").addEventListener("click",async()=>{const r=await db.auth.signOut();if(r.error)toast(r.error.message);else closeModals();});
   document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",closeModals));
-  ["announcement-compose-modal","announcement-view-modal","announcements-page-modal","notifications-modal","member-profile-modal","report-modal","reports-admin-modal","people-modal","profile-modal","requests-modal","friends-modal","settings-modal","group-photo-modal","group-settings-modal","message-search-modal","poll-create-modal","voice-record-modal","forward-message-modal","saved-messages-modal","chat-actions-modal","feedback-modal"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target===$(id))closeModals();}));
+  ["announcement-compose-modal","announcement-view-modal","announcements-page-modal","notifications-modal","member-profile-modal","report-modal","reports-admin-modal","people-modal","profile-modal","requests-modal","friends-modal","settings-modal","group-photo-modal","group-settings-modal","message-search-modal","poll-create-modal","forward-message-modal","saved-messages-modal","chat-actions-modal","feedback-modal"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target===$(id))closeModals();}));
   document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeComposerMoreMenu();closeModals();}});
 }
 async function boot(){
