@@ -1275,6 +1275,7 @@ function renderNotifications(){
       card.addEventListener("click",async()=>{
         if(item.announcement_history){
           await markAnnouncementNotificationsRead(item.announcement_id);
+          setModalBackTarget("announcement-view-modal","notifications-modal");
           $("notifications-modal").hidden=true;
           await openAnnouncement(item.announcement_id);
         }else{
