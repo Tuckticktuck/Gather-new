@@ -1670,7 +1670,7 @@ async function markMessagesRead(conversationId,rows){
 function subscribeMessageReads(conversationId){
   if(S.readChannel){db.removeChannel(S.readChannel);S.readChannel=null;}
   S.readChannel=db.channel("read-receipts-"+conversationId)
-    .on("postgres_changes",{event:"INSERT",schema:"public",table:"message_reads",filter:"conversation_id=eq."+conversationId},payload=>{
+    .on("postgres_changes",{event:"INSERT",schema:"public",table:"message_reads",filter:"conversation_id=eq."+conversationId},async payload=>{
       const receipt=payload.new;if(!receipt?.message_id||!receipt.user_id)return;
       const readers=S.messageReads[receipt.message_id]||(S.messageReads[receipt.message_id]=[]);
       if(!readers.some(x=>x.user_id===receipt.user_id))readers.push(receipt);
