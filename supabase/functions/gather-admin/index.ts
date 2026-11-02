@@ -238,6 +238,26 @@ Deno.serve(async (request: Request) => {
       return response(200, { success: true });
     }
 
+    if (action === "update_report_status") {
+      const reportId = cleanString(payload.report_id, 80);
+      const status = cleanString(payload.status, 20);
+      if (!reportId) return adminError(400, "Choose a report first.");
+      if (!["new", "reviewing", "resolved"].includes(status)) {
+        return adminError(400, "Choose a valid report status.");
+      }
+      const { data, error } = await adminClient.from("reports")
+        .update({ status })
+        .eq("id", reportId)
+        .select("id,target_user_id,status")
+        .maybeSingle();
+      if (error || !data) return adminError(400, "The report status could not be updated.");
+      await writeAdminLog(adminClient, actorId, data.target_user_id, "report_status_updated", {
+        report_id: data.id,
+        status: data.status,
+      });
+      return response(200, { report: data });
+    }
+
     if (action === "list_audit") {
       const { data, error } = await adminClient.from("admin_action_logs")
         .select("id,actor_id,target_user_id,action,details,created_at")
