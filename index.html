@@ -7,7 +7,7 @@
 <meta name="description" content="Private direct and group conversations.">
 <title>Gather</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="app.css?v=20261102-58">
+<link rel="stylesheet" href="app.css?v=20261102-59">
 <script src="https://unpkg.com/@supabase/supabase-js@2.118.0"></script>
 <script>
 if (!window.supabase?.createClient) {
@@ -15,7 +15,7 @@ if (!window.supabase?.createClient) {
 }
 </script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script defer src="app.js?v=20261102-66" onerror="const s=document.getElementById('auth-status');if(s){s.textContent='Gather could not load its app script. Check your connection and reload the page.';s.classList.add('error');}"></script>
+<script defer src="app.js?v=20261102-67" onerror="const s=document.getElementById('auth-status');if(s){s.textContent='Gather could not load its app script. Check your connection and reload the page.';s.classList.add('error');}"></script>
 </head>
 <body>
 <section id="auth" class="auth-shell">
@@ -59,7 +59,6 @@ if (!window.supabase?.createClient) {
     </div>
     <div class="topbar-actions">
       <button id="notifications-open" class="home-button notification-open" type="button" aria-label="Open notifications"><span class="home-glyph" aria-hidden="true">♢</span><span>Notifications</span><span id="notification-badge" class="notification-badge" hidden>0</span></button>
-      <button id="admin-mode-open" class="home-button admin-mode-launch" type="button" aria-label="Open Admin Mode" hidden><span class="home-glyph" aria-hidden="true">◇</span><span>Admin Mode</span></button>
       <button id="settings-open" class="home-button" type="button" aria-label="Open settings"><span class="home-glyph" aria-hidden="true">⚙</span><span>Settings</span></button>
       <button id="profile-open" class="profile-pill"><span id="user-initial" class="avatar">?</span><span id="user-name">Account</span><span>⌄</span></button>
     </div>
@@ -111,19 +110,6 @@ if (!window.supabase?.createClient) {
             <button id="home-requests-open" class="secondary-action" type="button">Chat requests</button>
           </div>
         </header>
-        <section id="home-announcement-card" class="home-announcement-card" hidden aria-label="Latest Gather Admin announcement">
-          <div class="home-announcement-mark" aria-hidden="true">◎</div>
-          <div class="home-announcement-copy">
-            <p class="eyebrow">LATEST FROM GATHER ADMIN</p>
-            <strong id="home-announcement-title"></strong>
-            <p id="home-announcement-preview"></p>
-            <small id="home-announcement-date"></small>
-          </div>
-          <div class="home-announcement-actions">
-            <button id="home-announcement-open" class="secondary-action" type="button">Read latest</button>
-            <button id="home-announcements-all" class="announcement-all-button" type="button">View all</button>
-          </div>
-        </section>
         <label class="workspace-search">Search conversations<input id="filter" class="search" type="search" placeholder="Search by name or message"></label>
         <div class="conversation-selection-toolbar">
           <button id="toggle-conversation-select" class="secondary-action conversation-select-toggle" type="button" aria-pressed="false">Select conversations</button>
@@ -194,7 +180,6 @@ if (!window.supabase?.createClient) {
   <section class="settings-section notification-settings-section"><h3>Message notifications</h3><p class="tiny muted">Choose how long new-message pop-ups stay visible.</p><div class="notification-mode-choices" role="group" aria-label="Message notification duration"><button class="font-choice" type="button" data-notification-mode="temporary" aria-pressed="true">Temporary · 5 seconds</button><button class="font-choice" type="button" data-notification-mode="persistent" aria-pressed="false">Persistent · until dismissed</button></div><label class="presence-setting-toggle notification-group-setting"><input id="group-unread-messages" type="checkbox"><span><strong>Group unread messages from the same person</strong><small>When enabled, multiple unread messages from one person in the same chat appear together until you open the conversation.</small></span></label></section>
   <section class="settings-section online-status-settings"><h3>Online status</h3><label class="presence-setting-toggle"><input id="share-online-status" type="checkbox" checked><span><strong>Share online status and last seen</strong><small>Friends can see when you are online and when you were last active. Turn this off any time.</small></span></label></section>
   <section id="security-settings-section" class="settings-section"><h3>Privacy and security</h3><p class="tiny muted">Manage the sessions that are signed in to your Gather account.</p><button id="signout-other-sessions" class="secondary-action" type="button">Sign out other devices</button><p id="session-security-status" class="tiny muted" role="status"></p><button id="request-account-deletion" class="danger-action" type="button">Request account deletion</button><p class="tiny muted">Deletion requests go to Gather support for review. Your account is not removed automatically.</p></section>
-  <section id="feedback-admin-settings-section" class="settings-section" hidden><h3>Administration</h3><p class="tiny muted">Review member feedback and manage replies.</p><button id="feedback-admin-open" class="secondary-action" type="button">Open admin inbox</button><button id="reports-admin-open" class="secondary-action" type="button">Review reports</button><button id="announcement-send-open" class="primary" type="button">Send announcement to everyone</button></section>
   <p id="settings-note" class="tiny muted">Your preferences are saved to your Gather account and follow you across devices.</p>
 
   </div>
@@ -202,98 +187,11 @@ if (!window.supabase?.createClient) {
 
 
 
-<div id="announcement-compose-modal" class="overlay" hidden><section class="modal announcement-modal" role="dialog" aria-modal="true" aria-labelledby="announcement-compose-title">
-  <button class="close" data-close aria-label="Close">×</button>
-  <p class="eyebrow">GATHER ADMIN</p><h2 id="announcement-compose-title">Send an announcement</h2>
-  <p id="announcement-compose-description" class="tiny muted">This message goes to everyone on Gather. Recipients see “Gather Admin” as the sender; your account name and profile are not shown.</p>
-  <form id="announcement-compose-form">
-    <label>Announcement title<input id="announcement-title" maxlength="100" required placeholder="A quick update"></label>
-    <div class="announcement-message-field">
-      <label for="announcement-body">Message</label>
-      <p class="announcement-format-hint">To bold text, put two asterisks around it, like **important update**.</p>
-      <textarea id="announcement-body" rows="6" maxlength="2000" required placeholder="Write a clear, neutral message for everyone…"></textarea>
-    </div>
-    <p id="announcement-compose-status" class="status" role="status"></p><button id="announcement-publish" class="primary" type="submit">Send to everyone</button>
-  </form>
-</section></div>
-
-<div id="announcements-page-modal" class="overlay" hidden><section class="modal announcements-page-modal" role="dialog" aria-modal="true" aria-labelledby="announcements-page-title">
-  <button class="close" data-close aria-label="Close">×</button>
-  <header class="announcements-page-header"><div><p class="eyebrow">OFFICIAL UPDATES</p><h2 id="announcements-page-title">Announcements</h2><p class="tiny muted">Messages shared with everyone by Gather Admin.</p></div></header>
-  <div id="announcements-history-list" class="announcements-history-list"><p class="muted tiny">Loading announcements…</p></div>
-</section></div>
-<div id="announcement-view-modal" class="overlay" hidden><section class="modal announcement-view-modal" role="dialog" aria-modal="true" aria-labelledby="announcement-view-title">
-  <button class="close" data-close aria-label="Close">×</button>
-  <div class="announcement-sender"><span class="announcement-admin-mark">◎</span><span><strong>Gather Admin</strong><small>Official announcement</small></span></div>
-  <h2 id="announcement-view-title"></h2><p id="announcement-view-date" class="tiny muted"></p>
-  <div id="announcement-view-body" class="announcement-view-body"></div>
-  <div class="announcement-view-actions"><button id="announcement-edit-open" class="outline" type="button" hidden>Edit announcement</button></div>
-</section></div>
-<div id="admin-mode-modal" class="overlay" hidden><section class="modal admin-mode-modal" role="dialog" aria-modal="true" aria-labelledby="admin-mode-title">
-  <header class="admin-mode-header">
-    <div><p class="eyebrow">GATHER CONTROL CENTER</p><h2 id="admin-mode-title">Admin Mode</h2><p class="tiny muted">Manage members, moderation, feedback, and official updates.</p></div>
-    <button class="close" data-close aria-label="Exit Admin Mode">×</button>
-  </header>
-  <nav class="admin-mode-nav" aria-label="Admin sections">
-    <button class="admin-mode-tab active" type="button" data-admin-section="overview">Overview</button>
-    <button class="admin-mode-tab" type="button" data-admin-section="accounts">Accounts</button>
-    <button class="admin-mode-tab" type="button" data-admin-section="reports">Reports</button>
-    <button class="admin-mode-tab" type="button" data-admin-section="feedback">Feedback</button>
-    <button class="admin-mode-tab" type="button" data-admin-section="announcements">Announcements</button>
-    <button class="admin-mode-tab" type="button" data-admin-section="activity">Activity</button>
-  </nav>
-  <main class="admin-mode-body">
-    <section class="admin-mode-panel" data-admin-panel="overview">
-      <div class="admin-mode-summary-grid">
-        <button class="admin-summary-card" type="button" data-admin-section="accounts"><span>Member accounts</span><strong id="admin-summary-accounts">—</strong><small>Registered accounts</small></button>
-        <button class="admin-summary-card" type="button" data-admin-section="reports"><span>Open reports</span><strong id="admin-summary-reports">—</strong><small>Awaiting review</small></button>
-        <button class="admin-summary-card" type="button" data-admin-section="feedback"><span>Feedback threads</span><strong id="admin-summary-feedback">—</strong><small>Not resolved</small></button>
-        <button class="admin-summary-card" type="button" data-admin-section="announcements"><span>Announcements</span><strong id="admin-summary-announcements">—</strong><small>Published updates</small></button>
-      </div>
-      <div class="admin-overview-grid">
-        <section class="admin-mode-card">
-          <h3>Quick actions</h3>
-          <button id="admin-quick-accounts" class="secondary-action" type="button">Manage member accounts</button>
-          <button id="admin-quick-reports" class="secondary-action" type="button">Review member reports</button>
-          <button id="admin-quick-feedback" class="secondary-action" type="button">Open feedback inbox</button>
-          <button id="admin-quick-announcements" class="secondary-action" type="button">Manage announcements</button>
-        </section>
-        <section class="admin-mode-card">
-          <div class="admin-section-heading"><h3>Recent admin actions</h3><button id="admin-overview-activity-refresh" class="outline" type="button">Refresh</button></div>
-          <div id="admin-overview-activity" class="admin-activity-list"><p class="muted tiny">Loading admin activity…</p></div>
-        </section>
-      </div>
-      <p class="admin-security-note">Account email addresses are available only inside this protected admin view. Passwords and password hashes are never displayed or retrieved.</p>
-    </section>
-    <section class="admin-mode-panel" data-admin-panel="accounts" hidden>
-      <div class="admin-section-heading"><div><h3>Member accounts</h3><p class="tiny muted">View account details, edit public profile fields, or manage account access.</p></div><button id="admin-accounts-refresh" class="outline" type="button">Refresh</button></div>
-      <label class="admin-account-search">Search loaded accounts<input id="admin-account-search" type="search" placeholder="Name, username, or email"></label>
-      <div class="admin-account-layout">
-        <div><div id="admin-account-list" class="admin-account-list"><p class="muted tiny">Open Accounts to load members.</p></div><button id="admin-accounts-more" class="secondary-action admin-load-more" type="button" hidden>Load more accounts</button></div>
-        <section id="admin-account-detail" class="admin-account-detail"><div class="admin-empty-state"><strong>Select a member</strong><p class="muted tiny">Account details and moderation controls will appear here.</p></div></section>
-      </div>
-    </section>
-    <section class="admin-mode-panel" data-admin-panel="reports" hidden>
-      <div class="admin-mode-card admin-feature-card"><span class="eyebrow">SAFETY & MODERATION</span><h3>Member reports</h3><p class="muted tiny">Review reports, update their status, and contact the reported member privately when follow-up is needed.</p><button id="admin-reports-open" class="primary" type="button">Open report inbox</button></div>
-    </section>
-    <section class="admin-mode-panel" data-admin-panel="feedback" hidden>
-      <div class="admin-mode-card admin-feature-card"><span class="eyebrow">SUPPORT</span><h3>Feedback inbox</h3><p class="muted tiny">Read private member feedback, respond as Gather Admin, and update each thread’s status.</p><button id="admin-feedback-open" class="primary" type="button">Open feedback inbox</button></div>
-    </section>
-    <section class="admin-mode-panel" data-admin-panel="announcements" hidden>
-      <div class="admin-mode-card admin-feature-card"><span class="eyebrow">COMMUNICATIONS</span><h3>Official announcements</h3><p class="muted tiny">Publish new updates, review the full announcement history, and edit existing announcements.</p><button id="admin-announcements-open" class="primary" type="button">Open announcements</button></div>
-    </section>
-    <section class="admin-mode-panel" data-admin-panel="activity" hidden>
-      <div class="admin-section-heading"><div><h3>Admin activity</h3><p class="tiny muted">A record of profile edits and account moderation actions.</p></div><button id="admin-activity-refresh" class="outline" type="button">Refresh</button></div>
-      <div id="admin-activity-list" class="admin-activity-list"><p class="muted tiny">No activity loaded yet.</p></div>
-    </section>
-  </main>
-</section></div>
 <div id="notifications-modal" class="overlay" hidden><section class="modal notifications-modal" role="dialog" aria-modal="true" aria-labelledby="notifications-title">
   <button class="close" data-close aria-label="Close">×</button><p class="eyebrow">YOUR UPDATES</p><h2 id="notifications-title">Notifications</h2>
-  <div class="notifications-shortcuts"><button id="notifications-admin-open" class="secondary-action notification-shortcut-button" type="button">View Gather Admin <span aria-hidden="true">↗</span></button><button id="notifications-recent-open" class="secondary-action notification-shortcut-button" type="button">View recent messages <span aria-hidden="true">→</span></button></div>
+  <div class="notifications-shortcuts"><button id="notifications-recent-open" class="secondary-action notification-shortcut-button" type="button">View recent messages <span aria-hidden="true">→</span></button></div>
   <nav class="notification-section-tabs" role="tablist" aria-label="Notification sections">
     <button class="notification-section-tab active" type="button" role="tab" aria-selected="true" data-notification-view="all">All</button>
-    <button class="notification-section-tab" type="button" role="tab" aria-selected="false" data-notification-view="admin">Gather Admin</button>
     <button class="notification-section-tab" type="button" role="tab" aria-selected="false" data-notification-view="messages">Recent messages</button>
     <button class="notification-section-tab" type="button" role="tab" aria-selected="false" data-notification-view="other">Other updates</button>
   </nav>
@@ -305,7 +203,6 @@ if (!window.supabase?.createClient) {
   <p id="feedback-modal-eyebrow" class="eyebrow">FEEDBACK AND SUPPORT</p>
   <h2 id="feedback-modal-title">Your feedback</h2>
   <p id="feedback-modal-description" class="muted tiny">Send feedback or ask for help. Replies stay private to your account.</p>
-  <p id="feedback-admin-identity" class="feedback-admin-identity" hidden><strong>Gather Admin</strong> · Your personal Gather username and profile name are not shown to members.</p>
   <div class="feedback-layout">
     <aside class="feedback-sidebar">
       <div class="feedback-sidebar-actions"><button id="feedback-new" class="primary" type="button">New feedback</button><button id="feedback-refresh" class="outline" type="button" aria-label="Refresh feedback">↻</button></div>
@@ -352,7 +249,7 @@ if (!window.supabase?.createClient) {
 
 <div id="report-modal" class="overlay" hidden><section class="modal report-modal" role="dialog" aria-modal="true" aria-labelledby="report-title">
   <button class="close" data-close aria-label="Close">×</button><p class="eyebrow">KEEP GATHER SAFE</p><h2 id="report-title">Report content</h2>
-  <p id="report-description" class="tiny muted">Reports are private and reviewed by the Gather administrator.</p>
+  <p id="report-description" class="tiny muted">Reports are private.</p>
   <form id="report-form"><label>Reason<select id="report-reason" required><option value="harassment">Harassment or bullying</option><option value="spam">Spam</option><option value="inappropriate">Inappropriate content</option><option value="impersonation">Impersonation</option><option value="other">Other</option></select></label>
     <label>Additional details <small class="muted">Optional, up to 1,000 characters</small><textarea id="report-details" rows="4" maxlength="1000" placeholder="Add context that may help us review this report…"></textarea></label>
     <p id="report-status" class="status" role="status"></p><button id="report-submit" class="primary" type="submit">Submit report</button>
@@ -505,10 +402,6 @@ if (!window.supabase?.createClient) {
   </div></section>
 </section></div>
 
-<div id="reports-admin-modal" class="overlay" hidden><section class="modal reports-admin-modal" role="dialog" aria-modal="true" aria-labelledby="reports-admin-title">
-  <button class="close" data-close aria-label="Close">×</button><p class="eyebrow">GATHER ADMIN</p><h2 id="reports-admin-title">Member reports</h2><p class="tiny muted">Private reports submitted by Gather members.</p>
-  <div id="reports-admin-list" class="reports-admin-list"><p class="muted tiny">Loading reports…</p></div>
-</section></div>
 <div id="toast" class="toast" role="status"></div>
 <div id="message-notifications" class="message-notifications" role="status" aria-live="polite" aria-atomic="false" hidden></div>
 </body>
