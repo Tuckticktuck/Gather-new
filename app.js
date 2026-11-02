@@ -612,6 +612,10 @@ function showAuth() {
   $("password-recovery-modal").hidden=true;S.passwordRecovery=false;
   if(S.channel){db.removeChannel(S.channel);S.channel=null;}
   if(S.requestChannel){db.removeChannel(S.requestChannel);S.requestChannel=null;}
+  if(S.friendActivityChannel){db.removeChannel(S.friendActivityChannel);S.friendActivityChannel=null;}
+  if(S.undoSendTimer){clearTimeout(S.undoSendTimer);S.undoSendTimer=null;}
+  S.pendingUndoSend=null;renderUndoSend();
+  S.friendActivityPosts=[];S.favoriteFriendIds=new Set();
   if(S.readChannel){db.removeChannel(S.readChannel);S.readChannel=null;}
   if(S.pollChannel){db.removeChannel(S.pollChannel);S.pollChannel=null;}
   if(S.notificationChannel){db.removeChannel(S.notificationChannel);S.notificationChannel=null;}
