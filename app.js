@@ -1414,7 +1414,7 @@ function renderChatSection(kind,listId,countId,term,sourceChats=null){
     }
     const unreadCount=Number(S.unreadCounts[c.id]||0),unread=unreadCount>0||chatHasUnread(c);
     const chatButton=el("div","chat-item"+(c.id===S.active?" active":"")+(unread?" has-unread":""));
-    chatButton.setAttribute("role","button");chatButton.tabIndex=0;
+    chatButton.setAttribute("role","group");chatButton.setAttribute("aria-label","Conversation row for "+chatTitle(c));chatButton.tabIndex=0;
     chatButton.append(avatarNode);
     const copy=el("div","chat-copy");
     const name=profileShortcut?el("button","chat-peer-profile-name",chatTitle(c)):el("strong","",chatTitle(c));
