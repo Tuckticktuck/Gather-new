@@ -961,6 +961,7 @@ async function loadAnnouncements(){
     const result=await db.from("admin_announcements")
       .select("id,title,body,created_at,edited_at")
       .order("created_at",{ascending:false})
+      .order("id",{ascending:true})
       .range(from,from+pageSize-1);
     if(result.error){
       console.warn("Admin announcements could not be loaded:",result.error.message);
@@ -1222,15 +1223,19 @@ async function markNotificationRead(id){
 }
 async function markAnnouncementNotificationsRead(announcementId){
   if(!S.user||!announcementId)return true;
-  const unread=S.notifications.filter(item=>item.kind==="announcement"&&item.announcement_id===announcementId&&!item.read_at);
-  if(!unread.length)return true;
-  const ids=unread.map(item=>item.id),at=new Date().toISOString();
-  const result=await db.from("notifications").update({read_at:at}).eq("recipient_id",S.user.id).in("id",ids);
+  const at=new Date().toISOString();
+  const result=await db.from("notifications").update({read_at:at})
+    .eq("recipient_id",S.user.id)
+    .eq("kind","announcement")
+    .eq("announcement_id",announcementId)
+    .is("read_at",null);
   if(result.error){
     console.warn("Announcement notifications could not be marked read:",result.error.message);
     return false;
   }
-  S.notifications.forEach(item=>{if(ids.includes(item.id))item.read_at=at;});
+  S.notifications.forEach(item=>{
+    if(item.kind==="announcement"&&item.announcement_id===announcementId&&!item.read_at)item.read_at=at;
+  });
   renderNotifications();
   return true;
 }
