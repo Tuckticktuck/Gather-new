@@ -108,6 +108,7 @@ function applyUIPreferences(){
   if(groupUnreadControl)groupUnreadControl.checked=S.preferences.groupUnreadMessages===true;
   const shareStatusControl=$("share-online-status");
   if(shareStatusControl)shareStatusControl.checked=S.preferences.shareOnlineStatus!==false;
+  if(S.active)applyChatAppearance(S.active);
 }
 function saveUIPreferences(){
   applyUIPreferences();
@@ -151,7 +152,12 @@ function toggleMutedConversation(id=S.active){
   if(!id)return;
   if(S.chatSettings.muted[id])delete S.chatSettings.muted[id];
   else S.chatSettings.muted[id]=true;
-  saveChatSettings();renderChats();renderChatOptions();
+  if(S.chatSettings.muted[id]){
+    $("message-notifications").querySelectorAll("[data-conversation-id]").forEach(card=>{
+      if(card.dataset.conversationId===id)dismissMessageNotification(card.dataset.notificationId);
+    });
+  }
+  saveChatSettings();renderChats();renderChatOptions();renderNotifications();renderNotificationBadge();
   toast(S.chatSettings.muted[id]?"Conversation muted.":"Conversation unmuted.");
 }
 function applyChatAppearance(id=S.active){
@@ -366,6 +372,7 @@ function markChatRead(chatId,through=null){
   saveReadState();
 }
 function showAuth() {
+  saveActiveChatDraft();clearUnreadDividerState();
   closeTypingChannel();
   stopOnlinePresence();
   clearPendingMessageImage();clearMessageNotifications();
@@ -377,6 +384,7 @@ function showAuth() {
   if(S.notificationChannel){db.removeChannel(S.notificationChannel);S.notificationChannel=null;}
   if(S.announcementChannel){db.removeChannel(S.announcementChannel);S.announcementChannel=null;}
   S.announcements=[];renderHomeAnnouncement();
+  clearTimeout(S.draftSaveTimer);S.draftSaveTimer=null;
   S.user=null;S.profile=null;S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.savedMessageIds=new Set();S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.reactionSelectionMode=false;S.selectedReactionMessageId=null;S.openMessageMenuId=null;S.notifications=[];S.feedbackAdminView=false;$("feedback-admin-open").hidden=true;$("feedback-admin-settings-section").hidden=true;S.profiles={};S.chats=[];S.messages=[];S.messageReads={};S.replyTo=null;S.hasOlderMessages=false;S.requests=[];S.friendRequests=[];S.friends=[];S.blockedUsers=[];S.deletedMessages=[];S.deletedMessageIds=new Set();S.lastReadAt={};S.folder="friends";S.directStatus=null;S.active=null;S.messages=[];S.loadError=null;S.avatarChanged=false;S.pendingAvatarData=null;loadUIPreferences(DEFAULT_PREFERENCES);
   setChatLoadStatus("");$("auth").hidden=false;$("app").hidden=true;
 }
@@ -765,6 +773,7 @@ function showMessageNotification(message,chat){
   const card=el("article","message-notification");
   card.id="message-notification-"+message.id;
   card.dataset.notificationId=message.id;
+  card.dataset.conversationId=chat.id;
   const open=el("button","message-notification-open");
   open.type="button";
   open.setAttribute("aria-label","Open conversation "+chatTitle(chat));
@@ -956,7 +965,10 @@ async function openAnnouncement(id){
 }
 
 function notificationItemsForCenter(){
-  return S.notifications.filter(item=>!(item.kind==="message"&&item.conversation_id&&item.conversation_id===S.active));
+  return S.notifications.filter(item=>
+    !(item.kind==="message"&&item.conversation_id&&item.conversation_id===S.active)&&
+    !(item.kind==="message"&&item.conversation_id&&S.chatSettings.muted[item.conversation_id])
+  );
 }
 function notificationItemsForView(view=S.notificationView){
   const items=notificationItemsForCenter();
@@ -1062,7 +1074,8 @@ function subscribeNotifications(){
       }
       await loadNotifications();
       const item=S.notifications.find(x=>x.id===payload.new.id);
-      if(item&&!activeConversationMessage&&$("notifications-modal")?.hidden)toast(item.title||"You have a new Gather notification.");
+      const mutedMessage=item?.kind==="message"&&item.conversation_id&&S.chatSettings.muted[item.conversation_id];
+      if(item&&!activeConversationMessage&&!mutedMessage&&$("notifications-modal")?.hidden)toast(item.title||"You have a new Gather notification.");
     }).subscribe();
 }
 async function markNotificationRead(id){
