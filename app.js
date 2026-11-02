@@ -1631,7 +1631,40 @@ function renderChats(){
   else renderDeletedMessages(term);
   renderChatSection("group","group-chat-list","group-chat-count",term,S.chats.filter(chat=>chat.kind==="group"&&!pinnedIds.has(chat.id)));
   renderConversationSelectionControls();
+  renderInChatSidebar();
 }
+function renderInChatSidebar(){
+  const pinnedSection=$("in-chat-pinned-section");
+  const pinnedList=$("in-chat-pinned-list");
+  const allList=$("in-chat-conversation-list");
+  const pinnedCount=$("in-chat-pinned-count");
+  const allCount=$("in-chat-conversation-count");
+  if(!pinnedSection||!pinnedList||!allList||!pinnedCount||!allCount)return;
+  const term=($("in-chat-filter")?.value||"").trim().toLowerCase();
+  const matches=S.chats.filter(chat=>{
+    const searchable=[chatTitle(chat),chatSub(chat),chat.last?.body||""].join(" ").toLowerCase();
+    return (!chat.hasMessages||!!chat.last)&&searchable.includes(term);
+  });
+  const pinnedSet=new Set(S.chatSettings.pinned);
+  const sortRecent=(a,b)=>{
+    const aTime=new Date(a.last?.created_at||a.updated_at||0).getTime();
+    const bTime=new Date(b.last?.created_at||b.updated_at||0).getTime();
+    return bTime-aTime;
+  };
+  const pinned=matches.filter(chat=>pinnedSet.has(chat.id)).sort(sortRecent);
+  const regular=matches.filter(chat=>!pinnedSet.has(chat.id)).sort(sortRecent);
+  pinnedSection.hidden=!pinned.length;
+  pinnedCount.textContent=String(pinned.length);
+  allCount.textContent=String(regular.length);
+  if(pinned.length)renderChatSection("direct","in-chat-pinned-list","in-chat-pinned-count","",pinned);
+  else pinnedList.replaceChildren();
+  if(regular.length)renderChatSection("direct","in-chat-conversation-list","in-chat-conversation-count","",regular);
+  else{
+    allList.replaceChildren();
+    allList.append(el("p","muted tiny in-chat-empty",term?"No matching conversations.":"No other conversations yet."));
+  }
+}
+
 async function loadBlocked(){
   if(!S.user)return false;
   const r=await db.from("user_blocks").select("blocked_id,created_at").eq("blocker_id",S.user.id).order("created_at",{ascending:false});
@@ -1679,6 +1712,11 @@ function renderActive(){
   const c=S.chats.find(x=>x.id===S.active);
   $("layout").classList.toggle("direct-chat",c?.kind==="direct");
   $("empty").hidden=!!c;$("chat").hidden=!c;
+  $("layout").classList.toggle("in-chat-mode",!!c);
+  $("sidebar-home-content").hidden=!!c;
+  $("in-chat-sidebar").hidden=!c;
+  $("sidebar-title").textContent=c?"Conversations":"Messages";
+
   const peer=c?.members.find(m=>m.user_id!==S.user.id),peerProfile=peer&&S.profiles[peer.user_id];
   const avatarImage=c?.kind==="group"?c.avatar_data:peerProfile?.avatar_data;
   paintAvatar($("chat-avatar"),chatTitle(c||{kind:"direct",members:[]}),avatarImage);
@@ -1935,6 +1973,7 @@ function subscribeTyping(conversationId){
 }
 
 async function openChat(id){
+  closeConversationDrawer();
   saveActiveChatDraft();
   clearUnreadDividerState();
   closeTypingChannel();
@@ -3265,11 +3304,22 @@ async function updateFeedbackStatus(){
 
 function closeModals(){ $("announcement-compose-modal").hidden=true;$("announcement-view-modal").hidden=true;$("announcements-page-modal").hidden=true;$("notifications-modal").hidden=true;$("member-profile-modal").hidden=true;$("report-modal").hidden=true;$("reports-admin-modal").hidden=true;$("people-modal").hidden=true;$("profile-modal").hidden=true;$("requests-modal").hidden=true;$("friends-modal").hidden=true;$("settings-modal").hidden=true;$("group-photo-modal").hidden=true;$("group-settings-modal").hidden=true;$("message-search-modal").hidden=true;$("poll-create-modal").hidden=true;$("forward-message-modal").hidden=true;$("saved-messages-modal").hidden=true;$("chat-actions-modal").hidden=true;$("feedback-modal").hidden=true; }
 function goHome(){
+  closeConversationDrawer();
   saveActiveChatDraft();clearUnreadDividerState();
   closeTypingChannel();
   clearPendingMessageImage();closeModals();S.active=null;S.messages=[];S.messageReads={};S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.replyTo=null;S.hasOlderMessages=false;S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;renderReplyComposer();
   $("layout").classList.remove("show-chat");$("layout").classList.add("show-home");renderChats();renderActive();
 }
+function setConversationDrawer(open){
+  const layout=$("layout"),backdrop=$("conversation-drawer-backdrop"),toggle=$("conversation-drawer-toggle");
+  if(!layout||!backdrop||!toggle)return;
+  const isOpen=!!open;
+  layout.classList.toggle("conversation-drawer-open",isOpen);
+  backdrop.hidden=!isOpen;
+  toggle.setAttribute("aria-expanded",String(isOpen));
+  toggle.setAttribute("aria-label",isOpen?"Close conversations":"Open conversations");
+}
+function closeConversationDrawer(){setConversationDrawer(false);}
 function closeComposerMoreMenu(){
   const menu=$("composer-more-menu"),trigger=$("composer-more-trigger");
   if(menu)menu.hidden=true;
@@ -3344,7 +3394,11 @@ function wire(){
   $("home-friends-open").addEventListener("click",openFriends);$("home-requests-open").addEventListener("click",openRequests);$("open-about-blank").addEventListener("click",openAboutBlank);
   $("toggle-conversation-select").addEventListener("click",toggleConversationSelectionMode);
   $("delete-selected-conversations").addEventListener("click",deleteSelectedConversations);$("pin-selected-conversations").addEventListener("click",toggleSelectedConversationPins);
-  $("filter").addEventListener("input",renderChats);document.querySelectorAll("[data-folder]").forEach(b=>b.addEventListener("click",()=>selectFolder(b.dataset.folder)));$("profile-open").addEventListener("click",openProfile);$("profile-form").addEventListener("submit",saveProfile);
+  $("filter").addEventListener("input",renderChats);
+  $("in-chat-filter").addEventListener("input",renderInChatSidebar);
+  $("conversation-drawer-toggle").addEventListener("click",()=>setConversationDrawer(!$("layout").classList.contains("conversation-drawer-open")));
+  $("conversation-drawer-backdrop").addEventListener("click",closeConversationDrawer);
+document.querySelectorAll("[data-folder]").forEach(b=>b.addEventListener("click",()=>selectFolder(b.dataset.folder)));$("profile-open").addEventListener("click",openProfile);$("profile-form").addEventListener("submit",saveProfile);
   $("profile-avatar-file").addEventListener("change",handleAvatarFile);
   $("avatar-remove").addEventListener("click",()=>{
     S.pendingAvatarData=null;S.avatarChanged=true;
