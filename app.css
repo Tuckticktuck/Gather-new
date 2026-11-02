@@ -1394,3 +1394,59 @@ html[data-theme="light"] .settings-scroll-content::-webkit-scrollbar-thumb{
   box-shadow:0 8px 22px #00000016;
 }
 .message-reaction-picker[hidden]{display:none}
+
+
+
+/* In-conversation navigation rail. */
+.layout{position:relative}
+.sidebar-home-content[hidden],.in-chat-sidebar[hidden]{display:none!important}
+.in-chat-sidebar{display:flex;flex:1;flex-direction:column;min-height:0;margin-top:12px}
+.in-chat-search{display:grid;gap:6px;margin:0 2px 14px;color:var(--muted);font-size:calc(10px * var(--font-scale,1));font-weight:700}
+.in-chat-search .search{width:100%;margin:0}
+.in-chat-sidebar-scroll{display:flex;flex:1;flex-direction:column;gap:16px;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:0 1px 10px}
+.in-chat-list-section{display:flex;flex-direction:column;gap:7px;min-height:0}
+.in-chat-list-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 6px 2px;color:var(--muted);font-size:calc(9px * var(--font-scale,1));font-weight:800;letter-spacing:.09em;text-transform:uppercase}
+.in-chat-conversation-list{display:grid;align-content:start;gap:5px;min-width:0}
+.in-chat-conversation-list .chat-row{display:flex;width:100%;min-width:0;gap:0;padding:2px;border:1px solid transparent;border-radius:11px;background:transparent;box-shadow:none}
+.in-chat-conversation-list .chat-row:hover{border-color:var(--line);background:var(--accent-panel)}
+.in-chat-conversation-list .chat-row .chat-item{display:flex;flex:1;min-width:0;width:100%;gap:9px;padding:8px;border:1px solid transparent;border-radius:9px;background:transparent}
+.in-chat-conversation-list .chat-row .chat-item:hover{background:transparent}
+.in-chat-conversation-list .chat-row .chat-item.active{border-color:var(--accent-outline-soft);background:var(--accent-surface)}
+.in-chat-conversation-list .chat-row .chat-item .avatar{width:36px;height:36px;flex:none}
+.in-chat-conversation-list .chat-copy{min-width:0}
+.in-chat-conversation-list .chat-copy strong,.in-chat-conversation-list .chat-copy .chat-peer-profile-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.in-chat-conversation-list .chat-copy span{display:block;margin-top:3px;overflow:hidden;color:var(--muted);font-size:calc(9px * var(--font-scale,1));text-overflow:ellipsis;white-space:nowrap}
+.in-chat-conversation-list .chat-time{display:none}
+.in-chat-conversation-list .unread-count-badge{margin-top:4px}
+.in-chat-empty{margin:5px 7px;padding:8px 0;font-size:calc(10px * var(--font-scale,1));line-height:1.45}
+.conversation-drawer-toggle{display:none;flex:none;width:34px;height:34px;align-items:center;justify-content:center;padding:0;font-size:18px}
+.conversation-drawer-backdrop{display:none}
+html[data-theme="light"] .in-chat-conversation-list .chat-row:hover{background:#f3f5fa}
+html[data-theme="light"] .in-chat-conversation-list .chat-row .chat-item.active{background:var(--accent-surface)}
+@media(max-width:720px){
+  .layout{overflow:hidden}
+  .conversation-drawer-toggle{display:inline-flex}
+  .layout.show-chat .sidebar{display:none}
+  .layout.show-chat .main{display:block}
+  .layout.show-chat.conversation-drawer-open .sidebar{
+    position:absolute;z-index:12;top:0;bottom:0;left:0;
+    display:flex;width:min(86vw,330px);height:auto;max-height:100%;
+    padding:18px 13px 12px;overflow:hidden;border-right:1px solid var(--line);
+    background:var(--accent-panel);box-shadow:14px 0 40px #0005;
+  }
+  .layout.show-chat.conversation-drawer-open .sidebar .side-title{flex:none}
+  .layout.show-chat.conversation-drawer-open .in-chat-sidebar{overflow:hidden}
+  .conversation-drawer-backdrop:not([hidden]){
+    position:absolute;z-index:11;inset:0;display:block;width:100%;height:100%;
+    padding:0;border:0;border-radius:0;background:#070912aa;
+  }
+  .in-chat-search{margin-bottom:10px}
+  .in-chat-sidebar-scroll{gap:12px}
+  .chat-head{flex-wrap:nowrap}
+}
+@media(min-width:721px){
+  .layout.in-chat-mode{grid-template-columns:285px minmax(0,1fr)}
+  .layout.in-chat-mode .sidebar{padding-top:20px}
+  .layout.in-chat-mode .side-title h2{font-size:calc(18px * var(--font-scale,1))}
+  .layout.in-chat-mode .in-chat-sidebar{margin-top:13px}
+}
