@@ -920,3 +920,9 @@ html[data-theme="light"] .accent-choice[aria-pressed="true"] .accent-swatch{
 .announcement-message-field>label{color:var(--text);font-size:calc(11px * var(--font-scale,1));font-weight:650}
 .announcement-format-hint{margin:0;color:var(--muted);font-size:calc(10px * var(--font-scale,1));line-height:1.45}
 .announcement-view-body strong,.announcement-history-copy strong,.home-announcement-copy p strong{font-weight:800;color:inherit}
+
+
+/* Defensive fallback: profile-name links never appear inside one-to-one chat bubbles. */
+#layout.direct-chat .message .meta .message-profile-link{
+  display:none !important;
+}
