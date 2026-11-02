@@ -277,7 +277,7 @@ input::placeholder,textarea::placeholder{color:var(--accent-muted)}
 .profile-pill,.outline,.requests-button,.secondary-action,.group-action{color:var(--accent-contrast)}
 .chat-time,.meta time,.chat-title small,.chat-copy span{color:var(--accent-muted)}
 .chat-item.active,.person:hover,.request-item:hover{border-color:var(--accent-outline)}
-.composer:focus-within{border-color:var(--accent-outline)}
+.composer:focus-within{border-color:var(--accent-chat-border)}
 .composer textarea:focus{background:transparent}
 @media(max-width:720px){
   .chat-head{background:var(--accent-panel)}
