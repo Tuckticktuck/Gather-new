@@ -580,6 +580,14 @@ input::placeholder,textarea::placeholder{color:var(--accent-muted)}
 /* Private feedback threads and administrator inbox. */
 .feedback-admin-identity{margin:0;padding:9px 11px;border:1px solid var(--accent-outline);border-radius:10px;color:var(--muted);background:var(--accent-surface);font-size:calc(10px * var(--font-scale,1));line-height:1.45}
 .feedback-admin-identity strong{color:var(--accent-text)}
+.feedback-request-actions{display:flex;justify-content:flex-end;gap:8px;flex:none}
+.feedback-request-actions button{min-height:34px;padding:7px 10px}
+.feedback-edit-form{display:grid;gap:10px;flex:1;min-height:0;align-content:start}
+.feedback-edit-form h3{margin:0;font-size:calc(15px * var(--font-scale,1))}
+.feedback-edit-form label{display:grid;gap:6px;font-size:calc(11px * var(--font-scale,1))}
+.feedback-edit-form textarea{min-height:120px;resize:vertical}
+.feedback-edit-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.feedback-edit-actions button{min-height:36px}
 .feedback-admin-mode .feedback-sidebar{border-color:var(--accent-outline-soft)}
 .feedback-admin-mode .feedback-sidebar-actions{justify-content:flex-end}
 .feedback-admin-mode .feedback-sidebar-actions #feedback-refresh{min-width:40px}
