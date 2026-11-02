@@ -1376,6 +1376,7 @@ async function toggleBlock(){
 }
 async function attachReplyPreviews(rows,conversationId){
   let messages=rows||[];
+  if(!messages.length)return messages;
   const ids=[...new Set(messages.map(m=>m.reply_to_id).filter(id=>id&&!S.deletedMessageIds.has(id)))];
   if(ids.length){
     const result=await db.from("messages").select("id,sender_id,body,attachment_path").eq("conversation_id",conversationId).in("id",ids);
@@ -1396,7 +1397,9 @@ async function attachReplyPreviews(rows,conversationId){
 }
 async function loadMessageReads(conversationId,messageIds){
   const ids=[...new Set((messageIds||[]).filter(Boolean))];if(!ids.length)return;
+  if(S.active!==conversationId)return;
   const result=await db.from("message_reads").select("message_id,user_id,read_at").eq("conversation_id",conversationId).in("message_id",ids);
+  if(S.active!==conversationId)return;
   if(result.error){console.warn("Message read receipts could not be loaded:",result.error.message);return;}
   (result.data||[]).forEach(receipt=>{
     const readers=S.messageReads[receipt.message_id]||(S.messageReads[receipt.message_id]=[]);
@@ -1548,9 +1551,7 @@ async function openChat(id){
   markChatRead(id,S.chats.find(c=>c.id===id)?.last?.created_at||null);
   $("layout").classList.remove("show-home");$("layout").classList.add("show-chat");renderActive();
   subscribeTyping(id);
-  await refreshDirectStatus(id);
-  if(S.active!==id)return;
-  await loadMessages(id);
+  await Promise.all([refreshDirectStatus(id),loadMessages(id)]);
   if(S.active!==id)return;
   subscribeMessageReads(id);subscribePollVotes(id);await markConversationRead(id);
 }
@@ -1562,16 +1563,20 @@ async function loadMessages(id){
   const loadedMessages=await attachReplyPreviews(raw.filter(m=>!S.deletedMessageIds.has(m.id)).reverse(),id);
   if(S.active!==id)return;
   S.messages=loadedMessages;
-  await Promise.all([loadMessagePolls(id,S.messages.map(m=>m.id)),loadPinnedMessages(id),loadSavedMessageIds()]);
-  if(S.active!==id)return;
-  await loadMessageReactions(id,S.messages.map(m=>m.id));
-  if(S.active!==id)return;
-  await loadMessageReads(id,S.messages.map(m=>m.id));
-  if(S.active!==id)return;
-  await markMessagesRead(id,S.messages);
   if(S.active!==id)return;
   markChatRead(id,S.messages[S.messages.length-1]?.created_at||null);
   renderMessages();
+  await Promise.all([
+    loadMessagePolls(id,S.messages.map(m=>m.id)),
+    loadPinnedMessages(id),
+    loadSavedMessageIds(),
+    loadMessageReactions(id,S.messages.map(m=>m.id)),
+    loadMessageReads(id,S.messages.map(m=>m.id))
+  ]);
+  if(S.active!==id)return;
+  await markMessagesRead(id,S.messages);
+  if(S.active!==id)return;
+  renderMessages(true);
 }
 
 function updateMessageReactionCache(record,removed=false){
@@ -2246,7 +2251,12 @@ async function sendMessage(e){
   $("message").value="";$("message").style.height="auto";clearPendingMessageImage();cancelReply();
   const [withReply]=await attachReplyPreviews([r.data],conversationId);
   if(!S.messages.some(x=>x.id===r.data.id)){S.messages.push({...withReply,reply_preview:reply||null});S.messageReactions[r.data.id]=[];renderMessages();}
-  send.disabled=false;await loadChats();
+  if(S.active===conversationId&&activeChat){
+    activeChat.last=r.data;activeChat.updated_at=r.data.created_at;activeChat.hasMessages=true;
+    S.chats.sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at));
+    renderChats();
+  }
+  send.disabled=false;
 }
 async function openPeople(mode){
   S.picker=mode;S.selected=new Set();$("people-modal").hidden=false;$("people-search").value="";
