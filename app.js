@@ -43,6 +43,16 @@ function setChatLoadStatus(message,retry=false){
 }
 function loadUIPreferences(saved){
   S.chatSettings=normalizeChatSettings(saved?.chatSettings);
+  if(S.user){
+    try{
+      const overrides=JSON.parse(localStorage.getItem("gather_chat_drafts_"+S.user.id)||"{}");
+      Object.entries(overrides).forEach(([id,value])=>{
+        if(typeof value!=="string")return;
+        if(value)S.chatSettings.drafts[id]=value.slice(0,4000);
+        else delete S.chatSettings.drafts[id];
+      });
+    }catch(error){}
+  }
   S.preferences={
     accent:ACCENTS[saved?.accent]?saved.accent:DEFAULT_PREFERENCES.accent,
     fontSize:FONT_SCALES[saved?.fontSize]?saved.fontSize:DEFAULT_PREFERENCES.fontSize,
@@ -127,7 +137,15 @@ function saveUIPreferences(){
       return;
     }
     S.profile.preferences=result.data.preferences;
-    try{localStorage.removeItem("gather_chat_drafts_"+userId);}catch(error){}
+    try{
+      const localKey="gather_chat_drafts_"+userId;
+      const overrides=JSON.parse(localStorage.getItem(localKey)||"{}");
+      Object.entries(overrides).forEach(([id,value])=>{
+        if((snapshot.chatSettings.drafts[id]||"")===value)delete overrides[id];
+      });
+      if(Object.keys(overrides).length)localStorage.setItem(localKey,JSON.stringify(overrides));
+      else localStorage.removeItem(localKey);
+    }catch(error){}
     await syncOwnPresence();
     $("settings-note").textContent="Saved to your account. Your settings follow you across devices.";
   },180);
