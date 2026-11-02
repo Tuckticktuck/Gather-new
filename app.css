@@ -1670,7 +1670,7 @@ html[data-theme="light"] .chat.chat-appearance-custom .messages .mine .bubble .m
 .admin-account-form textarea{min-height:68px;resize:vertical}
 .admin-account-form-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:3px}
 .admin-account-form-actions button{width:auto;min-width:0;margin:0;padding:8px 11px}
-.admin-danger-button{border-color:#d66b7d!important;color:#f3b1bc!important;background:#492d37!important}
+.admin-danger-button{border-color:#d66b7d!important;border-radius:12px!important;color:#f3b1bc!important;background:#492d37!important}
 .admin-empty-state{display:grid;min-height:130px;align-content:center;justify-items:center;gap:6px;text-align:center}
 .admin-empty-state strong{font-size:calc(13px * var(--font-scale,1))}
 .admin-empty-state p{max-width:250px;margin:0;line-height:1.5}
