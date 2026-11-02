@@ -2900,7 +2900,7 @@ function setAdminModeSection(section){
   if(!["overview","accounts","reports","feedback","announcements","activity"].includes(section))return;
   S.admin.section=section;
   document.querySelectorAll("[data-admin-section]").forEach(button=>{
-    button.classList.toggle("active",button.dataset.adminSection===section);
+    if(button.classList.contains("admin-mode-tab"))button.classList.toggle("active",button.dataset.adminSection===section);
     if(button.getAttribute("role")==="tab")button.setAttribute("aria-selected",String(button.dataset.adminSection===section));
   });
   document.querySelectorAll("[data-admin-panel]").forEach(panel=>{
@@ -3152,6 +3152,7 @@ function openReportsAdmin(){
   if(result.error){list.append(el("p","status error","Reports could not be loaded: "+result.error.message));return;}
   if(!result.data?.length){list.append(el("p","muted tiny","There are no reports to review."));return;}
   const profilesResult=await fetchProfileRecords([...new Set(result.data.flatMap(report=>[report.reporter_id,report.target_user_id]))]);
+  (profilesResult.data||[]).forEach(profile=>{S.profiles[profile.id]=profile;});
   const reportProfiles=new Map((profilesResult.data||[]).map(profile=>[profile.id,profile]));
   for(const report of result.data){
     const card=el("article","admin-report-card");
