@@ -10,7 +10,7 @@
 <link rel="stylesheet" href="app.css?v=20261102-50">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script defer src="app.js?v=20261102-58"></script>
+<script defer src="app.js?v=20261102-59"></script>
 </head>
 <body>
 <section id="auth" class="auth-shell">
@@ -103,6 +103,13 @@
           </div>
         </section>
         <label class="workspace-search">Search conversations<input id="filter" class="search" type="search" placeholder="Search by name or message"></label>
+        <div class="conversation-selection-toolbar">
+          <button id="toggle-conversation-select" class="secondary-action conversation-select-toggle" type="button" aria-pressed="false">Select conversations</button>
+          <div id="conversation-selection-actions" class="conversation-selection-actions" hidden>
+            <span id="conversation-selection-count" class="conversation-selection-count">0 selected</span>
+            <button id="delete-selected-conversations" class="danger-action" type="button" disabled>Delete selected (0)</button>
+          </div>
+        </div>
         <section id="pinned-chat-section" class="workspace-group-section pinned-chat-section" hidden>
           <div class="folder-panel-heading"><strong>Pinned conversations</strong><span id="pinned-chat-count" class="section-count">0</span></div>
           <div id="pinned-chat-list" class="workspace-chat-list"></div>
