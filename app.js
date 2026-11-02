@@ -2592,7 +2592,7 @@ function handleMessageImageFile(){
   const preview=$("message-image-preview");preview.replaceChildren();
   const image=el("img","message-image-thumb");image.src=S.pendingImageUrl;image.alt="Selected image preview";
   const details=el("div","message-image-details");details.append(el("strong","","Image ready to send"),el("small","",file.name),el("small","message-image-progress","Ready to send"));
-  const remove=el("button","message-image-remove","Action");remove.type="button";remove.addEventListener("click",clearPendingMessageImage);
+  const remove=el("button","message-image-remove","×");remove.type="button";remove.addEventListener("click",clearPendingMessageImage);
   preview.append(image,details,remove);preview.hidden=false;
 }
 function imageFileExtension(file){
