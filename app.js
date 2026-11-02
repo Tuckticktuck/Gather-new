@@ -3732,6 +3732,7 @@ function wire(){
   $("admin-quick-announcements").addEventListener("click",()=>setAdminModeSection("announcements"));
   $("admin-reports-open").addEventListener("click",openReportsAdmin);
   $("admin-feedback-open").addEventListener("click",()=>openFeedback(true));
+  $("admin-announcement-create").addEventListener("click",openAnnouncementComposer);
   $("admin-announcements-open").addEventListener("click",openAnnouncementsPage);
   $("admin-accounts-refresh").addEventListener("click",()=>loadAdminAccounts(true));
   $("admin-account-search").addEventListener("input",renderAdminAccounts);
