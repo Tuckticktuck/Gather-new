@@ -1487,3 +1487,12 @@ html[data-theme="light"] .chat.chat-appearance-custom .messages .mine .bubble .m
 html[data-theme="light"] .chat.chat-appearance-custom .messages .mine .bubble .message-receipts.is-seen{
   color:#a9edc4;
 }
+
+
+/* Use the available rail height so the feedback shortcut stays at the bottom. */
+#sidebar-home-content:not([hidden]){
+  display:flex;
+  flex:1 1 auto;
+  flex-direction:column;
+  min-height:0;
+}
