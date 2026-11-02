@@ -1876,3 +1876,28 @@ button:not(:disabled):active{transform:translateY(1px) scale(.985)}
   .layout.show-chat .main,.layout.show-home .main,
   #notifications-list .notification-center-item{animation:none!important}
 }
+
+/* Accessibility and supporting controls for the November 2026 improvements. */
+:where(button,a,input,textarea,select,[role="button"],[tabindex]):focus-visible{
+  outline:3px solid var(--accent-contrast,var(--accent));
+  outline-offset:3px;
+  box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 22%,transparent);
+}
+.workspace-search-controls{display:flex;align-items:end;gap:9px;margin:4px 0 12px}
+.workspace-search-controls .workspace-search{flex:1;min-width:0}
+.global-message-search-open{flex:none;min-height:39px;white-space:nowrap}
+.chat-draft-label{display:inline-flex;width:max-content;max-width:100%;margin-top:4px;padding:2px 7px;border:1px solid var(--accent-outline);border-radius:999px;color:var(--accent-text);background:var(--accent-surface);font-size:calc(9px * var(--font-scale,1));font-weight:750}
+.draft-save-status{color:var(--muted);font-size:calc(9px * var(--font-scale,1));min-width:0}
+.quiet-hours-toggle{margin-top:10px}
+.quiet-hours-times{display:flex;gap:12px;margin:10px 0 2px 31px}
+.quiet-hours-times[hidden]{display:none!important}
+.quiet-hours-times label{display:grid;gap:5px;flex:1;min-width:0;color:var(--muted);font-size:calc(10px * var(--font-scale,1));font-weight:650}
+.quiet-hours-times input{width:100%;min-width:0;padding:8px;border:1px solid var(--line);border-radius:9px;background:var(--accent-input);color:var(--text);font:inherit}
+@media(max-width:520px){
+  .workspace-search-controls{align-items:stretch;flex-direction:column}
+  .global-message-search-open{width:100%}
+  .quiet-hours-times{margin-left:0}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
