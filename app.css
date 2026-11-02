@@ -1527,3 +1527,20 @@ html[data-theme="light"] .chat.chat-appearance-custom .messages .mine .bubble .m
   .composer .message-image-thumb{width:48px;height:48px;}
   .composer .message-image-remove{min-height:30px;padding:6px 8px;}
 }
+
+
+/* Extend each conversation's selected appearance through the full chat panel and composer. */
+.chat.chat-appearance-custom{
+  background:var(--conversation-background);
+}
+.chat.chat-appearance-custom .messages{
+  background:var(--conversation-background)!important;
+}
+.chat.chat-appearance-custom .composer{
+  border-color:var(--conversation-accent-border);
+  background:color-mix(in srgb,var(--conversation-background) 92%,var(--conversation-accent) 8%);
+}
+.chat.chat-appearance-custom .composer textarea{
+  color:var(--text);
+  background:transparent;
+}
