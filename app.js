@@ -3892,8 +3892,18 @@ function setModalBackTarget(modalId,parentId){
 function syncModalBackButtons(){
   const adminOpen=!!(isFeedbackAdmin(S.user)&&$("admin-mode-modal")&&!$("admin-mode-modal").hidden);
   document.querySelectorAll(".modal-back-button").forEach(button=>{
-    const id=button.closest(".overlay")?.id;
-    button.hidden=!!(adminOpen&&id&&(S.admin.modalStack||[]).includes(id));
+    const modal=button.closest(".modal"),id=button.closest(".overlay")?.id;
+    const inAdminStack=!!(adminOpen&&id&&(S.admin.modalStack||[]).includes(id));
+    const hasParent=!!(id&&S.modalBackTargets?.[id]);
+    const feedbackHasPreviousScreen=id==="feedback-modal"&&(
+      !$("feedback-new-form").hidden||
+      !$("feedback-detail").hidden||
+      !$("feedback-edit-form").hidden
+    );
+    const hasExitButton=!!modal?.querySelector(":scope > .close");
+    // Keep Back only when it returns to a previous screen or leaves a nested feedback view.
+    // A root-level modal with its own close/exit control does not need a duplicate button.
+    button.hidden=inAdminStack||(!hasParent&&!feedbackHasPreviousScreen&&hasExitButton);
   });
 }
 function installModalBackButtons(){
