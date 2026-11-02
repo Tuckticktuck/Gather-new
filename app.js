@@ -3678,14 +3678,36 @@ function wire(){
   $("recovery-password-form").addEventListener("submit",completePasswordRecovery);
   $("recovery-cancel").addEventListener("click",async()=>{const result=await db.auth.signOut();if(result.error)status("recovery-password-status",result.error.message,"error");else $("password-recovery-modal").hidden=true;});
   $("auth-form").addEventListener("submit",async e=>{
-    e.preventDefault();const email=$("email").value.trim(),password=$("password").value,isNew=S.mode==="signup";$("auth-submit").disabled=true;status("auth-status",isNew?"Creating account…":"Signing in…");
-    const weak=isNew?strongPasswordError(password):"";
-    if(weak){status("auth-status",weak+" Use a unique password you don't use on other sites.","error");$("auth-submit").disabled=false;return;}
-    const r=isNew?await db.auth.signUp({email,password,options:{data:{display_name:$("name").value.trim()},emailRedirectTo:location.origin}}):await db.auth.signInWithPassword({email,password});
-    if(r.error)status("auth-status",r.error.message,"error");
-    else if(isNew&&!r.data.session)status("auth-status","Account created. Check your email for the confirmation link, then sign in here.","success");
-    else {status("auth-status","Signed in. Loading chats…","success");if(r.data.session?.user)await signedIn(r.data.session.user);}
-    $("auth-submit").disabled=false;
+    e.preventDefault();
+    const email=$("email").value.trim(),password=$("password").value,isNew=S.mode==="signup";
+    const button=$("auth-submit");
+    button.disabled=true;
+    status("auth-status",isNew?"Creating account…":"Signing in…");
+    try{
+      const weak=isNew?strongPasswordError(password):"";
+      if(weak){
+        status("auth-status",weak+" Use a unique password you don't use on other sites.","error");
+        return;
+      }
+      const result=isNew
+        ?await db.auth.signUp({email,password,options:{data:{display_name:$("name").value.trim()},emailRedirectTo:location.origin}})
+        :await db.auth.signInWithPassword({email,password});
+      if(result.error){
+        status("auth-status",result.error.message,"error");
+      }else if(isNew&&!result.data.session){
+        status("auth-status","Account created. Check your email for the confirmation link, then sign in here.","success");
+      }else if(result.data.session?.user){
+        status("auth-status","Signed in. Loading chats…","success");
+        await signedIn(result.data.session.user);
+      }else{
+        status("auth-status","Gather did not return a sign-in session. Please try again.","error");
+      }
+    }catch(error){
+      console.error("Gather authentication request failed:",error);
+      status("auth-status",error?.message||"Gather couldn't complete the sign-in request. Check your connection and try again.","error");
+    }finally{
+      button.disabled=false;
+    }
   });
   $("new-private-chat").addEventListener("click",()=>openPeople("direct"));$("new-group-chat").addEventListener("click",()=>openPeople("group"));
   $("retry-load-chats").addEventListener("click",()=>{if(S.user&&!S.loading)signedIn(S.user,true);});
