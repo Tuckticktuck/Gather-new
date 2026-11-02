@@ -692,6 +692,7 @@ input::placeholder,textarea::placeholder{color:var(--accent-muted)}
 .member-profile-main h2{margin:12px 0 2px}
 .member-profile-main p{overflow-wrap:anywhere}
 .member-profile-pronouns{margin:6px 0;color:var(--accent-text);font-size:calc(10px * var(--font-scale,1))}
+.member-profile-presence{margin:4px 0 0}
 .member-profile-bio{min-height:34px;margin:14px 0;line-height:1.6;white-space:pre-wrap}
 .report-modal form{display:grid;gap:11px}
 .report-modal textarea{resize:vertical}
