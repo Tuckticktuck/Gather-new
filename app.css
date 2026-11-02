@@ -941,3 +941,28 @@ html[data-theme="light"] .accent-choice[aria-pressed="true"] .accent-swatch{
 .presence-setting-toggle span{display:grid;gap:4px}
 .presence-setting-toggle strong{color:var(--text);font-size:calc(11px * var(--font-scale,1))}
 .presence-setting-toggle small{color:var(--muted);font-size:calc(10px * var(--font-scale,1));line-height:1.45}
+
+ 
+/* Message reactions. */
+.message-reaction-area{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:6px 0 2px;max-width:100%}
+.message-reactions{display:flex;flex-wrap:wrap;align-items:center;gap:5px;max-width:100%}
+.message-reaction,.message-reaction-add,.message-reaction-option{
+  display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:27px;
+  padding:4px 8px;border:1px solid var(--line);border-radius:999px;color:var(--text);
+  background:var(--accent-panel);font-size:calc(10px * var(--font-scale,1));line-height:1.2;
+}
+.message-reaction{font-weight:700}
+.message-reaction[aria-pressed="true"],.message-reaction.is-mine{
+  border-color:var(--accent-outline);color:var(--accent-text);background:var(--accent-surface)
+}
+.message-reaction-add{color:var(--muted);font-size:calc(9px * var(--font-scale,1));cursor:pointer}
+.message-reaction-add:hover,.message-reaction-option:hover{border-color:var(--accent-outline);background:var(--accent-hover);color:var(--accent-text)}
+.message-reaction-picker{display:flex;flex-wrap:wrap;gap:5px;max-width:100%;padding:5px;border:1px solid var(--accent-outline-soft);border-radius:12px;background:var(--accent-panel-raised);box-shadow:0 8px 22px #00000016}
+.message-reaction-picker[hidden]{display:none}
+.message-reaction-option{width:33px;min-width:33px;padding:5px;font-size:17px;cursor:pointer}
+.message-reaction:disabled{opacity:.65}
+.mine .message-reaction-area{justify-content:flex-end}
+html[data-theme="light"] .message-reaction,
+html[data-theme="light"] .message-reaction-add,
+html[data-theme="light"] .message-reaction-option{background:#fff;border-color:var(--line);color:var(--text)}
+html[data-theme="light"] .message-reaction.is-mine{background:var(--accent-surface);border-color:var(--accent-outline);color:var(--accent-text)}
