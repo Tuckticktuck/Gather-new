@@ -1650,6 +1650,7 @@ function subscribeMessageReads(conversationId){
       const receipt=payload.new;if(!receipt?.message_id||!receipt.user_id)return;
       const readers=S.messageReads[receipt.message_id]||(S.messageReads[receipt.message_id]=[]);
       if(!readers.some(x=>x.user_id===receipt.user_id))readers.push(receipt);
+      if(receipt.user_id===S.user.id)updateUnreadDivider(conversationId);
       renderMessages();
     }).subscribe();
 }
