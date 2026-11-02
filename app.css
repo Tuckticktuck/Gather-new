@@ -1014,3 +1014,16 @@ html[data-theme="light"] .message-action-menu button:hover{color:var(--accent-te
   .composer-actions>small{display:none}
   .composer-actions .message-react-mode{padding:0 8px}
 }
+
+
+/* One compact overflow menu for composer attachments and reactions. */
+.composer-more-wrap{position:relative;display:inline-flex;align-items:center;flex:none}
+.composer-actions .composer-more-trigger{display:inline-grid;place-items:center;flex:none;width:36px;height:31px;padding:0;border:1px solid var(--accent-outline-soft);border-radius:9px;color:var(--accent-text);background:var(--accent-surface);font-size:22px;font-weight:800;line-height:1;cursor:pointer}
+.composer-actions .composer-more-trigger:hover,.composer-actions .composer-more-trigger[aria-expanded="true"]{border-color:var(--accent-outline);background:var(--accent-hover)}
+.composer-more-menu{position:absolute;z-index:12;bottom:calc(100% + 9px);left:0;display:grid;min-width:190px;gap:3px;padding:6px;border:1px solid var(--accent-outline-soft);border-radius:11px;background:var(--accent-panel-raised);box-shadow:0 12px 30px #00000035}
+.composer-more-menu[hidden]{display:none}
+.composer-actions .composer-menu-item{display:flex;align-items:center;gap:9px;width:100%;min-height:38px;margin:0;padding:8px 10px;border:0;border-radius:7px;color:var(--text);background:transparent;font-size:calc(10px * var(--font-scale,1));font-weight:700;text-align:left;white-space:nowrap;cursor:pointer}
+.composer-actions .composer-menu-item:hover{color:var(--accent-text);background:var(--accent-hover)}
+html[data-theme="light"] .composer-more-menu{background:#fff;border-color:var(--line);box-shadow:0 12px 30px #30385022}
+html[data-theme="light"] .composer-actions .composer-menu-item{color:var(--text)}
+html[data-theme="light"] .composer-actions .composer-menu-item:hover{color:var(--accent-text);background:var(--accent-surface)}
