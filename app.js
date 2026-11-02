@@ -35,7 +35,7 @@ const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedU
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function appendFormattedMessageText(parent,value){
   const source=String(value??"");
-  const pattern=/\\*\\*([\\s\\S]+?)\\*\\*|#([\\s\\S]+?)#/g;
+  const pattern=/\*\*([\s\S]+?)\*\*|#([\s\S]+?)#/g;
   let last=0,match;
   while((match=pattern.exec(source))){
     if(match.index>last)parent.append(document.createTextNode(source.slice(last,match.index)));
