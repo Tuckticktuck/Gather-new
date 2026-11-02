@@ -33,6 +33,19 @@ function normalizeChatSettings(raw){
 const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
+function appendFormattedMessageText(parent,value){
+  const source=String(value??"");
+  const pattern=/\\*\\*([\\s\\S]+?)\\*\\*|#([\\s\\S]+?)#/g;
+  let last=0,match;
+  while((match=pattern.exec(source))){
+    if(match.index>last)parent.append(document.createTextNode(source.slice(last,match.index)));
+    const formatted=document.createElement(match[1]!==undefined?"strong":"em");
+    appendFormattedMessageText(formatted,match[1]??match[2]);
+    parent.append(formatted);
+    last=pattern.lastIndex;
+  }
+  if(last<source.length)parent.append(document.createTextNode(source.slice(last)));
+}
 function status(id, text, kind) { const n=$(id); n.textContent=text||""; n.className="status"+(kind?" "+kind:""); }
 function isFeedbackAdmin(user){return !!user&&!user.is_anonymous&&user.app_metadata?.gather_role==="admin";}
 function syncAdminModeButton(){
@@ -2596,7 +2609,10 @@ function renderMessages(preserveScroll=false){
       const quote=el("div","reply-preview"),target=m.reply_preview;
       const quoteName=target?.sender_id?(target.sender_id===S.user.id?"You":(S.profiles[target.sender_id]?.display_name||"Member")):"Reply";
       if(showSenderNames)quote.append(el("strong","",quoteName));
-      quote.append(el("span","",target?.body||(target?.attachment_path?"Sent an image":"Original message unavailable.")));
+      const quoteText=el("span");
+      if(target?.body)appendFormattedMessageText(quoteText,target.body);
+      else quoteText.textContent=target?.attachment_path?"Sent an image":"Original message unavailable.";
+      quote.append(quoteText);
       bubble.append(quote);
     }
     if(m.attachment_path){
@@ -2610,7 +2626,11 @@ function renderMessages(preserveScroll=false){
         link.append(image);bubble.append(link);
       }else bubble.append(el("p","message-image-unavailable","Image unavailable"));
     }
-    if(m.body&&!S.messagePolls[m.id])bubble.append(el("div","body-text",m.body));
+    if(m.body&&!S.messagePolls[m.id]){
+      const bodyText=el("div","body-text");
+      appendFormattedMessageText(bodyText,m.body);
+      bubble.append(bodyText);
+    }
     const pollArea=renderPollCard(m,S.messagePolls[m.id]);if(pollArea)bubble.append(pollArea);
     const reactionArea=renderMessageReactionArea(m);
     if(reactionArea)bubble.append(reactionArea);
@@ -3054,7 +3074,7 @@ async function submitReport(event){
 }
 async function editOwnMessage(message){
   if(!message||message.sender_id!==S.user?.id||!message.body)return;
-  const next=prompt("Edit your message:",message.body);
+  const next=prompt("Edit your message (use **bold** and #italic#):",message.body);
   if(next===null)return;
   const body=next.trim();
   if(!body||body.length>4000){toast("Messages must contain 1–4,000 characters.");return;}
