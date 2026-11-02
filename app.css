@@ -747,6 +747,7 @@ input::placeholder,textarea::placeholder{color:var(--accent-muted)}
 .message.group-continued .meta.meta-continued{margin-bottom:3px}
 
 /* Official Gather Admin broadcasts. */
+#announcement-compose-modal{z-index:8}
 .announcement-modal{width:min(100%,560px)}
 .announcement-modal form{display:grid;gap:11px}
 .announcement-modal form label{display:grid;gap:6px}
@@ -759,6 +760,8 @@ input::placeholder,textarea::placeholder{color:var(--accent-muted)}
 .announcement-sender strong{color:var(--accent-text);font-size:calc(11px * var(--font-scale,1))}
 .announcement-sender small{color:var(--muted);font-size:calc(9px * var(--font-scale,1))}
 .announcement-view-body{margin-top:15px;padding-top:15px;border-top:1px solid var(--line);font-size:calc(12px * var(--font-scale,1));line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere}
+.announcement-view-actions{display:flex;justify-content:flex-end;margin-top:16px}
+#announcement-edit-open{width:auto;padding:9px 13px;font-size:calc(10px * var(--font-scale,1))}
 @media(max-width:720px){.announcement-modal,.announcement-view-modal{max-height:calc(100dvh - 24px);overflow:auto}}
 
 /* Light appearance — surfaces, controls, and text are tuned for a bright theme. */
