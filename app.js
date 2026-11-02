@@ -14,8 +14,8 @@ const ACCENTS = {
 };
 const FONT_SCALES = {small:"0.9",normal:"1",large:"1.15"};
 const MESSAGE_REACTION_EMOJIS = ["👍","❤️","😂","😮","😢","🎉"];
-const DEFAULT_PREFERENCES = {accent:"lavender",fontSize:"normal",theme:"dark",messageNotificationMode:"temporary",shareOnlineStatus:true};
-const S = { user:null, profile:null, profiles:{}, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map() };
+const DEFAULT_PREFERENCES = {accent:"lavender",fontSize:"normal",theme:"dark",messageNotificationMode:"temporary",groupUnreadMessages:false,shareOnlineStatus:true};
+const S = { user:null, profile:null, profiles:{}, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map() };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function status(id, text, kind) { const n=$(id); n.textContent=text||""; n.className="status"+(kind?" "+kind:""); }
@@ -32,6 +32,7 @@ function loadUIPreferences(saved){
     fontSize:FONT_SCALES[saved?.fontSize]?saved.fontSize:DEFAULT_PREFERENCES.fontSize,
     theme:saved?.theme==="light"?"light":"dark",
     messageNotificationMode:saved?.messageNotificationMode==="persistent"?"persistent":"temporary",
+    groupUnreadMessages:saved?.groupUnreadMessages===true,
     shareOnlineStatus:saved?.shareOnlineStatus!==false
   };
   applyUIPreferences();
@@ -87,6 +88,8 @@ function applyUIPreferences(){
   document.querySelectorAll("[data-accent]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.accent===S.preferences.accent)));
   document.querySelectorAll("[data-font-size]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.fontSize===S.preferences.fontSize)));
   document.querySelectorAll("[data-notification-mode]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.notificationMode===S.preferences.messageNotificationMode)));
+  const groupUnreadControl=$("group-unread-messages");
+  if(groupUnreadControl)groupUnreadControl.checked=S.preferences.groupUnreadMessages===true;
   const shareStatusControl=$("share-online-status");
   if(shareStatusControl)shareStatusControl.checked=S.preferences.shareOnlineStatus!==false;
 }
@@ -126,6 +129,11 @@ function setFontSize(size){
 function setMessageNotificationMode(mode){
   if(mode!=="temporary"&&mode!=="persistent")return;
   S.preferences.messageNotificationMode=mode;saveUIPreferences();
+}
+function setGroupUnreadMessages(enabled){
+  S.preferences.groupUnreadMessages=!!enabled;
+  saveUIPreferences();
+  renderNotifications();
 }
 function openSettings(){
   applyUIPreferences();$("settings-modal").hidden=false;
@@ -208,10 +216,21 @@ function chatHasUnread(chat){
   const lastAt=new Date(chat.last.created_at).getTime();
   return Number.isFinite(lastAt)&&lastAt>Number(S.lastReadAt[chat.id]||0);
 }
+async function markConversationNotificationsRead(chatId){
+  if(!S.user||!chatId)return false;
+  const at=new Date().toISOString();
+  const result=await db.from("notifications").update({read_at:at})
+    .eq("recipient_id",S.user.id).eq("conversation_id",chatId).eq("kind","message").is("read_at",null);
+  if(result.error){console.warn("Notifications for the open conversation could not be marked read:",result.error.message);return false;}
+  S.notifications.forEach(item=>{if(item.kind==="message"&&item.conversation_id===chatId&&!item.read_at)item.read_at=at;});
+  renderNotifications();
+  return true;
+}
 async function markConversationRead(chatId){
   if(!S.user||!chatId)return false;
   const result=await db.rpc("mark_conversation_read",{p_conversation_id:chatId});
   if(result.error){console.warn("Conversation read status could not be saved:",result.error.message);return false;}
+  await markConversationNotificationsRead(chatId);
   await loadUnreadCounts();renderChats();return true;
 }
 function markChatRead(chatId,through=null){
@@ -812,8 +831,18 @@ async function openAnnouncement(id){
   $("announcement-view-date").textContent="Published "+dateLabel(result.data.created_at)+(result.data.edited_at?" · Edited "+dateLabel(result.data.edited_at):"");
 }
 
+function notificationItemsForCenter(){
+  return S.notifications.filter(item=>!(item.kind==="message"&&item.conversation_id&&item.conversation_id===S.active));
+}
+function notificationItemsForView(view=S.notificationView){
+  const items=notificationItemsForCenter();
+  if(view==="admin")return items.filter(item=>item.kind==="announcement");
+  if(view==="messages")return items.filter(item=>item.kind==="message");
+  if(view==="other")return items.filter(item=>item.kind!=="announcement"&&item.kind!=="message");
+  return items;
+}
 function notificationUnreadCount(){
-  return S.notifications.filter(item=>!item.read_at).length;
+  return notificationItemsForCenter().filter(item=>!item.read_at).length;
 }
 function renderNotificationBadge(){
   const badge=$("notification-badge");if(!badge)return;
@@ -823,26 +852,69 @@ function renderNotificationBadge(){
 function notificationKindLabel(kind){
   return ({message:"New message",friend_request:"Friend request",chat_request:"Chat request",feedback_reply:"Feedback update",report:"Safety report",announcement:"Official admin announcement"})[kind]||"Gather update";
 }
+function notificationDisplayItems(items){
+  if(!S.preferences.groupUnreadMessages)return items.map(item=>({notification:item,items:[item]}));
+  const groups=new Map(),display=[];
+  items.forEach(item=>{
+    if(item.kind!=="message"||item.read_at||!item.actor_id||!item.conversation_id){
+      display.push({notification:item,items:[item]});
+      return;
+    }
+    const key=item.conversation_id+":"+item.actor_id;
+    let group=groups.get(key);
+    if(!group){
+      group={notification:item,items:[]};
+      groups.set(key,group);
+      display.push(group);
+    }
+    group.items.push(item);
+  });
+  return display;
+}
+function setNotificationView(view){
+  if(!["all","admin","messages","other"].includes(view))return;
+  S.notificationView=view;
+  renderNotifications();
+}
 function renderNotifications(){
-  const list=$("notifications-list");list.replaceChildren();
-  if(!S.notifications.length){
-    list.append(el("p","muted tiny","You're all caught up. New messages and requests will appear here."));
+  const list=$("notifications-list");
+  if(!list)return;
+  list.replaceChildren();
+  const sectionItems=notificationItemsForView();
+  if(!sectionItems.length){
+    const emptyText={
+      all:"You're all caught up. New messages and requests will appear here.",
+      admin:"There are no Gather Admin announcements in your notifications yet.",
+      messages:"No recent message notifications. Messages in the conversation you're currently viewing stay out of this list.",
+      other:"There are no other updates right now."
+    };
+    list.append(el("p","muted tiny",emptyText[S.notificationView]||emptyText.all));
   }else{
-    S.notifications.forEach(item=>{
-      const card=el("button","notification-center-item"+(item.read_at?"":" unread"));
+    notificationDisplayItems(sectionItems).forEach(entry=>{
+      const item=entry.notification,items=entry.items;
+      const unread=items.some(notification=>!notification.read_at);
+      const card=el("button","notification-center-item"+(unread?" unread":""));
       card.type="button";
       const icon=el("span","notification-center-icon",item.kind==="announcement"?"◎":item.kind==="message"?"✉":item.kind==="friend_request"?"＋":item.kind==="chat_request"?"↗":item.kind==="report"?"⚑":"•");
       const copy=el("span","notification-center-copy");
-      const title=item.kind==="announcement"?"Gather Admin":(item.title||notificationKindLabel(item.kind));
-      const description=item.kind==="announcement"?"Official announcement · "+(item.body||"Open to read the full message."):(item.body||notificationKindLabel(item.kind));
+      const senderName=S.profiles[item.actor_id]?.display_name||item.title||"New messages";
+      const title=item.kind==="announcement"?"Gather Admin":item.kind==="message"&&items.length>1?senderName:(item.title||notificationKindLabel(item.kind));
+      const baseDescription=item.kind==="announcement"?"Official announcement · "+(item.body||"Open to read the full message."):(item.body||notificationKindLabel(item.kind));
+      const description=item.kind==="message"&&items.length>1?items.length+" unread messages · "+baseDescription:baseDescription;
       copy.append(el("strong","",title),el("small","",description),el("time","",dateLabel(item.created_at)));
       card.append(icon,copy);
-      if(!item.read_at)card.append(el("span","notification-unread-dot",""));
-      card.addEventListener("click",()=>openNotification(item));
+      if(unread)card.append(el("span","notification-unread-dot",""));
+      card.addEventListener("click",()=>openNotification(entry));
       list.append(card);
     });
   }
-  $("notifications-summary").textContent=notificationUnreadCount()+" unread · Latest "+S.notifications.length+" updates";
+  const unread=sectionItems.filter(item=>!item.read_at).length;
+  $("notifications-summary").textContent=unread+" unread · "+sectionItems.length+" updates";
+  document.querySelectorAll("[data-notification-view]").forEach(button=>{
+    const active=button.dataset.notificationView===S.notificationView;
+    button.classList.toggle("active",active);
+    button.setAttribute("aria-pressed",String(active));
+  });
   renderNotificationBadge();
 }
 async function loadNotifications(){
@@ -858,9 +930,15 @@ function subscribeNotifications(){
   S.notificationChannel=db.channel("notifications-"+uid)
     .on("postgres_changes",{event:"INSERT",schema:"public",table:"notifications",filter:"recipient_id=eq."+uid},async payload=>{
       if(payload.new?.recipient_id!==S.user?.id)return;
+      const activeConversationMessage=payload.new?.kind==="message"&&payload.new.conversation_id===S.active;
+      if(activeConversationMessage){
+        const at=new Date().toISOString();
+        const updated=await db.from("notifications").update({read_at:at}).eq("id",payload.new.id).eq("recipient_id",uid);
+        if(updated.error)console.warn("Active-chat notification could not be marked read:",updated.error.message);
+      }
       await loadNotifications();
       const item=S.notifications.find(x=>x.id===payload.new.id);
-      if(item&&$("notifications-modal")?.hidden)toast(item.title||"You have a new Gather notification.");
+      if(item&&!activeConversationMessage&&$("notifications-modal")?.hidden)toast(item.title||"You have a new Gather notification.");
     }).subscribe();
 }
 async function markNotificationRead(id){
@@ -880,10 +958,25 @@ async function markAllNotificationsRead(){
 }
 function openNotifications(){
   $("notifications-modal").hidden=false;
+  renderNotifications();
   loadNotifications();
 }
-async function openNotification(item){
-  await markNotificationRead(item.id);
+async function markNotificationGroupRead(items){
+  const unread=(items||[]).filter(item=>item?.id&&!item.read_at);
+  if(!unread.length)return true;
+  const ids=unread.map(item=>item.id),at=new Date().toISOString();
+  const result=await db.from("notifications").update({read_at:at}).eq("recipient_id",S.user.id).in("id",ids);
+  if(result.error){console.warn("Grouped message notifications could not be marked read:",result.error.message);return false;}
+  S.notifications.forEach(item=>{if(ids.includes(item.id))item.read_at=at;});
+  renderNotifications();
+  return true;
+}
+async function openNotification(entry){
+  const items=entry?.items||[entry];
+  const item=entry?.notification||items[0];
+  if(!item)return;
+  if(items.length>1)await markNotificationGroupRead(items);
+  else await markNotificationRead(item.id);
   $("notifications-modal").hidden=true;
   if(item.kind==="message"){
     if(item.conversation_id&&S.chats.some(chat=>chat.id===item.conversation_id))await openChat(item.conversation_id);
@@ -2462,6 +2555,9 @@ function wire(){
   $("home-announcement-open").addEventListener("click",()=>{const latest=S.announcements[0];if(latest)openAnnouncement(latest.id);});
   $("home-announcements-all").addEventListener("click",openAnnouncementsPage);
   $("notifications-mark-all").addEventListener("click",markAllNotificationsRead);
+  $("notifications-admin-open").addEventListener("click",()=>{$("notifications-modal").hidden=true;openAnnouncementsPage();});
+  $("notifications-recent-open").addEventListener("click",()=>setNotificationView("messages"));
+  document.querySelectorAll("[data-notification-view]").forEach(button=>button.addEventListener("click",()=>setNotificationView(button.dataset.notificationView)));
   $("report-form").addEventListener("submit",submitReport);
   $("member-profile-report").addEventListener("click",()=>{const userId=S.publicProfileId;$("member-profile-modal").hidden=true;openReport(userId);});
   $("reports-admin-open").addEventListener("click",()=>{$("settings-modal").hidden=true;openReportsAdmin();});
@@ -2494,6 +2590,7 @@ function wire(){
     S.preferences.shareOnlineStatus=!!event.target.checked;
     saveUIPreferences();
   });
+  $("group-unread-messages").addEventListener("change",event=>setGroupUnreadMessages(event.target.checked));
   document.addEventListener("visibilitychange",()=>{if(document.hidden)stopTyping(true);});
   $("messages").addEventListener("scroll",()=>{if($("messages").scrollTop<80)loadOlderMessages();});
   $("cancel-reply").addEventListener("click",cancelReply);

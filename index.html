@@ -7,10 +7,10 @@
 <meta name="description" content="Private direct and group conversations.">
 <title>Gather</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="app.css?v=20261101-47">
+<link rel="stylesheet" href="app.css?v=20261102-48">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script defer src="app.js?v=20261101-51"></script>
+<script defer src="app.js?v=20261102-52"></script>
 </head>
 <body>
 <section id="auth" class="auth-shell">
@@ -156,7 +156,7 @@
     <button class="font-choice" type="button" data-font-size="large" aria-pressed="false">Large</button>
   </div></section>
   
-  <section class="settings-section notification-settings-section"><h3>Message pop-ups</h3><p class="tiny muted">Choose how long new-message notifications from other conversations stay visible.</p><div class="notification-mode-choices" role="group" aria-label="Message notification duration"><button class="font-choice" type="button" data-notification-mode="temporary" aria-pressed="true">Temporary · 5 seconds</button><button class="font-choice" type="button" data-notification-mode="persistent" aria-pressed="false">Persistent · until dismissed</button></div></section>
+  <section class="settings-section notification-settings-section"><h3>Message notifications</h3><p class="tiny muted">Choose how long new-message pop-ups stay visible.</p><div class="notification-mode-choices" role="group" aria-label="Message notification duration"><button class="font-choice" type="button" data-notification-mode="temporary" aria-pressed="true">Temporary · 5 seconds</button><button class="font-choice" type="button" data-notification-mode="persistent" aria-pressed="false">Persistent · until dismissed</button></div><label class="presence-setting-toggle notification-group-setting"><input id="group-unread-messages" type="checkbox"><span><strong>Group unread messages from the same person</strong><small>When enabled, multiple unread messages from one person in the same chat appear together until you open the conversation.</small></span></label></section>
   <section class="settings-section online-status-settings"><h3>Online status</h3><label class="presence-setting-toggle"><input id="share-online-status" type="checkbox" checked><span><strong>Share online status and last seen</strong><small>Friends can see when you are online and when you were last active. Turn this off any time.</small></span></label></section>
   <section id="security-settings-section" class="settings-section"><h3>Privacy and security</h3><p class="tiny muted">Manage the sessions that are signed in to your Gather account.</p><button id="signout-other-sessions" class="secondary-action" type="button">Sign out other devices</button><p id="session-security-status" class="tiny muted" role="status"></p><button id="request-account-deletion" class="danger-action" type="button">Request account deletion</button><p class="tiny muted">Deletion requests go to Gather support for review. Your account is not removed automatically.</p></section>
   <section id="feedback-admin-settings-section" class="settings-section" hidden><h3>Administration</h3><p class="tiny muted">Review member feedback and manage replies.</p><button id="feedback-admin-open" class="secondary-action" type="button">Open admin inbox</button><button id="reports-admin-open" class="secondary-action" type="button">Review reports</button><button id="announcement-send-open" class="primary" type="button">Send announcement to everyone</button></section>
@@ -194,6 +194,13 @@
 </section></div>
 <div id="notifications-modal" class="overlay" hidden><section class="modal notifications-modal" role="dialog" aria-modal="true" aria-labelledby="notifications-title">
   <button class="close" data-close aria-label="Close">×</button><p class="eyebrow">YOUR UPDATES</p><h2 id="notifications-title">Notifications</h2>
+  <div class="notifications-shortcuts"><button id="notifications-admin-open" class="secondary-action notification-shortcut-button" type="button">View Gather Admin <span aria-hidden="true">↗</span></button><button id="notifications-recent-open" class="secondary-action notification-shortcut-button" type="button">View recent messages <span aria-hidden="true">→</span></button></div>
+  <nav class="notification-section-tabs" role="tablist" aria-label="Notification sections">
+    <button class="notification-section-tab active" type="button" role="tab" aria-selected="true" data-notification-view="all">All</button>
+    <button class="notification-section-tab" type="button" role="tab" aria-selected="false" data-notification-view="admin">Gather Admin</button>
+    <button class="notification-section-tab" type="button" role="tab" aria-selected="false" data-notification-view="messages">Recent messages</button>
+    <button class="notification-section-tab" type="button" role="tab" aria-selected="false" data-notification-view="other">Other updates</button>
+  </nav>
   <div class="notifications-toolbar"><span id="notifications-summary" class="tiny muted">Your recent activity.</span><button id="notifications-mark-all" class="outline" type="button">Mark all read</button></div>
   <div id="notifications-list" class="notifications-list"><p class="muted tiny">Loading notifications…</p></div>
 </section></div>
