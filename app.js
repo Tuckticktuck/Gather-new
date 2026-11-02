@@ -14,7 +14,7 @@ const ACCENTS = {
 };
 const FONT_SCALES = {small:"0.9",normal:"1",large:"1.15"};
 const DEFAULT_PREFERENCES = {accent:"lavender",fontSize:"normal",theme:"dark",messageNotificationMode:"temporary",shareOnlineStatus:true};
-const S = { user:null, profile:null, profiles:{}, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, hasOlderMessages:false, loadingOlder:false, replyTo:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map() };
+const S = { user:null, profile:null, profiles:{}, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, hasOlderMessages:false, loadingOlder:false, replyTo:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map() };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function status(id, text, kind) { const n=$(id); n.textContent=text||""; n.className="status"+(kind?" "+kind:""); }
@@ -1366,13 +1366,16 @@ function sendTypingSignal(isTyping){
 function stopTyping(sendStop=true){
   if(S.typingStopTimer){clearTimeout(S.typingStopTimer);S.typingStopTimer=null;}
   if(S.typingSent&&sendStop)sendTypingSignal(false);
-  S.typingSent=false;
+  S.typingSent=false;S.typingLastSentAt=0;
 }
 function updateLocalTyping(){
   const field=$("message");
   if(!field||!S.typingChannel||!S.typingReady)return;
   if(!field.value.trim()){stopTyping(true);return;}
-  if(!S.typingSent){S.typingSent=true;sendTypingSignal(true);}
+  const now=Date.now();
+  if(!S.typingSent||now-S.typingLastSentAt>=2500){
+    S.typingSent=true;S.typingLastSentAt=now;sendTypingSignal(true);
+  }
   if(S.typingStopTimer)clearTimeout(S.typingStopTimer);
   S.typingStopTimer=setTimeout(()=>stopTyping(true),1800);
 }
@@ -1399,7 +1402,7 @@ function handleTypingBroadcast(chatId,payload){
 }
 function closeTypingChannel(){
   stopTyping(true);
-  const channel=S.typingChannel;S.typingChannel=null;S.typingReady=false;S.typingSent=false;
+  const channel=S.typingChannel;S.typingChannel=null;S.typingReady=false;S.typingSent=false;S.typingLastSentAt=0;
   if(S.typingRemoteTimer){clearTimeout(S.typingRemoteTimer);S.typingRemoteTimer=null;}
   S.typingUsers.clear();renderTypingIndicator();
   if(channel)db.removeChannel(channel);
