@@ -488,7 +488,7 @@ function syncFriendPresenceChannels(){
   }
   for(const friendId of friendIds){
     if(S.friendPresenceChannels.has(friendId))continue;
-    const channel=db.channel("gather-presence:"+friendId,{config:{private:true,presence:{key:S.user.id}}});
+    const channel=db.channel("gather-presence:"+friendId,{config:{private:true}});
     channel.on("presence",{event:"sync"},()=>handleFriendPresenceSync(friendId,channel));
     channel.subscribe((status,error)=>{
       if(status==="SUBSCRIBED")handleFriendPresenceSync(friendId,channel);
@@ -523,7 +523,7 @@ async function syncOwnPresence(){
     return;
   }
   if(S.ownPresenceChannel)return;
-  const channel=db.channel("gather-presence:"+uid,{config:{private:true,presence:{key:uid}}});
+  const channel=db.channel("gather-presence:"+uid,{config:{private:true}});
   S.ownPresenceChannel=channel;
   channel.subscribe(async status=>{
     if(status!=="SUBSCRIBED"||S.user?.id!==uid||S.preferences.shareOnlineStatus===false||S.ownPresenceChannel!==channel)return;
