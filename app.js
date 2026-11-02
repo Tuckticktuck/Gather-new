@@ -3134,12 +3134,11 @@ async function messageReportedMember(report){
   const message=prompt("Write a private Gather Admin message to "+(target?.display_name||"the reported member")+".");
   if(!message?.trim())return;
   try{
-    const result=await db.rpc("admin_message_reported_user",{p_report_id:report.id,p_body:message.trim()});
-    if(result.error)throw new Error(result.error.message);
+    const result=await adminApi("message_reported_user",{report_id:report.id,body:message.trim()});
     $("reports-admin-modal").hidden=true;
     $("admin-mode-modal").hidden=true;
     await loadChats();
-    await openChat(result.data);
+    await openChat(result.conversation_id);
     toast("Your private message was sent.");
   }catch(error){toast("The member could not be contacted: "+error.message);}
 }
