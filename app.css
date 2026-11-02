@@ -1571,3 +1571,27 @@ html[data-theme="light"] .chat.chat-appearance-custom .messages .mine .bubble .m
   border-left-color:color-mix(in srgb,var(--conversation-accent-ink) 45%,transparent);
   background:color-mix(in srgb,var(--conversation-accent-ink) 9%,transparent);
 }
+
+
+/* Incoming messages use the softer shade of the selected conversation accent. */
+.chat.chat-appearance-custom .messages .message:not(.mine) .bubble{
+  background:var(--conversation-accent-soft)!important;
+  border-color:var(--conversation-accent-border)!important;
+  color:#f5f4fb!important;
+}
+.chat.chat-appearance-custom .messages .message:not(.mine) .bubble .meta strong,
+.chat.chat-appearance-custom .messages .message:not(.mine) .bubble .meta time,
+.chat.chat-appearance-custom .messages .message:not(.mine) .bubble .body-text,
+.chat.chat-appearance-custom .messages .message:not(.mine) .bubble .message-profile-link,
+.chat.chat-appearance-custom .messages .message:not(.mine) .bubble .message-edited-label,
+.chat.chat-appearance-custom .messages .message:not(.mine) .bubble .message-forwarded-label,
+.chat.chat-appearance-custom .messages .message:not(.mine) .bubble .message-receipts,
+.chat.chat-appearance-custom .messages .message:not(.mine) .bubble .message-receipts-button,
+.chat.chat-appearance-custom .messages .message:not(.mine) .bubble .message-action-trigger{
+  color:#f5f4fb!important;
+}
+.chat.chat-appearance-custom .messages .message:not(.mine) .bubble .reply-preview{
+  color:#f5f4fb;
+  border-left-color:var(--conversation-accent-border);
+  background:#ffffff12;
+}
