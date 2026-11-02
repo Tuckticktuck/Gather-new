@@ -229,6 +229,20 @@
           <div class="feedback-detail-heading"><h3 id="feedback-thread-subject"></h3><p id="feedback-thread-owner" class="tiny muted"></p></div>
           <div class="feedback-status-control"><span id="feedback-status-label" class="feedback-status-label"></span><select id="feedback-status-select" hidden aria-label="Feedback status"><option value="new">New</option><option value="in_progress">In progress</option><option value="resolved">Resolved</option></select></div>
         </header>
+        <div id="feedback-request-actions" class="feedback-request-actions" hidden>
+          <button id="feedback-edit-open" class="outline" type="button">Edit request</button>
+          <button id="feedback-delete-request" class="danger-action" type="button">Delete request</button>
+        </div>
+        <form id="feedback-edit-form" class="feedback-edit-form" hidden>
+          <h3>Edit your feedback</h3>
+          <label>Subject<input id="feedback-edit-subject" maxlength="100" required></label>
+          <label>Original message<textarea id="feedback-edit-message" rows="5" maxlength="4000" required></textarea></label>
+          <p id="feedback-edit-status" class="status" role="status"></p>
+          <div class="feedback-edit-actions">
+            <button id="feedback-edit-cancel" class="secondary-action" type="button">Cancel</button>
+            <button id="feedback-edit-save" class="primary" type="submit">Save changes</button>
+          </div>
+        </form>
         <div id="feedback-message-list" class="feedback-message-list"></div>
         <form id="feedback-reply-form" class="feedback-reply-form">
           <textarea id="feedback-reply" rows="3" maxlength="4000" required placeholder="Write a reply…"></textarea>
