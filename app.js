@@ -14,7 +14,7 @@ const ACCENTS = {
 };
 const FONT_SCALES = {small:"0.9",normal:"1",large:"1.15"};
 const DEFAULT_PREFERENCES = {accent:"lavender",fontSize:"normal",theme:"dark",messageNotificationMode:"temporary"};
-const S = { user:null, profile:null, profiles:{}, announcements:[], announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, hasOlderMessages:false, loadingOlder:false, replyTo:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null };
+const S = { user:null, profile:null, profiles:{}, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, hasOlderMessages:false, loadingOlder:false, replyTo:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function status(id, text, kind) { const n=$(id); n.textContent=text||""; n.className="status"+(kind?" "+kind:""); }
@@ -501,6 +501,9 @@ function showMessageNotification(message,chat){
 
 
 
+function announcementDateLabel(item){
+  return "Gather Admin · "+dateLabel(item.created_at)+(item.edited_at?" · Edited":"");
+}
 function renderHomeAnnouncement(){
   const card=$("home-announcement-card");
   if(!card)return;
@@ -509,7 +512,7 @@ function renderHomeAnnouncement(){
   if(!latest)return;
   $("home-announcement-title").textContent=latest.title;
   $("home-announcement-preview").textContent=latest.body;
-  $("home-announcement-date").textContent="Gather Admin · "+dateLabel(latest.created_at);
+  $("home-announcement-date").textContent=announcementDateLabel(latest);
 }
 function renderAnnouncementsPage(){
   const list=$("announcements-history-list");
@@ -527,7 +530,7 @@ function renderAnnouncementsPage(){
     copy.append(
       el("strong","",item.title),
       el("small","",item.body),
-      el("time","","Gather Admin · "+dateLabel(item.created_at))
+      el("time","",announcementDateLabel(item))
     );
     const arrow=el("span","announcement-history-arrow","›");
     card.append(mark,copy,arrow);
@@ -538,7 +541,7 @@ function renderAnnouncementsPage(){
 async function loadAnnouncements(){
   if(!S.user)return false;
   const result=await db.from("admin_announcements")
-    .select("id,title,body,created_at")
+    .select("id,title,body,created_at,edited_at")
     .order("created_at",{ascending:false})
     .limit(100);
   if(result.error){
@@ -568,38 +571,80 @@ function subscribeAnnouncements(){
       if(payload.new?.id&&$("announcements-page-modal").hidden){
         toast("A new official announcement from Gather Admin is available.");
       }
+    })
+    .on("postgres_changes",{event:"UPDATE",schema:"public",table:"admin_announcements"},async payload=>{
+      if(!S.user||S.user.id!==uid)return;
+      await loadAnnouncements();
+      if(payload.new?.id&&S.activeAnnouncementId===payload.new.id&&!$("announcement-view-modal").hidden){
+        await openAnnouncement(payload.new.id);
+      }
     }).subscribe();
 }
 
 function openAnnouncementComposer(){
   if(!isFeedbackAdmin(S.user)){toast("Only the Gather administrator can send announcements.");return;}
+  S.activeAnnouncementId=null;
+  $("announcement-compose-title").textContent="Send an announcement";
+  $("announcement-compose-description").textContent="This message goes to everyone on Gather. Recipients see “Gather Admin” as the sender; your account name and profile are not shown.";
+  $("announcement-publish").textContent="Send to everyone";
   $("announcement-title").value="";$("announcement-body").value="";
+  status("announcement-compose-status","");
+  $("announcement-compose-modal").hidden=false;$("announcement-title").focus();
+}
+function openAnnouncementEditor(id){
+  if(!isFeedbackAdmin(S.user)){toast("Only the Gather administrator can edit announcements.");return;}
+  const item=S.announcementInView?.id===id?S.announcementInView:S.announcements.find(a=>a.id===id);
+  if(!item){toast("This announcement could not be loaded. Open it again and retry.");return;}
+  S.activeAnnouncementId=id;
+  $("announcement-compose-title").textContent="Edit announcement";
+  $("announcement-compose-description").textContent="Update this official Gather Admin message. The original publication date stays the same, and members will see that it was edited.";
+  $("announcement-publish").textContent="Save changes";
+  $("announcement-title").value=item.title||"";
+  $("announcement-body").value=item.body||"";
   status("announcement-compose-status","");
   $("announcement-compose-modal").hidden=false;$("announcement-title").focus();
 }
 async function publishAnnouncement(event){
   event.preventDefault();
-  if(!isFeedbackAdmin(S.user)){status("announcement-compose-status","Only the Gather administrator can send announcements.","error");return;}
+  if(!isFeedbackAdmin(S.user)){status("announcement-compose-status","Only the Gather administrator can publish or edit announcements.","error");return;}
   const title=$("announcement-title").value.trim(),body=$("announcement-body").value.trim();
   if(!title||title.length>100||!body||body.length>2000){status("announcement-compose-status","Add a title and a message between 1 and 2,000 characters.","error");return;}
-  if(!confirm("Send this official announcement to everyone on Gather? It will appear as “Gather Admin” without showing your account identity."))return;
-  const button=$("announcement-publish");button.disabled=true;status("announcement-compose-status","Sending to all Gather members…");
-  const result=await db.from("admin_announcements").insert({title,body}).select("id").single();
+  const editingId=S.activeAnnouncementId;
+  const confirmation=editingId
+    ?"Save these changes to the official announcement? Its original publication date will stay the same."
+    :"Send this official announcement to everyone on Gather? It will appear as “Gather Admin” without showing your account identity.";
+  if(!confirm(confirmation))return;
+  const button=$("announcement-publish");button.disabled=true;
+  status("announcement-compose-status",editingId?"Saving announcement changes…":"Sending to all Gather members…");
+  const result=editingId
+    ?await db.from("admin_announcements").update({title,body,edited_at:new Date().toISOString()}).eq("id",editingId).select("id").maybeSingle()
+    :await db.from("admin_announcements").insert({title,body}).select("id").single();
   button.disabled=false;
-  if(result.error){status("announcement-compose-status","Announcement could not be sent: "+result.error.message,"error");return;}
-  $("announcement-compose-modal").hidden=true;toast("Official announcement sent to Gather members.");
-  await loadNotifications();await loadAnnouncements();await openAnnouncement(result.data.id);
+  if(result.error){status("announcement-compose-status",(editingId?"Announcement could not be updated: ":"Announcement could not be sent: ")+result.error.message,"error");return;}
+  if(!result.data?.id){status("announcement-compose-status","The announcement was not changed. Please verify your admin access and try again.","error");return;}
+  $("announcement-compose-modal").hidden=true;
+  if(editingId){
+    toast("Official announcement updated.");
+    await loadAnnouncements();
+    await openAnnouncement(editingId);
+  }else{
+    toast("Official announcement sent to Gather members.");
+    await loadNotifications();await loadAnnouncements();await openAnnouncement(result.data.id);
+  }
 }
 async function openAnnouncement(id){
   if(!id||!S.user)return;
+  S.activeAnnouncementId=id;
   $("announcement-view-title").textContent="Loading announcement…";
   $("announcement-view-body").textContent="";$("announcement-view-date").textContent="";
+  $("announcement-edit-open").hidden=!isFeedbackAdmin(S.user);
   $("announcement-view-modal").hidden=false;
-  const result=await db.from("admin_announcements").select("id,title,body,created_at").eq("id",id).maybeSingle();
+  const result=await db.from("admin_announcements").select("id,title,body,created_at,edited_at").eq("id",id).maybeSingle();
   if(result.error||!result.data){$("announcement-view-title").textContent="Announcement unavailable";$("announcement-view-body").textContent="This announcement could not be loaded.";return;}
+  S.announcementInView=result.data;
   $("announcement-view-title").textContent=result.data.title;
   $("announcement-view-body").textContent=result.data.body;
-  $("announcement-view-date").textContent=dateLabel(result.data.created_at);
+  $("announcement-view-date").textContent="Published "+dateLabel(result.data.created_at)+(result.data.edited_at?" · Edited "+dateLabel(result.data.edited_at):"");
 }
 
 function notificationUnreadCount(){
@@ -2028,6 +2073,7 @@ function wire(){
   $("notifications-open").addEventListener("click",openNotifications);
   $("announcement-send-open").addEventListener("click",()=>{$("settings-modal").hidden=true;openAnnouncementComposer();});
   $("announcement-compose-form").addEventListener("submit",publishAnnouncement);
+  $("announcement-edit-open").addEventListener("click",()=>openAnnouncementEditor(S.activeAnnouncementId));
   $("home-announcement-open").addEventListener("click",()=>{const latest=S.announcements[0];if(latest)openAnnouncement(latest.id);});
   $("home-announcements-all").addEventListener("click",openAnnouncementsPage);
   $("notifications-mark-all").addEventListener("click",markAllNotificationsRead);
