@@ -1213,6 +1213,8 @@ async function loadMessages(id){
 }
 function renderMessages(preserveScroll=false){
   const list=$("messages"),previousHeight=list.scrollHeight,previousTop=list.scrollTop;list.replaceChildren();
+  const activeChat=S.chats.find(chat=>chat.id===S.active);
+  const showSenderNames=activeChat?.kind==="group";
   if(!S.messages.length){list.append(el("p","muted tiny","This is the beginning of the conversation. Say hello."));return;}
   S.messages.forEach((m,index)=>{
     const mine=m.sender_id===S.user.id,p=S.profiles[m.sender_id];
@@ -1221,17 +1223,20 @@ function renderMessages(preserveScroll=false){
     const grouping=samePrevious?(sameNext?" group-middle":" group-last"):(sameNext?" group-first":"");
     const row=el("div","message"+(mine?" mine":"")+grouping+(samePrevious?" group-continued":""));row.dataset.messageId=m.id;
     const bubble=el("div","bubble"),meta=el("div","meta");
-    if(!samePrevious){
-      if(mine)meta.append(el("strong","","You"));
-      else {const author=el("button","message-profile-link",p?.display_name||"Member");author.type="button";author.addEventListener("click",()=>openPublicProfile(m.sender_id));meta.append(author);}
-    }else meta.classList.add("meta-continued");
+    if(showSenderNames){
+      if(!samePrevious){
+        if(mine)meta.append(el("strong","","You"));
+        else {const author=el("button","message-profile-link",p?.display_name||"Member");author.type="button";author.addEventListener("click",()=>openPublicProfile(m.sender_id));meta.append(author);}
+      }else meta.classList.add("meta-continued");
+    }
     meta.append(el("time","",new Date(m.created_at).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})));
     if(m.edited_at)meta.append(el("small","message-edited-label","edited"));
     bubble.append(meta);
     if(m.reply_to_id){
       const quote=el("div","reply-preview"),target=m.reply_preview;
       const quoteName=target?.sender_id?(target.sender_id===S.user.id?"You":(S.profiles[target.sender_id]?.display_name||"Member")):"Reply";
-      quote.append(el("strong","",quoteName),el("span","",target?.body||(target?.attachment_path?"Sent an image":"Original message unavailable.")));bubble.append(quote);
+      if(showSenderNames)quote.append(el("strong","",quoteName));
+      quote.append(el("span","",target?.body||(target?.attachment_path?"Sent an image":"Original message unavailable.")));bubble.append(quote);
     }
     if(m.attachment_path){
       if(m.image_url){
@@ -1248,7 +1253,6 @@ function renderMessages(preserveScroll=false){
       bubble.append(actions);
     }
     if(mine){
-      const activeChat=S.chats.find(chat=>chat.id===S.active);
       const memberIds=new Set((activeChat?.members||[]).map(member=>member.user_id).filter(id=>id!==S.user.id));
       const readers=[...new Map((S.messageReads[m.id]||[])
         .filter(receipt=>receipt.user_id!==S.user.id&&memberIds.has(receipt.user_id))
