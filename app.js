@@ -956,19 +956,26 @@ function renderAnnouncementsPage(){
 }
 async function loadAnnouncements(){
   if(!S.user)return false;
-  const result=await db.from("admin_announcements")
-    .select("id,title,body,created_at,edited_at")
-    .order("created_at",{ascending:false})
-    .limit(100);
-  if(result.error){
-    console.warn("Admin announcements could not be loaded:",result.error.message);
-    $("home-announcement-card").hidden=true;
-    $("announcements-history-list").replaceChildren(el("p","status error","Announcements could not be loaded. Please try again."));
-    return false;
+  const announcements=[],pageSize=500;
+  for(let from=0;;from+=pageSize){
+    const result=await db.from("admin_announcements")
+      .select("id,title,body,created_at,edited_at")
+      .order("created_at",{ascending:false})
+      .range(from,from+pageSize-1);
+    if(result.error){
+      console.warn("Admin announcements could not be loaded:",result.error.message);
+      $("home-announcement-card").hidden=true;
+      $("announcements-history-list").replaceChildren(el("p","status error","Announcements could not be loaded. Please try again."));
+      return false;
+    }
+    const page=result.data||[];
+    announcements.push(...page);
+    if(page.length<pageSize)break;
   }
-  S.announcements=result.data||[];
+  S.announcements=announcements;
   renderHomeAnnouncement();
   renderAnnouncementsPage();
+  if(S.notificationView==="admin")renderNotifications();
   return true;
 }
 function openAnnouncementsPage(){
@@ -1071,7 +1078,28 @@ function notificationItemsForCenter(){
 }
 function notificationItemsForView(view=S.notificationView){
   const items=notificationItemsForCenter();
-  if(view==="admin")return items.filter(item=>item.kind==="announcement");
+  if(view==="admin"){
+    const linked=new Map();
+    S.notifications.filter(item=>item.kind==="announcement"&&item.announcement_id).forEach(item=>{
+      const group=linked.get(item.announcement_id)||[];
+      group.push(item);
+      linked.set(item.announcement_id,group);
+    });
+    return (S.announcements||[]).map(announcement=>{
+      const related=linked.get(announcement.id)||[];
+      const unread=related.some(item=>!item.read_at);
+      return {
+        id:"announcement:"+announcement.id,
+        kind:"announcement",
+        announcement_id:announcement.id,
+        announcement_history:true,
+        title:announcement.title,
+        body:announcement.body,
+        created_at:announcement.created_at,
+        read_at:unread?null:(related.find(item=>item.read_at)?.read_at||"history")
+      };
+    });
+  }
   if(view==="messages")return items.filter(item=>item.kind==="message");
   if(view==="other")return items.filter(item=>item.kind!=="announcement"&&item.kind!=="message");
   return items;
@@ -1133,13 +1161,21 @@ function renderNotifications(){
       const icon=el("span","notification-center-icon",item.kind==="announcement"?"◎":item.kind==="message"?"✉":item.kind==="friend_request"?"＋":item.kind==="chat_request"?"↗":item.kind==="report"?"⚑":"•");
       const copy=el("span","notification-center-copy");
       const senderName=S.profiles[item.actor_id]?.display_name||item.title||"New messages";
-      const title=item.kind==="announcement"?"Gather Admin":item.kind==="message"&&items.length>1?senderName:(item.title||notificationKindLabel(item.kind));
+      const title=item.kind==="announcement"?(item.announcement_history?(item.title||"Gather Admin"):"Gather Admin"):item.kind==="message"&&items.length>1?senderName:(item.title||notificationKindLabel(item.kind));
       const baseDescription=item.kind==="announcement"?"Official announcement · "+(item.body||"Open to read the full message."):(item.body||notificationKindLabel(item.kind));
       const description=item.kind==="message"&&items.length>1?items.length+" unread messages · "+baseDescription:baseDescription;
       copy.append(el("strong","",title),el("small","",description),el("time","",dateLabel(item.created_at)));
       card.append(icon,copy);
       if(unread)card.append(el("span","notification-unread-dot",""));
-      card.addEventListener("click",()=>openNotification(entry));
+      card.addEventListener("click",async()=>{
+        if(item.announcement_history){
+          await markAnnouncementNotificationsRead(item.announcement_id);
+          $("notifications-modal").hidden=true;
+          await openAnnouncement(item.announcement_id);
+        }else{
+          await openNotification(entry);
+        }
+      });
       list.append(card);
     });
   }
@@ -1183,6 +1219,20 @@ async function markNotificationRead(id){
   if(result.error){console.warn("Notification could not be marked read:",result.error.message);return false;}
   const item=S.notifications.find(x=>x.id===id);if(item)item.read_at=at;
   renderNotifications();return true;
+}
+async function markAnnouncementNotificationsRead(announcementId){
+  if(!S.user||!announcementId)return true;
+  const unread=S.notifications.filter(item=>item.kind==="announcement"&&item.announcement_id===announcementId&&!item.read_at);
+  if(!unread.length)return true;
+  const ids=unread.map(item=>item.id),at=new Date().toISOString();
+  const result=await db.from("notifications").update({read_at:at}).eq("recipient_id",S.user.id).in("id",ids);
+  if(result.error){
+    console.warn("Announcement notifications could not be marked read:",result.error.message);
+    return false;
+  }
+  S.notifications.forEach(item=>{if(ids.includes(item.id))item.read_at=at;});
+  renderNotifications();
+  return true;
 }
 async function markAllNotificationsRead(){
   if(!S.user)return;
