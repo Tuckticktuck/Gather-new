@@ -1784,3 +1784,39 @@ html[data-theme="light"] .chat.chat-appearance-custom .messages .mine .bubble .m
   .admin-approval-layout{grid-template-columns:1fr}
   .admin-mode-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+
+
+/* Consistent back navigation for modal and nested views. */
+.modal-back-button{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  width:max-content;
+  min-height:35px;
+  margin:0 0 13px;
+  padding:7px 12px;
+  border:1px solid var(--accent-outline-soft);
+  border-radius:9px;
+  color:var(--accent-text);
+  background:var(--accent-surface);
+  font-family:inherit;
+  font-size:calc(11px * var(--font-scale,1));
+  font-weight:750;
+  line-height:1.2;
+  cursor:pointer;
+  transition:background .16s,border-color .16s,transform .16s;
+}
+.modal-back-button:hover{
+  border-color:var(--accent-outline);
+  background:var(--accent-hover);
+  transform:translateX(-1px);
+}
+.modal-back-button:focus-visible{
+  outline:2px solid var(--accent);
+  outline-offset:2px;
+}
+.modal-back-button[hidden]{display:none!important}
+@media(max-width:720px){
+  .modal-back-button{min-height:38px;margin-bottom:11px;padding:8px 12px}
+}
