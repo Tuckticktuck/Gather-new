@@ -3142,7 +3142,7 @@ async function messageReportedMember(report){
     toast("Your private message was sent.");
   }catch(error){toast("The member could not be contacted: "+error.message);}
 }
-function openReportsAdmin(){
+async function openReportsAdmin(){
   if(!isFeedbackAdmin(S.user)){toast("Only the administrator can review reports.");return;}
   $("reports-admin-modal").hidden=false;
   const list=$("reports-admin-list");list.replaceChildren(el("p","muted tiny","Loading reports…"));
