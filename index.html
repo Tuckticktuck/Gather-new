@@ -7,10 +7,10 @@
 <meta name="description" content="Private direct and group conversations.">
 <title>Gather</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="app.css?v=20261102-49">
+<link rel="stylesheet" href="app.css?v=20261102-50">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script defer src="app.js?v=20261102-53"></script>
+<script defer src="app.js?v=20261102-54"></script>
 </head>
 <body>
 <section id="auth" class="auth-shell">
@@ -103,6 +103,10 @@
           </div>
         </section>
         <label class="workspace-search">Search conversations<input id="filter" class="search" type="search" placeholder="Search by name or message"></label>
+        <section id="pinned-chat-section" class="workspace-group-section pinned-chat-section" hidden>
+          <div class="folder-panel-heading"><strong>Pinned conversations</strong><span id="pinned-chat-count" class="section-count">0</span></div>
+          <div id="pinned-chat-list" class="workspace-chat-list"></div>
+        </section>
         <nav class="folder-tabs workspace-tabs" role="tablist" aria-label="Message folders">
           <button class="folder-tab active" type="button" role="tab" aria-selected="true" data-folder="friends">Friends</button>
           <button class="folder-tab" type="button" role="tab" aria-selected="false" data-folder="nonfriends">Non-friends</button>
@@ -378,6 +382,28 @@
     <button id="group-settings-open" class="outline chat-action" type="button" hidden>Group settings</button>
     <button id="leave-chat" class="outline chat-action" type="button" hidden>Leave group</button>
   </div></section>
+  <section class="chat-action-section"><h3>Conversation preferences</h3>
+    <div class="chat-action-grid">
+      <button id="toggle-chat-pin" class="outline chat-action" type="button">Pin conversation</button>
+      <button id="toggle-chat-mute" class="outline chat-action" type="button">Mute notifications</button>
+    </div>
+    <div class="chat-appearance-controls">
+      <label>Chat accent
+        <select id="chat-appearance-accent">
+          <option value="default">Use your default accent</option>
+          <option value="lavender">Lavender</option><option value="blue">Ocean blue</option>
+          <option value="mint">Mint</option><option value="rose">Rose</option>
+          <option value="amber">Amber</option><option value="teal">Teal</option>
+        </select>
+      </label>
+      <label>Chat background
+        <select id="chat-appearance-background">
+          <option value="default">Default</option><option value="slate">Slate</option>
+          <option value="forest">Forest</option><option value="plum">Plum</option><option value="sand">Sand</option>
+        </select>
+      </label>
+    </div>
+  </section>
   <section class="chat-action-section"><h3>Messages</h3><div class="chat-action-grid">
     <button id="search-messages-open" class="outline chat-action" type="button">Search messages</button>
     <button id="saved-messages-open" class="outline chat-action" type="button">Saved messages</button>
