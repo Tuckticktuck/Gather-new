@@ -516,25 +516,6 @@ function renderAnnouncementText(target,value){
   }
   if(cursor<source.length)target.append(document.createTextNode(source.slice(cursor)));
 }
-function toggleAnnouncementBold(){
-  const field=$("announcement-body");
-  if(!field)return;
-  const value=field.value;
-  const start=field.selectionStart??value.length;
-  const end=field.selectionEnd??start;
-  const selected=value.slice(start,end);
-  if(start===end){
-    field.setRangeText("****",start,end,"end");
-    field.setSelectionRange(start+2,start+2);
-  }else if(start>=2&&value.slice(start-2,start)==="**"&&value.slice(end,end+2)==="**"){
-    field.setRangeText(selected,start-2,end+2,"select");
-    field.setSelectionRange(start-2,start-2+selected.length);
-  }else{
-    field.setRangeText("**"+selected+"**",start,end,"select");
-    field.setSelectionRange(start+2,start+2+selected.length);
-  }
-  field.focus();
-}
 function announcementDateLabel(item){
   return "Gather Admin · "+dateLabel(item.created_at)+(item.edited_at?" · Edited":"");
 }
@@ -2109,13 +2090,6 @@ function wire(){
   $("notifications-open").addEventListener("click",openNotifications);
   $("announcement-send-open").addEventListener("click",()=>{$("settings-modal").hidden=true;openAnnouncementComposer();});
   $("announcement-compose-form").addEventListener("submit",publishAnnouncement);
-  $("announcement-bold").addEventListener("click",toggleAnnouncementBold);
-  $("announcement-body").addEventListener("keydown",event=>{
-    if((event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==="b"){
-      event.preventDefault();
-      toggleAnnouncementBold();
-    }
-  });
   $("announcement-edit-open").addEventListener("click",()=>openAnnouncementEditor(S.activeAnnouncementId));
   $("home-announcement-open").addEventListener("click",()=>{const latest=S.announcements[0];if(latest)openAnnouncement(latest.id);});
   $("home-announcements-all").addEventListener("click",openAnnouncementsPage);
