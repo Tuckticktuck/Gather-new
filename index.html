@@ -7,10 +7,10 @@
 <meta name="description" content="Private direct and group conversations.">
 <title>Gather</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="app.css?v=20261101-42">
+<link rel="stylesheet" href="app.css?v=20261101-43">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script defer src="app.js?v=20261101-42"></script>
+<script defer src="app.js?v=20261101-43"></script>
 </head>
 <body>
 <section id="auth" class="auth-shell">
@@ -172,10 +172,7 @@
     <label>Announcement title<input id="announcement-title" maxlength="100" required placeholder="A quick update"></label>
     <div class="announcement-message-field">
       <label for="announcement-body">Message</label>
-      <div class="announcement-format-toolbar" role="group" aria-label="Message formatting">
-        <button id="announcement-bold" class="outline announcement-format-button" type="button" title="Bold selected text (Ctrl or Command + B)" aria-label="Bold selected text"><strong>B</strong></button>
-        <span class="announcement-format-hint">Select text and press B, or use Ctrl/⌘ + B.</span>
-      </div>
+      <p class="announcement-format-hint">To bold text, put two asterisks around it, like **important update**.</p>
       <textarea id="announcement-body" rows="6" maxlength="2000" required placeholder="Write a clear, neutral message for everyone…"></textarea>
     </div>
     <p id="announcement-compose-status" class="status" role="status"></p><button id="announcement-publish" class="primary" type="submit">Send to everyone</button>
