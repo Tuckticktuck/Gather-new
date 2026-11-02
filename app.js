@@ -1260,7 +1260,7 @@ async function leaveGroupChat(conversationId){
   if(result.error){toast("Could not leave group: "+result.error.message);return;}
   if(result.data?.status!=="left"){toast("You could not leave this group. Please refresh and try again.");return;}
   if(S.active===conversationId){
-    S.active=null;S.messages=[];S.directStatus=null;
+    S.active=null;S.messages=[];S.messageReactions={};S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.directStatus=null;
     S.selectingMessages=false;S.selectedMessageIds.clear();
     renderActive();
   }
@@ -1491,7 +1491,7 @@ async function loadMessageReactions(conversationId,messageIds,merge=false){
       if((result.data||[]).length<1000)break;
     }
   }
-  const next=merge?{...S.messageReactions}:{};
+  const next={...S.messageReactions};
   ids.forEach(id=>{if(!next[id])next[id]=[];});
   collected.forEach(record=>{
     const rows=next[record.message_id]||(next[record.message_id]=[]);
