@@ -1336,10 +1336,12 @@ function renderDirectControls(){
   $("chat-notice").hidden=!blocked;
   $("chat-notice").textContent=!d?"Checking private chat permissions…":d.error?"Could not verify chat permissions. Refresh the page and try again.":d.i_blocked?"You blocked this member. Unblock them to send private messages. Your previous messages remain visible.":"Private messaging is unavailable in this conversation. Your previous messages remain visible.";
 }
-async function refreshDirectStatus(){
-  const c=S.chats.find(x=>x.id===S.active),peer=c?.members.find(m=>m.user_id!==S.user.id);
-  if(!c||c.kind!=="direct"||!peer){S.directStatus=null;renderDirectControls();return;}
+async function refreshDirectStatus(conversationId=S.active){
+  if(!conversationId||S.active!==conversationId)return;
+  const c=S.chats.find(x=>x.id===conversationId),peer=c?.members.find(m=>m.user_id!==S.user.id);
+  if(!c||c.kind!=="direct"||!peer){if(S.active!==conversationId)return;S.directStatus=null;renderDirectControls();return;}
   const r=await db.rpc("get_direct_chat_status",{p_other_user_id:peer.user_id});
+  if(S.active!==conversationId)return;
   S.directStatus=r.error?{i_blocked:false,can_message:false,error:r.error.message}:(r.data||{i_blocked:false,can_message:false,error:"No status returned"});
   renderDirectControls();
 }
@@ -1540,23 +1542,32 @@ async function openChat(id){
   clearPendingMessageImage();
   S.active=id;S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;
   S.messages=[];S.messageReads={};S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.reactionSelectionMode=false;S.selectedReactionMessageId=null;S.openMessageMenuId=null;S.replyTo=null;S.hasOlderMessages=false;S.loadingOlder=false;renderReplyComposer();
+  $("messages").replaceChildren(el("p","muted tiny","Loading messages…"));
   markChatRead(id,S.chats.find(c=>c.id===id)?.last?.created_at||null);
   $("layout").classList.remove("show-home");$("layout").classList.add("show-chat");renderActive();
   subscribeTyping(id);
-  await refreshDirectStatus();await loadMessages(id);
+  await refreshDirectStatus(id);
+  if(S.active!==id)return;
+  await loadMessages(id);
   if(S.active!==id)return;
   subscribeMessageReads(id);subscribePollVotes(id);await markConversationRead(id);
 }
 async function loadMessages(id){
   const r=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,edited_at,reply_to_id,attachment_path,forwarded_from_id").eq("conversation_id",id).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
-  if(r.error){toast("Messages could not be loaded: "+r.error.message);return;}
   if(S.active!==id)return;
+  if(r.error){$("messages").replaceChildren(el("p","status error","Messages could not be loaded. Please try again."));toast("Messages could not be loaded: "+r.error.message);return;}
   const raw=r.data||[];S.hasOlderMessages=raw.length===300;
-  S.messages=await attachReplyPreviews(raw.filter(m=>!S.deletedMessageIds.has(m.id)).reverse(),id);
+  const loadedMessages=await attachReplyPreviews(raw.filter(m=>!S.deletedMessageIds.has(m.id)).reverse(),id);
+  if(S.active!==id)return;
+  S.messages=loadedMessages;
   await Promise.all([loadMessagePolls(id,S.messages.map(m=>m.id)),loadPinnedMessages(id),loadSavedMessageIds()]);
+  if(S.active!==id)return;
   await loadMessageReactions(id,S.messages.map(m=>m.id));
+  if(S.active!==id)return;
   await loadMessageReads(id,S.messages.map(m=>m.id));
+  if(S.active!==id)return;
   await markMessagesRead(id,S.messages);
+  if(S.active!==id)return;
   markChatRead(id,S.messages[S.messages.length-1]?.created_at||null);
   renderMessages();
 }
@@ -1695,6 +1706,7 @@ async function loadMessagePolls(cid,ids){
   ids=[...new Set((ids||[]).filter(Boolean))];if(!S.user||S.active!==cid||!ids.length)return;
   const p=await db.from("message_polls").select("id,message_id,conversation_id,created_by,question,created_at").eq("conversation_id",cid).in("message_id",ids);
   if(p.error){console.warn("Polls failed to load:",p.error.message);return;}
+  if(S.active!==cid)return;
   const next={...S.messagePolls};ids.forEach(id=>delete next[id]);const polls=p.data||[];
   if(polls.length){
     const pids=polls.map(x=>x.id);
@@ -1703,6 +1715,7 @@ async function loadMessagePolls(cid,ids){
       db.from("message_poll_votes").select("poll_id,option_id,user_id,created_at").eq("conversation_id",cid).in("poll_id",pids)
     ]);
     if(o.error||v.error){console.warn("Poll data failed:",o.error?.message||v.error?.message);return;}
+    if(S.active!==cid)return;
     polls.forEach(x=>next[x.message_id]={...x,options:(o.data||[]).filter(y=>y.poll_id===x.id),votes:(v.data||[]).filter(y=>y.poll_id===x.id)});
   }S.messagePolls=next;
 }
@@ -1710,8 +1723,10 @@ async function loadPinnedMessages(cid){
   if(!S.user||S.active!==cid)return;
   const r=await db.from("message_pins").select("conversation_id,message_id,pinned_by,created_at").eq("conversation_id",cid).order("created_at",{ascending:false});
   if(r.error){console.warn("Pins failed:",r.error.message);return;}
+  if(S.active!==cid)return;
   const pins=r.data||[],ids=pins.map(x=>x.message_id),m=ids.length?await db.from("messages").select("id,body,attachment_path").in("id",ids):{data:[]};
-  const map=new Map((m.data||[]).map(x=>[x.id,x]));S.pinnedMessages=pins.map(x=>({...x,message:map.get(x.message_id)||null}));
+  if(S.active!==cid)return;
+  const map=new Map((m.data||[]).map(x=>[x.id,x]));S.pinnedMessages=pins.map(x=>({...x,message:map.get(x.id)||null}));
 }
 async function loadSavedMessageIds(){
   if(!S.user)return;const r=await db.from("saved_messages").select("message_id").eq("user_id",S.user.id).limit(1000);
