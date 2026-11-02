@@ -65,12 +65,15 @@ Deno.serve(async (request: Request) => {
     auth: { autoRefreshToken: false, persistSession: false },
   });
   const { data: authData, error: authError } = await userClient.auth.getUser();
-  if (authError || !isAdmin(authData.user)) return adminError(403, "Admin Mode is not available for this account.");
+  const authenticatedUser = authData?.user ?? null;
+  if (authError || !authenticatedUser || !isAdmin(authenticatedUser)) {
+    return adminError(403, "Admin Mode is not available for this account.");
+  }
 
   const adminClient = createClient(SUPABASE_URL, SERVICE_KEY, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
-  const actorId = authData.user.id;
+  const actorId = authenticatedUser.id;
 
   let payload: Record<string, unknown>;
   try {
