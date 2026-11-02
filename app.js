@@ -396,6 +396,24 @@ async function loadApprovedUserIds(){
   S.approvedUserIds=new Set((result.data||[]).map(item=>item.user_id));
   return true;
 }
+function refreshApprovedBadgeUI(){
+  if(!S.user)return;
+  const ownName=$("user-name");
+  if(S.profile&&ownName){
+    ownName.textContent=S.profile.display_name;
+    appendApprovedBadge(ownName,S.user.id);
+  }
+  if(S.active)renderActive();else renderChats();
+  renderFriends();
+  if(S.active)renderMessages(true);
+  if(S.publicProfileId){
+    const publicName=$("member-profile-name");
+    publicName.querySelector(".approved-account-badge")?.remove();
+    appendApprovedBadge(publicName,S.publicProfileId);
+  }
+  if(!$("people-modal").hidden&&$("people-search").value.trim().length>=2)void searchPeople();
+  if(!$("requests-modal").hidden)renderRequests();
+}
 async function loadOwnApprovalRequests(){
   if(!S.user)return false;
   const userId=S.user.id;
@@ -1872,8 +1890,10 @@ function renderActive(){
     $("chat-typing-indicator").hidden=true;
     return;
   }
-  $("chat-title").textContent=chatTitle(c);$("chat-subtitle").textContent=chatSub(c);
   const peerUserId=c.kind==="direct"?peerForChat(c):null;
+  $("chat-title").textContent=chatTitle(c);
+  if(peerUserId)appendApprovedBadge($("chat-title"),peerUserId);
+  $("chat-subtitle").textContent=chatSub(c);
   const presence=friendPresenceSummary(peerUserId);
   const presenceNode=$("chat-presence-status");
   presenceNode.hidden=!presence;
@@ -2827,7 +2847,7 @@ async function searchPeople(){
   if(!people.length){box.append(el("p","muted tiny","No matching members found."));return;}
   people.forEach(p=>{
     const b=el("button","person");b.type="button";b.append(avatar(p.display_name,p.avatar_data));
-    const copy=el("div","person-copy");copy.append(el("strong","",p.display_name));
+    const copy=el("div","person-copy");copy.append(el("strong","",p.display_name));appendApprovedBadge(copy,p.id);
     if(S.picker==="friend"){
       const isFriend=S.friends.some(x=>x.friend_id===p.id);
       const incoming=S.friendRequests.find(x=>x.sender_id===p.id&&x.recipient_id===S.user.id&&x.status==="pending");
@@ -4009,7 +4029,10 @@ document.querySelectorAll("[data-folder]").forEach(b=>b.addEventListener("click"
     saveUIPreferences();
   });
   $("group-unread-messages").addEventListener("change",event=>setGroupUnreadMessages(event.target.checked));
-  document.addEventListener("visibilitychange",()=>{if(document.hidden)stopTyping(true);});
+  document.addEventListener("visibilitychange",()=>{
+    if(document.hidden){stopTyping(true);return;}
+    if(S.user)void loadApprovedUserIds().then(ok=>{if(ok)refreshApprovedBadgeUI();});
+  });
   $("messages").addEventListener("scroll",()=>{if($("messages").scrollTop<80)loadOlderMessages();checkUnreadDividerVisibility();},{passive:true});
   $("cancel-reply").addEventListener("click",cancelReply);
   $("search-messages-open").addEventListener("click",openMessageSearch);
