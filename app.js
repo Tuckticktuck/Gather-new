@@ -312,7 +312,8 @@ function checkUnreadDividerVisibility(){
   if(target.bottom<viewport.top||target.top>viewport.bottom)return;
   const chatId=S.active,messageId=S.unreadDividerMessageId;
   S.unreadDividerArmed=true;
-  S.unreadDividerTimer=setTimeout(()=>dismissUnreadDivider(chatId,messageId),2000);
+  S.unreadDividerTimer=null;
+  void dismissUnreadDivider(chatId,messageId);
 }
 async function dismissUnreadDivider(chatId,messageId){
   if(S.active!==chatId||S.unreadDividerMessageId!==messageId)return;
