@@ -2704,6 +2704,8 @@ async function openFeedback(adminView=false){
   if(adminView&&!isFeedbackAdmin(S.user)){toast("This inbox is only available to the feedback administrator.");return;}
   S.feedbackAdminView=!!adminView;
   S.activeFeedbackThreadId=null;S.feedbackMessages=[];
+  $("feedback-request-actions").hidden=true;$("feedback-edit-form").hidden=true;
+  $("feedback-message-list").hidden=false;$("feedback-reply-form").hidden=false;
   $("feedback-modal-title").textContent=S.feedbackAdminView?"Admin inbox":"Your feedback";
   $("feedback-modal-eyebrow").textContent=S.feedbackAdminView?"GATHER ADMIN":"FEEDBACK AND SUPPORT";
   $("feedback-modal-description").textContent=S.feedbackAdminView?"Review private requests from Gather members, reply, and update each thread’s status. Replies appear as Gather Admin, not your personal username.":"Send feedback or ask for help. Replies to your feedback stay private to your account.";
@@ -2722,6 +2724,8 @@ async function selectFeedbackThread(threadId){
   if(!thread)return;
   S.activeFeedbackThreadId=threadId;
   $("feedback-new-form").hidden=true;$("feedback-empty").hidden=true;$("feedback-detail").hidden=false;
+  $("feedback-request-actions").hidden=S.feedbackAdminView;
+  $("feedback-edit-form").hidden=true;$("feedback-message-list").hidden=false;$("feedback-reply-form").hidden=false;
   $("feedback-thread-subject").textContent=thread.subject;
   const profile=S.feedbackProfiles[thread.user_id];
   $("feedback-thread-owner").textContent=S.feedbackAdminView
@@ -2768,6 +2772,75 @@ async function createFeedbackThread(event){
   await loadFeedbackThreads();
   await selectFeedbackThread(result.data);
   toast("Feedback sent.");
+}
+function startFeedbackEdit(){
+  if(S.feedbackAdminView||!S.user||!S.activeFeedbackThreadId)return;
+  const thread=S.feedbackThreads.find(item=>item.id===S.activeFeedbackThreadId);
+  const original=S.feedbackMessages.find(message=>message.sender_id===thread?.user_id);
+  if(!thread||!original){toast("The original feedback message could not be found.");return;}
+  $("feedback-edit-subject").value=thread.subject;
+  $("feedback-edit-message").value=original.body;
+  $("feedback-edit-status").textContent="";
+  $("feedback-request-actions").hidden=true;
+  $("feedback-message-list").hidden=true;
+  $("feedback-reply-form").hidden=true;
+  $("feedback-edit-form").hidden=false;
+  $("feedback-edit-subject").focus();
+}
+function cancelFeedbackEdit(){
+  $("feedback-edit-form").hidden=true;
+  $("feedback-request-actions").hidden=S.feedbackAdminView;
+  $("feedback-message-list").hidden=false;
+  $("feedback-reply-form").hidden=false;
+}
+async function saveFeedbackEdit(event){
+  event.preventDefault();
+  if(S.feedbackAdminView||!S.user||!S.activeFeedbackThreadId)return;
+  const subject=$("feedback-edit-subject").value.trim();
+  const message=$("feedback-edit-message").value.trim();
+  if(subject.length<3||subject.length>100){
+    $("feedback-edit-status").textContent="Use a subject between 3 and 100 characters.";
+    return;
+  }
+  if(!message||message.length>4000){
+    $("feedback-edit-status").textContent="Write a message between 1 and 4,000 characters.";
+    return;
+  }
+  const threadId=S.activeFeedbackThreadId;
+  const button=$("feedback-edit-save");button.disabled=true;
+  $("feedback-edit-status").textContent="Saving your changes…";
+  const result=await db.rpc("edit_own_feedback_request",{
+    p_thread_id:threadId,p_subject:subject,p_message:message
+  });
+  button.disabled=false;
+  if(result.error){
+    $("feedback-edit-status").textContent="Your feedback could not be updated: "+result.error.message;
+    return;
+  }
+  $("feedback-edit-form").hidden=true;
+  await loadFeedbackThreads();
+  await selectFeedbackThread(threadId);
+  toast("Your feedback was updated.");
+}
+async function deleteFeedbackRequest(){
+  if(S.feedbackAdminView||!S.user||!S.activeFeedbackThreadId)return;
+  const thread=S.feedbackThreads.find(item=>item.id===S.activeFeedbackThreadId);
+  if(!thread||thread.user_id!==S.user.id){toast("You can only delete your own feedback.");return;}
+  const confirmed=confirm("Delete this feedback request and its entire conversation, including Gather Admin replies? This cannot be undone.");
+  if(!confirmed)return;
+  const threadId=S.activeFeedbackThreadId;
+  const button=$("feedback-delete-request");button.disabled=true;
+  const result=await db.rpc("delete_own_feedback_request",{p_thread_id:threadId});
+  button.disabled=false;
+  if(result.error){toast("Your feedback could not be deleted: "+result.error.message);return;}
+  S.activeFeedbackThreadId=null;S.feedbackMessages=[];
+  $("feedback-detail").hidden=true;
+  $("feedback-request-actions").hidden=true;
+  $("feedback-edit-form").hidden=true;
+  $("feedback-empty").hidden=false;
+  $("feedback-empty").textContent="Your feedback request was deleted. You can start a new one any time.";
+  await loadFeedbackThreads();
+  toast("Your feedback request and its replies were deleted.");
 }
 async function sendFeedbackReply(event){
   event.preventDefault();
@@ -2860,6 +2933,10 @@ function wire(){
   $("feedback-new").addEventListener("click",showFeedbackNewForm);
   $("feedback-refresh").addEventListener("click",async()=>{const keep=S.activeFeedbackThreadId;await loadFeedbackThreads();if(keep&&S.feedbackThreads.some(thread=>thread.id===keep))await selectFeedbackThread(keep);});
   $("feedback-new-form").addEventListener("submit",createFeedbackThread);
+  $("feedback-edit-open").addEventListener("click",startFeedbackEdit);
+  $("feedback-delete-request").addEventListener("click",deleteFeedbackRequest);
+  $("feedback-edit-form").addEventListener("submit",saveFeedbackEdit);
+  $("feedback-edit-cancel").addEventListener("click",cancelFeedbackEdit);
   $("feedback-reply-form").addEventListener("submit",sendFeedbackReply);
   $("feedback-status-select").addEventListener("change",updateFeedbackStatus);
   document.querySelectorAll("[data-theme-mode]").forEach(b=>b.addEventListener("click",()=>setTheme(b.dataset.themeMode)));
