@@ -1341,29 +1341,16 @@ async function restoreMessage(messageId){
   toast("Message restored to your conversation.");
 }
 function openAboutBlank(){
-  const target=window.open("about:blank","_blank");
-  if(!target){
-    toast("Your browser blocked the new tab. Allow pop-ups for Gather and try again.");
-    return;
-  }
-  try{
-    const doc=target.document;
-    doc.title="Gather";
-    doc.documentElement.style.cssText="width:100%;height:100%;margin:0;background:#171923;";
-    const viewport=doc.createElement("meta");viewport.name="viewport";viewport.content="width=device-width,initial-scale=1,viewport-fit=cover";
-    const theme=doc.createElement("meta");theme.name="theme-color";theme.content="#171923";
-    const style=doc.createElement("style");style.textContent="html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#171923}iframe{display:block;width:100%;height:100%;border:0;background:#171923}";
-    doc.head.replaceChildren(viewport,theme,style);
-    const frame=doc.createElement("iframe");
-    frame.title="Gather";
-    frame.referrerPolicy="strict-origin-when-cross-origin";
-    frame.src=window.location.href;
-    doc.body.replaceChildren(frame);
-  }catch(error){
-    try{target.close();}catch(closeError){}
-    toast("Your browser could not open Gather in a blank tab. Use the regular Gather page instead.");
-    console.warn("Gather about:blank view could not be opened:",error);
-  }
+  const screen=$("privacy-screen");
+  if(!screen)return;
+  screen.hidden=false;
+  $("privacy-return").focus();
+}
+function closeAboutBlank(){
+  const screen=$("privacy-screen");
+  if(!screen)return;
+  screen.hidden=true;
+  $("open-about-blank").focus();
 }
 function openMessageSearch(){
   if(!S.active)return;
@@ -2093,7 +2080,7 @@ function wire(){
   document.querySelectorAll("[data-accent]").forEach(b=>b.addEventListener("click",()=>setAccent(b.dataset.accent)));
   document.querySelectorAll("[data-font-size]").forEach(b=>b.addEventListener("click",()=>setFontSize(b.dataset.fontSize)));
   document.querySelectorAll("[data-notification-mode]").forEach(b=>b.addEventListener("click",()=>setMessageNotificationMode(b.dataset.notificationMode)));
-  $("home-friends-open").addEventListener("click",openFriends);$("home-requests-open").addEventListener("click",openRequests);$("open-about-blank").addEventListener("click",openAboutBlank);
+  $("home-friends-open").addEventListener("click",openFriends);$("home-requests-open").addEventListener("click",openRequests);$("open-about-blank").addEventListener("click",openAboutBlank);$("privacy-return").addEventListener("click",closeAboutBlank);
   $("filter").addEventListener("input",renderChats);document.querySelectorAll("[data-folder]").forEach(b=>b.addEventListener("click",()=>selectFolder(b.dataset.folder)));$("profile-open").addEventListener("click",openProfile);$("profile-form").addEventListener("submit",saveProfile);
   $("profile-avatar-file").addEventListener("change",handleAvatarFile);
   $("avatar-remove").addEventListener("click",()=>{
