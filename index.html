@@ -7,7 +7,7 @@
 <meta name="description" content="Private direct and group conversations.">
 <title>Gather</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="app.css?v=20261102-71">
+<link rel="stylesheet" href="app.css?v=20261102-72">
 <script src="https://unpkg.com/@supabase/supabase-js@2.118.0"></script>
 <script>
 if (!window.supabase?.createClient) {
@@ -15,7 +15,7 @@ if (!window.supabase?.createClient) {
 }
 </script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script defer src="app.js?v=20261102-81" onerror="const s=document.getElementById('auth-status');if(s){s.textContent='Gather could not load its app script. Check your connection and reload the page.';s.classList.add('error');}"></script>
+<script defer src="app.js?v=20261102-82" onerror="const s=document.getElementById('auth-status');if(s){s.textContent='Gather could not load its app script. Check your connection and reload the page.';s.classList.add('error');}"></script>
 </head>
 <body>
 <section id="auth" class="auth-shell">
@@ -124,6 +124,18 @@ if (!window.supabase?.createClient) {
             <button id="home-announcements-all" class="announcement-all-button" type="button">View all</button>
           </div>
         </section>
+        <section id="friend-activity-panel" class="friend-activity-panel" aria-labelledby="friend-activity-title">
+          <div class="friend-activity-heading">
+            <div><p class="eyebrow">YOUR FRIENDS</p><h2 id="friend-activity-title">Friend activity</h2><p class="muted tiny">Quick updates shared by people you're friends with.</p></div>
+            <button id="friend-activity-refresh" class="secondary-action" type="button">Refresh</button>
+          </div>
+          <form id="friend-activity-form" class="friend-activity-form">
+            <label for="friend-activity-input">Share an update</label>
+            <textarea id="friend-activity-input" rows="2" maxlength="280" placeholder="What's happening? Share a quick update with your friends…"></textarea>
+            <div class="friend-activity-submit-row"><small>Only your Gather friends can see your updates.</small><button id="friend-activity-submit" class="primary" type="submit">Post update</button></div>
+          </form>
+          <div id="friend-activity-list" class="friend-activity-list" role="feed" aria-label="Friend activity updates"><p class="muted tiny friend-activity-empty">Your friends' updates will appear here.</p></div>
+        </section>
         <div class="workspace-search-controls">
           <label class="workspace-search">Search conversations<input id="filter" class="search" type="search" placeholder="Search by name or message"></label>
           <button id="global-message-search-open" class="secondary-action global-message-search-open" type="button">Search all messages</button>
@@ -169,7 +181,7 @@ if (!window.supabase?.createClient) {
         <header class="chat-head"><button id="back" class="back" aria-label="Back to home">←</button><button id="conversation-drawer-toggle" class="outline conversation-drawer-toggle" type="button" aria-label="Open conversations" aria-controls="in-chat-sidebar" aria-expanded="false">☰</button><span id="chat-avatar" class="avatar">?</span><div class="chat-title"><button id="chat-title" class="chat-title-profile" type="button" hidden></button><small id="chat-subtitle"></small><small id="chat-presence-status" class="presence-label" hidden></small><small id="chat-typing-indicator" class="chat-typing-indicator" aria-live="polite" hidden></small></div><button id="chat-actions-open" class="outline chat-actions-trigger" type="button" aria-label="Open chat options" aria-haspopup="dialog">Chat options <span aria-hidden="true">⌄</span></button></header>
         <div id="messages" class="messages"></div>
         <p id="chat-notice" class="chat-notice" hidden></p>
-        
+        <div id="message-undo-bar" class="message-undo-bar" hidden role="status" aria-live="polite"><span>Message sent</span><small>Undo available for 10 seconds</small><button id="message-undo" type="button">Undo</button></div>
         <form id="send-form" class="composer"><div id="reply-compose" class="reply-compose" hidden><div><small id="reply-compose-label">Replying to</small><span id="reply-compose-text"></span></div><button id="cancel-reply" type="button" aria-label="Cancel reply">×</button></div><div id="message-image-preview" class="message-image-preview" hidden></div><textarea id="message" rows="1" maxlength="4000" placeholder="Write a message…" aria-label="Write a message"></textarea><small class="message-format-hint">Use **bold** and #italic# formatting</small><div class="composer-actions"><input id="message-image-file" class="message-image-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif" aria-label="Choose an image to send"><div id="composer-more-wrap" class="composer-more-wrap"><button id="composer-more-trigger" class="composer-more-trigger" type="button" aria-label="More message options" aria-haspopup="menu" aria-expanded="false">⋯</button><div id="composer-more-menu" class="composer-more-menu" role="menu" hidden><label class="composer-menu-item" for="message-image-file">＋ Add photo</label><button id="message-create-poll" class="composer-menu-item" type="button" role="menuitem">Create a poll</button></div></div><small id="draft-save-status" class="draft-save-status" role="status" aria-live="polite"></small><small>Enter to send · Shift + Enter for a new line</small><button id="send" type="submit" aria-label="Send">↑</button></div></form>
       </section>
     </main>
