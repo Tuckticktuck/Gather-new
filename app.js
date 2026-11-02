@@ -30,11 +30,15 @@ function normalizeChatSettings(raw){
   });
   return {pinned,muted,drafts,appearance};
 }
-const S = { user:null, profile:null, profiles:{}, chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map() };
+const S = { user:null, profile:null, profiles:{}, chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[]} };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function status(id, text, kind) { const n=$(id); n.textContent=text||""; n.className="status"+(kind?" "+kind:""); }
 function isFeedbackAdmin(user){return !!user&&!user.is_anonymous&&String(user.email||"").trim().toLowerCase()==="landoncordeiro237@gmail.com";}
+function syncAdminModeButton(){
+  const button=$("admin-mode-open");
+  if(button)button.hidden=!isFeedbackAdmin(S.user);
+}
 function toast(text) { $("toast").textContent=text; $("toast").classList.add("show"); clearTimeout(toast.t); toast.t=setTimeout(()=>$("toast").classList.remove("show"),3000); }
 function setChatLoadStatus(message,retry=false){
   const box=$("chat-load-status");if(!box)return;
@@ -482,7 +486,7 @@ function showAuth() {
   clearTimeout(S.chatSettingsSaveTimer);S.chatSettingsSaveTimer=null;S.chatSettings=normalizeChatSettings(DEFAULT_CHAT_SETTINGS);
   S.selectingConversations=false;S.selectedConversationIds.clear();renderConversationSelectionControls();
   S.unreadTargetMessageId=null;S.unreadTargetLoaded=false;S.suppressReadDividerUpdates=false;
-  S.user=null;S.profile=null;S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.savedMessageIds=new Set();S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.openMessageMenuId=null;S.notifications=[];S.feedbackAdminView=false;$("feedback-admin-open").hidden=true;$("feedback-admin-settings-section").hidden=true;S.profiles={};S.chats=[];S.messages=[];S.messageReads={};S.replyTo=null;S.hasOlderMessages=false;S.requests=[];S.friendRequests=[];S.friends=[];S.blockedUsers=[];S.deletedMessages=[];S.deletedMessageIds=new Set();S.lastReadAt={};S.folder="friends";S.directStatus=null;S.active=null;S.messages=[];S.loadError=null;S.avatarChanged=false;S.pendingAvatarData=null;loadUIPreferences(DEFAULT_PREFERENCES);
+  S.user=null;S.profile=null;syncAdminModeButton();S.admin={users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[]};S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.savedMessageIds=new Set();S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.openMessageMenuId=null;S.notifications=[];S.feedbackAdminView=false;$("feedback-admin-open").hidden=true;$("feedback-admin-settings-section").hidden=true;S.profiles={};S.chats=[];S.messages=[];S.messageReads={};S.replyTo=null;S.hasOlderMessages=false;S.requests=[];S.friendRequests=[];S.friends=[];S.blockedUsers=[];S.deletedMessages=[];S.deletedMessageIds=new Set();S.lastReadAt={};S.folder="friends";S.directStatus=null;S.active=null;S.messages=[];S.loadError=null;S.avatarChanged=false;S.pendingAvatarData=null;loadUIPreferences(DEFAULT_PREFERENCES);
   setChatLoadStatus("");$("auth").hidden=false;$("app").hidden=true;
 }
 function showApp(){ $("auth").hidden=true;$("app").hidden=false; }
@@ -544,7 +548,7 @@ async function ensureProfile(user){
 async function signedIn(user,retry=false){
   if(!user||S.loading===user.id)return;
   if(!retry&&S.user&&S.user.id===user.id&&S.profile)return;
-  S.loading=user.id;S.user=user;S.loadError=null;$("feedback-admin-open").hidden=!isFeedbackAdmin(user);$("feedback-admin-settings-section").hidden=!isFeedbackAdmin(user);showApp();setChatLoadStatus("Loading your chats…");
+  S.loading=user.id;S.user=user;S.loadError=null;syncAdminModeButton();$("feedback-admin-open").hidden=!isFeedbackAdmin(user);$("feedback-admin-settings-section").hidden=!isFeedbackAdmin(user);showApp();setChatLoadStatus("Loading your chats…");
   try{
     S.profile=await ensureProfile(user);
     if(S.user?.id!==user.id)return;
@@ -2872,7 +2876,274 @@ async function editOwnMessage(message){
   if(result.error||!result.data){toast("Message could not be edited: "+(result.error?.message||"Permission denied."));return;}
   Object.assign(message,result.data);renderMessages(true);toast("Message updated.");
 }
-async function openReportsAdmin(){
+async 
+async function adminApi(action,data={}){
+  if(!isFeedbackAdmin(S.user))throw new Error("Admin Mode is not available for this account.");
+  const {data:sessionData,error:sessionError}=await db.auth.getSession();
+  const token=sessionData?.session?.access_token;
+  if(sessionError||!token)throw new Error("Your session expired. Please sign in again.");
+  const result=await fetch(URL+"/functions/v1/gather-admin",{
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      "apikey":KEY,
+      "Authorization":"Bearer "+token
+    },
+    body:JSON.stringify({action,...data})
+  });
+  let payload={};
+  try{payload=await result.json();}catch(error){}
+  if(!result.ok)throw new Error(payload.error||"Admin Mode could not complete that action.");
+  return payload;
+}
+function setAdminModeSection(section){
+  if(!["overview","accounts","reports","feedback","announcements","activity"].includes(section))return;
+  S.admin.section=section;
+  document.querySelectorAll("[data-admin-section]").forEach(button=>{
+    button.classList.toggle("active",button.dataset.adminSection===section);
+    if(button.getAttribute("role")==="tab")button.setAttribute("aria-selected",String(button.dataset.adminSection===section));
+  });
+  document.querySelectorAll("[data-admin-panel]").forEach(panel=>{
+    panel.hidden=panel.dataset.adminPanel!==section;
+  });
+  if(section==="overview")loadAdminOverview();
+  if(section==="accounts"&&!S.admin.users.length)loadAdminAccounts(true);
+  if(section==="activity")loadAdminActivity();
+}
+async function openAdminMode(){
+  if(!isFeedbackAdmin(S.user)){toast("Admin Mode is only available to the designated Gather administrator.");return;}
+  $("admin-mode-modal").hidden=false;
+  setAdminModeSection("overview");
+}
+function adminActionLabel(action){
+  return ({
+    profile_updated:"Updated a member profile",
+    user_banned:"Banned a member account",
+    user_unbanned:"Unbanned a member account",
+    user_deleted:"Deleted a member account",
+    message_reported_user:"Contacted a reported member"
+  })[action]||String(action||"Admin action").replaceAll("_"," ");
+}
+function renderAdminActivity(listId,items){
+  const list=$(listId);if(!list)return;
+  list.replaceChildren();
+  if(!items?.length){list.append(el("p","muted tiny","No admin actions have been recorded yet."));return;}
+  items.forEach(item=>{
+    const row=el("article","admin-activity-item");
+    row.append(
+      el("strong","",adminActionLabel(item.action)),
+      el("small","",dateLabel(item.created_at)+(item.target_user_id?" · Member ID "+item.target_user_id.slice(0,8):"")),
+      el("small","",Object.entries(item.details||{}).map(([key,value])=>key.replaceAll("_"," ")+": "+String(value)).join(" · "))
+    );
+    list.append(row);
+  });
+}
+async function loadAdminOverview(){
+  if(!isFeedbackAdmin(S.user))return;
+  $("admin-overview-activity").replaceChildren(el("p","muted tiny","Loading admin activity…"));
+  try{
+    const result=await adminApi("summary");
+    S.admin.summary=result.summary||{};
+    $("admin-summary-accounts").textContent=String(S.admin.summary.accounts??0);
+    $("admin-summary-reports").textContent=String(S.admin.summary.reports??0);
+    $("admin-summary-feedback").textContent=String(S.admin.summary.feedback??0);
+    $("admin-summary-announcements").textContent=String(S.admin.summary.announcements??0);
+    S.admin.activity=result.activity||[];
+    renderAdminActivity("admin-overview-activity",S.admin.activity);
+  }catch(error){
+    $("admin-overview-activity").replaceChildren(el("p","status error",error.message));
+  }
+}
+async function loadAdminAccounts(reset=false){
+  if(!isFeedbackAdmin(S.user)||S.admin.loading)return;
+  S.admin.loading=true;
+  const button=$("admin-accounts-more");
+  if(reset){S.admin.users=[];S.admin.page=0;S.admin.hasMore=false;S.admin.selectedUserId=null;}
+  button.disabled=true;
+  button.textContent="Loading accounts…";
+  $("admin-account-list").replaceChildren(el("p","muted tiny","Loading member accounts…"));
+  try{
+    const page=(reset?0:S.admin.page)+1;
+    const result=await adminApi("list_users",{page,per_page:50});
+    if(reset)S.admin.users=[];
+    S.admin.users.push(...(result.users||[]));
+    S.admin.page=result.page||page;
+    S.admin.hasMore=!!result.has_more;
+    renderAdminAccounts();
+    renderAdminAccountDetail();
+  }catch(error){
+    $("admin-account-list").replaceChildren(el("p","status error",error.message));
+  }finally{
+    S.admin.loading=false;
+    button.disabled=false;
+    button.hidden=!S.admin.hasMore;
+    button.textContent="Load more accounts";
+  }
+}
+function renderAdminAccounts(){
+  const list=$("admin-account-list");if(!list)return;
+  list.replaceChildren();
+  const term=($("admin-account-search")?.value||"").trim().toLowerCase();
+  const users=S.admin.users.filter(user=>{
+    const search=[user.display_name,user.username,user.email,user.id].join(" ").toLowerCase();
+    return !term||search.includes(term);
+  });
+  if(!users.length){
+    list.append(el("p","muted tiny",term?"No loaded accounts match that search.":"No member accounts were returned."));
+    return;
+  }
+  users.forEach(user=>{
+    const button=el("button","admin-account-item"+(S.admin.selectedUserId===user.id?" active":""));
+    button.type="button";
+    const name=user.display_name||user.username||"Unnamed account";
+    const banned=!!user.active_ban_reason||(user.banned_until&&new Date(user.banned_until)>new Date());
+    button.append(
+      el("strong","",name),
+      el("small","",user.username?"@"+user.username:"No username set"),
+      el("small","",user.email||"No email address"),
+      el("small","admin-account-item-status",banned?"Banned":"Active")
+    );
+    button.addEventListener("click",()=>{S.admin.selectedUserId=user.id;renderAdminAccounts();renderAdminAccountDetail();});
+    list.append(button);
+  });
+}
+function renderAdminAccountDetail(){
+  const detail=$("admin-account-detail");if(!detail)return;
+  detail.replaceChildren();
+  const user=S.admin.users.find(item=>item.id===S.admin.selectedUserId);
+  if(!user){
+    const empty=el("div","admin-empty-state");
+    empty.append(el("strong","","Select a member"),el("p","muted tiny","Account details and moderation controls will appear here."));
+    detail.append(empty);return;
+  }
+  const banned=!!user.active_ban_reason||(user.banned_until&&new Date(user.banned_until)>new Date());
+  const header=el("div","admin-account-detail-header");
+  header.append(el("h4","",user.display_name||"Unnamed account"),el("p","admin-account-email",user.email||"No email address on file"));
+  const meta=el("div","admin-account-meta");
+  meta.append(
+    el("span","", "Account ID: "+user.id),
+    el("span","", "Created: "+(dateLabel(user.created_at)||"Unknown")),
+    el("span","", "Last sign-in: "+(dateLabel(user.last_sign_in_at)||"Never recorded")),
+    el("span","", "Status: "+(banned?"Banned":"Active")),
+    ...(user.active_ban_reason?[el("span","","Ban reason: "+user.active_ban_reason)]:[])
+  );
+  const form=el("form","admin-account-form");form.id="admin-account-form";
+  const fields=[
+    ["Username","username",24,user.username||""],
+    ["Display name","display_name",50,user.display_name||""],
+    ["Bio","bio",160,user.bio||""],
+    ["Pronouns","pronouns",35,user.pronouns||""]
+  ];
+  fields.forEach(([label,key,maxLength,value])=>{
+    const input=key==="bio"?el("textarea",""):el("input","");
+    input.id="admin-edit-"+key;
+    input.maxLength=maxLength;
+    input.value=value;
+    if(key!=="bio")input.type="text";
+    const wrapper=el("label");
+    wrapper.append(el("span","",label),input);
+    form.append(wrapper);
+  });
+  const banner=el("select","");banner.id="admin-edit-banner_style";
+  ["violet","blue","mint","rose","amber","teal"].forEach(value=>{
+    const option=el("option","",value[0].toUpperCase()+value.slice(1));option.value=value;banner.append(option);
+  });
+  banner.value=user.banner_style||"violet";
+  const bannerLabel=el("label");bannerLabel.append(el("span","","Profile banner"),banner);form.append(bannerLabel);
+  const actions=el("div","admin-account-form-actions");
+  const save=el("button","primary","Save profile");save.type="submit";
+  const ban=el("button","outline",banned?"":"Ban account");ban.id="admin-account-ban";ban.type="button";ban.hidden=banned;
+  const unban=el("button","outline","Unban account");unban.id="admin-account-unban";unban.type="button";unban.hidden=!banned;
+  const remove=el("button","admin-danger-button","Delete account");remove.id="admin-account-delete";remove.type="button";
+  actions.append(save,ban,unban,remove);form.append(actions);
+  const saveStatus=el("p","tiny muted");saveStatus.id="admin-account-save-status";
+  const note=el("p","tiny muted","Emails are read from Auth. Passwords and password hashes are never available in this screen.");
+  detail.append(header,meta,form,saveStatus,note);
+  form.addEventListener("submit",saveAdminAccountProfile);
+  ban.addEventListener("click",()=>banAdminAccount(user.id));
+  unban.addEventListener("click",()=>unbanAdminAccount(user.id));
+  remove.addEventListener("click",()=>deleteAdminAccount(user.id));
+}
+async function saveAdminAccountProfile(event){
+  event.preventDefault();
+  const user=S.admin.users.find(item=>item.id===S.admin.selectedUserId);if(!user)return;
+  const statusNode=$("admin-account-save-status"),submit=$("admin-account-form")?.querySelector('button[type="submit"]');
+  if(submit)submit.disabled=true;
+  if(statusNode)statusNode.textContent="Saving profile…";
+  const profile={
+    username:$("admin-edit-username").value,
+    display_name:$("admin-edit-display_name").value,
+    bio:$("admin-edit-bio").value,
+    pronouns:$("admin-edit-pronouns").value,
+    banner_style:$("admin-edit-banner_style").value
+  };
+  try{
+    const result=await adminApi("update_profile",{user_id:user.id,profile});
+    Object.assign(user,result.profile||profile);
+    if(S.profiles[user.id])Object.assign(S.profiles[user.id],result.profile||profile);
+    renderAdminAccounts();renderAdminAccountDetail();toast("Member profile updated.");
+  }catch(error){
+    if(statusNode)statusNode.textContent=error.message;
+  }finally{if(submit)submit.disabled=false;}
+}
+async function banAdminAccount(userId){
+  const user=S.admin.users.find(item=>item.id===userId);if(!user)return;
+  const reason=prompt("Why is this account being banned? This reason is saved in the moderation record.");
+  if(!reason?.trim())return;
+  if(!confirm("Ban "+(user.display_name||user.username||"this member")+"? They will be blocked from signing in."))return;
+  try{
+    await adminApi("ban_user",{user_id:userId,reason:reason.trim()});
+    user.active_ban_reason=reason.trim();user.banned_until="9999-12-31T00:00:00.000Z";
+    renderAdminAccounts();renderAdminAccountDetail();toast("Account banned.");
+  }catch(error){toast(error.message);}
+}
+async function unbanAdminAccount(userId){
+  const user=S.admin.users.find(item=>item.id===userId);if(!user)return;
+  if(!confirm("Restore sign-in access for "+(user.display_name||user.username||"this member")+"?"))return;
+  try{
+    await adminApi("unban_user",{user_id:userId});
+    user.active_ban_reason="";user.banned_until=null;
+    renderAdminAccounts();renderAdminAccountDetail();toast("Account unbanned.");
+  }catch(error){toast(error.message);}
+}
+async function deleteAdminAccount(userId){
+  const user=S.admin.users.find(item=>item.id===userId);if(!user)return;
+  const confirmText=prompt("Permanently delete "+(user.display_name||user.username||"this account")+"? This cannot be undone. Type DELETE to continue.");
+  if(confirmText!=="DELETE")return;
+  if(!confirm("Final confirmation: permanently delete this member account and its linked Auth profile?"))return;
+  try{
+    await adminApi("delete_user",{user_id:userId});
+    S.admin.users=S.admin.users.filter(item=>item.id!==userId);
+    S.admin.selectedUserId=null;
+    renderAdminAccounts();renderAdminAccountDetail();await loadAdminOverview();
+    toast("Member account deleted.");
+  }catch(error){toast(error.message);}
+}
+async function loadAdminActivity(){
+  if(!isFeedbackAdmin(S.user))return;
+  $("admin-activity-list").replaceChildren(el("p","muted tiny","Loading admin activity…"));
+  try{
+    const result=await adminApi("list_audit");
+    S.admin.activity=result.activity||[];
+    renderAdminActivity("admin-activity-list",S.admin.activity);
+  }catch(error){$("admin-activity-list").replaceChildren(el("p","status error",error.message));}
+}
+async function messageReportedMember(report){
+  if(!isFeedbackAdmin(S.user)||!report?.id)return;
+  const target=S.profiles[report.target_user_id];
+  const message=prompt("Write a private Gather Admin message to "+(target?.display_name||"the reported member")+".");
+  if(!message?.trim())return;
+  try{
+    const result=await db.rpc("admin_message_reported_user",{p_report_id:report.id,p_body:message.trim()});
+    if(result.error)throw new Error(result.error.message);
+    $("reports-admin-modal").hidden=true;
+    $("admin-mode-modal").hidden=true;
+    await loadChats();
+    await openChat(result.data);
+    toast("Your private message was sent.");
+  }catch(error){toast("The member could not be contacted: "+error.message);}
+}
+function openReportsAdmin(){
   if(!isFeedbackAdmin(S.user)){toast("Only the administrator can review reports.");return;}
   $("reports-admin-modal").hidden=false;
   const list=$("reports-admin-list");list.replaceChildren(el("p","muted tiny","Loading reports…"));
@@ -2891,7 +3162,10 @@ async function openReportsAdmin(){
     const meta=el("small","muted", "From: "+(reporter?.display_name||"Member")+" (@"+(reporter?.username||"unknown")+") · About: "+(target?.display_name||"Member")+" (@"+(target?.username||"unknown")+")");
     const select=el("select","admin-report-status");["new","reviewing","resolved"].forEach(value=>{const option=el("option","",value==="new"?"New":value==="reviewing"?"Reviewing":"Resolved");option.value=value;select.append(option);});select.value=report.status;
     select.addEventListener("change",async()=>{select.disabled=true;const update=await db.from("reports").update({status:select.value}).eq("id",report.id);select.disabled=false;if(update.error)toast("Report status could not be updated.");else toast("Report status updated.");});
-    card.append(heading,text,meta,select);list.append(card);
+    const contact=el("button","outline admin-report-message","Message reported member");
+    contact.type="button";
+    contact.addEventListener("click",()=>messageReportedMember(report));
+    card.append(heading,text,meta,select,contact);list.append(card);
   }
 }
 async function signOutOtherSessions(){
@@ -3357,7 +3631,7 @@ async function updateFeedbackStatus(){
   toast("Feedback status updated.");
 }
 
-function closeModals(){ $("announcement-compose-modal").hidden=true;$("announcement-view-modal").hidden=true;$("announcements-page-modal").hidden=true;$("notifications-modal").hidden=true;$("member-profile-modal").hidden=true;$("report-modal").hidden=true;$("reports-admin-modal").hidden=true;$("people-modal").hidden=true;$("profile-modal").hidden=true;$("requests-modal").hidden=true;$("friends-modal").hidden=true;$("settings-modal").hidden=true;$("group-photo-modal").hidden=true;$("group-settings-modal").hidden=true;$("message-search-modal").hidden=true;$("poll-create-modal").hidden=true;$("forward-message-modal").hidden=true;$("saved-messages-modal").hidden=true;$("chat-actions-modal").hidden=true;$("feedback-modal").hidden=true; }
+function closeModals(){ $("admin-mode-modal").hidden=true;$("announcement-compose-modal").hidden=true;$("announcement-view-modal").hidden=true;$("announcements-page-modal").hidden=true;$("notifications-modal").hidden=true;$("member-profile-modal").hidden=true;$("report-modal").hidden=true;$("reports-admin-modal").hidden=true;$("people-modal").hidden=true;$("profile-modal").hidden=true;$("requests-modal").hidden=true;$("friends-modal").hidden=true;$("settings-modal").hidden=true;$("group-photo-modal").hidden=true;$("group-settings-modal").hidden=true;$("message-search-modal").hidden=true;$("poll-create-modal").hidden=true;$("forward-message-modal").hidden=true;$("saved-messages-modal").hidden=true;$("chat-actions-modal").hidden=true;$("feedback-modal").hidden=true; }
 function goHome(){
   closeConversationDrawer();
   saveActiveChatDraft();clearUnreadDividerState();
@@ -3417,6 +3691,21 @@ function wire(){
   $("chat-title").addEventListener("click",()=>{const chat=S.chats.find(item=>item.id===S.active);if(chat?.kind==="direct")openPublicProfile(peerForChat(chat));});
   $("settings-open").addEventListener("click",openSettings);
   $("notifications-open").addEventListener("click",openNotifications);
+  $("admin-mode-open").addEventListener("click",openAdminMode);
+  document.querySelectorAll("[data-admin-section]").forEach(button=>button.addEventListener("click",()=>setAdminModeSection(button.dataset.adminSection)));
+  $("admin-quick-accounts").addEventListener("click",()=>setAdminModeSection("accounts"));
+  $("admin-quick-reports").addEventListener("click",()=>setAdminModeSection("reports"));
+  $("admin-quick-feedback").addEventListener("click",()=>setAdminModeSection("feedback"));
+  $("admin-quick-announcements").addEventListener("click",()=>setAdminModeSection("announcements"));
+  $("admin-reports-open").addEventListener("click",openReportsAdmin);
+  $("admin-feedback-open").addEventListener("click",()=>openFeedback(true));
+  $("admin-announcements-open").addEventListener("click",openAnnouncementsPage);
+  $("admin-accounts-refresh").addEventListener("click",()=>loadAdminAccounts(true));
+  $("admin-account-search").addEventListener("input",renderAdminAccounts);
+  $("admin-accounts-more").addEventListener("click",()=>loadAdminAccounts(false));
+  $("admin-activity-refresh").addEventListener("click",loadAdminActivity);
+  $("admin-overview-activity-refresh").addEventListener("click",loadAdminOverview);
+
   $("announcement-send-open").addEventListener("click",()=>{$("settings-modal").hidden=true;openAnnouncementComposer();});
   $("announcement-compose-form").addEventListener("submit",publishAnnouncement);
   $("announcement-edit-open").addEventListener("click",()=>openAnnouncementEditor(S.activeAnnouncementId));
@@ -3487,7 +3776,7 @@ document.querySelectorAll("[data-folder]").forEach(b=>b.addEventListener("click"
   $("delete-selected").addEventListener("click",deleteSelectedMessages);
   $("signout").addEventListener("click",async()=>{const r=await db.auth.signOut();if(r.error)toast(r.error.message);else closeModals();});
   document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",closeModals));
-  ["announcement-compose-modal","announcement-view-modal","announcements-page-modal","notifications-modal","member-profile-modal","report-modal","reports-admin-modal","people-modal","profile-modal","requests-modal","friends-modal","settings-modal","group-photo-modal","group-settings-modal","message-search-modal","poll-create-modal","forward-message-modal","saved-messages-modal","chat-actions-modal","feedback-modal"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target===$(id))closeModals();}));
+  ["admin-mode-modal","announcement-compose-modal","announcement-view-modal","announcements-page-modal","notifications-modal","member-profile-modal","report-modal","reports-admin-modal","people-modal","profile-modal","requests-modal","friends-modal","settings-modal","group-photo-modal","group-settings-modal","message-search-modal","poll-create-modal","forward-message-modal","saved-messages-modal","chat-actions-modal","feedback-modal"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target===$(id))closeModals();}));
   document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeComposerMoreMenu();closeModals();}});
 }
 async function boot(){
