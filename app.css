@@ -578,6 +578,11 @@ input::placeholder,textarea::placeholder{color:var(--accent-muted)}
 
 
 /* Private feedback threads and administrator inbox. */
+.feedback-admin-identity{margin:0;padding:9px 11px;border:1px solid var(--accent-outline);border-radius:10px;color:var(--muted);background:var(--accent-surface);font-size:calc(10px * var(--font-scale,1));line-height:1.45}
+.feedback-admin-identity strong{color:var(--accent-text)}
+.feedback-admin-mode .feedback-sidebar{border-color:var(--accent-outline-soft)}
+.feedback-admin-mode .feedback-sidebar-actions{justify-content:flex-end}
+.feedback-admin-mode .feedback-sidebar-actions #feedback-refresh{min-width:40px}
 .feedback-settings-actions{display:flex;gap:8px;flex-wrap:wrap}
 .feedback-modal{width:min(100%,900px);height:min(84vh,760px);max-height:calc(100dvh - 24px);display:flex;flex-direction:column}
 .feedback-layout{display:grid;grid-template-columns:minmax(190px,260px) minmax(0,1fr);gap:14px;flex:1;min-height:0;margin-top:12px}
