@@ -1028,9 +1028,8 @@ html[data-theme="light"] .composer-more-menu{background:#fff;border-color:var(--
 html[data-theme="light"] .composer-actions .composer-menu-item{color:var(--text)}
 html[data-theme="light"] .composer-actions .composer-menu-item:hover{color:var(--accent-text);background:var(--accent-surface)}
 
-/* Message tools: polls, voice notes, pins, saved items and forwarding. */
+/* Message tools: polls, pins, saved items and forwarding. */
 .message-forwarded-label{color:var(--muted);font-size:calc(8px * var(--font-scale,1));font-weight:700}
-.voice-message-player{display:block;width:min(290px,100%);max-width:100%;height:38px;margin:8px 0 3px}
 .pinned-message-banner{display:flex;align-items:center;gap:10px;width:100%;flex:none;padding:9px 12px;border:1px solid var(--accent-outline-soft);border-radius:11px;color:var(--text);background:var(--accent-panel);text-align:left;cursor:pointer}
 .pinned-message-banner:hover{border-color:var(--accent-outline);background:var(--accent-surface)}
 .pinned-message-mark{display:grid;place-items:center;width:27px;height:27px;flex:none;border-radius:8px;color:var(--accent-text);background:var(--accent-badge);font-size:17px}
@@ -1060,12 +1059,6 @@ html[data-theme="light"] .composer-actions .composer-menu-item:hover{color:var(-
 .poll-option-remove{width:28px;height:30px;border:1px solid var(--line);border-radius:7px;color:var(--muted);background:var(--accent-panel);font-size:17px}
 .poll-add-option{width:auto;justify-self:start}
 .poll-form-actions{display:flex;justify-content:flex-end;gap:8px}
-.voice-record-modal{width:min(100%,460px)}
-.voice-record-meter{display:flex;justify-content:space-between;align-items:center;margin:13px 0;color:var(--muted);font-size:calc(10px * var(--font-scale,1))}
-.voice-record-meter span:first-child{color:var(--accent-text);font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
-.voice-record-preview{width:100%;margin:10px 0}
-.voice-record-preview[hidden]{display:none}
-.voice-record-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;margin-top:15px}
 .forward-message-modal,.saved-messages-modal{width:min(100%,560px)}
 .forward-message-list,.saved-message-list{display:grid;gap:8px;max-height:65vh;overflow:auto}
 .forward-message-choice{display:flex;flex-direction:column;gap:4px;width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;color:var(--text);background:var(--accent-panel);text-align:left;cursor:pointer}
@@ -1080,4 +1073,4 @@ html[data-theme="light"] .composer-actions .composer-menu-item:hover{color:var(-
 .saved-message-remove{padding:6px 8px;border:1px solid var(--line);border-radius:7px;color:var(--muted);background:transparent;font-size:calc(9px * var(--font-scale,1))}
 html[data-theme="light"] .message-poll-card,html[data-theme="light"] .pinned-message-banner,html[data-theme="light"] .saved-message-card{background:#fff}
 html[data-theme="light"] .message-poll-option{background:#f7f8fc}
-@media(max-width:520px){.message-poll-card{min-width:min(240px,100%)}.voice-record-actions>*{flex:1}.saved-message-card{align-items:flex-start}}
+@media(max-width:520px){.message-poll-card{min-width:min(240px,100%)}.saved-message-card{align-items:flex-start}}
