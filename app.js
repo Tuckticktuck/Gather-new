@@ -39,6 +39,7 @@ function applyUIPreferences(){
   const root=document.documentElement;
   const isLight=S.preferences.theme==="light";
   root.dataset.theme=isLight?"light":"dark";
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content",isLight?"#f3f5fa":"#171923");
   root.style.setProperty("--accent",accent.accent);
   root.style.setProperty("--accent-strong",accent.strong);
   root.style.setProperty("--accent-ink",accent.ink);
