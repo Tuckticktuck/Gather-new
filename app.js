@@ -501,6 +501,40 @@ function showMessageNotification(message,chat){
 
 
 
+function renderAnnouncementText(target,value){
+  if(!target)return;
+  target.replaceChildren();
+  const source=String(value??"");
+  const boldPattern=/\\*\\*([\\s\\S]+?)\\*\\*/g;
+  let cursor=0,match;
+  while((match=boldPattern.exec(source))){
+    if(match.index>cursor)target.append(document.createTextNode(source.slice(cursor,match.index)));
+    const strong=document.createElement("strong");
+    strong.textContent=match[1];
+    target.append(strong);
+    cursor=boldPattern.lastIndex;
+  }
+  if(cursor<source.length)target.append(document.createTextNode(source.slice(cursor)));
+}
+function toggleAnnouncementBold(){
+  const field=$("announcement-body");
+  if(!field)return;
+  const value=field.value;
+  const start=field.selectionStart??value.length;
+  const end=field.selectionEnd??start;
+  const selected=value.slice(start,end);
+  if(start===end){
+    field.setRangeText("****",start,end,"end");
+    field.setSelectionRange(start+2,start+2);
+  }else if(start>=2&&value.slice(start-2,start)==="**"&&value.slice(end,end+2)==="**"){
+    field.setRangeText(selected,start-2,end+2,"select");
+    field.setSelectionRange(start-2,start-2+selected.length);
+  }else{
+    field.setRangeText("**"+selected+"**",start,end,"select");
+    field.setSelectionRange(start+2,start+2+selected.length);
+  }
+  field.focus();
+}
 function announcementDateLabel(item){
   return "Gather Admin · "+dateLabel(item.created_at)+(item.edited_at?" · Edited":"");
 }
@@ -511,7 +545,7 @@ function renderHomeAnnouncement(){
   card.hidden=!latest;
   if(!latest)return;
   $("home-announcement-title").textContent=latest.title;
-  $("home-announcement-preview").textContent=latest.body;
+  renderAnnouncementText($("home-announcement-preview"),latest.body);
   $("home-announcement-date").textContent=announcementDateLabel(latest);
 }
 function renderAnnouncementsPage(){
@@ -527,9 +561,11 @@ function renderAnnouncementsPage(){
     card.type="button";
     const mark=el("span","announcement-history-mark","◎");
     const copy=el("span","announcement-history-copy");
+    const bodyPreview=el("small","");
+    renderAnnouncementText(bodyPreview,item.body);
     copy.append(
       el("strong","",item.title),
-      el("small","",item.body),
+      bodyPreview,
       el("time","",announcementDateLabel(item))
     );
     const arrow=el("span","announcement-history-arrow","›");
@@ -643,7 +679,7 @@ async function openAnnouncement(id){
   if(result.error||!result.data){$("announcement-view-title").textContent="Announcement unavailable";$("announcement-view-body").textContent="This announcement could not be loaded.";return;}
   S.announcementInView=result.data;
   $("announcement-view-title").textContent=result.data.title;
-  $("announcement-view-body").textContent=result.data.body;
+  renderAnnouncementText($("announcement-view-body"),result.data.body);
   $("announcement-view-date").textContent="Published "+dateLabel(result.data.created_at)+(result.data.edited_at?" · Edited "+dateLabel(result.data.edited_at):"");
 }
 
@@ -2073,6 +2109,13 @@ function wire(){
   $("notifications-open").addEventListener("click",openNotifications);
   $("announcement-send-open").addEventListener("click",()=>{$("settings-modal").hidden=true;openAnnouncementComposer();});
   $("announcement-compose-form").addEventListener("submit",publishAnnouncement);
+  $("announcement-bold").addEventListener("click",toggleAnnouncementBold);
+  $("announcement-body").addEventListener("keydown",event=>{
+    if((event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==="b"){
+      event.preventDefault();
+      toggleAnnouncementBold();
+    }
+  });
   $("announcement-edit-open").addEventListener("click",()=>openAnnouncementEditor(S.activeAnnouncementId));
   $("home-announcement-open").addEventListener("click",()=>{const latest=S.announcements[0];if(latest)openAnnouncement(latest.id);});
   $("home-announcements-all").addEventListener("click",openAnnouncementsPage);
