@@ -1037,7 +1037,9 @@ async function unblockUser(userId){
   toast("Member unblocked.");
 }
 function renderActive(){
-  const c=S.chats.find(x=>x.id===S.active);$("empty").hidden=!!c;$("chat").hidden=!c;
+  const c=S.chats.find(x=>x.id===S.active);
+  $("layout").classList.toggle("direct-chat",c?.kind==="direct");
+  $("empty").hidden=!!c;$("chat").hidden=!c;
   const peer=c?.members.find(m=>m.user_id!==S.user.id),peerProfile=peer&&S.profiles[peer.user_id];
   const avatarImage=c?.kind==="group"?c.avatar_data:peerProfile?.avatar_data;
   paintAvatar($("chat-avatar"),chatTitle(c||{kind:"direct",members:[]}),avatarImage);
