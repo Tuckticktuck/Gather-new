@@ -985,3 +985,32 @@ html[data-theme="light"] .message-reaction.is-mine{background:var(--accent-surfa
 }
 html[data-theme="light"] .notification-shortcut-button{background:#f7f8fc;color:var(--accent-text)}
 html[data-theme="light"] .notification-section-tabs{background:#f6f7fb}
+
+/* Compact message controls and the single chat-level reaction flow. */
+.meta{align-items:center}
+.message-menu-wrap{position:relative;display:inline-flex;align-items:center;margin-left:auto;flex:none}
+.message-action-trigger{display:inline-grid;place-items:center;width:24px;height:21px;padding:0;border:0;border-radius:6px;color:var(--muted);background:transparent;font-size:19px;line-height:1;cursor:pointer}
+.message-action-trigger:hover,.message-action-trigger[aria-expanded="true"]{color:var(--accent-text);background:var(--accent-hover)}
+.message-action-trigger:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.message-action-menu{position:absolute;z-index:8;top:calc(100% + 5px);right:0;display:grid;min-width:116px;gap:2px;padding:5px;border:1px solid var(--accent-outline-soft);border-radius:10px;background:var(--accent-panel-raised);box-shadow:0 10px 26px #00000035}
+.message-action-menu[hidden]{display:none}
+.message-action-menu button{width:100%;padding:8px 10px;border:0;border-radius:7px;color:var(--text);background:transparent;font-size:calc(10px * var(--font-scale,1));font-weight:650;text-align:left;cursor:pointer}
+.message-action-menu button:hover{color:var(--accent-text);background:var(--accent-hover)}
+.message.reaction-selectable{cursor:pointer}
+.message.reaction-selectable .bubble{transition:outline-color .15s,background .15s}
+.message.reaction-target .bubble{outline:2px solid var(--accent);outline-offset:3px}
+.message-reaction-status{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0 0 8px;padding:8px 10px;border:1px solid var(--accent-outline-soft);border-radius:10px;background:var(--accent-panel)}
+.message-reaction-status[hidden]{display:none}
+.message-reaction-hint{flex:1;min-width:130px;color:var(--accent-text);font-size:calc(10px * var(--font-scale,1));font-weight:650}
+.message-reaction-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:5px}
+.message-reaction-toolbar[hidden]{display:none}
+.message-reaction-cancel{width:auto!important;height:auto!important;padding:5px 8px!important;border:1px solid var(--line)!important;border-radius:7px!important;color:var(--muted)!important;background:transparent!important;font-size:calc(9px * var(--font-scale,1))!important;cursor:pointer}
+.composer-actions .message-react-mode{flex:none;width:auto;height:29px;padding:0 10px;border:1px solid var(--accent-outline-soft);border-radius:9px;color:var(--accent-text);background:var(--accent-surface);font-size:calc(10px * var(--font-scale,1));font-weight:750;cursor:pointer}
+.composer-actions .message-react-mode:hover,.composer-actions .message-react-mode[aria-pressed="true"]{border-color:var(--accent-outline);background:var(--accent-hover)}
+html[data-theme="light"] .message-action-menu{background:#fff;border-color:var(--line);box-shadow:0 10px 26px #30385022}
+html[data-theme="light"] .message-action-menu button{color:var(--text)}
+html[data-theme="light"] .message-action-menu button:hover{color:var(--accent-text);background:var(--accent-surface)}
+@media(max-width:520px){
+  .composer-actions>small{display:none}
+  .composer-actions .message-react-mode{padding:0 8px}
+}
