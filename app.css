@@ -1915,3 +1915,8 @@ button:not(:disabled):active{transform:translateY(1px) scale(.985)}
     }
   }
 }
+
+
+/* Keep the message composer visually steady while typing; remove accent focus rings here only. */
+.composer:focus-within{border-color:var(--line)}
+.composer textarea:focus,.composer textarea:focus-visible{outline:none;outline-offset:0;box-shadow:none}
