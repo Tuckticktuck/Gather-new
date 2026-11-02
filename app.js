@@ -14,7 +14,7 @@ const ACCENTS = {
 };
 const FONT_SCALES = {small:"0.9",normal:"1",large:"1.15"};
 const MESSAGE_REACTION_EMOJIS = ["👍","❤️","😂","😮","😢","🎉"];
-const DEFAULT_PREFERENCES = {accent:"lavender",fontSize:"normal",theme:"dark",messageNotificationMode:"temporary",groupUnreadMessages:false,shareOnlineStatus:true};
+const DEFAULT_PREFERENCES = {accent:"lavender",fontSize:"normal",theme:"dark",messageNotificationMode:"temporary",groupUnreadMessages:false,shareOnlineStatus:true,quietHoursEnabled:false,quietHoursStart:"22:00",quietHoursEnd:"07:00"};
 const DEFAULT_CHAT_SETTINGS = {pinned:[],muted:{},drafts:{},appearance:{}};
 const CHAT_BACKGROUNDS = {default:null,slate:"#202a37",forest:"#1d302b",plum:"#302438",sand:"#40382d"};
 function normalizeChatSettings(raw){
@@ -46,13 +46,17 @@ function setChatLoadStatus(message,retry=false){
   $("chat-load-message").textContent=message||"";$("retry-load-chats").hidden=!retry;
 }
 function loadUIPreferences(saved){
+  const validTime=value=>typeof value==="string"&&/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value);
   S.preferences={
     accent:ACCENTS[saved?.accent]?saved.accent:DEFAULT_PREFERENCES.accent,
     fontSize:FONT_SCALES[saved?.fontSize]?saved.fontSize:DEFAULT_PREFERENCES.fontSize,
     theme:saved?.theme==="light"?"light":"dark",
     messageNotificationMode:saved?.messageNotificationMode==="persistent"?"persistent":"temporary",
     groupUnreadMessages:saved?.groupUnreadMessages===true,
-    shareOnlineStatus:saved?.shareOnlineStatus!==false
+    shareOnlineStatus:saved?.shareOnlineStatus!==false,
+    quietHoursEnabled:saved?.quietHoursEnabled===true,
+    quietHoursStart:validTime(saved?.quietHoursStart)?saved.quietHoursStart:DEFAULT_PREFERENCES.quietHoursStart,
+    quietHoursEnd:validTime(saved?.quietHoursEnd)?saved.quietHoursEnd:DEFAULT_PREFERENCES.quietHoursEnd
   };
   applyUIPreferences();
 }
@@ -148,6 +152,13 @@ function applyUIPreferences(){
   if(groupUnreadControl)groupUnreadControl.checked=S.preferences.groupUnreadMessages===true;
   const shareStatusControl=$("share-online-status");
   if(shareStatusControl)shareStatusControl.checked=S.preferences.shareOnlineStatus!==false;
+  const quietHoursControl=$("quiet-hours-enabled");
+  if(quietHoursControl)quietHoursControl.checked=S.preferences.quietHoursEnabled===true;
+  const quietHoursStart=$("quiet-hours-start"),quietHoursEnd=$("quiet-hours-end");
+  if(quietHoursStart)quietHoursStart.value=S.preferences.quietHoursStart;
+  if(quietHoursEnd)quietHoursEnd.value=S.preferences.quietHoursEnd;
+  const quietHoursTimes=$("quiet-hours-times");
+  if(quietHoursTimes)quietHoursTimes.hidden=!S.preferences.quietHoursEnabled;
   if(S.active)applyChatAppearance(S.active);
 }
 function saveUIPreferences(){
@@ -183,10 +194,14 @@ function saveChatSettings(){
     if(S.user?.id!==userId)return;
     if(result.error){
       console.warn("Private chat preferences could not be saved:",result.error.message);
+      const draftStatus=$("draft-save-status");
+      if(draftStatus&&S.active&&snapshot.drafts[S.active]===$("message").value&&$("message").value)draftStatus.textContent="Draft saved on this device; account sync failed.";
       toast("Your private chat preferences couldn't be saved. Please try again.");
       return;
     }
     clearSyncedLocalDraftOverrides(userId,snapshot);
+    const draftStatus=$("draft-save-status");
+    if(draftStatus&&S.active&&snapshot.drafts[S.active]===$("message").value&&$("message").value)draftStatus.textContent="Draft synced to your account.";
   },220);
 }
 function chatSettingsFor(id=S.active){
@@ -262,6 +277,8 @@ function saveActiveChatDraft(){
   if(value){delete S.chatSettings.drafts[id];S.chatSettings.drafts[id]=value;}
   else delete S.chatSettings.drafts[id];
   saveLocalChatDraftOverride(id,value);
+  const draftStatus=$("draft-save-status");
+  if(draftStatus)draftStatus.textContent=value?"Draft saved on this device · syncing…":"";
   clearTimeout(S.draftSaveTimer);
   S.draftSaveTimer=setTimeout(saveChatSettings,450);
 }
@@ -279,6 +296,8 @@ function restoreChatDraft(id){
   $("message").value=S.chatSettings.drafts[id]||"";
   $("message").style.height="auto";
   $("message").style.height=Math.min($("message").scrollHeight,120)+"px";
+  const draftStatus=$("draft-save-status");
+  if(draftStatus)draftStatus.textContent=$("message").value?"Draft restored":"";
 }
 function clearUnreadDividerState(){
   clearTimeout(S.unreadDividerTimer);S.unreadDividerTimer=null;
@@ -553,6 +572,17 @@ async function markConversationRead(chatId){
   if(result.error){console.warn("Conversation read status could not be saved:",result.error.message);return false;}
   await markConversationNotificationsRead(chatId);
   await loadUnreadCounts();renderChats();return true;
+}
+async function markActiveConversationUnread(){
+  const conversationId=S.active;
+  if(!S.user||!conversationId)return;
+  const result=await db.rpc("mark_conversation_unread",{p_conversation_id:conversationId});
+  if(result.error){toast("This conversation could not be marked unread: "+result.error.message);return;}
+  if(result.data!==true){toast("There are no incoming messages in this conversation to mark unread.");return;}
+  $("chat-actions-modal").hidden=true;
+  await loadUnreadCounts();
+  goHome();
+  toast("Conversation marked as unread.");
 }
 function markChatRead(chatId,through=null){
   if(!chatId)return;
@@ -966,8 +996,19 @@ function clearMessageNotifications(){
   const container=$("message-notifications");
   if(container){container.replaceChildren();container.hidden=true;}
 }
+function isWithinQuietHours(now=new Date()){
+  if(!S.preferences.quietHoursEnabled)return false;
+  const toMinutes=value=>{
+    const [hours,minutes]=String(value||"").split(":").map(Number);
+    return Number.isFinite(hours)&&Number.isFinite(minutes)?hours*60+minutes:null;
+  };
+  const start=toMinutes(S.preferences.quietHoursStart),end=toMinutes(S.preferences.quietHoursEnd);
+  if(start===null||end===null||start===end)return false;
+  const current=now.getHours()*60+now.getMinutes();
+  return start<end?(current>=start&&current<end):(current>=start||current<end);
+}
 function showMessageNotification(message,chat){
-  if(!message||!chat||!S.user||message.sender_id===S.user.id||S.active===chat.id||S.chatSettings.muted[chat.id])return;
+  if(!message||!chat||!S.user||message.sender_id===S.user.id||S.active===chat.id||S.chatSettings.muted[chat.id]||isWithinQuietHours())return;
   const container=$("message-notifications");
   if(!container||$("message-notification-"+message.id))return;
   const card=el("article","message-notification");
@@ -1601,6 +1642,7 @@ function renderChatSection(kind,listId,countId,term,sourceChats=null){
     if(c.last&&c.last.sender_id===S.user.id)preview="You: "+preview;
     else if(c.kind==="group"&&c.last)preview=(S.profiles[c.last.sender_id]?.display_name||"Member")+": "+preview;
     copy.append(el("span","",preview));
+    if(S.chatSettings.drafts[c.id])copy.append(el("small","chat-draft-label","Draft saved"));
     if(c.kind==="direct")appendFriendPresenceLabel(copy,peer?.user_id);
     if(S.chatSettings.muted[c.id])copy.append(el("small","chat-muted-label","Muted"));
     if(unread){const badge=el("small","unread-count-badge",unreadCount>0?(unreadCount>99?"99+":String(unreadCount)):"New");badge.setAttribute("aria-label",unreadCount>0?unreadCount+" unread messages":"Unread message");copy.append(badge);}
@@ -2719,7 +2761,26 @@ function openAboutBlank(){
     console.warn("Gather about:blank view could not be opened:",error);
   }
 }
-function openMessageSearch(){
+function openMessageSearch(scope="conversation"){
+  const conversationId=scope==="all"?null:S.active;
+  if(!conversationId&&!S.chats.length){toast("Create or open a conversation before searching messages.");return;}
+  S.searchConversationId=conversationId;S.searchQuery="";S.searchOffset=0;S.searchHasMore=false;
+  $("message-search-title").textContent=conversationId?"Search messages":"Search all conversations";
+  $("message-search-label").textContent=conversationId?"Search this conversation":"Search all conversations";
+  $("message-search-input").placeholder=conversationId?"Find a word or phrase":"Find a word or phrase in any chat";
+  $("message-search-input").value="";
+  $("message-search-results").replaceChildren(el("p","muted tiny",conversationId?"Search all messages in this conversation.":"Search messages across your Gather conversations."));
+  $("message-search-more").hidden=true;status("message-search-status","");$("message-search-modal").hidden=false;$("message-search-input").focus();
+}
+async function searchConversationMessages(reset=true){
+  const query=$("message-search-input").value.trim().slice(0,120);
+  if(reset){S.searchQuery=query;S.searchOffset=0;S.searchHasMore=false;$("message-search-results").replaceChildren();}
+  if(!query){$("message-search-results").replaceChildren(el("p","muted tiny","Enter a word or phrase to search messages."));$("message-search-more").hidden=true;return;}
+  if(query!==S.searchQuery){S.searchQuery=query;S.searchOffset=0;$("message-search-results").replaceChildren();}
+  const conversationId=S.searchConversationId,from=S.searchOffset,to=from+99;
+  if(!conversationId&&!S.chats.length){$("message-search-results").replaceChildren(el("p","muted tiny","You do not have any conversations to search yet."));$("message-search-more").hidden=true;return;}
+  status("message-search-status",S.searchOffset?"Loading more matches…":"Searching "+(conversationId?"this conversation":"all conversations")+"…");
+  const escapedQuery=query.replace(/[\\%_]/g,"\\function openMessageSearch(){
   if(!S.active)return;
   S.searchConversationId=S.active;S.searchQuery="";S.searchOffset=0;S.searchHasMore=false;
   $("message-search-input").value="";$("message-search-results").replaceChildren(el("p","muted tiny","Search all messages in this conversation."));
@@ -2746,6 +2807,41 @@ async function searchConversationMessages(reset=true){
 }
 async function openSearchResult(message){
   const conversationId=S.searchConversationId;$("message-search-modal").hidden=true;
+  if(S.active!==conversationId)await openChat(conversationId);
+  const result=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,edited_at,reply_to_id,attachment_path").eq("conversation_id",conversationId).lte("created_at",message.created_at).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
+  if(result.error){toast("That message could not be opened: "+result.error.message);return;}
+  if(S.active!==conversationId)return;
+  const raw=result.data||[];S.hasOlderMessages=raw.length===300;
+  S.messages=await attachReplyPreviews(raw.filter(m=>!S.deletedMessageIds.has(m.id)).reverse(),conversationId);
+  await loadMessageReactions(conversationId,S.messages.map(m=>m.id),true);
+  await loadMessageReads(conversationId,S.messages.map(m=>m.id));await markMessagesRead(conversationId,S.messages);renderMessages();
+  setTimeout(()=>{
+    const row=document.querySelector('[data-message-id="'+message.id+'"]');
+    if(row){row.scrollIntoView({block:"center"});row.classList.add("search-highlight");setTimeout(()=>row.classList.remove("search-highlight"),2200);}
+  },50);
+}");
+  let request=db.from("messages").select("id,conversation_id,sender_id,body,created_at");
+  if(conversationId)request=request.eq("conversation_id",conversationId);
+  else request=request.in("conversation_id",S.chats.map(chat=>chat.id));
+  const result=await request.ilike("body","%"+escapedQuery+"%").order("created_at",{ascending:false}).order("id",{ascending:false}).range(from,to);
+  if(result.error){status("message-search-status","Search failed: "+result.error.message,"error");return;}
+  const rows=(result.data||[]).filter(m=>!S.deletedMessageIds.has(m.id));
+  rows.forEach(m=>{
+    const button=el("button","message-search-result");button.type="button";
+    const chat=S.chats.find(item=>item.id===m.conversation_id);
+    const chatLabel=conversationId?"":(chat?chatTitle(chat):"Conversation")+" · ";
+    const sender=S.profiles[m.sender_id]?.display_name||"Member";
+    button.append(el("strong","",chatLabel+sender+" · "+dateLabel(m.created_at)),el("span","",m.body));
+    button.addEventListener("click",()=>openSearchResult(m));$("message-search-results").append(button);
+  });
+  S.searchOffset=to+1;S.searchHasMore=(result.data||[]).length===100;
+  $("message-search-more").hidden=!S.searchHasMore;
+  status("message-search-status",rows.length?("Found "+S.searchOffset+" matching messages"+(S.searchHasMore?" so far":".")):"No matching messages on this page.");
+}
+async function openSearchResult(message){
+  const conversationId=message.conversation_id||S.searchConversationId;
+  $("message-search-modal").hidden=true;
+  if(!conversationId||!S.chats.some(chat=>chat.id===conversationId)){toast("That conversation is no longer available.");return;}
   if(S.active!==conversationId)await openChat(conversationId);
   const result=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,edited_at,reply_to_id,attachment_path").eq("conversation_id",conversationId).lte("created_at",message.created_at).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
   if(result.error){toast("That message could not be opened: "+result.error.message);return;}
@@ -4056,6 +4152,8 @@ function wire(){
   $("retry-load-chats").addEventListener("click",()=>{if(S.user&&!S.loading)signedIn(S.user,true);});
   $("empty-private").addEventListener("click",()=>openPeople("direct"));$("empty-group").addEventListener("click",()=>openPeople("group"));
   $("chat-actions-open").addEventListener("click",()=>{renderChatOptions();$("chat-actions-modal").hidden=false;});
+  $("mark-chat-unread").addEventListener("click",markActiveConversationUnread);
+  $("global-message-search-open").addEventListener("click",()=>openMessageSearch("all"));
   $("toggle-chat-pin").addEventListener("click",()=>togglePinnedConversation());
   $("toggle-chat-mute").addEventListener("click",()=>toggleMutedConversation());
   $("chat-appearance-accent").addEventListener("change",updateChatAppearance);
@@ -4137,6 +4235,14 @@ document.querySelectorAll("[data-folder]").forEach(b=>b.addEventListener("click"
     saveUIPreferences();
   });
   $("group-unread-messages").addEventListener("change",event=>setGroupUnreadMessages(event.target.checked));
+  $("quiet-hours-enabled").addEventListener("change",event=>{
+    S.preferences.quietHoursEnabled=!!event.target.checked;
+    saveUIPreferences();
+  });
+  ["quiet-hours-start","quiet-hours-end"].forEach(id=>$(id).addEventListener("change",event=>{
+    S.preferences[id==="quiet-hours-start"?"quietHoursStart":"quietHoursEnd"]=event.target.value||DEFAULT_PREFERENCES[id==="quiet-hours-start"?"quietHoursStart":"quietHoursEnd"];
+    saveUIPreferences();
+  }));
   document.addEventListener("visibilitychange",()=>{
     if(document.hidden){stopTyping(true);return;}
     if(S.user)void loadApprovedUserIds().then(ok=>{if(ok)refreshApprovedBadgeUI();});
