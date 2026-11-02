@@ -3,7 +3,7 @@
 const URL = "https://xrwldphmeafiakittcof.supabase.co";
 const KEY = "sb_publishable_5Gws8f_CODwrHigG2U6Veg_bTRrBoeA";
 const $ = (id) => document.getElementById(id);
-const db = window.supabase.createClient(URL, KEY);
+const db = window.supabase?.createClient ? window.supabase.createClient(URL, KEY) : null;
 const ACCENTS = {
   lavender:{accent:"#b6a9ff",strong:"#9583ef",ink:"#211d35",soft:"#302d47",border:"#b6a9ff55"},
   blue:{accent:"#9bcfff",strong:"#589be0",ink:"#142b43",soft:"#243b58",border:"#9bcfff55"},
@@ -3684,6 +3684,7 @@ function wire(){
     button.disabled=true;
     status("auth-status",isNew?"Creating account…":"Signing in…");
     try{
+      if(!db){status("auth-status","Gather could not load its secure login service. Please reload the page and check your connection or content blocker.","error");return;}
       const weak=isNew?strongPasswordError(password):"";
       if(weak){
         status("auth-status",weak+" Use a unique password you don't use on other sites.","error");
@@ -3813,16 +3814,25 @@ document.querySelectorAll("[data-folder]").forEach(b=>b.addEventListener("click"
   document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeComposerMoreMenu();closeModals();}});
 }
 async function boot(){
-  if(!window.supabase?.createClient){status("auth-status","The chat library did not load. Refresh and try again.","error");return;}
-  wire();
-  loadUIPreferences(DEFAULT_PREFERENCES);
-  db.auth.onAuthStateChange((event,session)=>{setTimeout(()=>{
-    if(event==="PASSWORD_RECOVERY"&&session?.user){signedIn(session.user);openPasswordRecovery();}
-    else if(session?.user)signedIn(session.user);
-    else if(event==="SIGNED_OUT")showAuth();
-  },0);});
-  const session=await db.auth.getSession();if(session.error){status("auth-status",session.error.message,"error");return;}
-  if(session.data.session?.user)await signedIn(session.data.session.user);else showAuth();
+  try{
+    wire();
+    loadUIPreferences(DEFAULT_PREFERENCES);
+    if(!window.supabase?.createClient||!db){
+      status("auth-status","Gather could not load its secure login service. Please reload the page and check your connection or content blocker.","error");
+      return;
+    }
+    db.auth.onAuthStateChange((event,session)=>{setTimeout(()=>{
+      if(event==="PASSWORD_RECOVERY"&&session?.user){signedIn(session.user);openPasswordRecovery();}
+      else if(session?.user)signedIn(session.user);
+      else if(event==="SIGNED_OUT")showAuth();
+    },0);});
+    const session=await db.auth.getSession();
+    if(session.error){status("auth-status",session.error.message,"error");return;}
+    if(session.data.session?.user)await signedIn(session.data.session.user);else showAuth();
+  }catch(error){
+    console.error("Gather startup failed:",error);
+    status("auth-status","Gather could not start: "+(error?.message||"an unexpected startup error occurred."),"error");
+  }
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);else boot();
 })();
