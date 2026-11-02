@@ -15,7 +15,22 @@ const ACCENTS = {
 const FONT_SCALES = {small:"0.9",normal:"1",large:"1.15"};
 const MESSAGE_REACTION_EMOJIS = ["👍","❤️","😂","😮","😢","🎉"];
 const DEFAULT_PREFERENCES = {accent:"lavender",fontSize:"normal",theme:"dark",messageNotificationMode:"temporary",groupUnreadMessages:false,shareOnlineStatus:true};
-const S = { user:null, profile:null, profiles:{}, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, reactionSelectionMode:false, selectedReactionMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map() };
+const DEFAULT_CHAT_SETTINGS = {pinned:[],muted:{},drafts:{},appearance:{}};
+const CHAT_BACKGROUNDS = {default:null,slate:"#202a37",forest:"#1d302b",plum:"#302438",sand:"#40382d"};
+function normalizeChatSettings(raw){
+  const pinned=[...new Set((Array.isArray(raw?.pinned)?raw.pinned:[]).filter(x=>typeof x==="string"&&x.length<=80))].slice(0,100);
+  const muted={};
+  if(raw?.muted&&typeof raw.muted==="object"&&!Array.isArray(raw.muted))Object.entries(raw.muted).forEach(([id,value])=>{if(value===true&&id.length<=80)muted[id]=true;});
+  const drafts={};
+  if(raw?.drafts&&typeof raw.drafts==="object"&&!Array.isArray(raw.drafts))Object.entries(raw.drafts).slice(-50).forEach(([id,value])=>{if(typeof value==="string"&&value.length&&id.length<=80)drafts[id]=value.slice(0,4000);});
+  const appearance={};
+  if(raw?.appearance&&typeof raw.appearance==="object"&&!Array.isArray(raw.appearance))Object.entries(raw.appearance).forEach(([id,value])=>{
+    if(!value||typeof value!=="object"||id.length>80)return;
+    appearance[id]={accent:ACCENTS[value.accent]?value.accent:"default",background:Object.hasOwn(CHAT_BACKGROUNDS,value.background)?value.background:"default"};
+  });
+  return {pinned,muted,drafts,appearance};
+}
+const S = { user:null, profile:null, profiles:{}, chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, reactionSelectionMode:false, selectedReactionMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map() };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function status(id, text, kind) { const n=$(id); n.textContent=text||""; n.className="status"+(kind?" "+kind:""); }
@@ -27,6 +42,7 @@ function setChatLoadStatus(message,retry=false){
   $("chat-load-message").textContent=message||"";$("retry-load-chats").hidden=!retry;
 }
 function loadUIPreferences(saved){
+  S.chatSettings=normalizeChatSettings(saved?.chatSettings);
   S.preferences={
     accent:ACCENTS[saved?.accent]?saved.accent:DEFAULT_PREFERENCES.accent,
     fontSize:FONT_SCALES[saved?.fontSize]?saved.fontSize:DEFAULT_PREFERENCES.fontSize,
@@ -96,7 +112,7 @@ function applyUIPreferences(){
 function saveUIPreferences(){
   applyUIPreferences();
   if(!S.user)return;
-  const userId=S.user.id,snapshot={...S.preferences};
+  const userId=S.user.id,snapshot={...S.preferences,chatSettings:normalizeChatSettings(S.chatSettings)};
   $("settings-note").textContent="Saving to your Gather account…";
   clearTimeout(S.preferenceSaveTimer);
   S.preferenceSaveTimer=setTimeout(async()=>{
@@ -113,6 +129,113 @@ function saveUIPreferences(){
     await syncOwnPresence();
     $("settings-note").textContent="Saved to your account. Your settings follow you across devices.";
   },180);
+}
+function saveChatSettings(){
+  if(!S.user)return;
+  saveUIPreferences();
+}
+function chatSettingsFor(id=S.active){
+  return id?{pinned:S.chatSettings.pinned.includes(id),muted:S.chatSettings.muted[id]===true,appearance:S.chatSettings.appearance[id]||{accent:"default",background:"default"},draft:S.chatSettings.drafts[id]||""}:{pinned:false,muted:false,appearance:{accent:"default",background:"default"},draft:""};
+}
+function togglePinnedConversation(id=S.active){
+  if(!id)return;
+  const index=S.chatSettings.pinned.indexOf(id);
+  if(index>=0)S.chatSettings.pinned.splice(index,1);
+  else{
+    if(S.chatSettings.pinned.length>=100){toast("You can pin up to 100 conversations.");return;}
+    S.chatSettings.pinned.unshift(id);
+  }
+  saveChatSettings();renderChats();renderActive();
+}
+function toggleMutedConversation(id=S.active){
+  if(!id)return;
+  if(S.chatSettings.muted[id])delete S.chatSettings.muted[id];
+  else S.chatSettings.muted[id]=true;
+  saveChatSettings();renderChats();renderChatOptions();
+  toast(S.chatSettings.muted[id]?"Conversation muted.":"Conversation unmuted.");
+}
+function applyChatAppearance(id=S.active){
+  const chat=$("chat"),messages=$("messages");
+  if(!chat||!messages)return;
+  const appearance=S.chatSettings.appearance[id]||{accent:"default",background:"default"};
+  const accent=ACCENTS[appearance.accent]||ACCENTS[S.preferences.accent]||ACCENTS.lavender;
+  const background=CHAT_BACKGROUNDS[appearance.background]||null;
+  const custom=appearance.accent!=="default"||!!background;
+  chat.classList.toggle("chat-appearance-custom",custom);
+  if(custom){
+    chat.style.setProperty("--conversation-accent",accent.accent);
+    chat.style.setProperty("--conversation-accent-soft",accent.soft);
+    chat.style.setProperty("--conversation-accent-border",accent.border);
+    messages.style.setProperty("--conversation-background",background||(S.preferences.theme==="light"?"#f5f6fa":"#171923"));
+  }else{
+    ["--conversation-accent","--conversation-accent-soft","--conversation-accent-border"].forEach(key=>chat.style.removeProperty(key));
+    messages.style.removeProperty("--conversation-background");
+  }
+}
+function renderChatOptions(){
+  const settings=chatSettingsFor();
+  $("toggle-chat-pin").textContent=settings.pinned?"Unpin conversation":"Pin conversation";
+  $("toggle-chat-mute").textContent=settings.muted?"Unmute notifications":"Mute notifications";
+  $("chat-appearance-accent").value=settings.appearance.accent;
+  $("chat-appearance-background").value=settings.appearance.background;
+}
+function updateChatAppearance(){
+  const id=S.active;if(!id)return;
+  S.chatSettings.appearance[id]={
+    accent:$("chat-appearance-accent").value,
+    background:$("chat-appearance-background").value
+  };
+  applyChatAppearance(id);saveChatSettings();
+}
+function saveActiveChatDraft(){
+  const id=S.active;if(!id)return;
+  const value=$("message").value.slice(0,4000);
+  if(value)S.chatSettings.drafts[id]=value;
+  else delete S.chatSettings.drafts[id];
+  clearTimeout(S.draftSaveTimer);
+  S.draftSaveTimer=setTimeout(saveChatSettings,450);
+}
+function restoreChatDraft(id){
+  $("message").value=S.chatSettings.drafts[id]||"";
+  $("message").style.height="auto";
+  $("message").style.height=Math.min($("message").scrollHeight,120)+"px";
+}
+function clearUnreadDividerState(){
+  clearTimeout(S.unreadDividerTimer);S.unreadDividerTimer=null;
+  S.unreadDividerMessageId=null;S.unreadDividerArmed=false;
+}
+function updateUnreadDivider(id=S.active){
+  if(!id||S.active!==id)return;
+  const unread=S.messages.find(message=>message.sender_id!==S.user?.id&&!(S.messageReads[message.id]||[]).some(receipt=>receipt.user_id===S.user.id));
+  const next=unread?.id||null;
+  if(next!==S.unreadDividerMessageId){
+    clearTimeout(S.unreadDividerTimer);S.unreadDividerTimer=null;S.unreadDividerArmed=false;
+    S.unreadDividerMessageId=next;
+  }
+}
+function checkUnreadDividerVisibility(){
+  if(!S.active||!S.unreadDividerMessageId||S.unreadDividerArmed)return;
+  const list=$("messages"),divider=list?.querySelector(".new-messages-divider");
+  if(!divider)return;
+  const target=divider.getBoundingClientRect(),viewport=list.getBoundingClientRect();
+  if(target.bottom<viewport.top||target.top>viewport.bottom)return;
+  const chatId=S.active,messageId=S.unreadDividerMessageId;
+  S.unreadDividerArmed=true;
+  S.unreadDividerTimer=setTimeout(()=>dismissUnreadDivider(chatId,messageId),2000);
+}
+async function dismissUnreadDivider(chatId,messageId){
+  if(S.active!==chatId||S.unreadDividerMessageId!==messageId)return;
+  const index=S.messages.findIndex(message=>message.id===messageId);
+  if(index<0){clearUnreadDividerState();return;}
+  const newlyRead=S.messages.slice(index);
+  clearUnreadDividerState();renderMessages(true);
+  const marked=await markMessagesRead(chatId,newlyRead);
+  if(!marked)return;
+  const lastIncoming=[...newlyRead].reverse().find(message=>message.sender_id!==S.user.id);
+  if(lastIncoming)markChatRead(chatId,lastIncoming.created_at);
+  await loadUnreadCounts();
+  if(!Number(S.unreadCounts[chatId]||0))await markConversationNotificationsRead(chatId);
+  renderChats();
 }
 function setTheme(theme){
   if(theme!=="light"&&theme!=="dark")return;
@@ -636,7 +759,7 @@ function clearMessageNotifications(){
   if(container){container.replaceChildren();container.hidden=true;}
 }
 function showMessageNotification(message,chat){
-  if(!message||!chat||!S.user||message.sender_id===S.user.id||S.active===chat.id)return;
+  if(!message||!chat||!S.user||message.sender_id===S.user.id||S.active===chat.id||S.chatSettings.muted[chat.id])return;
   const container=$("message-notifications");
   if(!container||$("message-notification-"+message.id))return;
   const card=el("article","message-notification");
@@ -1165,12 +1288,18 @@ function renderChatSection(kind,listId,countId,term,sourceChats=null){
     else if(c.kind==="group"&&c.last)preview=(S.profiles[c.last.sender_id]?.display_name||"Member")+": "+preview;
     copy.append(el("span","",preview));
     if(c.kind==="direct")appendFriendPresenceLabel(copy,peer?.user_id);
+    if(S.chatSettings.muted[c.id])copy.append(el("small","chat-muted-label","Muted"));
     if(unread){const badge=el("small","unread-count-badge",unreadCount>0?(unreadCount>99?"99+":String(unreadCount)):"New");badge.setAttribute("aria-label",unreadCount>0?unreadCount+" unread messages":"Unread message");copy.append(badge);}
     b.append(copy,el("small","chat-time",dateLabel(c.last?.created_at||c.updated_at)));
     b.addEventListener("click",()=>openChat(c.id));
     const del=el("button","conversation-delete","Delete");del.type="button";del.title="Move all messages in this conversation to Deleted messages";
     del.addEventListener("click",()=>deleteConversationMessages(c.id));
     row.append(b);
+    const pin=el("button","conversation-pin",S.chatSettings.pinned.includes(c.id)?"★":"☆");
+    pin.type="button";pin.title=S.chatSettings.pinned.includes(c.id)?"Unpin conversation":"Pin conversation";
+    pin.setAttribute("aria-label",pin.title);pin.setAttribute("aria-pressed",String(S.chatSettings.pinned.includes(c.id)));
+    pin.addEventListener("click",event=>{event.stopPropagation();togglePinnedConversation(c.id);});
+    row.append(pin);
     if(c.kind==="direct"){
       const profile=el("button","conversation-profile","Profile");profile.type="button";
       profile.addEventListener("click",async()=>{const peerId=peerForChat(c);if(await canViewMemberProfile(peerId))await openPublicProfile(peerId);else toast("This member is not currently available for private messaging.");});
@@ -1224,6 +1353,10 @@ function renderChats(){
   const term=$("filter").value.trim().toLowerCase();
   const standard=$("private-folder-panel"),blocked=$("blocked-panel"),deleted=$("deleted-panel");
   const isStandard=S.folder==="friends"||S.folder==="nonfriends";
+  const pinnedIds=new Set(S.chatSettings.pinned);
+  const pinnedChats=S.chatSettings.pinned.map(id=>S.chats.find(chat=>chat.id===id)).filter(Boolean);
+  $("pinned-chat-section").hidden=!pinnedChats.length;
+  renderChatSection("direct","pinned-chat-list","pinned-chat-count",term,pinnedChats);
   standard.hidden=!isStandard;blocked.hidden=S.folder!=="blocked";deleted.hidden=S.folder!=="deleted";
   document.querySelectorAll("[data-folder]").forEach(b=>{
     const active=b.dataset.folder===S.folder;
@@ -1233,14 +1366,14 @@ function renderChats(){
     $("private-chat-heading").textContent=S.folder==="friends"?"Friends":"Non-friends";
     const friends=new Set(S.friends.map(x=>x.friend_id)),blockedIds=new Set(S.blockedUsers.map(x=>x.blocked_id));
     const chats=S.chats.filter(c=>{
-      if(c.kind!=="direct")return false;
+      if(c.kind!=="direct"||pinnedIds.has(c.id))return false;
       const peer=peerForChat(c);if(!peer||blockedIds.has(peer))return false;
       return S.folder==="friends"?friends.has(peer):!friends.has(peer);
     });
     renderChatSection("direct","private-chat-list","private-chat-count",term,chats);
   }else if(S.folder==="blocked")renderBlockedUsers(term);
   else renderDeletedMessages(term);
-  renderChatSection("group","group-chat-list","group-chat-count",term);
+  renderChatSection("group","group-chat-list","group-chat-count",term,S.chats.filter(chat=>chat.kind==="group"&&!pinnedIds.has(chat.id)));
 }
 async function loadBlocked(){
   if(!S.user)return false;
@@ -1321,6 +1454,7 @@ function renderActive(){
 }
 function renderDirectControls(){
   const c=S.chats.find(x=>x.id===S.active),isDirect=c?.kind==="direct";
+  applyChatAppearance(S.active);
   $("block-user").hidden=!isDirect;
   $("select-messages").hidden=false;
   $("select-messages").textContent=S.selectingMessages?"Cancel":"Select";
@@ -1411,12 +1545,14 @@ async function markMessagesRead(conversationId,rows){
   const entries=incoming.filter(m=>!(S.messageReads[m.id]||[]).some(r=>r.user_id===S.user.id))
     .map(m=>({message_id:m.id,conversation_id:conversationId,user_id:S.user.id}));
   if(!entries.length)return;
+  if(!entries.length)return true;
   const result=await db.from("message_reads").upsert(entries,{onConflict:"message_id,user_id",ignoreDuplicates:true});
-  if(result.error){console.warn("Message read receipts could not be saved:",result.error.message);return;}
+  if(result.error){console.warn("Message read receipts could not be saved:",result.error.message);return false;}
   entries.forEach(entry=>{
     const readers=S.messageReads[entry.message_id]||(S.messageReads[entry.message_id]=[]);
     if(!readers.some(x=>x.user_id===entry.user_id))readers.push({...entry,read_at:new Date().toISOString()});
   });
+  return true;
 }
 function subscribeMessageReads(conversationId){
   if(S.readChannel){db.removeChannel(S.readChannel);S.readChannel=null;}
@@ -1456,7 +1592,8 @@ async function loadOlderMessages(){
   await loadMessagePolls(conversationId,withReplies.map(m=>m.id));
   await loadMessageReactions(conversationId,withReplies.map(m=>m.id),true);
   await loadMessageReads(conversationId,withReplies.map(m=>m.id));
-  await markMessagesRead(conversationId,withReplies);
+  if(S.active!==conversationId)return;
+  updateUnreadDivider(conversationId);
   await loadUnreadCounts();renderChats();
   renderMessages(true);
 }
@@ -1541,19 +1678,20 @@ function subscribeTyping(conversationId){
 }
 
 async function openChat(id){
+  saveActiveChatDraft();
+  clearUnreadDividerState();
   closeTypingChannel();
   if(S.readChannel){db.removeChannel(S.readChannel);S.readChannel=null;}
   if(S.pollChannel){db.removeChannel(S.pollChannel);S.pollChannel=null;}
   clearPendingMessageImage();
-  S.active=id;S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;
+  S.active=id;restoreChatDraft(id);S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;
   S.messages=[];S.messageReads={};S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.reactionSelectionMode=false;S.selectedReactionMessageId=null;S.openMessageMenuId=null;S.replyTo=null;S.hasOlderMessages=false;S.loadingOlder=false;renderReplyComposer();
   $("messages").replaceChildren(el("p","muted messages-loading","Loading messages…"));
-  markChatRead(id,S.chats.find(c=>c.id===id)?.last?.created_at||null);
   $("layout").classList.remove("show-home");$("layout").classList.add("show-chat");renderActive();
   subscribeTyping(id);
   await Promise.all([refreshDirectStatus(id),loadMessages(id)]);
   if(S.active!==id)return;
-  subscribeMessageReads(id);subscribePollVotes(id);await markConversationRead(id);
+  subscribeMessageReads(id);subscribePollVotes(id);await loadUnreadCounts();renderChats();
 }
 async function loadMessages(id){
   const r=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,edited_at,reply_to_id,attachment_path,forwarded_from_id").eq("conversation_id",id).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
@@ -1564,7 +1702,6 @@ async function loadMessages(id){
   if(S.active!==id)return;
   S.messages=loadedMessages;
   if(S.active!==id)return;
-  markChatRead(id,S.messages[S.messages.length-1]?.created_at||null);
   renderMessages();
   await Promise.all([
     loadMessagePolls(id,S.messages.map(m=>m.id)),
@@ -1574,8 +1711,7 @@ async function loadMessages(id){
     loadMessageReads(id,S.messages.map(m=>m.id))
   ]);
   if(S.active!==id)return;
-  await markMessagesRead(id,S.messages);
-  if(S.active!==id)return;
+  updateUnreadDivider(id);
   renderMessages(true);
 }
 
@@ -1901,6 +2037,7 @@ function renderMessages(preserveScroll=false){
     const samePrevious=S.messages[index-1]?.sender_id===m.sender_id;
     const sameNext=S.messages[index+1]?.sender_id===m.sender_id;
     const grouping=samePrevious?(sameNext?" group-middle":" group-last"):(sameNext?" group-first":"");
+    if(S.unreadDividerMessageId===m.id)list.append(el("div","new-messages-divider","New messages"));
     const row=el("div","message"+(mine?" mine":"")+grouping+(samePrevious?" group-continued":""));
     row.dataset.messageId=m.id;
     row.classList.toggle("reaction-target",S.selectedReactionMessageId===m.id);
@@ -2035,6 +2172,7 @@ function renderMessages(preserveScroll=false){
   });
   if(preserveScroll)list.scrollTop=previousTop+(list.scrollHeight-previousHeight);
   else list.scrollTop=list.scrollHeight;
+  checkUnreadDividerVisibility();
 }
 async function deleteConversationMessages(conversationId){
   const conversation=S.chats.find(c=>c.id===conversationId);
@@ -2899,6 +3037,7 @@ async function updateFeedbackStatus(){
 
 function closeModals(){ $("announcement-compose-modal").hidden=true;$("announcement-view-modal").hidden=true;$("announcements-page-modal").hidden=true;$("notifications-modal").hidden=true;$("member-profile-modal").hidden=true;$("report-modal").hidden=true;$("reports-admin-modal").hidden=true;$("people-modal").hidden=true;$("profile-modal").hidden=true;$("requests-modal").hidden=true;$("friends-modal").hidden=true;$("settings-modal").hidden=true;$("group-photo-modal").hidden=true;$("group-settings-modal").hidden=true;$("message-search-modal").hidden=true;$("poll-create-modal").hidden=true;$("forward-message-modal").hidden=true;$("saved-messages-modal").hidden=true;$("chat-actions-modal").hidden=true;$("feedback-modal").hidden=true; }
 function goHome(){
+  saveActiveChatDraft();clearUnreadDividerState();
   closeTypingChannel();
   clearPendingMessageImage();closeModals();S.active=null;S.messages=[];S.messageReads={};S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.replyTo=null;S.hasOlderMessages=false;S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;renderReplyComposer();
   $("layout").classList.remove("show-chat");$("layout").classList.add("show-home");renderChats();renderActive();
@@ -2933,7 +3072,11 @@ function wire(){
   $("new-private-chat").addEventListener("click",()=>openPeople("direct"));$("new-group-chat").addEventListener("click",()=>openPeople("group"));
   $("retry-load-chats").addEventListener("click",()=>{if(S.user&&!S.loading)signedIn(S.user,true);});
   $("empty-private").addEventListener("click",()=>openPeople("direct"));$("empty-group").addEventListener("click",()=>openPeople("group"));
-  $("chat-actions-open").addEventListener("click",()=>{$("chat-actions-modal").hidden=false;});
+  $("chat-actions-open").addEventListener("click",()=>{renderChatOptions();$("chat-actions-modal").hidden=false;});
+  $("toggle-chat-pin").addEventListener("click",()=>togglePinnedConversation());
+  $("toggle-chat-mute").addEventListener("click",()=>toggleMutedConversation());
+  $("chat-appearance-accent").addEventListener("change",updateChatAppearance);
+  $("chat-appearance-background").addEventListener("change",updateChatAppearance);
   ["add-people","edit-group-photo","group-settings-open","search-messages-open","saved-messages-open","leave-chat","block-user","select-messages","delete-selected"].forEach(id=>$(id).addEventListener("click",()=>{$("chat-actions-modal").hidden=true;}));
   $("add-people").addEventListener("click",()=>openPeople("add"));$("edit-group-photo").addEventListener("click",openGroupPhoto);$("group-settings-open").addEventListener("click",openGroupSettings);$("group-settings-save").addEventListener("click",saveGroupSettings);$("group-avatar-file").addEventListener("change",handleGroupAvatarFile);$("group-avatar-remove").addEventListener("click",removeGroupAvatar);$("group-avatar-save").addEventListener("click",saveGroupAvatar);$("leave-chat").addEventListener("click",()=>{if(S.active)leaveGroupChat(S.active);});$("requests-open").addEventListener("click",openRequests);$("friends-open").addEventListener("click",openFriends);$("friends-find").addEventListener("click",()=>{$("friends-modal").hidden=true;openPeople("friend");});$("block-user").addEventListener("click",toggleBlock);
   $("people-search").addEventListener("input",()=>{clearTimeout(S.timer);S.timer=setTimeout(searchPeople,220);});$("people-create").addEventListener("click",createGroupOrAdd);
@@ -2980,7 +3123,7 @@ function wire(){
   });
   $("password-form").addEventListener("submit",changePassword);
   $("send-form").addEventListener("submit",sendMessage);$("message-image-file").addEventListener("change",handleMessageImageFile);$("composer-more-trigger").addEventListener("click",event=>{event.stopPropagation();toggleComposerMoreMenu();});$("composer-more-menu").addEventListener("click",event=>event.stopPropagation());$("message-react-mode").addEventListener("click",()=>{closeComposerMoreMenu();beginMessageReactionSelection();});$("message-create-poll").addEventListener("click",openPollComposer);$("poll-form").addEventListener("submit",submitPoll);$("poll-add-option").addEventListener("click",addPollOptionInput);$("poll-cancel").addEventListener("click",()=>$("poll-create-modal").hidden=true);$("saved-messages-open").addEventListener("click",openSavedMessages);document.addEventListener("click",event=>{const wrap=$("composer-more-wrap");if(wrap&&!wrap.contains(event.target))closeComposerMoreMenu();});$("message-reaction-cancel").addEventListener("click",cancelMessageReactionSelection);
-  $("message").addEventListener("input",e=>{e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,120)+"px";updateLocalTyping();});
+  $("message").addEventListener("input",e=>{e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,120)+"px";updateLocalTyping();saveActiveChatDraft();});
   $("message").addEventListener("blur",()=>stopTyping(true));
   $("share-online-status").addEventListener("change",event=>{
     S.preferences.shareOnlineStatus=!!event.target.checked;
@@ -2988,7 +3131,7 @@ function wire(){
   });
   $("group-unread-messages").addEventListener("change",event=>setGroupUnreadMessages(event.target.checked));
   document.addEventListener("visibilitychange",()=>{if(document.hidden)stopTyping(true);});
-  $("messages").addEventListener("scroll",()=>{if($("messages").scrollTop<80)loadOlderMessages();});
+  $("messages").addEventListener("scroll",()=>{if($("messages").scrollTop<80)loadOlderMessages();checkUnreadDividerVisibility();},{passive:true});
   $("cancel-reply").addEventListener("click",cancelReply);
   $("search-messages-open").addEventListener("click",openMessageSearch);
   $("message-search-input").addEventListener("input",()=>{clearTimeout(S.searchTimer);S.searchTimer=setTimeout(()=>searchConversationMessages(true),250);});
