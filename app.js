@@ -1057,7 +1057,10 @@ async function publishAnnouncement(event){
     await openAnnouncement(editingId);
   }else{
     toast("Official announcement sent to Gather members.");
-    await loadNotifications();await loadAnnouncements();await openAnnouncement(result.data.id);
+    await loadNotifications();await loadAnnouncements();
+    if($("admin-mode-modal").hidden!==false||S.admin.section!=="announcements"){
+      await openAnnouncement(result.data.id);
+    }
   }
 }
 async function openAnnouncement(id){
@@ -3733,7 +3736,7 @@ function wire(){
   $("admin-reports-open").addEventListener("click",openReportsAdmin);
   $("admin-feedback-open").addEventListener("click",()=>openFeedback(true));
   $("admin-announcement-create").addEventListener("click",openAnnouncementComposer);
-  $("admin-announcements-open").addEventListener("click",openAnnouncementsPage);
+  $("admin-announcements-open").addEventListener("click",()=>{$("admin-mode-modal").hidden=true;openAnnouncementsPage();});
   $("admin-accounts-refresh").addEventListener("click",()=>loadAdminAccounts(true));
   $("admin-account-search").addEventListener("input",renderAdminAccounts);
   $("admin-accounts-more").addEventListener("click",()=>loadAdminAccounts(false));
