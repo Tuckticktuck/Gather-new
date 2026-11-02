@@ -145,7 +145,7 @@ function togglePinnedConversation(id=S.active){
     if(S.chatSettings.pinned.length>=100){toast("You can pin up to 100 conversations.");return;}
     S.chatSettings.pinned.unshift(id);
   }
-  saveChatSettings();renderChats();renderActive();
+  saveChatSettings();renderChats();renderActive();renderChatOptions();
 }
 function toggleMutedConversation(id=S.active){
   if(!id)return;
@@ -1544,7 +1544,6 @@ async function markMessagesRead(conversationId,rows){
   const incoming=(rows||[]).filter(m=>m.sender_id!==S.user.id&&!S.deletedMessageIds.has(m.id));
   const entries=incoming.filter(m=>!(S.messageReads[m.id]||[]).some(r=>r.user_id===S.user.id))
     .map(m=>({message_id:m.id,conversation_id:conversationId,user_id:S.user.id}));
-  if(!entries.length)return;
   if(!entries.length)return true;
   const result=await db.from("message_reads").upsert(entries,{onConflict:"message_id,user_id",ignoreDuplicates:true});
   if(result.error){console.warn("Message read receipts could not be saved:",result.error.message);return false;}
@@ -2386,7 +2385,7 @@ async function sendMessage(e){
     send.disabled=false;toast("Message not sent: "+r.error.message);return;
   }
   stopTyping(true);
-  $("message").value="";$("message").style.height="auto";clearPendingMessageImage();cancelReply();
+  $("message").value="";$("message").style.height="auto";delete S.chatSettings.drafts[conversationId];clearTimeout(S.draftSaveTimer);saveChatSettings();clearPendingMessageImage();cancelReply();
   const [withReply]=await attachReplyPreviews([r.data],conversationId);
   if(!S.messages.some(x=>x.id===r.data.id)){S.messages.push({...withReply,reply_preview:reply||null});S.messageReactions[r.data.id]=[];renderMessages();}
   if(S.active===conversationId&&activeChat){
