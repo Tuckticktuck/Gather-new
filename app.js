@@ -13,8 +13,9 @@ const ACCENTS = {
   teal:{accent:"#9be2e4",strong:"#50b9be",ink:"#14373a",soft:"#234649",border:"#9be2e455"}
 };
 const FONT_SCALES = {small:"0.9",normal:"1",large:"1.15"};
+const MESSAGE_REACTION_EMOJIS = ["👍","❤️","😂","😮","😢","🎉"];
 const DEFAULT_PREFERENCES = {accent:"lavender",fontSize:"normal",theme:"dark",messageNotificationMode:"temporary",shareOnlineStatus:true};
-const S = { user:null, profile:null, profiles:{}, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, hasOlderMessages:false, loadingOlder:false, replyTo:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map() };
+const S = { user:null, profile:null, profiles:{}, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map() };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function status(id, text, kind) { const n=$(id); n.textContent=text||""; n.className="status"+(kind?" "+kind:""); }
@@ -233,7 +234,7 @@ function showAuth() {
   if(S.notificationChannel){db.removeChannel(S.notificationChannel);S.notificationChannel=null;}
   if(S.announcementChannel){db.removeChannel(S.announcementChannel);S.announcementChannel=null;}
   S.announcements=[];renderHomeAnnouncement();
-  S.user=null;S.profile=null;S.notifications=[];S.feedbackAdminView=false;$("feedback-admin-open").hidden=true;$("feedback-admin-settings-section").hidden=true;S.profiles={};S.chats=[];S.messages=[];S.messageReads={};S.replyTo=null;S.hasOlderMessages=false;S.requests=[];S.friendRequests=[];S.friends=[];S.blockedUsers=[];S.deletedMessages=[];S.deletedMessageIds=new Set();S.lastReadAt={};S.folder="friends";S.directStatus=null;S.active=null;S.messages=[];S.loadError=null;S.avatarChanged=false;S.pendingAvatarData=null;loadUIPreferences(DEFAULT_PREFERENCES);
+  S.user=null;S.profile=null;S.messageReactions={};S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.notifications=[];S.feedbackAdminView=false;$("feedback-admin-open").hidden=true;$("feedback-admin-settings-section").hidden=true;S.profiles={};S.chats=[];S.messages=[];S.messageReads={};S.replyTo=null;S.hasOlderMessages=false;S.requests=[];S.friendRequests=[];S.friends=[];S.blockedUsers=[];S.deletedMessages=[];S.deletedMessageIds=new Set();S.lastReadAt={};S.folder="friends";S.directStatus=null;S.active=null;S.messages=[];S.loadError=null;S.avatarChanged=false;S.pendingAvatarData=null;loadUIPreferences(DEFAULT_PREFERENCES);
   setChatLoadStatus("");$("auth").hidden=false;$("app").hidden=true;
 }
 function showApp(){ $("auth").hidden=true;$("app").hidden=false; }
@@ -908,7 +909,7 @@ function subscribeMessages(){
       chat.hasMessages=true;
       if(S.active===chat.id){
         const [withReply]=await attachReplyPreviews([message],chat.id);
-        if(!S.messages.some(x=>x.id===message.id)){S.messages.push(withReply);S.messages.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at)||a.id.localeCompare(b.id));renderMessages();}
+        if(!S.messages.some(x=>x.id===message.id)){S.messages.push(withReply);S.messages.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at)||a.id.localeCompare(b.id));S.messageReactions[message.id]=[];renderMessages();}
         if(message.sender_id!==uid){markChatRead(chat.id,message.created_at);await markConversationRead(chat.id);}
       }else{
         if(message.sender_id!==uid)showMessageNotification(message,chat);
@@ -922,6 +923,12 @@ function subscribeMessages(){
       if(index>=0){S.messages[index]={...S.messages[index],...updated};renderMessages(true);}
       const chat=S.chats.find(item=>item.id===updated.conversation_id);
       if(chat?.last?.id===updated.id)chat.last={...chat.last,...updated};
+    })
+    .on("postgres_changes",{event:"*",schema:"public",table:"message_reactions"},payload=>{
+      const record=payload.eventType==="DELETE"?payload.old:payload.new;
+      if(!record?.message_id||record.conversation_id!==S.active)return;
+      updateMessageReactionCache(record,payload.eventType==="DELETE");
+      renderMessages(true);
     })
     .on("postgres_changes",{event:"INSERT",schema:"public",table:"message_reads",filter:"user_id=eq."+uid},async()=>{
       await loadUnreadCounts();renderChats();
@@ -1347,6 +1354,7 @@ async function loadOlderMessages(){
   const withReplies=await attachReplyPreviews(visible,conversationId);
   const existing=new Set(S.messages.map(m=>m.id));
   S.messages=[...withReplies.filter(m=>!existing.has(m.id)).reverse(),...S.messages];
+  await loadMessageReactions(conversationId,withReplies.map(m=>m.id),true);
   await loadMessageReads(conversationId,withReplies.map(m=>m.id));
   await markMessagesRead(conversationId,withReplies);
   await loadUnreadCounts();renderChats();
@@ -1436,7 +1444,7 @@ async function openChat(id){
   closeTypingChannel();
   clearPendingMessageImage();
   S.active=id;S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;
-  S.messages=[];S.messageReads={};S.replyTo=null;S.hasOlderMessages=false;S.loadingOlder=false;renderReplyComposer();
+  S.messages=[];S.messageReads={};S.messageReactions={};S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.replyTo=null;S.hasOlderMessages=false;S.loadingOlder=false;renderReplyComposer();
   markChatRead(id,S.chats.find(c=>c.id===id)?.last?.created_at||null);
   $("layout").classList.remove("show-home");$("layout").classList.add("show-chat");renderActive();
   subscribeTyping(id);
@@ -1450,11 +1458,115 @@ async function loadMessages(id){
   if(S.active!==id)return;
   const raw=r.data||[];S.hasOlderMessages=raw.length===300;
   S.messages=await attachReplyPreviews(raw.filter(m=>!S.deletedMessageIds.has(m.id)).reverse(),id);
+  await loadMessageReactions(id,S.messages.map(m=>m.id));
   await loadMessageReads(id,S.messages.map(m=>m.id));
   await markMessagesRead(id,S.messages);
   markChatRead(id,S.messages[S.messages.length-1]?.created_at||null);
   renderMessages();
 }
+
+function updateMessageReactionCache(record,removed=false){
+  if(!record?.message_id||record.conversation_id!==S.active)return;
+  const rows=S.messageReactions[record.message_id]||(S.messageReactions[record.message_id]=[]);
+  if(removed){
+    S.messageReactions[record.message_id]=rows.filter(item=>item.id!==record.id);
+    return;
+  }
+  if(!rows.some(item=>item.id===record.id))rows.push(record);
+}
+async function loadMessageReactions(conversationId,messageIds,merge=false){
+  const ids=[...new Set((messageIds||[]).filter(Boolean))];
+  if(!S.user||S.active!==conversationId||!ids.length)return false;
+  const collected=[];
+  for(let i=0;i<ids.length;i+=100){
+    const batch=ids.slice(i,i+100);
+    for(let offset=0;;offset+=1000){
+      const result=await db.from("message_reactions")
+        .select("id,message_id,conversation_id,user_id,emoji,created_at")
+        .eq("conversation_id",conversationId).in("message_id",batch)
+        .order("created_at",{ascending:true}).range(offset,offset+999);
+      if(S.active!==conversationId)return false;
+      if(result.error){console.warn("Message reactions could not be loaded:",result.error.message);return false;}
+      collected.push(...(result.data||[]));
+      if((result.data||[]).length<1000)break;
+    }
+  }
+  const next=merge?{...S.messageReactions}:{};
+  ids.forEach(id=>{if(!next[id])next[id]=[];});
+  collected.forEach(record=>{
+    const rows=next[record.message_id]||(next[record.message_id]=[]);
+    if(!rows.some(item=>item.id===record.id))rows.push(record);
+  });
+  S.messageReactions=next;
+  return true;
+}
+function renderMessageReactionArea(message){
+  const reactions=S.messageReactions[message.id]||[];
+  const area=el("div","message-reaction-area");
+  if(reactions.length){
+    const groups=new Map();
+    reactions.forEach(reaction=>{
+      const group=groups.get(reaction.emoji)||{emoji:reaction.emoji,count:0,mine:false};
+      group.count++;
+      if(reaction.user_id===S.user?.id)group.mine=true;
+      groups.set(reaction.emoji,group);
+    });
+    const badges=el("div","message-reactions");
+    groups.forEach(group=>{
+      const badge=el(S.selectingMessages?"span":"button","message-reaction"+(group.mine?" is-mine":""),
+        group.emoji+" "+group.count);
+      if(!S.selectingMessages){
+        badge.type="button";
+        badge.setAttribute("aria-label",group.emoji+" reaction, "+group.count+" total"+(group.mine?", including yours":""));
+        badge.setAttribute("aria-pressed",String(group.mine));
+        badge.addEventListener("click",()=>toggleMessageReaction(message.id,group.emoji));
+      }
+      badges.append(badge);
+    });
+    area.append(badges);
+  }
+  if(!S.selectingMessages){
+    const add=el("button","message-reaction-add","＋ React");
+    add.type="button";add.setAttribute("aria-label","Add a reaction");
+    add.setAttribute("aria-expanded",String(S.openReactionPickerMessageId===message.id));
+    add.addEventListener("click",()=>{
+      S.openReactionPickerMessageId=S.openReactionPickerMessageId===message.id?null:message.id;
+      renderMessages(true);
+    });
+    const picker=el("div","message-reaction-picker");
+    picker.hidden=S.openReactionPickerMessageId!==message.id;
+    MESSAGE_REACTION_EMOJIS.forEach(emoji=>{
+      const option=el("button","message-reaction-option",emoji);option.type="button";
+      option.setAttribute("aria-label","React with "+emoji);
+      option.addEventListener("click",()=>toggleMessageReaction(message.id,emoji));
+      picker.append(option);
+    });
+    area.append(add,picker);
+  }
+  return area.childElementCount?area:null;
+}
+async function toggleMessageReaction(messageId,emoji){
+  const conversationId=S.active,message=S.messages.find(item=>item.id===messageId);
+  if(!S.user||!conversationId||!message||S.selectingMessages||!MESSAGE_REACTION_EMOJIS.includes(emoji))return;
+  const key=messageId+":"+emoji;
+  if(S.pendingReactionKeys.has(key))return;
+  S.pendingReactionKeys.add(key);
+  const existing=(S.messageReactions[messageId]||[]).find(item=>item.user_id===S.user.id&&item.emoji===emoji);
+  const result=existing
+    ?await db.from("message_reactions").delete().eq("id",existing.id).eq("user_id",S.user.id)
+    :await db.from("message_reactions").insert({message_id:messageId,conversation_id:conversationId,user_id:S.user.id,emoji})
+      .select("id,message_id,conversation_id,user_id,emoji,created_at").single();
+  S.pendingReactionKeys.delete(key);
+  S.openReactionPickerMessageId=null;
+  if(result.error){
+    toast("Reaction could not be saved: "+result.error.message);
+    renderMessages(true);return;
+  }
+  if(existing)updateMessageReactionCache(existing,true);
+  else if(result.data)updateMessageReactionCache(result.data,false);
+  renderMessages(true);
+}
+
 function renderMessages(preserveScroll=false){
   const list=$("messages"),previousHeight=list.scrollHeight,previousTop=list.scrollTop;list.replaceChildren();
   const activeChat=S.chats.find(chat=>chat.id===S.active);
@@ -1490,6 +1602,7 @@ function renderMessages(preserveScroll=false){
       }else bubble.append(el("p","message-image-unavailable","Image unavailable"));
     }
     if(m.body)bubble.append(el("div","body-text",m.body));
+    const reactionArea=renderMessageReactionArea(m);if(reactionArea)bubble.append(reactionArea);
     if(!S.selectingMessages){
       const actions=el("div","message-actions"),reply=el("button","message-reply","Reply");reply.type="button";reply.addEventListener("click",()=>beginReply(m));actions.append(reply);
       if(mine&&m.body){const edit=el("button","message-edit","Edit");edit.type="button";edit.addEventListener("click",()=>editOwnMessage(m));actions.append(edit);}
@@ -1663,6 +1776,7 @@ async function openSearchResult(message){
   if(S.active!==conversationId)return;
   const raw=result.data||[];S.hasOlderMessages=raw.length===300;
   S.messages=await attachReplyPreviews(raw.filter(m=>!S.deletedMessageIds.has(m.id)).reverse(),conversationId);
+  await loadMessageReactions(conversationId,S.messages.map(m=>m.id),true);
   await loadMessageReads(conversationId,S.messages.map(m=>m.id));await markMessagesRead(conversationId,S.messages);renderMessages();
   setTimeout(()=>{
     const row=document.querySelector('[data-message-id="'+message.id+'"]');
@@ -1748,7 +1862,7 @@ async function sendMessage(e){
   stopTyping(true);
   $("message").value="";$("message").style.height="auto";clearPendingMessageImage();cancelReply();
   const [withReply]=await attachReplyPreviews([r.data],conversationId);
-  if(!S.messages.some(x=>x.id===r.data.id)){S.messages.push({...withReply,reply_preview:reply||null});renderMessages();}
+  if(!S.messages.some(x=>x.id===r.data.id)){S.messages.push({...withReply,reply_preview:reply||null});S.messageReactions[r.data.id]=[];renderMessages();}
   send.disabled=false;await loadChats();
 }
 async function openPeople(mode){
@@ -2313,7 +2427,7 @@ async function updateFeedbackStatus(){
 function closeModals(){ $("announcement-compose-modal").hidden=true;$("announcement-view-modal").hidden=true;$("announcements-page-modal").hidden=true;$("notifications-modal").hidden=true;$("member-profile-modal").hidden=true;$("report-modal").hidden=true;$("reports-admin-modal").hidden=true;$("people-modal").hidden=true;$("profile-modal").hidden=true;$("requests-modal").hidden=true;$("friends-modal").hidden=true;$("settings-modal").hidden=true;$("group-photo-modal").hidden=true;$("group-settings-modal").hidden=true;$("message-search-modal").hidden=true;$("chat-actions-modal").hidden=true;$("feedback-modal").hidden=true; }
 function goHome(){
   closeTypingChannel();
-  clearPendingMessageImage();closeModals();S.active=null;S.messages=[];S.messageReads={};S.replyTo=null;S.hasOlderMessages=false;S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;renderReplyComposer();
+  clearPendingMessageImage();closeModals();S.active=null;S.messages=[];S.messageReads={};S.messageReactions={};S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.replyTo=null;S.hasOlderMessages=false;S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;renderReplyComposer();
   $("layout").classList.remove("show-chat");$("layout").classList.add("show-home");renderChats();renderActive();
 }
 function wire(){
