@@ -3161,7 +3161,18 @@ function openReportsAdmin(){
     const reporter=reportProfiles.get(report.reporter_id),target=reportProfiles.get(report.target_user_id);
     const meta=el("small","muted", "From: "+(reporter?.display_name||"Member")+" (@"+(reporter?.username||"unknown")+") · About: "+(target?.display_name||"Member")+" (@"+(target?.username||"unknown")+")");
     const select=el("select","admin-report-status");["new","reviewing","resolved"].forEach(value=>{const option=el("option","",value==="new"?"New":value==="reviewing"?"Reviewing":"Resolved");option.value=value;select.append(option);});select.value=report.status;
-    select.addEventListener("change",async()=>{select.disabled=true;const update=await db.from("reports").update({status:select.value}).eq("id",report.id);select.disabled=false;if(update.error)toast("Report status could not be updated.");else toast("Report status updated.");});
+    select.addEventListener("change",async()=>{
+      const previous=report.status;
+      select.disabled=true;
+      try{
+        const result=await adminApi("update_report_status",{report_id:report.id,status:select.value});
+        report.status=result.report?.status||select.value;
+        toast("Report status updated.");
+      }catch(error){
+        select.value=previous;
+        toast("Report status could not be updated: "+error.message);
+      }finally{select.disabled=false;}
+    });
     const contact=el("button","outline admin-report-message","Message reported member");
     contact.type="button";
     contact.addEventListener("click",()=>messageReportedMember(report));
