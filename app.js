@@ -442,7 +442,7 @@ function renderAccountApprovalSettings(){
     button.hidden=true;
   }else if(latest?.status==="pending"){
     statusNode.className="account-approval-status pending";
-    statusNode.textContent="Your request was submitted "+dateLabel(latest.created_at)+". It is waiting for the Gather administrator to review it.";
+    statusNode.textContent="Your account is pending administrator review. You can use Gather normally while the review is in progress.";
     button.hidden=true;noteLabel.hidden=true;
   }else if(latest?.status==="declined"){
     statusNode.className="account-approval-status declined";
@@ -3930,7 +3930,7 @@ function wire(){
       if(result.error){
         status("auth-status",result.error.message,"error");
       }else if(isNew&&!result.data.session){
-        status("auth-status","Account created. Check your email for the confirmation link, then sign in here.","success");
+        status("auth-status","Account created and automatically submitted for administrator review. Check your email for the confirmation link, then sign in here. You can use Gather normally while it is pending.","success");
       }else if(result.data.session?.user){
         status("auth-status","Signed in. Loading chats…","success");
         await signedIn(result.data.session.user);
