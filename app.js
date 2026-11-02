@@ -1789,13 +1789,28 @@ async function forwardMessageToConversation(cid){
     if(s.error||!s.data?.can_message){toast("Private messaging is unavailable in that conversation.");return;}
   }
   const b=$("forward-message-list").querySelector('[data-destination="'+cid+'"]');if(b)b.disabled=true;
-  let image=null;
+  let image=null,messageId=null;
   try{
     if(m.attachment_path)image=await duplicateStoredAttachment("gather-message-images",m.attachment_path,cid);
-    const r=await db.from("messages").insert({conversation_id:cid,sender_id:S.user.id,body:m.body||"",attachment_path:image,forwarded_from_id:m.id}).select("id").single();
-    if(r.error)throw new Error(r.error.message);
+    const sent=await db.from("messages").insert({
+      conversation_id:cid,sender_id:S.user.id,body:m.body||"",attachment_path:image,forwarded_from_id:m.id
+    }).select("id").single();
+    if(sent.error)throw new Error(sent.error.message);
+    messageId=sent.data.id;
+    const sourcePoll=S.messagePolls[m.id];
+    if(sourcePoll){
+      const poll=await db.from("message_polls").insert({
+        message_id:messageId,conversation_id:cid,created_by:S.user.id,question:sourcePoll.question
+      }).select("id").single();
+      if(poll.error)throw new Error("The message was forwarded, but its poll could not be copied: "+poll.error.message);
+      const options=await db.from("message_poll_options").insert(
+        sourcePoll.options.map(option=>({poll_id:poll.data.id,conversation_id:cid,label:option.label,position:option.position}))
+      );
+      if(options.error)throw new Error("The message was forwarded, but its poll choices could not be copied: "+options.error.message);
+    }
     $("forward-message-modal").hidden=true;S.forwardMessage=null;await loadChats();toast("Message forwarded.");
   }catch(e){
+    if(messageId){const rollback=await db.from("messages").delete().eq("id",messageId);if(rollback.error)console.warn("Forward rollback failed:",rollback.error.message);}
     if(image){const cleanup=await db.storage.from("gather-message-images").remove([image]);if(cleanup.error)console.warn("Forwarded image cleanup failed:",cleanup.error.message);}
     if(b)b.disabled=false;toast("Forward failed: "+e.message);
   }
