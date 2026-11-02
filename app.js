@@ -471,7 +471,7 @@ function renderAccountApprovalSettings(){
     button.hidden=false;button.textContent="Request approval again";noteLabel.hidden=false;
   }else{
     statusNode.className="account-approval-status";
-    statusNode.textContent="Your account is currently a regular Gather account. Approved accounts receive a badge on their profile and beside their name.";
+    statusNode.textContent="Your account is currently a regular Gather account. Approved status appears when members look you up to start a private message or group chat, or view your profile.";
     button.hidden=false;button.textContent="Request approved status";noteLabel.hidden=false;
   }
   if(noteLabel.hidden&&note)note.value="";
@@ -3316,8 +3316,7 @@ function renderAdminAccounts(){
       el("strong","",name),
       el("small","",user.username?"@"+user.username:"No username set"),
       el("small","",user.email||"No email address"),
-      el("small","admin-account-item-status",banned?"Banned":"Active"),
-      ...(user.is_approved?[el("small","approved-account-badge","✓ Approved")]:[])
+      el("small","admin-account-item-status",banned?"Banned":"Active")
     );
     button.addEventListener("click",()=>{S.admin.selectedUserId=user.id;renderAdminAccounts();renderAdminAccountDetail();});
     list.append(button);
