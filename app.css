@@ -926,3 +926,17 @@ html[data-theme="light"] .accent-choice[aria-pressed="true"] .accent-swatch{
 #layout.direct-chat .message .meta .message-profile-link{
   display:none !important;
 }
+
+
+/* Online status and live typing indicators. */
+.presence-label{display:block;margin-top:4px;color:var(--muted);font-size:calc(9px * var(--font-scale,1));line-height:1.35}
+.presence-label.is-online{color:#58c897}
+.presence-label.is-online::before{content:"";display:inline-block;width:7px;height:7px;margin:0 6px 1px 0;border-radius:50%;background:#58c897}
+.chat-title #chat-presence-status{margin-top:3px}
+.chat-title .chat-typing-indicator{color:var(--accent-text);font-size:calc(9px * var(--font-scale,1));font-style:italic}
+.online-status-settings{padding-top:14px;border-top:1px solid var(--line)}
+.presence-setting-toggle{display:flex;align-items:flex-start;gap:11px;padding:12px;border:1px solid var(--line);border-radius:11px;background:var(--accent-panel);cursor:pointer}
+.presence-setting-toggle input{width:18px;height:18px;flex:none;margin:2px 0 0;accent-color:var(--accent)}
+.presence-setting-toggle span{display:grid;gap:4px}
+.presence-setting-toggle strong{color:var(--text);font-size:calc(11px * var(--font-scale,1))}
+.presence-setting-toggle small{color:var(--muted);font-size:calc(10px * var(--font-scale,1));line-height:1.45}
