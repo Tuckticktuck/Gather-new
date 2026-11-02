@@ -1544,7 +1544,7 @@ async function openChat(id){
   clearPendingMessageImage();
   S.active=id;S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;
   S.messages=[];S.messageReads={};S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.reactionSelectionMode=false;S.selectedReactionMessageId=null;S.openMessageMenuId=null;S.replyTo=null;S.hasOlderMessages=false;S.loadingOlder=false;renderReplyComposer();
-  $("messages").replaceChildren(el("p","muted tiny","Loading messages…"));
+  $("messages").replaceChildren(el("p","muted messages-loading","Loading messages…"));
   markChatRead(id,S.chats.find(c=>c.id===id)?.last?.created_at||null);
   $("layout").classList.remove("show-home");$("layout").classList.add("show-chat");renderActive();
   subscribeTyping(id);
