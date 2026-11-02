@@ -1539,6 +1539,8 @@ function subscribeTyping(conversationId){
 
 async function openChat(id){
   closeTypingChannel();
+  if(S.readChannel){db.removeChannel(S.readChannel);S.readChannel=null;}
+  if(S.pollChannel){db.removeChannel(S.pollChannel);S.pollChannel=null;}
   clearPendingMessageImage();
   S.active=id;S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;
   S.messages=[];S.messageReads={};S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.reactionSelectionMode=false;S.selectedReactionMessageId=null;S.openMessageMenuId=null;S.replyTo=null;S.hasOlderMessages=false;S.loadingOlder=false;renderReplyComposer();
