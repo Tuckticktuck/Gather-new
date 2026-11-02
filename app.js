@@ -30,7 +30,7 @@ function normalizeChatSettings(raw){
   });
   return {pinned,muted,drafts,appearance};
 }
-const S = { user:null, profile:null, profiles:{}, chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[]} };
+const S = { user:null, profile:null, profiles:{}, chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],modalStack:[]} };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function status(id, text, kind) { const n=$(id); n.textContent=text||""; n.className="status"+(kind?" "+kind:""); }
@@ -984,7 +984,7 @@ async function loadAnnouncements(){
   return true;
 }
 function openAnnouncementsPage(){
-  $("announcements-page-modal").hidden=false;
+  showAdminChildModal("announcements-page-modal");
   renderAnnouncementsPage();
   loadAnnouncements();
 }
@@ -1017,7 +1017,7 @@ function openAnnouncementComposer(){
   $("announcement-publish").textContent="Send to everyone";
   $("announcement-title").value="";$("announcement-body").value="";
   status("announcement-compose-status","");
-  $("announcement-compose-modal").hidden=false;$("announcement-title").focus();
+  showAdminChildModal("announcement-compose-modal");$("announcement-title").focus();
 }
 function openAnnouncementEditor(id){
   if(!isFeedbackAdmin(S.user)){toast("Only the Gather administrator can edit announcements.");return;}
@@ -1030,7 +1030,7 @@ function openAnnouncementEditor(id){
   $("announcement-title").value=item.title||"";
   $("announcement-body").value=item.body||"";
   status("announcement-compose-status","");
-  $("announcement-compose-modal").hidden=false;$("announcement-title").focus();
+  showAdminChildModal("announcement-compose-modal");$("announcement-title").focus();
 }
 async function publishAnnouncement(event){
   event.preventDefault();
@@ -1050,7 +1050,7 @@ async function publishAnnouncement(event){
   button.disabled=false;
   if(result.error){status("announcement-compose-status",(editingId?"Announcement could not be updated: ":"Announcement could not be sent: ")+result.error.message,"error");return;}
   if(!result.data?.id){status("announcement-compose-status","The announcement was not changed. Please verify your admin access and try again.","error");return;}
-  $("announcement-compose-modal").hidden=true;
+  dismissAdminChildModal("announcement-compose-modal");
   if(editingId){
     toast("Official announcement updated.");
     await loadAnnouncements();
@@ -1069,7 +1069,7 @@ async function openAnnouncement(id){
   $("announcement-view-title").textContent="Loading announcement…";
   $("announcement-view-body").textContent="";$("announcement-view-date").textContent="";
   $("announcement-edit-open").hidden=!isFeedbackAdmin(S.user);
-  $("announcement-view-modal").hidden=false;
+  showAdminChildModal("announcement-view-modal");
   const result=await db.from("admin_announcements").select("id,title,body,created_at,edited_at").eq("id",id).maybeSingle();
   if(result.error||!result.data){$("announcement-view-title").textContent="Announcement unavailable";$("announcement-view-body").textContent="This announcement could not be loaded.";return;}
   S.announcementInView=result.data;
@@ -2898,6 +2898,55 @@ async function adminApi(action,data={}){
   if(!result.ok)throw new Error(payload.error||"Admin Mode could not complete that action.");
   return payload;
 }
+const ADMIN_CHILD_MODAL_IDS=["announcement-compose-modal","announcements-page-modal","announcement-view-modal","reports-admin-modal","feedback-modal"];
+function updateAdminModalStack(){
+  const stack=S.admin.modalStack||[];
+  ADMIN_CHILD_MODAL_IDS.forEach(id=>{
+    const modal=$(id);if(!modal)return;
+    const index=stack.indexOf(id);
+    if(index<0){modal.style.removeProperty("z-index");}
+    else{modal.hidden=false;modal.style.zIndex=String(6+index);}
+  });
+  document.querySelectorAll("[data-admin-back]").forEach(button=>{
+    const parent=button.closest(".overlay");
+    button.hidden=!parent||!stack.includes(parent.id);
+  });
+}
+function showAdminChildModal(id){
+  const modal=$(id);if(!modal)return;
+  if(isFeedbackAdmin(S.user)&&$("admin-mode-modal")&&!$("admin-mode-modal").hidden){
+    const stack=S.admin.modalStack;
+    const existing=stack.indexOf(id);
+    if(existing>=0){
+      const removed=stack.splice(existing+1);
+      removed.forEach(childId=>{const child=$(childId);if(child){child.hidden=true;child.style.removeProperty("z-index");}});
+    }else stack.push(id);
+    updateAdminModalStack();
+  }else{
+    modal.hidden=false;
+  }
+}
+function closeAdminChildNavigation(){
+  const stack=S.admin.modalStack;
+  if(!stack?.length)return false;
+  const id=stack.pop(),modal=$(id);
+  if(modal){modal.hidden=true;modal.style.removeProperty("z-index");}
+  updateAdminModalStack();
+  return true;
+}
+function dismissAdminChildModal(id){
+  const stack=S.admin.modalStack,index=stack.lastIndexOf(id);
+  if(index>=0){
+    const removed=stack.splice(index);
+    removed.forEach(childId=>{const child=$(childId);if(child){child.hidden=true;child.style.removeProperty("z-index");}});
+    updateAdminModalStack();
+  }else if($(id))$(id).hidden=true;
+}
+function clearAdminChildNavigation(){
+  S.admin.modalStack=[];
+  ADMIN_CHILD_MODAL_IDS.forEach(id=>{const modal=$(id);if(modal){modal.hidden=true;modal.style.removeProperty("z-index");}});
+  updateAdminModalStack();
+}
 function setAdminModeSection(section){
   if(!["overview","accounts","reports","feedback","announcements","activity"].includes(section))return;
   S.admin.section=section;
@@ -2914,6 +2963,7 @@ function setAdminModeSection(section){
 }
 async function openAdminMode(){
   if(!isFeedbackAdmin(S.user)){toast("Admin Mode is only available to the designated Gather administrator.");return;}
+  clearAdminChildNavigation();
   $("admin-mode-modal").hidden=false;
   setAdminModeSection("overview");
 }
@@ -3137,7 +3187,7 @@ async function messageReportedMember(report){
   if(!message?.trim())return;
   try{
     const result=await adminApi("message_reported_user",{report_id:report.id,body:message.trim()});
-    $("reports-admin-modal").hidden=true;
+    clearAdminChildNavigation();
     $("admin-mode-modal").hidden=true;
     await loadChats();
     await openChat(result.conversation_id);
@@ -3146,7 +3196,7 @@ async function messageReportedMember(report){
 }
 async function openReportsAdmin(){
   if(!isFeedbackAdmin(S.user)){toast("Only the administrator can review reports.");return;}
-  $("reports-admin-modal").hidden=false;
+  showAdminChildModal("reports-admin-modal");
   const list=$("reports-admin-list");list.replaceChildren(el("p","muted tiny","Loading reports…"));
   const result=await db.from("reports").select("id,reporter_id,target_user_id,message_id,reason,details,status,created_at").order("created_at",{ascending:false}).limit(100);
   list.replaceChildren();
@@ -3489,7 +3539,7 @@ async function openFeedback(adminView=false){
   $("feedback-modal").classList.toggle("feedback-admin-mode",S.feedbackAdminView);
   $("feedback-reply").placeholder=S.feedbackAdminView?"Reply as Gather Admin…":"Write a reply…";
   $("feedback-reply-submit").textContent=S.feedbackAdminView?"Reply as Gather Admin":"Send reply";
-  $("feedback-modal").hidden=false;
+  if(S.feedbackAdminView)showAdminChildModal("feedback-modal");else $("feedback-modal").hidden=false;
   $("feedback-empty").textContent=S.feedbackAdminView?"Select a feedback thread to read and respond.":"Choose a feedback thread or start a new one.";
   await loadFeedbackThreads();
 }
@@ -3644,12 +3694,15 @@ async function updateFeedbackStatus(){
   toast("Feedback status updated.");
 }
 
-function closeModals(){ $("admin-mode-modal").hidden=true;$("announcement-compose-modal").hidden=true;$("announcement-view-modal").hidden=true;$("announcements-page-modal").hidden=true;$("notifications-modal").hidden=true;$("member-profile-modal").hidden=true;$("report-modal").hidden=true;$("reports-admin-modal").hidden=true;$("people-modal").hidden=true;$("profile-modal").hidden=true;$("requests-modal").hidden=true;$("friends-modal").hidden=true;$("settings-modal").hidden=true;$("group-photo-modal").hidden=true;$("group-settings-modal").hidden=true;$("message-search-modal").hidden=true;$("poll-create-modal").hidden=true;$("forward-message-modal").hidden=true;$("saved-messages-modal").hidden=true;$("chat-actions-modal").hidden=true;$("feedback-modal").hidden=true; }
+function closeModals(forceAll=false){
+  if(!forceAll&&S.admin.modalStack?.length&&$("admin-mode-modal")&&!$("admin-mode-modal").hidden){closeAdminChildNavigation();return;}
+  clearAdminChildNavigation();
+  $("admin-mode-modal").hidden=true;$("announcement-compose-modal").hidden=true;$("announcement-view-modal").hidden=true;$("announcements-page-modal").hidden=true;$("notifications-modal").hidden=true;$("member-profile-modal").hidden=true;$("report-modal").hidden=true;$("reports-admin-modal").hidden=true;$("people-modal").hidden=true;$("profile-modal").hidden=true;$("requests-modal").hidden=true;$("friends-modal").hidden=true;$("settings-modal").hidden=true;$("group-photo-modal").hidden=true;$("group-settings-modal").hidden=true;$("message-search-modal").hidden=true;$("poll-create-modal").hidden=true;$("forward-message-modal").hidden=true;$("saved-messages-modal").hidden=true;$("chat-actions-modal").hidden=true;$("feedback-modal").hidden=true; }
 function goHome(){
   closeConversationDrawer();
   saveActiveChatDraft();clearUnreadDividerState();
   closeTypingChannel();
-  clearPendingMessageImage();closeModals();S.active=null;S.messages=[];S.messageReads={};S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.replyTo=null;S.hasOlderMessages=false;S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;renderReplyComposer();
+  clearPendingMessageImage();closeModals(true);S.active=null;S.messages=[];S.messageReads={};S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.replyTo=null;S.hasOlderMessages=false;S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;renderReplyComposer();
   $("layout").classList.remove("show-chat");$("layout").classList.add("show-home");renderChats();renderActive();
 }
 function setConversationDrawer(open){
@@ -3736,7 +3789,7 @@ function wire(){
   $("admin-reports-open").addEventListener("click",openReportsAdmin);
   $("admin-feedback-open").addEventListener("click",()=>openFeedback(true));
   $("admin-announcement-create").addEventListener("click",openAnnouncementComposer);
-  $("admin-announcements-open").addEventListener("click",()=>{$("admin-mode-modal").hidden=true;openAnnouncementsPage();});
+  $("admin-announcements-open").addEventListener("click",openAnnouncementsPage);
   $("admin-accounts-refresh").addEventListener("click",()=>loadAdminAccounts(true));
   $("admin-account-search").addEventListener("input",renderAdminAccounts);
   $("admin-accounts-more").addEventListener("click",()=>loadAdminAccounts(false));
@@ -3812,7 +3865,8 @@ document.querySelectorAll("[data-folder]").forEach(b=>b.addEventListener("click"
   });
   $("delete-selected").addEventListener("click",deleteSelectedMessages);
   $("signout").addEventListener("click",async()=>{const r=await db.auth.signOut();if(r.error)toast(r.error.message);else closeModals();});
-  document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",closeModals));
+  document.querySelectorAll("[data-admin-back]").forEach(b=>b.addEventListener("click",closeAdminChildNavigation));
+  document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",()=>closeModals()));
   ["admin-mode-modal","announcement-compose-modal","announcement-view-modal","announcements-page-modal","notifications-modal","member-profile-modal","report-modal","reports-admin-modal","people-modal","profile-modal","requests-modal","friends-modal","settings-modal","group-photo-modal","group-settings-modal","message-search-modal","poll-create-modal","forward-message-modal","saved-messages-modal","chat-actions-modal","feedback-modal"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target===$(id))closeModals();}));
   document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeComposerMoreMenu();closeModals();}});
 }
