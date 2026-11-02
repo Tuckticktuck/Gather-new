@@ -401,8 +401,9 @@ function avatar(name,imageData=null){
   paintAvatar(node,name,imageData);
   return node;
 }
-function appendApprovedBadge(parent,userId){
+function appendApprovedBadge(parent,userId,context){
   if(!parent||!userId||!S.approvedUserIds.has(userId))return;
+  if(context!=="profile"&&context!=="new-chat-picker")return;
   const badge=el("span","approved-account-badge","✓ Approved");
   badge.title="Gather approved account";
   badge.setAttribute("aria-label","Gather approved account");
@@ -418,17 +419,14 @@ async function loadApprovedUserIds(){
 function refreshApprovedBadgeUI(){
   if(!S.user)return;
   const ownName=$("user-name");
-  if(S.profile&&ownName){
-    ownName.textContent=S.profile.display_name;
-    appendApprovedBadge(ownName,S.user.id);
-  }
+  if(S.profile&&ownName)ownName.textContent=S.profile.display_name;
   if(S.active)renderActive();else renderChats();
   renderFriends();
   if(S.active)renderMessages(true);
   if(S.publicProfileId){
     const publicName=$("member-profile-name");
     publicName.querySelector(".approved-account-badge")?.remove();
-    appendApprovedBadge(publicName,S.publicProfileId);
+    appendApprovedBadge(publicName,S.publicProfileId,"profile");
   }
   if(!$("people-modal").hidden&&$("people-search").value.trim().length>=2)void searchPeople();
   if(!$("requests-modal").hidden)renderRequests();
@@ -457,7 +455,7 @@ function renderAccountApprovalSettings(){
   noteLabel.hidden=approved;
   if(approved){
     statusNode.className="account-approval-status approved";
-    statusNode.textContent="Your account is approved. The Approved badge is visible to other Gather members.";
+    statusNode.textContent="Your account is approved. The Approved badge appears when someone looks you up to start a private message or group chat, or views your profile.";
     button.hidden=true;
   }else if(latest?.status==="pending"){
     statusNode.className="account-approval-status pending";
@@ -686,7 +684,7 @@ async function signedIn(user,retry=false){
     const ownPicture=await db.from("profile_avatars").select("image_data").eq("user_id",user.id).maybeSingle();
     S.profile.avatar_data=ownPicture.error?null:(ownPicture.data?.image_data||null);
     S.profiles[user.id]=S.profile;
-    $("user-name").textContent=S.profile.display_name;appendApprovedBadge($("user-name"),user.id);
+    $("user-name").textContent=S.profile.display_name;
     syncOwnAvatar();
     subscribeRequests();
     const loaded=await loadChats();
@@ -1509,7 +1507,7 @@ function renderFriends(){
   S.friends.forEach(f=>{
     const p=S.profiles[f.friend_id]||{id:f.friend_id,display_name:"Gather member",username:"member"};
     const row=el("div","request-item");row.append(avatar(p.display_name,p.avatar_data));
-    const copy=el("div","request-copy"),name=el("strong","",p.display_name);copy.append(name);appendApprovedBadge(copy,f.friend_id);copy.append(el("small","","@"+p.username));appendFriendPresenceLabel(copy,f.friend_id);row.append(copy);
+    const copy=el("div","request-copy"),name=el("strong","",p.display_name);copy.append(name,el("small","","@"+p.username));appendFriendPresenceLabel(copy,f.friend_id);row.append(copy);
     const actions=el("div","request-actions");
     const profile=el("button","outline friend-profile-button","Profile"),message=el("button","request-accept","Message"),remove=el("button","request-decline","Remove");
     profile.type=message.type=remove.type="button";
@@ -1526,7 +1524,7 @@ function renderFriends(){
 function friendRequestRow(r,isIncoming){
   const peerId=isIncoming?r.sender_id:r.recipient_id,p=S.profiles[peerId]||{display_name:"Gather member",username:"member"};
   const row=el("div","request-item");row.append(avatar(p.display_name,p.avatar_data));
-  const copy=el("div","request-copy"),name=el("strong","",p.display_name);copy.append(name);appendApprovedBadge(copy,peerId);copy.append(el("small","","@"+p.username));row.append(copy);
+  const copy=el("div","request-copy"),name=el("strong","",p.display_name);copy.append(name,el("small","","@"+p.username));row.append(copy);
   if(isIncoming){
     const actions=el("div","request-actions"),accept=el("button","request-accept","Accept"),decline=el("button","request-decline","Decline");
     accept.type=decline.type="button";
@@ -1539,7 +1537,7 @@ function friendRequestRow(r,isIncoming){
 function requestRow(r,isIncoming){
   const peerId=isIncoming?r.sender_id:r.recipient_id,p=S.profiles[peerId]||{display_name:"Gather member",username:"member"};
   const row=el("div","request-item");row.append(avatar(p.display_name,p.avatar_data));
-  const copy=el("div","request-copy"),name=el("strong","",p.display_name);copy.append(name);appendApprovedBadge(copy,peerId);copy.append(el("small","","@"+p.username));row.append(copy);
+  const copy=el("div","request-copy"),name=el("strong","",p.display_name);copy.append(name,el("small","","@"+p.username));row.append(copy);
   if(isIncoming){
     const actions=el("div","request-actions"),accept=el("button","request-accept","Accept"),decline=el("button","request-decline","Decline");
     accept.type=decline.type="button";accept.addEventListener("click",()=>respondToRequest(r.id,true));decline.addEventListener("click",()=>respondToRequest(r.id,false));actions.append(accept,decline);row.append(actions);
@@ -1637,7 +1635,6 @@ function renderChatSection(kind,listId,countId,term,sourceChats=null){
       });
     }
     copy.append(name);
-    if(profileShortcut)appendApprovedBadge(copy,peer.user_id);
     let preview=c.last?(c.last.body||(c.last.attachment_path?"Sent an image":"")):chatSub(c);
     if(c.last&&c.last.sender_id===S.user.id)preview="You: "+preview;
     else if(c.kind==="group"&&c.last)preview=(S.profiles[c.last.sender_id]?.display_name||"Member")+": "+preview;
@@ -1943,7 +1940,6 @@ function renderActive(){
   }
   const peerUserId=c.kind==="direct"?peerForChat(c):null;
   $("chat-title").textContent=chatTitle(c);
-  if(peerUserId)appendApprovedBadge($("chat-title"),peerUserId);
   $("chat-subtitle").textContent=chatSub(c);
   const presence=friendPresenceSummary(peerUserId);
   const presenceNode=$("chat-presence-status");
@@ -2548,7 +2544,7 @@ function renderMessages(preserveScroll=false){
           const author=el("button","message-profile-link",p?.display_name||"Member");
           author.type="button";
           author.addEventListener("click",()=>openPublicProfile(m.sender_id));
-          meta.append(author);appendApprovedBadge(meta,m.sender_id);
+          meta.append(author);
         }
       }else meta.classList.add("meta-continued");
     }
@@ -2924,7 +2920,7 @@ async function searchPeople(){
   if(!people.length){box.append(el("p","muted tiny","No matching members found."));return;}
   people.forEach(p=>{
     const b=el("button","person");b.type="button";b.append(avatar(p.display_name,p.avatar_data));
-    const copy=el("div","person-copy");copy.append(el("strong","",p.display_name));appendApprovedBadge(copy,p.id);
+    const copy=el("div","person-copy");copy.append(el("strong","",p.display_name));appendApprovedBadge(copy,p.id,(S.picker==="direct"||S.picker==="group")?"new-chat-picker":null);
     if(S.picker==="friend"){
       const isFriend=S.friends.some(x=>x.friend_id===p.id);
       const incoming=S.friendRequests.find(x=>x.sender_id===p.id&&x.recipient_id===S.user.id&&x.status==="pending");
@@ -3019,7 +3015,7 @@ async function openPublicProfile(userId){
   profile.avatar_data=picture.error?null:(picture.data?.image_data||null);
   S.profiles[userId]=profile;S.publicProfileId=userId;
   renderPublicProfilePresence();
-  $("member-profile-name").textContent=profile.display_name;appendApprovedBadge($("member-profile-name"),userId);
+  $("member-profile-name").textContent=profile.display_name;appendApprovedBadge($("member-profile-name"),userId,"profile");
   $("member-profile-username").textContent="@"+profile.username;
   $("member-profile-pronouns").textContent=profile.pronouns||"";
   $("member-profile-pronouns").hidden=!profile.pronouns;
@@ -3722,7 +3718,7 @@ async function saveProfile(e){
     S.profile.avatar_data=S.pendingAvatarData||null;
   }
   S.profiles[S.user.id]=S.profile;
-  $("user-name").textContent=S.profile.display_name;appendApprovedBadge($("user-name"),S.user.id);syncOwnAvatar();
+  $("user-name").textContent=S.profile.display_name;syncOwnAvatar();
   S.pendingAvatarData=null;S.avatarChanged=false;$("profile-modal").hidden=true;save.disabled=false;
   await loadChats();if(S.active)await loadMessages(S.active);toast("Profile updated.");
 }
