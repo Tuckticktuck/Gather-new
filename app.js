@@ -2646,7 +2646,6 @@ async function editOwnMessage(message){
   if(result.error||!result.data){toast("Message could not be edited: "+(result.error?.message||"Permission denied."));return;}
   Object.assign(message,result.data);renderMessages(true);toast("Message updated.");
 }
-async 
 async function signOutOtherSessions(){
   const button=$("signout-other-sessions");button.disabled=true;
   $("session-security-status").textContent="Signing out other devices…";
