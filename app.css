@@ -1496,3 +1496,34 @@ html[data-theme="light"] .chat.chat-appearance-custom .messages .mine .bubble .m
   flex-direction:column;
   min-height:0;
 }
+
+
+/* Keep the image attachment remove control sized to its label, not the composer icon buttons. */
+.composer .message-image-preview{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  box-sizing:border-box;
+}
+.composer .message-image-details{
+  flex:1 1 0;
+  min-width:0;
+}
+.composer .message-image-remove{
+  display:inline-flex;
+  flex:0 0 auto;
+  align-items:center;
+  justify-content:center;
+  width:auto;
+  min-width:max-content;
+  height:auto;
+  min-height:32px;
+  padding:7px 10px;
+  line-height:1.2;
+  white-space:nowrap;
+}
+@media(max-width:420px){
+  .composer .message-image-preview{gap:8px;padding:7px;}
+  .composer .message-image-thumb{width:48px;height:48px;}
+  .composer .message-image-remove{min-height:30px;padding:6px 8px;}
+}
