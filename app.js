@@ -649,7 +649,7 @@ function showMessageNotification(message,chat){
   heading.append(el("strong","",chatTitle(chat)));
   const sender=S.profiles[message.sender_id]?.display_name||"A group member";
   heading.append(el("small","",chat.kind==="group"?sender+" sent a message":"New message"));
-  const preview=el("span","message-notification-preview",message.body||(message.attachment_path?"Sent an image":"Sent a message"));
+  const preview=el("span","message-notification-preview",message.body||(message.audio_path?"Sent a voice message":message.attachment_path?"Sent an image":"Sent a message"));
   open.append(heading,preview);
   open.addEventListener("click",()=>{
     dismissMessageNotification(message.id);
@@ -2817,7 +2817,7 @@ async function updateFeedbackStatus(){
   toast("Feedback status updated.");
 }
 
-function closeModals(){ if($("voice-record-modal")&&!$("voice-record-modal").hidden)cancelVoiceRecording(false); $("announcement-compose-modal").hidden=true;$("announcement-view-modal").hidden=true;$("announcements-page-modal").hidden=true;$("notifications-modal").hidden=true;$("member-profile-modal").hidden=true;$("report-modal").hidden=true;$("reports-admin-modal").hidden=true;$("people-modal").hidden=true;$("profile-modal").hidden=true;$("requests-modal").hidden=true;$("friends-modal").hidden=true;$("settings-modal").hidden=true;$("group-photo-modal").hidden=true;$("group-settings-modal").hidden=true;$("message-search-modal").hidden=true;$("chat-actions-modal").hidden=true;$("feedback-modal").hidden=true; }
+function closeModals(){ if($("voice-record-modal")&&!$("voice-record-modal").hidden)cancelVoiceRecording(false); $("announcement-compose-modal").hidden=true;$("announcement-view-modal").hidden=true;$("announcements-page-modal").hidden=true;$("notifications-modal").hidden=true;$("member-profile-modal").hidden=true;$("report-modal").hidden=true;$("reports-admin-modal").hidden=true;$("people-modal").hidden=true;$("profile-modal").hidden=true;$("requests-modal").hidden=true;$("friends-modal").hidden=true;$("settings-modal").hidden=true;$("group-photo-modal").hidden=true;$("group-settings-modal").hidden=true;$("message-search-modal").hidden=true;$("poll-create-modal").hidden=true;$("voice-record-modal").hidden=true;$("forward-message-modal").hidden=true;$("saved-messages-modal").hidden=true;$("chat-actions-modal").hidden=true;$("feedback-modal").hidden=true; }
 function goHome(){
   closeTypingChannel();
   clearPendingMessageImage();cancelVoiceRecording(false);closeModals();S.active=null;S.messages=[];S.messageReads={};S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.replyTo=null;S.hasOlderMessages=false;S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;renderReplyComposer();
