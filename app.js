@@ -30,7 +30,7 @@ function normalizeChatSettings(raw){
   });
   return {pinned,muted,drafts,appearance};
 }
-const S = { user:null, profile:null, profiles:{}, chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],modalStack:[]} };
+const S = { user:null, profile:null, profiles:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function status(id, text, kind) { const n=$(id); n.textContent=text||""; n.className="status"+(kind?" "+kind:""); }
@@ -363,7 +363,7 @@ function setGroupUnreadMessages(enabled){
   renderNotifications();
 }
 function openSettings(){
-  applyUIPreferences();$("settings-modal").hidden=false;
+  applyUIPreferences();renderAccountApprovalSettings();$("settings-modal").hidden=false;
 }
 function initials(s) { return (String(s||"?").trim()[0]||"?").toUpperCase(); }
 function paintAvatar(node,name,imageData){
@@ -381,6 +381,79 @@ function avatar(name,imageData=null){
   const node=el("span","avatar");
   paintAvatar(node,name,imageData);
   return node;
+}
+function appendApprovedBadge(parent,userId){
+  if(!parent||!userId||!S.approvedUserIds.has(userId))return;
+  const badge=el("span","approved-account-badge","✓ Approved");
+  badge.title="Gather approved account";
+  badge.setAttribute("aria-label","Gather approved account");
+  parent.append(badge);
+}
+async function loadApprovedUserIds(){
+  if(!S.user)return false;
+  const result=await db.from("approved_accounts").select("user_id");
+  if(result.error){console.warn("Approved account badges could not be loaded:",result.error.message);return false;}
+  S.approvedUserIds=new Set((result.data||[]).map(item=>item.user_id));
+  return true;
+}
+async function loadOwnApprovalRequests(){
+  if(!S.user)return false;
+  const userId=S.user.id;
+  const result=await db.from("account_approval_requests")
+    .select("id,status,message,created_at,reviewed_at,review_note")
+    .eq("user_id",userId)
+    .order("created_at",{ascending:false})
+    .limit(20);
+  if(S.user?.id!==userId)return false;
+  if(result.error){console.warn("Your account approval status could not be loaded:",result.error.message);return false;}
+  S.ownApprovalRequests=result.data||[];
+  renderAccountApprovalSettings();
+  return true;
+}
+function renderAccountApprovalSettings(){
+  const statusNode=$("account-approval-status"),noteLabel=$("account-approval-message-label"),note=$("account-approval-message"),button=$("account-approval-submit");
+  if(!statusNode||!button)return;
+  const latest=S.ownApprovalRequests[0]||null,approved=!!S.user&&S.approvedUserIds.has(S.user.id);
+  noteLabel.hidden=approved;
+  if(approved){
+    statusNode.className="account-approval-status approved";
+    statusNode.textContent="Your account is approved. The Approved badge is visible to other Gather members.";
+    button.hidden=true;
+  }else if(latest?.status==="pending"){
+    statusNode.className="account-approval-status pending";
+    statusNode.textContent="Your request was submitted "+dateLabel(latest.created_at)+". It is waiting for the Gather administrator to review it.";
+    button.hidden=true;noteLabel.hidden=true;
+  }else if(latest?.status==="declined"){
+    statusNode.className="account-approval-status declined";
+    statusNode.textContent="Your previous request was not approved. "+(latest.review_note||"You can submit a new request when you're ready.");
+    button.hidden=false;button.textContent="Request approval again";noteLabel.hidden=false;
+  }else if(latest?.status==="revoked"){
+    statusNode.className="account-approval-status declined";
+    statusNode.textContent="Your approved status was removed. You may submit a new request for review.";
+    button.hidden=false;button.textContent="Request approval again";noteLabel.hidden=false;
+  }else{
+    statusNode.className="account-approval-status";
+    statusNode.textContent="Your account is currently a regular Gather account. Approved accounts receive a badge on their profile and beside their name.";
+    button.hidden=false;button.textContent="Request approved status";noteLabel.hidden=false;
+  }
+  if(noteLabel.hidden&&note)note.value="";
+  button.disabled=!!S.approvalSubmitting;
+}
+async function submitAccountApprovalRequest(){
+  if(!S.user||S.approvedUserIds.has(S.user.id))return;
+  const button=$("account-approval-submit"),message=$("account-approval-message").value.trim();
+  if(message.length>500){toast("Your application note must be 500 characters or fewer.");return;}
+  button.disabled=true;S.approvalSubmitting=true;
+  const result=await db.from("account_approval_requests").insert({user_id:S.user.id,message}).select("id,status,created_at").single();
+  S.approvalSubmitting=false;button.disabled=false;
+  if(result.error){
+    if(result.error.code==="23505")toast("You already have a pending approval request.");
+    else toast("Your approval request could not be submitted: "+result.error.message);
+    await loadOwnApprovalRequests();return;
+  }
+  $("account-approval-message").value="";
+  await loadOwnApprovalRequests();
+  toast("Your approved-account request was sent for review.");
 }
 async function fetchProfileRecords(ids){
   const unique=[...new Set((ids||[]).filter(Boolean))];
@@ -552,6 +625,9 @@ async function signedIn(user,retry=false){
   try{
     S.profile=await ensureProfile(user);
     if(S.user?.id!==user.id)return;
+    await Promise.all([loadApprovedUserIds(),loadOwnApprovalRequests()]);
+    if(S.user?.id!==user.id)return;
+    renderAccountApprovalSettings();
     loadReadState();
     loadUIPreferences(S.profile.preferences||DEFAULT_PREFERENCES);
     await loadChatSettings(user.id);
@@ -1362,7 +1438,7 @@ function renderFriends(){
   S.friends.forEach(f=>{
     const p=S.profiles[f.friend_id]||{id:f.friend_id,display_name:"Gather member",username:"member"};
     const row=el("div","request-item");row.append(avatar(p.display_name,p.avatar_data));
-    const copy=el("div","request-copy");copy.append(el("strong","",p.display_name),el("small","","@"+p.username));appendFriendPresenceLabel(copy,f.friend_id);row.append(copy);
+    const copy=el("div","request-copy"),name=el("strong","",p.display_name);copy.append(name);appendApprovedBadge(copy,f.friend_id);copy.append(el("small","","@"+p.username));appendFriendPresenceLabel(copy,f.friend_id);row.append(copy);
     const actions=el("div","request-actions");
     const profile=el("button","outline friend-profile-button","Profile"),message=el("button","request-accept","Message"),remove=el("button","request-decline","Remove");
     profile.type=message.type=remove.type="button";
@@ -1379,7 +1455,7 @@ function renderFriends(){
 function friendRequestRow(r,isIncoming){
   const peerId=isIncoming?r.sender_id:r.recipient_id,p=S.profiles[peerId]||{display_name:"Gather member",username:"member"};
   const row=el("div","request-item");row.append(avatar(p.display_name,p.avatar_data));
-  const copy=el("div","request-copy");copy.append(el("strong","",p.display_name),el("small","","@"+p.username));row.append(copy);
+  const copy=el("div","request-copy"),name=el("strong","",p.display_name);copy.append(name);appendApprovedBadge(copy,peerId);copy.append(el("small","","@"+p.username));row.append(copy);
   if(isIncoming){
     const actions=el("div","request-actions"),accept=el("button","request-accept","Accept"),decline=el("button","request-decline","Decline");
     accept.type=decline.type="button";
@@ -1392,7 +1468,7 @@ function friendRequestRow(r,isIncoming){
 function requestRow(r,isIncoming){
   const peerId=isIncoming?r.sender_id:r.recipient_id,p=S.profiles[peerId]||{display_name:"Gather member",username:"member"};
   const row=el("div","request-item");row.append(avatar(p.display_name,p.avatar_data));
-  const copy=el("div","request-copy");copy.append(el("strong","",p.display_name),el("small","","@"+p.username));row.append(copy);
+  const copy=el("div","request-copy"),name=el("strong","",p.display_name);copy.append(name);appendApprovedBadge(copy,peerId);copy.append(el("small","","@"+p.username));row.append(copy);
   if(isIncoming){
     const actions=el("div","request-actions"),accept=el("button","request-accept","Accept"),decline=el("button","request-decline","Decline");
     accept.type=decline.type="button";accept.addEventListener("click",()=>respondToRequest(r.id,true));decline.addEventListener("click",()=>respondToRequest(r.id,false));actions.append(accept,decline);row.append(actions);
@@ -1490,6 +1566,7 @@ function renderChatSection(kind,listId,countId,term,sourceChats=null){
       });
     }
     copy.append(name);
+    if(profileShortcut)appendApprovedBadge(copy,peer.user_id);
     let preview=c.last?(c.last.body||(c.last.attachment_path?"Sent an image":"")):chatSub(c);
     if(c.last&&c.last.sender_id===S.user.id)preview="You: "+preview;
     else if(c.kind==="group"&&c.last)preview=(S.profiles[c.last.sender_id]?.display_name||"Member")+": "+preview;
@@ -2385,7 +2462,7 @@ function renderMessages(preserveScroll=false){
           const author=el("button","message-profile-link",p?.display_name||"Member");
           author.type="button";
           author.addEventListener("click",()=>openPublicProfile(m.sender_id));
-          meta.append(author);
+          meta.append(author);appendApprovedBadge(meta,m.sender_id);
         }
       }else meta.classList.add("meta-continued");
     }
@@ -2833,7 +2910,7 @@ async function openPublicProfile(userId){
   profile.avatar_data=picture.error?null:(picture.data?.image_data||null);
   S.profiles[userId]=profile;S.publicProfileId=userId;
   renderPublicProfilePresence();
-  $("member-profile-name").textContent=profile.display_name;
+  $("member-profile-name").textContent=profile.display_name;appendApprovedBadge($("member-profile-name"),userId);
   $("member-profile-username").textContent="@"+profile.username;
   $("member-profile-pronouns").textContent=profile.pronouns||"";
   $("member-profile-pronouns").hidden=!profile.pronouns;
@@ -2948,7 +3025,7 @@ function clearAdminChildNavigation(){
   updateAdminModalStack();
 }
 function setAdminModeSection(section){
-  if(!["overview","accounts","reports","feedback","announcements","activity"].includes(section))return;
+  if(!["overview","accounts","reports","feedback","announcements","approvals","activity"].includes(section))return;
   S.admin.section=section;
   document.querySelectorAll("[data-admin-section]").forEach(button=>{
     if(button.classList.contains("admin-mode-tab"))button.classList.toggle("active",button.dataset.adminSection===section);
@@ -2960,6 +3037,7 @@ function setAdminModeSection(section){
   if(section==="overview")loadAdminOverview();
   if(section==="accounts"&&!S.admin.users.length)loadAdminAccounts(true);
   if(section==="activity")loadAdminActivity();
+  if(section==="approvals")loadAdminApprovals();
 }
 async function openAdminMode(){
   if(!isFeedbackAdmin(S.user)){toast("Admin Mode is only available to the designated Gather administrator.");return;}
@@ -3000,10 +3078,87 @@ async function loadAdminOverview(){
     $("admin-summary-reports").textContent=String(S.admin.summary.reports??0);
     $("admin-summary-feedback").textContent=String(S.admin.summary.feedback??0);
     $("admin-summary-announcements").textContent=String(S.admin.summary.announcements??0);
+     $("admin-summary-approvals").textContent=String(S.admin.summary.pendingApprovals??0);
     S.admin.activity=result.activity||[];
     renderAdminActivity("admin-overview-activity",S.admin.activity);
   }catch(error){
     $("admin-overview-activity").replaceChildren(el("p","status error",error.message));
+  }
+}
+async function loadAdminApprovals(){
+  if(!isFeedbackAdmin(S.user))return;
+  const pending=$("admin-approval-pending-list"),approved=$("admin-approval-approved-list");
+  pending.replaceChildren(el("p","muted tiny","Loading approval requests…"));
+  approved.replaceChildren(el("p","muted tiny","Loading approved accounts…"));
+  try{
+    const result=await adminApi("list_approval_data");
+    S.admin.approvalPending=result.pending||[];
+    S.admin.approvalApproved=result.approved||[];
+    renderAdminApprovals();
+  }catch(error){
+    pending.replaceChildren(el("p","status error",error.message));
+    approved.replaceChildren(el("p","muted tiny","Approved accounts could not be loaded."));
+  }
+}
+function renderAdminApprovals(){
+  const pending=$("admin-approval-pending-list"),approved=$("admin-approval-approved-list");
+  if(!pending||!approved)return;
+  pending.replaceChildren();approved.replaceChildren();
+  if(!S.admin.approvalPending.length)pending.append(el("p","muted tiny section-empty","There are no pending account approval requests."));
+  S.admin.approvalPending.forEach(item=>{
+    const profile=item.profile||{},card=el("article","admin-approval-card");
+    const heading=el("div","admin-approval-heading");
+    heading.append(el("strong","",profile.display_name||"Gather member"),el("small","",profile.username?"@"+profile.username:"No username"));
+    card.append(heading,el("small","muted","Requested "+dateLabel(item.created_at)));
+    if(item.message)card.append(el("p","admin-approval-message",item.message));
+    const noteLabel=el("label","admin-approval-note-label");
+    noteLabel.append(el("span","","Review note (optional)"));
+    const note=el("textarea");note.rows=2;note.maxLength=500;note.placeholder="Add a short note for the member…";
+    noteLabel.append(note);card.append(noteLabel);
+    const actions=el("div","admin-account-form-actions");
+    const approve=el("button","primary","Approve");approve.type="button";
+    const decline=el("button","outline","Decline");decline.type="button";
+    approve.addEventListener("click",()=>reviewAdminApproval(item.id,"approve",note.value,approve,decline));
+    decline.addEventListener("click",()=>reviewAdminApproval(item.id,"decline",note.value,approve,decline));
+    actions.append(approve,decline);card.append(actions);pending.append(card);
+  });
+  if(!S.admin.approvalApproved.length)approved.append(el("p","muted tiny section-empty","No accounts have approved status yet."));
+  S.admin.approvalApproved.forEach(item=>{
+    const profile=item.profile||{},row=el("div","admin-approval-approved-row");
+    const copy=el("div","admin-approval-approved-copy");
+    copy.append(el("strong","",profile.display_name||"Gather member"),el("small","muted",profile.username?"@"+profile.username:"No username"),el("small","muted","Approved "+dateLabel(item.approved_at)));
+    const revoke=el("button","admin-danger-button","Revoke");revoke.type="button";
+    revoke.addEventListener("click",()=>revokeAdminApproval(item.user_id,revoke));
+    row.append(copy,revoke);approved.append(row);
+  });
+}
+async function reviewAdminApproval(requestId,decision,note,approveButton,declineButton){
+  if(!isFeedbackAdmin(S.user))return;
+  if(decision==="decline"&&!confirm("Decline this account approval request?"))return;
+  approveButton.disabled=true;declineButton.disabled=true;
+  try{
+    await adminApi("review_account_approval",{request_id:requestId,decision,review_note:String(note||"").trim().slice(0,500)});
+    toast(decision==="approve"?"Account approved.":"Approval request declined.");
+    await Promise.all([loadAdminApprovals(),loadAdminOverview()]);
+    await loadApprovedUserIds();
+    renderChats();renderFriends();
+  }catch(error){
+    toast("The approval request could not be updated: "+error.message);
+    approveButton.disabled=false;declineButton.disabled=false;
+  }
+}
+async function revokeAdminApproval(userId,button){
+  if(!isFeedbackAdmin(S.user)||!userId)return;
+  const item=S.admin.approvalApproved.find(row=>row.user_id===userId),name=item?.profile?.display_name||"this member";
+  if(!confirm("Remove approved status from "+name+"? The account will remain active as a regular Gather account."))return;
+  button.disabled=true;
+  try{
+    await adminApi("revoke_account_approval",{user_id:userId});
+    toast("Approved status revoked.");
+    await Promise.all([loadAdminApprovals(),loadAdminOverview(),loadApprovedUserIds()]);
+    renderChats();renderFriends();
+  }catch(error){
+    toast("Approved status could not be revoked: "+error.message);button.disabled=false;
   }
 }
 async function loadAdminAccounts(reset=false){
@@ -3053,7 +3208,8 @@ function renderAdminAccounts(){
       el("strong","",name),
       el("small","",user.username?"@"+user.username:"No username set"),
       el("small","",user.email||"No email address"),
-      el("small","admin-account-item-status",banned?"Banned":"Active")
+      el("small","admin-account-item-status",banned?"Banned":"Active"),
+      ...(user.is_approved?[el("small","approved-account-badge","✓ Approved")]:[])
     );
     button.addEventListener("click",()=>{S.admin.selectedUserId=user.id;renderAdminAccounts();renderAdminAccountDetail();});
     list.append(button);
@@ -3789,6 +3945,8 @@ function wire(){
   $("admin-reports-open").addEventListener("click",openReportsAdmin);
   $("admin-feedback-open").addEventListener("click",()=>openFeedback(true));
   $("admin-announcement-create").addEventListener("click",openAnnouncementComposer);
+  $("admin-approvals-refresh").addEventListener("click",loadAdminApprovals);
+  $("account-approval-submit").addEventListener("click",submitAccountApprovalRequest);
   $("admin-announcements-open").addEventListener("click",openAnnouncementsPage);
   $("admin-accounts-refresh").addEventListener("click",()=>loadAdminAccounts(true));
   $("admin-account-search").addEventListener("input",renderAdminAccounts);
