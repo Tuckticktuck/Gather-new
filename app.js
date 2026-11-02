@@ -1378,6 +1378,11 @@ async function respondToRequest(id,accept){
     $("requests-modal").hidden=true;toast("Request accepted. You can now message each other.");await loadChats();await openChat(r.data.conversation_id);
   }else{toast("Request declined.");await loadRequests();}
 }
+async function openConversationMemberProfile(userId){
+  if(!userId)return;
+  if(await canViewMemberProfile(userId))await openPublicProfile(userId);
+  else toast("This member is not currently available for private messaging.");
+}
 function renderChatSection(kind,listId,countId,term,sourceChats=null){
   const list=$(listId);list.replaceChildren();
   const chats=(sourceChats||S.chats.filter(c=>c.kind===kind)).filter(c=>{
@@ -1394,11 +1399,35 @@ function renderChatSection(kind,listId,countId,term,sourceChats=null){
   chats.forEach(c=>{
     const row=el("div","chat-row");
     const peer=c.members.find(m=>m.user_id!==S.user.id),peerProfile=peer&&S.profiles[peer.user_id];
+    const profileShortcut=!S.selectingConversations&&c.kind==="direct"&&!!peer?.user_id;
     const avatarImage=c.kind==="group"?c.avatar_data:peerProfile?.avatar_data;
+    const avatarNode=profileShortcut?el("button","avatar chat-peer-profile-target"):avatar(chatTitle(c),avatarImage);
+    if(profileShortcut){
+      avatarNode.type="button";
+      avatarNode.title="View "+chatTitle(c)+"'s profile";
+      avatarNode.setAttribute("aria-label","View "+chatTitle(c)+"'s profile");
+      paintAvatar(avatarNode,chatTitle(c),avatarImage);
+      avatarNode.addEventListener("click",event=>{
+        event.stopPropagation();
+        void openConversationMemberProfile(peer.user_id);
+      });
+    }
     const unreadCount=Number(S.unreadCounts[c.id]||0),unread=unreadCount>0||chatHasUnread(c);
-    const b=el("button","chat-item"+(c.id===S.active?" active":"")+(unread?" has-unread":""));b.type="button";b.append(avatar(chatTitle(c),avatarImage));
+    const chatButton=el("div","chat-item"+(c.id===S.active?" active":"")+(unread?" has-unread":""));
+    chatButton.setAttribute("role","button");chatButton.tabIndex=0;
+    chatButton.append(avatarNode);
     const copy=el("div","chat-copy");
-    copy.append(el("strong","",chatTitle(c)));
+    const name=profileShortcut?el("button","chat-peer-profile-name",chatTitle(c)):el("strong","",chatTitle(c));
+    if(profileShortcut){
+      name.type="button";
+      name.setAttribute("aria-label","View "+chatTitle(c)+"'s profile");
+      name.title="View profile";
+      name.addEventListener("click",event=>{
+        event.stopPropagation();
+        void openConversationMemberProfile(peer.user_id);
+      });
+    }
+    copy.append(name);
     let preview=c.last?(c.last.body||(c.last.attachment_path?"Sent an image":"")):chatSub(c);
     if(c.last&&c.last.sender_id===S.user.id)preview="You: "+preview;
     else if(c.kind==="group"&&c.last)preview=(S.profiles[c.last.sender_id]?.display_name||"Member")+": "+preview;
@@ -1406,10 +1435,15 @@ function renderChatSection(kind,listId,countId,term,sourceChats=null){
     if(c.kind==="direct")appendFriendPresenceLabel(copy,peer?.user_id);
     if(S.chatSettings.muted[c.id])copy.append(el("small","chat-muted-label","Muted"));
     if(unread){const badge=el("small","unread-count-badge",unreadCount>0?(unreadCount>99?"99+":String(unreadCount)):"New");badge.setAttribute("aria-label",unreadCount>0?unreadCount+" unread messages":"Unread message");copy.append(badge);}
-    b.append(copy,el("small","chat-time",dateLabel(c.last?.created_at||c.updated_at)));
-    b.addEventListener("click",()=>{
+    chatButton.append(copy,el("small","chat-time",dateLabel(c.last?.created_at||c.updated_at)));
+    const activate=()=>{
       if(S.selectingConversations){toggleConversationSelection(c.id);return;}
       openChat(c.id);
+    };
+    chatButton.addEventListener("click",activate);
+    chatButton.addEventListener("keydown",event=>{
+      if(event.target!==chatButton||(event.key!=="Enter"&&event.key!==" "))return;
+      event.preventDefault();activate();
     });
     row.classList.toggle("conversation-row-selecting",S.selectingConversations);
     const selector=el("label","conversation-select-control");
@@ -1420,19 +1454,7 @@ function renderChatSection(kind,listId,countId,term,sourceChats=null){
     checkbox.addEventListener("click",event=>event.stopPropagation());
     checkbox.addEventListener("change",()=>toggleConversationSelection(c.id,checkbox.checked));
     selector.append(checkbox);
-    row.append(selector,b);
-    const pin=el("button","conversation-pin",S.chatSettings.pinned.includes(c.id)?"★":"☆");
-    pin.type="button";pin.title=S.chatSettings.pinned.includes(c.id)?"Unpin conversation":"Pin conversation";
-    pin.setAttribute("aria-label",pin.title);pin.setAttribute("aria-pressed",String(S.chatSettings.pinned.includes(c.id)));
-    pin.hidden=S.selectingConversations;
-    pin.addEventListener("click",event=>{event.stopPropagation();togglePinnedConversation(c.id);});
-    row.append(pin);
-    if(c.kind==="direct"){
-      const profile=el("button","conversation-profile","Profile");profile.type="button";
-      profile.addEventListener("click",async()=>{const peerId=peerForChat(c);if(await canViewMemberProfile(peerId))await openPublicProfile(peerId);else toast("This member is not currently available for private messaging.");});
-      profile.hidden=S.selectingConversations;
-      row.append(profile);
-    }
+    row.append(selector,chatButton);
     list.append(row);
   });
 }
