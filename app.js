@@ -635,7 +635,7 @@ async function signedIn(user,retry=false){
     const ownPicture=await db.from("profile_avatars").select("image_data").eq("user_id",user.id).maybeSingle();
     S.profile.avatar_data=ownPicture.error?null:(ownPicture.data?.image_data||null);
     S.profiles[user.id]=S.profile;
-    $("user-name").textContent=S.profile.display_name;
+    $("user-name").textContent=S.profile.display_name;appendApprovedBadge($("user-name"),user.id);
     syncOwnAvatar();
     subscribeRequests();
     const loaded=await loadChats();
@@ -3608,7 +3608,7 @@ async function saveProfile(e){
     S.profile.avatar_data=S.pendingAvatarData||null;
   }
   S.profiles[S.user.id]=S.profile;
-  $("user-name").textContent=S.profile.display_name;syncOwnAvatar();
+  $("user-name").textContent=S.profile.display_name;appendApprovedBadge($("user-name"),S.user.id);syncOwnAvatar();
   S.pendingAvatarData=null;S.avatarChanged=false;$("profile-modal").hidden=true;save.disabled=false;
   await loadChats();if(S.active)await loadMessages(S.active);toast("Profile updated.");
 }
