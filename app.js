@@ -505,7 +505,7 @@ function renderAnnouncementText(target,value){
   if(!target)return;
   target.replaceChildren();
   const source=String(value??"");
-  const boldPattern=/\\*\\*([\\s\\S]+?)\\*\\*/g;
+  const boldPattern=/\*\*([\s\S]+?)\*\*/g;
   let cursor=0,match;
   while((match=boldPattern.exec(source))){
     if(match.index>cursor)target.append(document.createTextNode(source.slice(cursor,match.index)));
