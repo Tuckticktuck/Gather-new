@@ -1904,3 +1904,14 @@ button:not(:disabled):active{transform:translateY(1px) scale(.985)}
 
 /* Inline message-formatting guidance in the composer. */
 .message-format-hint{display:block;margin:2px 0 7px;color:var(--muted);font-size:calc(9px * var(--font-scale,1));line-height:1.35}
+
+
+/* iOS Safari zooms focused text controls below 16px; keep this adjustment iOS-only. */
+@supports (-webkit-touch-callout: none) {
+  @media (hover: none) and (pointer: coarse) {
+    input:not([type="file"]):not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="hidden"]):not([type="image"]):not([type="range"]),
+    textarea {
+      font-size: max(16px, calc(12px * var(--font-scale, 1))) !important;
+    }
+  }
+}
