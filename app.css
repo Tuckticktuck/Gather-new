@@ -1450,3 +1450,40 @@ html[data-theme="light"] .in-chat-conversation-list .chat-row .chat-item.active{
   .layout.in-chat-mode .side-title h2{font-size:calc(18px * var(--font-scale,1))}
   .layout.in-chat-mode .in-chat-sidebar{margin-top:13px}
 }
+
+
+/* High-contrast text for dark outgoing bubbles in light-theme custom chats. */
+html[data-theme="light"] .chat.chat-appearance-custom .messages .mine .bubble{
+  color:#f7f9fc;
+}
+html[data-theme="light"] .chat.chat-appearance-custom .messages .mine .bubble .meta strong,
+html[data-theme="light"] .chat.chat-appearance-custom .messages .mine .bubble .message-profile-link{
+  color:#ffffff;
+}
+html[data-theme="light"] .chat.chat-appearance-custom .messages .mine .bubble .meta time,
+html[data-theme="light"] .chat.chat-appearance-custom .messages .mine .bubble .message-edited-label,
+html[data-theme="light"] .chat.chat-appearance-custom .messages .mine .bubble .message-forwarded-label{
+  color:#dce5ef;
+}
+html[data-theme="light"] .chat.chat-appearance-custom .messages .mine .bubble .message-action-trigger{
+  color:#e5edf5;
+}
+html[data-theme="light"] .chat.chat-appearance-custom .messages .mine .bubble .message-action-trigger:hover,
+html[data-theme="light"] .chat.chat-appearance-custom .messages .mine .bubble .message-action-trigger[aria-expanded="true"]{
+  color:#ffffff;
+  background:#ffffff20;
+}
+html[data-theme="light"] .chat.chat-appearance-custom .messages .mine .bubble .reply-preview{
+  color:#f7f9fc;
+  border-left-color:#dce5ef;
+  background:#ffffff18;
+}
+html[data-theme="light"] .chat.chat-appearance-custom .messages .mine .bubble .reply-preview strong{
+  color:#ffffff;
+}
+html[data-theme="light"] .chat.chat-appearance-custom .messages .mine .bubble .message-receipts{
+  color:#e5edf5;
+}
+html[data-theme="light"] .chat.chat-appearance-custom .messages .mine .bubble .message-receipts.is-seen{
+  color:#a9edc4;
+}
