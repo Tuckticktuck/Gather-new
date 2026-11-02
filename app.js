@@ -443,9 +443,17 @@ function appendFriendPresenceLabel(container,userId){
   if(!presence)return;
   container.append(el("small","presence-label"+(presence.online?" is-online":""),presence.text));
 }
+function renderPublicProfilePresence(){
+  const label=$("member-profile-presence");
+  if(!label)return;
+  const presence=friendPresenceSummary(S.publicProfileId);
+  label.hidden=!presence;
+  label.textContent=presence?.text||"";
+  label.classList.toggle("is-online",!!presence?.online);
+}
 function renderPresenceUI(){
   if(!S.user)return;
-  renderFriends();renderChats();renderActive();
+  renderFriends();renderChats();renderActive();renderPublicProfilePresence();
 }
 function ensurePresenceDisplayTimer(){
   if(S.presenceDisplayTimer)return;
@@ -1840,6 +1848,9 @@ async function openPublicProfile(userId){
   $("member-profile-pronouns").textContent="";
   $("member-profile-bio").textContent="";
   $("member-profile-mutuals").textContent="";
+  S.publicProfileId=null;
+  const presenceLabel=$("member-profile-presence");
+  presenceLabel.textContent="";presenceLabel.hidden=true;presenceLabel.classList.remove("is-online");
   const existing=S.profiles[userId];
   const result=await db.from("profiles").select("id,username,display_name,bio,pronouns,banner_style").eq("id",userId).maybeSingle();
   if(result.error||!result.data){$("member-profile-name").textContent="Profile unavailable";return;}
@@ -1847,6 +1858,7 @@ async function openPublicProfile(userId){
   const picture=await db.from("profile_avatars").select("image_data").eq("user_id",userId).maybeSingle();
   profile.avatar_data=picture.error?null:(picture.data?.image_data||null);
   S.profiles[userId]=profile;S.publicProfileId=userId;
+  renderPublicProfilePresence();
   $("member-profile-name").textContent=profile.display_name;
   $("member-profile-username").textContent="@"+profile.username;
   $("member-profile-pronouns").textContent=profile.pronouns||"";
