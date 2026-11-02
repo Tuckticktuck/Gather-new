@@ -30,7 +30,7 @@ function normalizeChatSettings(raw){
   });
   return {pinned,muted,drafts,appearance};
 }
-const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
+const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], favoriteFriendIds:new Set(), friendActivityPosts:[], friendActivityChannel:null, blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingUndoSend:null, undoSendTimer:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function appendFormattedMessageText(parent,value){
@@ -707,6 +707,7 @@ async function signedIn(user,retry=false){
     await loadAnnouncements();subscribeAnnouncements();
     setChatLoadStatus("");
     if(!await loadFriends())console.warn("Gather friend list could not be loaded.");
+    await loadFriendActivity();subscribeFriendActivity();
     if(!await loadBlocked())console.warn("Gather blocked list could not be loaded.");
     renderChats();
   }catch(e){
@@ -781,21 +782,28 @@ async function loadRequests(){
 }
 async function loadFriends(){
   if(!S.user)return false;
-  const [friendsResult,requestsResult]=await Promise.all([
-    db.from("friendships").select("friend_id,created_at").eq("user_id",S.user.id).order("created_at",{ascending:false}),
-    db.from("friend_requests").select("id,sender_id,recipient_id,status,created_at").or("sender_id.eq."+S.user.id+",recipient_id.eq."+S.user.id).order("created_at",{ascending:false}).limit(80)
+  const uid=S.user.id;
+  const [friendsResult,requestsResult,favoritesResult]=await Promise.all([
+    db.from("friendships").select("friend_id,created_at").eq("user_id",uid).order("created_at",{ascending:false}),
+    db.from("friend_requests").select("id,sender_id,recipient_id,status,created_at").or("sender_id.eq."+uid+",recipient_id.eq."+uid).order("created_at",{ascending:false}).limit(80),
+    db.from("favorite_friends").select("friend_id").eq("user_id",uid)
   ]);
+  if(S.user?.id!==uid)return false;
   if(friendsResult.error||requestsResult.error){
     const reason=friendsResult.error?.message||requestsResult.error?.message||"Unknown database error";
     console.error("Gather friends could not be loaded:",reason);
     $("friends-error").textContent="Friends could not be loaded. "+reason;
     return false;
   }
+  if(favoritesResult.error){
+    console.warn("Favorite friends could not be loaded:",favoritesResult.error.message);
+    S.favoriteFriendIds=new Set();
+  }else S.favoriteFriendIds=new Set((favoritesResult.data||[]).map(x=>x.friend_id));
   S.friends=friendsResult.data||[];
   S.friendRequests=requestsResult.data||[];
   const ids=[...new Set([
     ...S.friends.map(x=>x.friend_id),
-    ...S.friendRequests.flatMap(x=>[x.sender_id,x.recipient_id].filter(id=>id!==S.user.id))
+    ...S.friendRequests.flatMap(x=>[x.sender_id,x.recipient_id].filter(id=>id!==uid))
   ])];
   if(ids.length){
     const profiles=await fetchProfileRecords(ids);
@@ -811,7 +819,106 @@ async function loadFriends(){
   ensurePresenceDisplayTimer();
   await syncOwnPresence();
   renderFriends();renderChats();
+  void loadFriendActivity();
   return true;
+}
+
+
+async function toggleFavoriteFriend(friendId){
+  if(!S.user||!S.friends.some(friend=>friend.friend_id===friendId))return;
+  const isFavorite=S.favoriteFriendIds.has(friendId);
+  const result=isFavorite
+    ?await db.from("favorite_friends").delete().eq("user_id",S.user.id).eq("friend_id",friendId)
+    :await db.from("favorite_friends").insert({user_id:S.user.id,friend_id:friendId});
+  if(result.error){toast("Favorite could not be updated: "+result.error.message);return;}
+  if(isFavorite)S.favoriteFriendIds.delete(friendId);else S.favoriteFriendIds.add(friendId);
+  renderFriends();renderChats();
+  toast(isFavorite?"Friend removed from favorites.":"Friend added to favorites.");
+}
+function renderFriendActivity(){
+  const list=$("friend-activity-list");if(!list)return;
+  list.replaceChildren();
+  if(!S.friendActivityPosts.length){
+    list.append(el("p","muted tiny friend-activity-empty","No activity yet. Share a quick update to start your feed."));
+    return;
+  }
+  S.friendActivityPosts.forEach(post=>{
+    const profile=S.profiles[post.author_id]||{id:post.author_id,display_name:"Gather member",username:"member"};
+    const card=el("article","friend-activity-item");
+    const top=el("div","friend-activity-top");
+    const avatarButton=el("button","friend-activity-avatar-button");
+    avatarButton.type="button";avatarButton.setAttribute("aria-label","Open "+profile.display_name+"'s profile");
+    avatarButton.append(avatar(profile.display_name,profile.avatar_data));
+    avatarButton.addEventListener("click",()=>openPublicProfile(post.author_id));
+    const details=el("div","friend-activity-author");
+    const name=el("button","friend-activity-name",profile.display_name);
+    name.type="button";name.addEventListener("click",()=>openPublicProfile(post.author_id));
+    details.append(name,el("small","muted","@"+(profile.username||"member")+" · "+formatLastSeen(post.created_at)));
+    top.append(avatarButton,details);
+    if(post.author_id===S.user?.id){
+      const remove=el("button","friend-activity-delete","Delete");
+      remove.type="button";remove.setAttribute("aria-label","Delete your activity update");
+      remove.addEventListener("click",()=>deleteFriendActivity(post));
+      top.append(remove);
+    }
+    card.append(top,el("p","friend-activity-body",post.body));
+    list.append(card);
+  });
+}
+async function loadFriendActivity(){
+  if(!S.user)return false;
+  const userId=S.user.id,list=$("friend-activity-list");
+  if(list&&!S.friendActivityPosts.length)list.replaceChildren(el("p","muted tiny friend-activity-empty","Loading friend activity…"));
+  const result=await db.from("friend_activity_posts")
+    .select("id,author_id,body,created_at")
+    .order("created_at",{ascending:false})
+    .limit(40);
+  if(S.user?.id!==userId)return false;
+  if(result.error){
+    console.warn("Friend activity could not be loaded:",result.error.message);
+    if(list){list.replaceChildren(el("p","muted tiny friend-activity-empty","Friend activity couldn't be loaded. Please try again."));}
+    return false;
+  }
+  S.friendActivityPosts=result.data||[];
+  const missing=[...new Set(S.friendActivityPosts.map(post=>post.author_id).filter(id=>!S.profiles[id]))];
+  if(missing.length){
+    const profiles=await fetchProfileRecords(missing);
+    if(profiles.error)console.warn("Friend activity profiles could not be loaded:",profiles.error.message);
+    else profiles.data.forEach(profile=>S.profiles[profile.id]=profile);
+  }
+  if(S.user?.id!==userId)return false;
+  renderFriendActivity();return true;
+}
+async function postFriendActivity(event){
+  event.preventDefault();
+  if(!S.user)return;
+  const field=$("friend-activity-input"),body=field.value.trim(),button=$("friend-activity-submit");
+  if(!body||body.length>280){toast("Write an update between 1 and 280 characters.");return;}
+  button.disabled=true;button.textContent="Posting…";
+  const result=await db.from("friend_activity_posts")
+    .insert({author_id:S.user.id,body})
+    .select("id,author_id,body,created_at").single();
+  button.disabled=false;button.textContent="Post update";
+  if(result.error){toast("Your update could not be posted: "+result.error.message);return;}
+  field.value="";
+  S.friendActivityPosts=[result.data,...S.friendActivityPosts.filter(post=>post.id!==result.data.id)].slice(0,40);
+  renderFriendActivity();toast("Update shared with your friends.");
+}
+async function deleteFriendActivity(post){
+  if(!S.user||post?.author_id!==S.user.id)return;
+  if(!confirm("Delete this activity update?"))return;
+  const result=await db.from("friend_activity_posts").delete().eq("id",post.id).eq("author_id",S.user.id);
+  if(result.error){toast("Activity update could not be deleted: "+result.error.message);return;}
+  S.friendActivityPosts=S.friendActivityPosts.filter(item=>item.id!==post.id);
+  renderFriendActivity();toast("Activity update deleted.");
+}
+function subscribeFriendActivity(){
+  if(S.friendActivityChannel){db.removeChannel(S.friendActivityChannel);S.friendActivityChannel=null;}
+  if(!S.user)return;
+  const uid=S.user.id;
+  S.friendActivityChannel=db.channel("friend-activity-"+uid)
+    .on("postgres_changes",{event:"*",schema:"public",table:"friend_activity_posts"},()=>{void loadFriendActivity();})
+    .subscribe();
 }
 
 function formatLastSeen(value){
@@ -1517,17 +1624,23 @@ function renderFriends(){
   $("friends-count").textContent=S.friends.length;
   $("friends-open").classList.toggle("has-requests",ins.length>0);
   if(!S.friends.length)list.append(el("p","muted tiny","You have not added any friends yet."));
-  S.friends.forEach(f=>{
+  const orderedFriends=[...S.friends].sort((a,b)=>Number(S.favoriteFriendIds.has(b.friend_id))-Number(S.favoriteFriendIds.has(a.friend_id)));
+  orderedFriends.forEach(f=>{
     const p=S.profiles[f.friend_id]||{id:f.friend_id,display_name:"Gather member",username:"member"};
-    const row=el("div","request-item");row.append(avatar(p.display_name,p.avatar_data));
+    const row=el("div","request-item"+(S.favoriteFriendIds.has(f.friend_id)?" is-favorite-friend":""));row.append(avatar(p.display_name,p.avatar_data));
     const copy=el("div","request-copy"),name=el("strong","",p.display_name);copy.append(name,el("small","","@"+p.username));appendFriendPresenceLabel(copy,f.friend_id);row.append(copy);
     const actions=el("div","request-actions");
+    const favorite=el("button","favorite-friend-toggle"+(S.favoriteFriendIds.has(f.friend_id)?" active":""),S.favoriteFriendIds.has(f.friend_id)?"★":"☆");
+    favorite.type="button";favorite.setAttribute("aria-pressed",String(S.favoriteFriendIds.has(f.friend_id)));
+    favorite.setAttribute("aria-label",S.favoriteFriendIds.has(f.friend_id)?"Remove from favorites":"Add to favorites");
+    favorite.title=favorite.getAttribute("aria-label");
+    favorite.addEventListener("click",()=>toggleFavoriteFriend(f.friend_id));
     const profile=el("button","outline friend-profile-button","Profile"),message=el("button","request-accept","Message"),remove=el("button","request-decline","Remove");
     profile.type=message.type=remove.type="button";
     profile.addEventListener("click",()=>openPublicProfile(f.friend_id));
     message.addEventListener("click",async()=>{ $("friends-modal").hidden=true;await directChat(p); });
     remove.addEventListener("click",()=>removeFriend(f.friend_id));
-    actions.append(profile,message,remove);row.append(actions);list.append(row);
+    actions.append(favorite,profile,message,remove);row.append(actions);list.append(row);
   });
   if(!ins.length)incoming.append(el("p","muted tiny","No new friend requests."));
   if(!outs.length)outgoing.append(el("p","muted tiny","You have no pending sent requests."));
@@ -1847,6 +1960,7 @@ function renderChats(){
       const peer=peerForChat(c);if(!peer||blockedIds.has(peer))return false;
       return S.folder==="friends"?friends.has(peer):!friends.has(peer);
     });
+    if(S.folder==="friends")chats.sort((a,b)=>Number(S.favoriteFriendIds.has(peerForChat(b)))-Number(S.favoriteFriendIds.has(peerForChat(a))));
     renderChatSection("direct","private-chat-list","private-chat-count",term,chats);
   }else if(S.folder==="blocked")renderBlockedUsers(term);
   else renderDeletedMessages(term);
@@ -1873,7 +1987,7 @@ function renderInChatSidebar(){
     return bTime-aTime;
   };
   const pinned=matches.filter(chat=>pinnedSet.has(chat.id)).sort(sortRecent);
-  const regular=matches.filter(chat=>!pinnedSet.has(chat.id)).sort(sortRecent);
+  const regular=matches.filter(chat=>!pinnedSet.has(chat.id)).sort((a,b)=>Number(S.favoriteFriendIds.has(peerForChat(b)))-Number(S.favoriteFriendIds.has(peerForChat(a)))||sortRecent(a,b));
   pinnedSection.hidden=!pinned.length;
   pinnedCount.textContent=String(pinned.length);
   allCount.textContent=String(regular.length);
@@ -1931,6 +2045,8 @@ async function unblockUser(userId){
 }
 function renderActive(){
   const c=S.chats.find(x=>x.id===S.active);
+  $("message-create-poll").hidden=c?.kind!=="group";
+  renderUndoSend();
   $("layout").classList.toggle("direct-chat",c?.kind==="direct");
   $("empty").hidden=!!c;$("chat").hidden=!c;
   $("layout").classList.toggle("in-chat-mode",!!c);
@@ -2439,8 +2555,8 @@ async function copyMessage(m){
 }
 function openForwardMessage(m){S.forwardMessage=m;$("forward-message-modal").hidden=false;renderForwardDestinations();}
 function renderForwardDestinations(){
-  const list=$("forward-message-list");list.replaceChildren();const chats=S.chats.filter(x=>x.id!==S.active);
-  if(!chats.length){list.append(el("p","muted tiny","Start another conversation before forwarding a message."));return;}
+  const list=$("forward-message-list");list.replaceChildren();const forwardingPoll=!!S.messagePolls[S.forwardMessage?.id];const chats=S.chats.filter(x=>x.id!==S.active&&(!forwardingPoll||x.kind==="group"));
+  if(!chats.length){list.append(el("p","muted tiny",forwardingPoll?"Polls can only be forwarded to group chats.":"Start another conversation before forwarding a message."));return;}
   chats.forEach(c=>{const b=el("button","forward-message-choice");b.type="button";b.dataset.destination=c.id;b.append(el("strong","",chatTitle(c)),el("small","",c.kind==="group"?"Group chat":"Private chat"));b.addEventListener("click",()=>forwardMessageToConversation(c.id));list.append(b);});
 }
 async function duplicateStoredAttachment(bucket,path,cid){
@@ -2451,6 +2567,8 @@ async function duplicateStoredAttachment(bucket,path,cid){
 }
 async function forwardMessageToConversation(cid){
   const m=S.forwardMessage,c=S.chats.find(x=>x.id===cid);if(!m||!c||!S.user)return;
+  const sourcePoll=S.messagePolls[m.id];
+  if(sourcePoll&&c.kind!=="group"){toast("Polls can only be forwarded to group chats.");return;}
   if(c.kind==="direct"){
     const s=await db.rpc("get_direct_chat_status",{p_other_user_id:peerForChat(c)});
     if(s.error||!s.data?.can_message){toast("Private messaging is unavailable in that conversation.");return;}
@@ -2464,7 +2582,6 @@ async function forwardMessageToConversation(cid){
     }).select("id").single();
     if(sent.error)throw new Error(sent.error.message);
     messageId=sent.data.id;
-    const sourcePoll=S.messagePolls[m.id];
     if(sourcePoll){
       const poll=await db.from("message_polls").insert({
         message_id:messageId,conversation_id:cid,created_by:S.user.id,question:sourcePoll.question
@@ -2506,8 +2623,8 @@ async function openSavedMessage(m){
   if(row)row.scrollIntoView({block:"center",behavior:"smooth"});else toast("Saved message could not be loaded.");
 }
 function openPollComposer(){
-  closeComposerMoreMenu();if(!S.active){toast("Open a conversation first.");return;}const c=S.chats.find(x=>x.id===S.active);
-  if(c?.kind==="direct"&&!S.directStatus?.can_message){toast("Private messaging is unavailable.");return;}
+  closeComposerMoreMenu();if(!S.active){toast("Open a group chat first.");return;}const c=S.chats.find(x=>x.id===S.active);
+  if(c?.kind!=="group"){toast("Polls are available in group chats only.");return;}
   $("poll-question").value="";$("poll-options-inputs").replaceChildren();addPollOptionInput();addPollOptionInput();status("poll-status","");$("poll-create-modal").hidden=false;
 }
 function addPollOptionInput(){
@@ -2519,9 +2636,9 @@ function addPollOptionInput(){
 }
 async function submitPoll(e){
   e.preventDefault();const cid=S.active,c=S.chats.find(x=>x.id===cid),question=$("poll-question").value.trim(),opts=[...$("poll-options-inputs").querySelectorAll("input")].map(x=>x.value.trim()).filter(Boolean);
-  if(!cid||!question||question.length>200||opts.length<2||opts.length>6){status("poll-status","Enter a question and at least two options.","error");return;}
+  if(!cid||c?.kind!=="group"){status("poll-status","Polls are available in group chats only.","error");return;}
+  if(!question||question.length>200||opts.length<2||opts.length>6){status("poll-status","Enter a question and at least two options.","error");return;}
   if(new Set(opts.map(x=>x.toLowerCase())).size!==opts.length){status("poll-status","Poll choices must be different.","error");return;}
-  if(c?.kind==="direct"&&!S.directStatus?.can_message){status("poll-status","Private messaging is unavailable.","error");return;}
   const b=$("poll-submit");b.disabled=true;status("poll-status","Creating poll…");
   const m=await db.from("messages").insert({conversation_id:cid,sender_id:S.user.id,body:question,attachment_path:null}).select("id").single();
   if(m.error){b.disabled=false;status("poll-status",m.error.message,"error");return;}
@@ -2596,6 +2713,7 @@ function renderMessages(preserveScroll=false){
       addAction("Reply",()=>beginReply(m));
       addAction(S.openReactionPickerMessageId===m.id?"Close reaction picker":"React",()=>{S.openReactionPickerMessageId=S.openReactionPickerMessageId===m.id?null:m.id;renderMessages(true);});
       if(mine&&m.body)addAction("Edit",()=>editOwnMessage(m));
+      if(mine&&m._undoExpiresAt>Date.now())addAction("Undo send",()=>undoSendMessage(m));
       addAction("Copy message",()=>copyMessage(m));
       addAction("Forward message",()=>openForwardMessage(m));
       addAction(S.pinnedMessages.some(x=>x.message_id===m.id)?"Unpin message":"Pin message",()=>togglePinnedMessage(m));
@@ -2886,6 +3004,51 @@ async function uploadMessageImage(file,path){
     upload.start();
   });
 }
+
+function renderUndoSend(){
+  const bar=$("message-undo-bar");if(!bar)return;
+  const pending=S.pendingUndoSend;
+  const visible=!!pending&&pending.expiresAt>Date.now()&&pending.conversationId===S.active;
+  bar.hidden=!visible;
+}
+function armUndoSend(message){
+  if(S.undoSendTimer)clearTimeout(S.undoSendTimer);
+  const expiresAt=message?._undoExpiresAt||0;
+  if(!message||expiresAt<=Date.now()){S.pendingUndoSend=null;renderUndoSend();return;}
+  S.pendingUndoSend={message,conversationId:message.conversation_id,expiresAt};
+  S.undoSendTimer=setTimeout(()=>{
+    if(S.pendingUndoSend?.message.id===message.id){S.pendingUndoSend=null;S.undoSendTimer=null;renderUndoSend();}
+  },Math.max(0,expiresAt-Date.now()));
+  renderUndoSend();
+}
+async function undoSendMessage(message){
+  if(!S.user||!message||message.sender_id!==S.user.id)return;
+  const expiresAt=message._undoExpiresAt||0;
+  if(!expiresAt||Date.now()>expiresAt){toast("Undo send is available for 10 seconds after sending.");return;}
+  const button=$("message-undo");if(button)button.disabled=true;
+  const result=await db.from("messages").delete().eq("id",message.id).eq("sender_id",S.user.id).select("id").maybeSingle();
+  if(button)button.disabled=false;
+  if(result.error||!result.data){toast("Message could not be unsent: "+(result.error?.message||"It may no longer be available."));return;}
+  const attachmentPath=message._undoAttachmentPath||message.attachment_path;
+  if(attachmentPath){
+    const cleanup=await db.storage.from("gather-message-images").remove([attachmentPath]);
+    if(cleanup.error)console.warn("Unsent image cleanup failed:",cleanup.error.message);
+  }
+  if(S.pendingUndoSend?.message.id===message.id){
+    if(S.undoSendTimer)clearTimeout(S.undoSendTimer);
+    S.undoSendTimer=null;S.pendingUndoSend=null;
+  }
+  S.messages=S.messages.filter(item=>item.id!==message.id);
+  if(S.active===message.conversation_id)await loadMessages(message.conversation_id);
+  await loadChats();renderUndoSend();
+  toast("Message unsent for everyone in the conversation.");
+}
+async function undoLastSend(){
+  const pending=S.pendingUndoSend;
+  if(!pending)return;
+  await undoSendMessage(pending.message);
+}
+
 async function sendMessage(e){
   e.preventDefault();
   const body=$("message").value.trim(),file=S.pendingImageFile;
@@ -2910,7 +3073,10 @@ async function sendMessage(e){
   stopTyping(true);
   $("message").value="";$("message").style.height="auto";delete S.chatSettings.drafts[conversationId];saveLocalChatDraftOverride(conversationId,"");clearTimeout(S.draftSaveTimer);saveChatSettings();clearPendingMessageImage();cancelReply();
   const [withReply]=await attachReplyPreviews([r.data],conversationId);
-  if(!S.messages.some(x=>x.id===r.data.id)){S.messages.push({...withReply,reply_preview:reply||null});S.messageReactions[r.data.id]=[];renderMessages();}
+  let localMessage=S.messages.find(x=>x.id===r.data.id);
+  if(!localMessage){localMessage={...withReply,reply_preview:reply||null};S.messages.push(localMessage);S.messageReactions[r.data.id]=[];}
+  localMessage._undoExpiresAt=Date.now()+10000;localMessage._undoAttachmentPath=attachmentPath;
+  renderMessages();armUndoSend(localMessage);
   if(S.active===conversationId&&activeChat){
     activeChat.last=r.data;activeChat.updated_at=r.data.created_at;activeChat.hasMessages=true;
     S.chats.sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at));
@@ -4202,7 +4368,10 @@ document.querySelectorAll("[data-folder]").forEach(b=>b.addEventListener("click"
     status("profile-status","The picture will be removed when you save changes.","success");
   });
   $("password-form").addEventListener("submit",changePassword);
-  $("send-form").addEventListener("submit",sendMessage);$("message-image-file").addEventListener("change",handleMessageImageFile);$("composer-more-trigger").addEventListener("click",event=>{event.stopPropagation();toggleComposerMoreMenu();});$("composer-more-menu").addEventListener("click",event=>event.stopPropagation());$("message-create-poll").addEventListener("click",openPollComposer);$("poll-form").addEventListener("submit",submitPoll);$("poll-add-option").addEventListener("click",addPollOptionInput);$("poll-cancel").addEventListener("click",()=>$("poll-create-modal").hidden=true);$("saved-messages-open").addEventListener("click",openSavedMessages);document.addEventListener("click",event=>{const wrap=$("composer-more-wrap");if(wrap&&!wrap.contains(event.target))closeComposerMoreMenu();if(S.openReactionPickerMessageId&&!event.target.closest(".message-reaction-area")){S.openReactionPickerMessageId=null;if(S.active)renderMessages(true);}});
+  $("send-form").addEventListener("submit",sendMessage);
+  $("message-undo").addEventListener("click",undoLastSend);
+  $("friend-activity-form").addEventListener("submit",postFriendActivity);
+  $("friend-activity-refresh").addEventListener("click",()=>loadFriendActivity());$("message-image-file").addEventListener("change",handleMessageImageFile);$("composer-more-trigger").addEventListener("click",event=>{event.stopPropagation();toggleComposerMoreMenu();});$("composer-more-menu").addEventListener("click",event=>event.stopPropagation());$("message-create-poll").addEventListener("click",openPollComposer);$("poll-form").addEventListener("submit",submitPoll);$("poll-add-option").addEventListener("click",addPollOptionInput);$("poll-cancel").addEventListener("click",()=>$("poll-create-modal").hidden=true);$("saved-messages-open").addEventListener("click",openSavedMessages);document.addEventListener("click",event=>{const wrap=$("composer-more-wrap");if(wrap&&!wrap.contains(event.target))closeComposerMoreMenu();if(S.openReactionPickerMessageId&&!event.target.closest(".message-reaction-area")){S.openReactionPickerMessageId=null;if(S.active)renderMessages(true);}});
   $("message").addEventListener("input",e=>{e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,120)+"px";updateLocalTyping();saveActiveChatDraft();});
   $("message").addEventListener("blur",()=>stopTyping(true));
   $("share-online-status").addEventListener("change",event=>{
