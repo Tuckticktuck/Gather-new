@@ -292,6 +292,7 @@ async function loadOldestUnreadTarget(id=S.active){
   }
   S.unreadTargetLoaded=true;
   updateUnreadDivider(id);
+  if(S.messages.length)renderMessages(true);
   return true;
 }
 function updateUnreadDivider(id=S.active){
