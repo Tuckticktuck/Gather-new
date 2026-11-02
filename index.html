@@ -7,10 +7,10 @@
 <meta name="description" content="Private direct and group conversations.">
 <title>Gather</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="app.css?v=20261101-37">
+<link rel="stylesheet" href="app.css?v=20261101-38">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script defer src="app.js?v=20261101-37"></script>
+<script defer src="app.js?v=20261101-38"></script>
 </head>
 <body>
 <section id="auth" class="auth-shell">
@@ -89,6 +89,19 @@
             <button id="home-requests-open" class="secondary-action" type="button">Chat requests</button>
           </div>
         </header>
+        <section id="home-announcement-card" class="home-announcement-card" hidden aria-label="Latest Gather Admin announcement">
+          <div class="home-announcement-mark" aria-hidden="true">◎</div>
+          <div class="home-announcement-copy">
+            <p class="eyebrow">LATEST FROM GATHER ADMIN</p>
+            <strong id="home-announcement-title"></strong>
+            <p id="home-announcement-preview"></p>
+            <small id="home-announcement-date"></small>
+          </div>
+          <div class="home-announcement-actions">
+            <button id="home-announcement-open" class="secondary-action" type="button">Read latest</button>
+            <button id="home-announcements-all" class="announcement-all-button" type="button">View all</button>
+          </div>
+        </section>
         <label class="workspace-search">Search conversations<input id="filter" class="search" type="search" placeholder="Search by name or message"></label>
         <nav class="folder-tabs workspace-tabs" role="tablist" aria-label="Message folders">
           <button class="folder-tab active" type="button" role="tab" aria-selected="true" data-folder="friends">Friends</button>
@@ -128,6 +141,7 @@
 
 <div id="settings-modal" class="overlay" hidden><section class="modal settings-modal">
   <button class="close" data-close aria-label="Close">×</button><p class="eyebrow">MAKE IT YOURS</p><h2>Settings</h2><p class="muted tiny">Choose an accent color and text size. Your choices are saved to your Gather account and follow you across devices.</p>
+  <section class="settings-section"><h3>Appearance mode</h3><p class="tiny muted">Choose a light or dark look for Gather. This setting is saved to your account.</p><div class="theme-mode-choices" role="group" aria-label="Appearance mode"><button class="theme-mode-choice" type="button" data-theme-mode="dark" aria-pressed="true"><span class="theme-mode-icon">☾</span><span>Dark mode</span></button><button class="theme-mode-choice" type="button" data-theme-mode="light" aria-pressed="false"><span class="theme-mode-icon">☀</span><span>Light mode</span></button></div></section>
   <section class="settings-section"><h3>Accent color</h3><div class="accent-choices" role="group" aria-label="Accent color">
     <button class="accent-choice" type="button" data-accent="lavender" aria-pressed="false"><span class="accent-swatch lavender"></span><span>Lavender</span></button>
     <button class="accent-choice" type="button" data-accent="blue" aria-pressed="false"><span class="accent-swatch blue"></span><span>Ocean blue</span></button>
@@ -159,6 +173,12 @@
     <label>Message<textarea id="announcement-body" rows="6" maxlength="2000" required placeholder="Write a clear, neutral message for everyone…"></textarea></label>
     <p id="announcement-compose-status" class="status" role="status"></p><button id="announcement-publish" class="primary" type="submit">Send to everyone</button>
   </form>
+</section></div>
+
+<div id="announcements-page-modal" class="overlay" hidden><section class="modal announcements-page-modal" role="dialog" aria-modal="true" aria-labelledby="announcements-page-title">
+  <button class="close" data-close aria-label="Close">×</button>
+  <header class="announcements-page-header"><div><p class="eyebrow">OFFICIAL UPDATES</p><h2 id="announcements-page-title">Announcements</h2><p class="tiny muted">Messages shared with everyone by Gather Admin.</p></div></header>
+  <div id="announcements-history-list" class="announcements-history-list"><p class="muted tiny">Loading announcements…</p></div>
 </section></div>
 <div id="announcement-view-modal" class="overlay" hidden><section class="modal announcement-view-modal" role="dialog" aria-modal="true" aria-labelledby="announcement-view-title">
   <button class="close" data-close aria-label="Close">×</button>
