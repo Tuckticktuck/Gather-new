@@ -1376,45 +1376,21 @@ html[data-theme="light"] .settings-scroll-content::-webkit-scrollbar-thumb{
   .conversation-selection-actions .danger-action{width:100%;min-width:0}
 }
 
-/* Reactions are selected directly on each existing message bubble. */
-.message-reaction-area{
-  display:grid;
-  justify-items:start;
-  gap:6px;
-  margin:7px 0 2px;
-  max-width:100%;
-}
-.message-reaction-area .message-reactions{max-width:100%}
-.message-reaction-controls{
-  display:flex;
-  flex-direction:column;
-  align-items:flex-start;
-  gap:6px;
-  max-width:100%;
-}
-.message-reaction-add{
-  min-height:25px;
-  padding:3px 9px;
-  border-style:dashed;
-  color:var(--muted);
-  background:transparent;
-  font-size:calc(9px * var(--font-scale,1));
-  cursor:pointer;
-}
-.message-reaction-add:hover,
-.message-reaction-add[aria-expanded="true"]{
-  border-color:var(--accent-outline);
-  color:var(--accent-text);
-  background:var(--accent-surface);
-}
+
+/* Emoji picker appears only after choosing React from a message's three-dot menu. */
 .message-reaction-picker{
+  
   position:relative;
   z-index:2;
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px;
   width:max-content;
   max-width:min(100%,280px);
+  padding:5px;
+  border:1px solid var(--accent-outline-soft);
+  border-radius:12px;
+  background:var(--accent-panel-raised);
+  box-shadow:0 8px 22px #00000016;
 }
-.mine .message-reaction-area{justify-items:end}
-.mine .message-reaction-controls{align-items:flex-end}
-html[data-theme="light"] .message-reaction-add{background:#fff}
-html[data-theme="light"] .message-reaction-add:hover,
-html[data-theme="light"] .message-reaction-add[aria-expanded="true"]{background:var(--accent-surface)}
+.message-reaction-picker[hidden]{display:none}
