@@ -30,7 +30,7 @@ function normalizeChatSettings(raw){
   });
   return {pinned,muted,drafts,appearance};
 }
-const S = { user:null, profile:null, profiles:{}, chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, reactionSelectionMode:false, selectedReactionMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map() };
+const S = { user:null, profile:null, profiles:{}, chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressedReadReceiptIds:new Set(), announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, reactionSelectionMode:false, selectedReactionMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map() };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function status(id, text, kind) { const n=$(id); n.textContent=text||""; n.className="status"+(kind?" "+kind:""); }
@@ -304,9 +304,12 @@ async function dismissUnreadDivider(chatId,messageId){
   const index=S.messages.findIndex(message=>message.id===messageId);
   if(index<0){clearUnreadDividerState();return;}
   const newlyRead=S.messages.slice(index);
+  const suppressedIds=newlyRead.filter(message=>message.sender_id!==S.user.id).map(message=>message.id);
+  suppressedIds.forEach(id=>S.suppressedReadReceiptIds.add(id));
+  setTimeout(()=>suppressedIds.forEach(id=>S.suppressedReadReceiptIds.delete(id)),10000);
   clearUnreadDividerState();renderMessages(true);
   const marked=await markMessagesRead(chatId,newlyRead);
-  if(!marked)return;
+  if(!marked){suppressedIds.forEach(id=>S.suppressedReadReceiptIds.delete(id));return;}
   const lastIncoming=[...newlyRead].reverse().find(message=>message.sender_id!==S.user.id);
   if(lastIncoming)markChatRead(chatId,lastIncoming.created_at);
   await loadUnreadCounts();
@@ -1650,7 +1653,7 @@ function subscribeMessageReads(conversationId){
       const receipt=payload.new;if(!receipt?.message_id||!receipt.user_id)return;
       const readers=S.messageReads[receipt.message_id]||(S.messageReads[receipt.message_id]=[]);
       if(!readers.some(x=>x.user_id===receipt.user_id))readers.push(receipt);
-      if(receipt.user_id===S.user.id)updateUnreadDivider(conversationId);
+      if(receipt.user_id===S.user.id&&!S.suppressedReadReceiptIds.has(receipt.message_id))updateUnreadDivider(conversationId);
       renderMessages();
     }).subscribe();
 }
