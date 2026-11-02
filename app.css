@@ -1595,3 +1595,18 @@ html[data-theme="light"] .chat.chat-appearance-custom .messages .mine .bubble .m
   border-left-color:var(--conversation-accent-border);
   background:#ffffff12;
 }
+
+
+/* Center the New messages divider symmetrically across the conversation width. */
+.messages > .new-messages-divider{
+  align-self:stretch;
+  width:100%;
+  box-sizing:border-box;
+  justify-content:center;
+}
+.messages > .new-messages-divider::before,
+.messages > .new-messages-divider::after{
+  flex:1 1 0;
+  min-width:0;
+  max-width:none;
+}
