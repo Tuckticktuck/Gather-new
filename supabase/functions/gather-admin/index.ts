@@ -91,14 +91,16 @@ Deno.serve(async (request: Request) => {
 
   try {
     if (action === "summary") {
-      const [accounts, reports, feedback, announcements, activity] = await Promise.all([
+      const [accounts, reports, feedback, announcements, activity, approvals, approvedAccounts] = await Promise.all([
         adminClient.from("profiles").select("id", { count: "exact", head: true }),
         adminClient.from("reports").select("id", { count: "exact", head: true }).neq("status", "resolved"),
         adminClient.from("feedback_threads").select("id", { count: "exact", head: true }).neq("status", "resolved"),
         adminClient.from("admin_announcements").select("id", { count: "exact", head: true }),
         adminClient.from("admin_action_logs").select("id,actor_id,target_user_id,action,details,created_at").order("created_at", { ascending: false }).limit(8),
+        adminClient.from("account_approval_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
+        adminClient.from("approved_accounts").select("user_id", { count: "exact", head: true }),
       ]);
-      const firstError = accounts.error || reports.error || feedback.error || announcements.error || activity.error;
+      const firstError = accounts.error || reports.error || feedback.error || announcements.error || activity.error || approvals.error || approvedAccounts.error;
       if (firstError) return adminError(500, "The admin overview could not be loaded.");
       return response(200, {
         summary: {
@@ -106,6 +108,8 @@ Deno.serve(async (request: Request) => {
           reports: reports.count ?? 0,
           feedback: feedback.count ?? 0,
           announcements: announcements.count ?? 0,
+          pendingApprovals: approvals.count ?? 0,
+          approvedAccounts: approvedAccounts.count ?? 0,
         },
         activity: activity.data ?? [],
       });
@@ -118,18 +122,22 @@ Deno.serve(async (request: Request) => {
       if (error) return adminError(500, "Member accounts could not be loaded.");
       const users = data.users ?? [];
       const ids = users.map((user) => user.id);
-      const [profileResult, banResult] = await Promise.all([
+      const [profileResult, banResult, approvedResult] = await Promise.all([
         ids.length
           ? adminClient.from("profiles").select("id,username,display_name,bio,pronouns,banner_style,created_at").in("id", ids)
           : Promise.resolve({ data: [], error: null }),
         ids.length
           ? adminClient.from("admin_bans").select("user_id,reason,created_at").in("user_id", ids).is("lifted_at", null).order("created_at", { ascending: false })
           : Promise.resolve({ data: [], error: null }),
+        ids.length
+          ? adminClient.from("approved_accounts").select("user_id,approved_at").in("user_id", ids)
+          : Promise.resolve({ data: [], error: null }),
       ]);
-      if (profileResult.error || banResult.error) return adminError(500, "Member account details could not be loaded.");
+      if (profileResult.error || banResult.error || approvedResult.error) return adminError(500, "Member account details could not be loaded.");
       const profileById = new Map((profileResult.data ?? []).map((profile) => [profile.id, profile]));
       const banById = new Map();
       for (const ban of banResult.data ?? []) if (!banById.has(ban.user_id)) banById.set(ban.user_id, ban);
+      const approvedById = new Map((approvedResult.data ?? []).map((item) => [item.user_id, item]));
       return response(200, {
         users: users.map((user) => {
           const profile = profileById.get(user.id) ?? {};
@@ -149,6 +157,8 @@ Deno.serve(async (request: Request) => {
             banner_style: profile.banner_style ?? "violet",
             profile_created_at: profile.created_at ?? null,
             active_ban_reason: ban?.reason ?? "",
+            is_approved: approvedById.has(user.id),
+            approved_at: approvedById.get(user.id)?.approved_at ?? null,
           };
         }),
         page,
@@ -319,6 +329,131 @@ Deno.serve(async (request: Request) => {
         status: data.status,
       });
       return response(200, { report: data });
+    }
+
+
+    if (action === "list_approval_data") {
+      const [pendingResult, approvedResult] = await Promise.all([
+        adminClient.from("account_approval_requests")
+          .select("id,user_id,message,created_at")
+          .eq("status", "pending")
+          .order("created_at", { ascending: true })
+          .limit(200),
+        adminClient.from("approved_accounts")
+          .select("user_id,approved_at")
+          .order("approved_at", { ascending: false })
+          .limit(500),
+      ]);
+      if (pendingResult.error || approvedResult.error) {
+        return adminError(500, "Account approval records could not be loaded.");
+      }
+      const ids = [...new Set([
+        ...(pendingResult.data ?? []).map((item) => item.user_id),
+        ...(approvedResult.data ?? []).map((item) => item.user_id),
+      ])];
+      const { data: profiles, error: profileError } = ids.length
+        ? await adminClient.from("profiles").select("id,username,display_name,created_at").in("id", ids)
+        : { data: [], error: null };
+      if (profileError) return adminError(500, "Member profiles for approval records could not be loaded.");
+      const profileById = new Map((profiles ?? []).map((profile) => [profile.id, profile]));
+      return response(200, {
+        pending: (pendingResult.data ?? []).map((item) => ({
+          ...item,
+          profile: profileById.get(item.user_id) ?? null,
+        })),
+        approved: (approvedResult.data ?? []).map((item) => ({
+          ...item,
+          profile: profileById.get(item.user_id) ?? null,
+        })),
+      });
+    }
+
+    if (action === "review_account_approval") {
+      const requestId = cleanString(payload.request_id, 80);
+      const decision = cleanString(payload.decision, 20);
+      const reviewNote = cleanString(payload.review_note, 500);
+      if (!requestId) return adminError(400, "Choose an approval request first.");
+      if (!["approve", "decline"].includes(decision)) return adminError(400, "Choose approve or decline.");
+      const { data: approvalRequest, error: requestError } = await adminClient
+        .from("account_approval_requests")
+        .select("id,user_id,status")
+        .eq("id", requestId)
+        .maybeSingle();
+      if (requestError || !approvalRequest) return adminError(404, "That approval request could not be found.");
+      if (approvalRequest.status !== "pending") return adminError(409, "That approval request has already been reviewed.");
+      if (approvalRequest.user_id === actorId) return adminError(400, "You cannot approve your own account.");
+      const { data: targetResult, error: targetError } = await adminClient.auth.admin.getUserById(approvalRequest.user_id);
+      const targetUser = targetResult?.user;
+      if (targetError || !targetUser) return adminError(404, "That member account could not be found.");
+      if (targetUser.app_metadata?.gather_role === "admin") return adminError(400, "The Gather administrator does not need account approval.");
+      const now = new Date().toISOString();
+
+      if (decision === "approve") {
+        const { data: existing, error: existingError } = await adminClient
+          .from("approved_accounts").select("user_id").eq("user_id", approvalRequest.user_id).maybeSingle();
+        if (existingError) return adminError(500, "The current approval status could not be checked.");
+        if (!existing) {
+          const { error: insertError } = await adminClient.from("approved_accounts").insert({
+            user_id: approvalRequest.user_id,
+            approved_by: actorId,
+          });
+          if (insertError) return adminError(500, "The approved account badge could not be created.");
+        }
+        const { data: updated, error: updateError } = await adminClient
+          .from("account_approval_requests")
+          .update({ status: "approved", reviewed_at: now, reviewed_by: actorId, review_note: reviewNote })
+          .eq("id", requestId)
+          .eq("status", "pending")
+          .select("id")
+          .maybeSingle();
+        if (updateError || !updated) {
+          if (!existing) await adminClient.from("approved_accounts").delete().eq("user_id", approvalRequest.user_id);
+          return adminError(409, "The approval request changed before it could be saved. Refresh and try again.");
+        }
+        await writeAdminLog(adminClient, actorId, approvalRequest.user_id, "account_approval_approved", { request_id: requestId });
+        return response(200, { success: true, decision, user_id: approvalRequest.user_id });
+      }
+
+      const { data: updated, error: updateError } = await adminClient
+        .from("account_approval_requests")
+        .update({ status: "declined", reviewed_at: now, reviewed_by: actorId, review_note: reviewNote })
+        .eq("id", requestId)
+        .eq("status", "pending")
+        .select("id")
+        .maybeSingle();
+      if (updateError || !updated) return adminError(409, "The approval request changed before it could be saved. Refresh and try again.");
+      await writeAdminLog(adminClient, actorId, approvalRequest.user_id, "account_approval_declined", { request_id: requestId });
+      return response(200, { success: true, decision, user_id: approvalRequest.user_id });
+    }
+
+    if (action === "revoke_account_approval") {
+      if (!targetId) return adminError(400, "Choose an approved member first.");
+      if (targetId === actorId) return adminError(400, "You cannot revoke your own administrator account approval.");
+      const { data: targetResult, error: targetError } = await adminClient.auth.admin.getUserById(targetId);
+      const targetUser = targetResult?.user;
+      if (targetError || !targetUser) return adminError(404, "That member account could not be found.");
+      if (targetUser.app_metadata?.gather_role === "admin") return adminError(400, "The Gather administrator account is protected.");
+      const { data: existing, error: existingError } = await adminClient
+        .from("approved_accounts").select("user_id,approved_at,approved_by").eq("user_id", targetId).maybeSingle();
+      if (existingError || !existing) return adminError(404, "That account is not currently approved.");
+      const now = new Date().toISOString();
+      const { data: updatedRequests, error: requestError } = await adminClient
+        .from("account_approval_requests")
+        .update({ status: "revoked", reviewed_at: now, reviewed_by: actorId })
+        .eq("user_id", targetId)
+        .eq("status", "approved")
+        .select("id");
+      if (requestError || !updatedRequests?.length) return adminError(500, "The approval history could not be updated.");
+      const { error: deleteError } = await adminClient.from("approved_accounts").delete().eq("user_id", targetId);
+      if (deleteError) {
+        await adminClient.from("account_approval_requests")
+          .update({ status: "approved", reviewed_at: existing.approved_at, reviewed_by: existing.approved_by })
+          .eq("user_id", targetId)
+          .eq("status", "revoked");
+        return adminError(500, "The approved badge could not be revoked. No account status change was kept.");
+      }
+      await writeAdminLog(adminClient, actorId, targetId, "account_approval_revoked", {});
+      return response(200, { success: true, user_id: targetId });
     }
 
     if (action === "list_audit") {
