@@ -42,17 +42,6 @@ function setChatLoadStatus(message,retry=false){
   $("chat-load-message").textContent=message||"";$("retry-load-chats").hidden=!retry;
 }
 function loadUIPreferences(saved){
-  S.chatSettings=normalizeChatSettings(saved?.chatSettings);
-  if(S.user){
-    try{
-      const overrides=JSON.parse(localStorage.getItem("gather_chat_drafts_"+S.user.id)||"{}");
-      Object.entries(overrides).forEach(([id,value])=>{
-        if(typeof value!=="string")return;
-        if(value)S.chatSettings.drafts[id]=value.slice(0,4000);
-        else delete S.chatSettings.drafts[id];
-      });
-    }catch(error){}
-  }
   S.preferences={
     accent:ACCENTS[saved?.accent]?saved.accent:DEFAULT_PREFERENCES.accent,
     fontSize:FONT_SCALES[saved?.fontSize]?saved.fontSize:DEFAULT_PREFERENCES.fontSize,
@@ -62,6 +51,43 @@ function loadUIPreferences(saved){
     shareOnlineStatus:saved?.shareOnlineStatus!==false
   };
   applyUIPreferences();
+}
+async function loadChatSettings(userId=S.user?.id){
+  if(!userId)return false;
+  const result=await db.from("user_chat_preferences").select("settings").eq("user_id",userId).maybeSingle();
+  if(S.user?.id!==userId)return false;
+  if(result.error){
+    console.warn("Private chat preferences could not be loaded:",result.error.message);
+    S.chatSettings=normalizeChatSettings(DEFAULT_CHAT_SETTINGS);
+    toast("Your private chat preferences couldn't be loaded. You can still use Gather, but changes may not be saved.");
+    return false;
+  }
+  S.chatSettings=normalizeChatSettings(result.data?.settings||DEFAULT_CHAT_SETTINGS);
+  mergeLocalChatDraftOverrides(userId);
+  return true;
+}
+function mergeLocalChatDraftOverrides(userId=S.user?.id){
+  if(!userId)return;
+  let changed=false;
+  try{
+    const overrides=JSON.parse(localStorage.getItem("gather_chat_drafts_"+userId)||"{}");
+    Object.entries(overrides).forEach(([id,value])=>{
+      if(typeof value!=="string")return;
+      if(value){if(S.chatSettings.drafts[id]!==value.slice(0,4000)){S.chatSettings.drafts[id]=value.slice(0,4000);changed=true;}}
+      else if(S.chatSettings.drafts[id]){delete S.chatSettings.drafts[id];changed=true;}
+    });
+  }catch(error){}
+  if(changed)saveChatSettings();
+}
+function clearSyncedLocalDraftOverrides(userId,savedSettings){
+  try{
+    const key="gather_chat_drafts_"+userId,overrides=JSON.parse(localStorage.getItem(key)||"{}");
+    Object.entries(overrides).forEach(([id,value])=>{
+      if((savedSettings.drafts[id]||"")===value)delete overrides[id];
+    });
+    if(Object.keys(overrides).length)localStorage.setItem(key,JSON.stringify(overrides));
+    else localStorage.removeItem(key);
+  }catch(error){}
 }
 function applyUIPreferences(){
   const accent=ACCENTS[S.preferences.accent]||ACCENTS.lavender;
@@ -123,7 +149,7 @@ function applyUIPreferences(){
 function saveUIPreferences(){
   applyUIPreferences();
   if(!S.user)return;
-  const userId=S.user.id,snapshot={...S.preferences,chatSettings:normalizeChatSettings(S.chatSettings)};
+  const userId=S.user.id,snapshot={...S.preferences};
   $("settings-note").textContent="Saving to your Gather account…";
   clearTimeout(S.preferenceSaveTimer);
   S.preferenceSaveTimer=setTimeout(async()=>{
@@ -137,22 +163,27 @@ function saveUIPreferences(){
       return;
     }
     S.profile.preferences=result.data.preferences;
-    try{
-      const localKey="gather_chat_drafts_"+userId;
-      const overrides=JSON.parse(localStorage.getItem(localKey)||"{}");
-      Object.entries(overrides).forEach(([id,value])=>{
-        if((snapshot.chatSettings.drafts[id]||"")===value)delete overrides[id];
-      });
-      if(Object.keys(overrides).length)localStorage.setItem(localKey,JSON.stringify(overrides));
-      else localStorage.removeItem(localKey);
-    }catch(error){}
     await syncOwnPresence();
     $("settings-note").textContent="Saved to your account. Your settings follow you across devices.";
   },180);
 }
 function saveChatSettings(){
   if(!S.user)return;
-  saveUIPreferences();
+  const userId=S.user.id,snapshot=normalizeChatSettings(S.chatSettings);
+  clearTimeout(S.chatSettingsSaveTimer);
+  S.chatSettingsSaveTimer=setTimeout(async()=>{
+    if(S.user?.id!==userId)return;
+    const result=await db.from("user_chat_preferences")
+      .upsert({user_id:userId,settings:snapshot,updated_at:new Date().toISOString()},{onConflict:"user_id"})
+      .select("settings").single();
+    if(S.user?.id!==userId)return;
+    if(result.error){
+      console.warn("Private chat preferences could not be saved:",result.error.message);
+      toast("Your private chat preferences couldn't be saved. Please try again.");
+      return;
+    }
+    clearSyncedLocalDraftOverrides(userId,snapshot);
+  },220);
 }
 function chatSettingsFor(id=S.active){
   return id?{pinned:S.chatSettings.pinned.includes(id),muted:S.chatSettings.muted[id]===true,appearance:S.chatSettings.appearance[id]||{accent:"default",background:"default"},draft:S.chatSettings.drafts[id]||""}:{pinned:false,muted:false,appearance:{accent:"default",background:"default"},draft:""};
@@ -424,6 +455,7 @@ function showAuth() {
   if(S.announcementChannel){db.removeChannel(S.announcementChannel);S.announcementChannel=null;}
   S.announcements=[];renderHomeAnnouncement();
   clearTimeout(S.draftSaveTimer);S.draftSaveTimer=null;
+  clearTimeout(S.chatSettingsSaveTimer);S.chatSettingsSaveTimer=null;S.chatSettings=normalizeChatSettings(DEFAULT_CHAT_SETTINGS);
   S.user=null;S.profile=null;S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.savedMessageIds=new Set();S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.reactionSelectionMode=false;S.selectedReactionMessageId=null;S.openMessageMenuId=null;S.notifications=[];S.feedbackAdminView=false;$("feedback-admin-open").hidden=true;$("feedback-admin-settings-section").hidden=true;S.profiles={};S.chats=[];S.messages=[];S.messageReads={};S.replyTo=null;S.hasOlderMessages=false;S.requests=[];S.friendRequests=[];S.friends=[];S.blockedUsers=[];S.deletedMessages=[];S.deletedMessageIds=new Set();S.lastReadAt={};S.folder="friends";S.directStatus=null;S.active=null;S.messages=[];S.loadError=null;S.avatarChanged=false;S.pendingAvatarData=null;loadUIPreferences(DEFAULT_PREFERENCES);
   setChatLoadStatus("");$("auth").hidden=false;$("app").hidden=true;
 }
@@ -492,6 +524,8 @@ async function signedIn(user,retry=false){
     if(S.user?.id!==user.id)return;
     loadReadState();
     loadUIPreferences(S.profile.preferences||DEFAULT_PREFERENCES);
+    await loadChatSettings(user.id);
+    if(S.user?.id!==user.id)return;
     const ownPicture=await db.from("profile_avatars").select("image_data").eq("user_id",user.id).maybeSingle();
     S.profile.avatar_data=ownPicture.error?null:(ownPicture.data?.image_data||null);
     S.profiles[user.id]=S.profile;
