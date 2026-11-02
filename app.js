@@ -30,15 +30,10 @@ function normalizeChatSettings(raw){
   });
   return {pinned,muted,drafts,appearance};
 }
-const S = { user:null, profile:null, profiles:{}, chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[]} };
+const S = { user:null, profile:null, profiles:{}, chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null,  feedbackThreads:[], feedbackMessages:[],  activeFeedbackThreadId:null,  notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[]} };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function status(id, text, kind) { const n=$(id); n.textContent=text||""; n.className="status"+(kind?" "+kind:""); }
-function isFeedbackAdmin(user){return !!user&&!user.is_anonymous&&String(user.email||"").trim().toLowerCase()==="landoncordeiro237@gmail.com";}
-function syncAdminModeButton(){
-  const button=$("admin-mode-open");
-  if(button)button.hidden=!isFeedbackAdmin(S.user);
-}
 function toast(text) { $("toast").textContent=text; $("toast").classList.add("show"); clearTimeout(toast.t); toast.t=setTimeout(()=>$("toast").classList.remove("show"),3000); }
 function setChatLoadStatus(message,retry=false){
   const box=$("chat-load-status");if(!box)return;
@@ -480,13 +475,12 @@ function showAuth() {
   if(S.readChannel){db.removeChannel(S.readChannel);S.readChannel=null;}
   if(S.pollChannel){db.removeChannel(S.pollChannel);S.pollChannel=null;}
   if(S.notificationChannel){db.removeChannel(S.notificationChannel);S.notificationChannel=null;}
-  if(S.announcementChannel){db.removeChannel(S.announcementChannel);S.announcementChannel=null;}
-  S.announcements=[];renderHomeAnnouncement();
+  
   clearTimeout(S.draftSaveTimer);S.draftSaveTimer=null;
   clearTimeout(S.chatSettingsSaveTimer);S.chatSettingsSaveTimer=null;S.chatSettings=normalizeChatSettings(DEFAULT_CHAT_SETTINGS);
   S.selectingConversations=false;S.selectedConversationIds.clear();renderConversationSelectionControls();
   S.unreadTargetMessageId=null;S.unreadTargetLoaded=false;S.suppressReadDividerUpdates=false;
-  S.user=null;S.profile=null;syncAdminModeButton();S.admin={users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[]};S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.savedMessageIds=new Set();S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.openMessageMenuId=null;S.notifications=[];S.feedbackAdminView=false;$("feedback-admin-open").hidden=true;$("feedback-admin-settings-section").hidden=true;S.profiles={};S.chats=[];S.messages=[];S.messageReads={};S.replyTo=null;S.hasOlderMessages=false;S.requests=[];S.friendRequests=[];S.friends=[];S.blockedUsers=[];S.deletedMessages=[];S.deletedMessageIds=new Set();S.lastReadAt={};S.folder="friends";S.directStatus=null;S.active=null;S.messages=[];S.loadError=null;S.avatarChanged=false;S.pendingAvatarData=null;loadUIPreferences(DEFAULT_PREFERENCES);
+  S.user=null;S.profile=null;S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.savedMessageIds=new Set();S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.openMessageMenuId=null;S.notifications=[];S.profiles={};S.chats=[];S.messages=[];S.messageReads={};S.replyTo=null;S.hasOlderMessages=false;S.requests=[];S.friendRequests=[];S.friends=[];S.blockedUsers=[];S.deletedMessages=[];S.deletedMessageIds=new Set();S.lastReadAt={};S.folder="friends";S.directStatus=null;S.active=null;S.messages=[];S.loadError=null;S.avatarChanged=false;S.pendingAvatarData=null;loadUIPreferences(DEFAULT_PREFERENCES);
   setChatLoadStatus("");$("auth").hidden=false;$("app").hidden=true;
 }
 function showApp(){ $("auth").hidden=true;$("app").hidden=false; }
@@ -548,7 +542,7 @@ async function ensureProfile(user){
 async function signedIn(user,retry=false){
   if(!user||S.loading===user.id)return;
   if(!retry&&S.user&&S.user.id===user.id&&S.profile)return;
-  S.loading=user.id;S.user=user;S.loadError=null;syncAdminModeButton();$("feedback-admin-open").hidden=!isFeedbackAdmin(user);$("feedback-admin-settings-section").hidden=!isFeedbackAdmin(user);showApp();setChatLoadStatus("Loading your chats…");
+  S.loading=user.id;S.user=user;S.loadError=null;showApp();setChatLoadStatus("Loading your chats…");
   try{
     S.profile=await ensureProfile(user);
     if(S.user?.id!==user.id)return;
@@ -566,7 +560,6 @@ async function signedIn(user,retry=false){
     if(!loaded)throw new Error(S.loadError||"Please check your connection and try again.");
     subscribeMessages();
     await loadNotifications();subscribeNotifications();
-    await loadAnnouncements();subscribeAnnouncements();
     setChatLoadStatus("");
     if(!await loadFriends())console.warn("Gather friend list could not be loaded.");
     if(!await loadBlocked())console.warn("Gather blocked list could not be loaded.");
@@ -904,209 +897,15 @@ function showMessageNotification(message,chat){
 
 
 
-function renderAnnouncementText(target,value){
-  if(!target)return;
-  target.replaceChildren();
-  const source=String(value??"");
-  const boldPattern=/\*\*([\s\S]+?)\*\*/g;
-  let cursor=0,match;
-  while((match=boldPattern.exec(source))){
-    if(match.index>cursor)target.append(document.createTextNode(source.slice(cursor,match.index)));
-    const strong=document.createElement("strong");
-    strong.textContent=match[1];
-    target.append(strong);
-    cursor=boldPattern.lastIndex;
-  }
-  if(cursor<source.length)target.append(document.createTextNode(source.slice(cursor)));
-}
-function announcementDateLabel(item){
-  return "Gather Admin · "+dateLabel(item.created_at)+(item.edited_at?" · Edited":"");
-}
-function renderHomeAnnouncement(){
-  const card=$("home-announcement-card");
-  if(!card)return;
-  const latest=S.announcements[0];
-  card.hidden=!latest;
-  if(!latest)return;
-  $("home-announcement-title").textContent=latest.title;
-  renderAnnouncementText($("home-announcement-preview"),latest.body);
-  $("home-announcement-date").textContent=announcementDateLabel(latest);
-}
-function renderAnnouncementsPage(){
-  const list=$("announcements-history-list");
-  if(!list)return;
-  list.replaceChildren();
-  if(!S.announcements.length){
-    list.append(el("p","muted tiny","There are no admin announcements yet. New official updates will appear here."));
-    return;
-  }
-  S.announcements.forEach(item=>{
-    const card=el("button","announcement-history-item");
-    card.type="button";
-    const mark=el("span","announcement-history-mark","◎");
-    const copy=el("span","announcement-history-copy");
-    const bodyPreview=el("small","");
-    renderAnnouncementText(bodyPreview,item.body);
-    copy.append(
-      el("strong","",item.title),
-      bodyPreview,
-      el("time","",announcementDateLabel(item))
-    );
-    const arrow=el("span","announcement-history-arrow","›");
-    card.append(mark,copy,arrow);
-    card.addEventListener("click",()=>openAnnouncement(item.id));
-    list.append(card);
-  });
-}
-async function loadAnnouncements(){
-  if(!S.user)return false;
-  const announcements=[],pageSize=500;
-  for(let from=0;;from+=pageSize){
-    const result=await db.from("admin_announcements")
-      .select("id,title,body,created_at,edited_at")
-      .order("created_at",{ascending:false})
-      .order("id",{ascending:true})
-      .range(from,from+pageSize-1);
-    if(result.error){
-      console.warn("Admin announcements could not be loaded:",result.error.message);
-      $("home-announcement-card").hidden=true;
-      $("announcements-history-list").replaceChildren(el("p","status error","Announcements could not be loaded. Please try again."));
-      return false;
-    }
-    const page=result.data||[];
-    announcements.push(...page);
-    if(page.length<pageSize)break;
-  }
-  S.announcements=announcements;
-  renderHomeAnnouncement();
-  renderAnnouncementsPage();
-  if(S.notificationView==="admin")renderNotifications();
-  return true;
-}
-function openAnnouncementsPage(){
-  $("announcements-page-modal").hidden=false;
-  renderAnnouncementsPage();
-  loadAnnouncements();
-}
-function subscribeAnnouncements(){
-  if(S.announcementChannel){db.removeChannel(S.announcementChannel);S.announcementChannel=null;}
-  if(!S.user)return;
-  const uid=S.user.id;
-  S.announcementChannel=db.channel("admin-announcements-"+uid)
-    .on("postgres_changes",{event:"INSERT",schema:"public",table:"admin_announcements"},async payload=>{
-      if(!S.user||S.user.id!==uid)return;
-      await loadAnnouncements();
-      if(payload.new?.id&&$("announcements-page-modal").hidden){
-        toast("A new official announcement from Gather Admin is available.");
-      }
-    })
-    .on("postgres_changes",{event:"UPDATE",schema:"public",table:"admin_announcements"},async payload=>{
-      if(!S.user||S.user.id!==uid)return;
-      await loadAnnouncements();
-      if(payload.new?.id&&S.activeAnnouncementId===payload.new.id&&!$("announcement-view-modal").hidden){
-        await openAnnouncement(payload.new.id);
-      }
-    }).subscribe();
-}
-
-function openAnnouncementComposer(){
-  if(!isFeedbackAdmin(S.user)){toast("Only the Gather administrator can send announcements.");return;}
-  S.activeAnnouncementId=null;
-  $("announcement-compose-title").textContent="Send an announcement";
-  $("announcement-compose-description").textContent="This message goes to everyone on Gather. Recipients see “Gather Admin” as the sender; your account name and profile are not shown.";
-  $("announcement-publish").textContent="Send to everyone";
-  $("announcement-title").value="";$("announcement-body").value="";
-  status("announcement-compose-status","");
-  $("announcement-compose-modal").hidden=false;$("announcement-title").focus();
-}
-function openAnnouncementEditor(id){
-  if(!isFeedbackAdmin(S.user)){toast("Only the Gather administrator can edit announcements.");return;}
-  const item=S.announcementInView?.id===id?S.announcementInView:S.announcements.find(a=>a.id===id);
-  if(!item){toast("This announcement could not be loaded. Open it again and retry.");return;}
-  S.activeAnnouncementId=id;
-  $("announcement-compose-title").textContent="Edit announcement";
-  $("announcement-compose-description").textContent="Update this official Gather Admin message. The original publication date stays the same, and members will see that it was edited.";
-  $("announcement-publish").textContent="Save changes";
-  $("announcement-title").value=item.title||"";
-  $("announcement-body").value=item.body||"";
-  status("announcement-compose-status","");
-  $("announcement-compose-modal").hidden=false;$("announcement-title").focus();
-}
-async function publishAnnouncement(event){
-  event.preventDefault();
-  if(!isFeedbackAdmin(S.user)){status("announcement-compose-status","Only the Gather administrator can publish or edit announcements.","error");return;}
-  const title=$("announcement-title").value.trim(),body=$("announcement-body").value.trim();
-  if(!title||title.length>100||!body||body.length>2000){status("announcement-compose-status","Add a title and a message between 1 and 2,000 characters.","error");return;}
-  const editingId=S.activeAnnouncementId;
-  const confirmation=editingId
-    ?"Save these changes to the official announcement? Its original publication date will stay the same."
-    :"Send this official announcement to everyone on Gather? It will appear as “Gather Admin” without showing your account identity.";
-  if(!confirm(confirmation))return;
-  const button=$("announcement-publish");button.disabled=true;
-  status("announcement-compose-status",editingId?"Saving announcement changes…":"Sending to all Gather members…");
-  const result=editingId
-    ?await db.from("admin_announcements").update({title,body,edited_at:new Date().toISOString()}).eq("id",editingId).select("id").maybeSingle()
-    :await db.from("admin_announcements").insert({title,body}).select("id").single();
-  button.disabled=false;
-  if(result.error){status("announcement-compose-status",(editingId?"Announcement could not be updated: ":"Announcement could not be sent: ")+result.error.message,"error");return;}
-  if(!result.data?.id){status("announcement-compose-status","The announcement was not changed. Please verify your admin access and try again.","error");return;}
-  $("announcement-compose-modal").hidden=true;
-  if(editingId){
-    toast("Official announcement updated.");
-    await loadAnnouncements();
-    await openAnnouncement(editingId);
-  }else{
-    toast("Official announcement sent to Gather members.");
-    await loadNotifications();await loadAnnouncements();await openAnnouncement(result.data.id);
-  }
-}
-async function openAnnouncement(id){
-  if(!id||!S.user)return;
-  S.activeAnnouncementId=id;
-  $("announcement-view-title").textContent="Loading announcement…";
-  $("announcement-view-body").textContent="";$("announcement-view-date").textContent="";
-  $("announcement-edit-open").hidden=!isFeedbackAdmin(S.user);
-  $("announcement-view-modal").hidden=false;
-  const result=await db.from("admin_announcements").select("id,title,body,created_at,edited_at").eq("id",id).maybeSingle();
-  if(result.error||!result.data){$("announcement-view-title").textContent="Announcement unavailable";$("announcement-view-body").textContent="This announcement could not be loaded.";return;}
-  S.announcementInView=result.data;
-  $("announcement-view-title").textContent=result.data.title;
-  renderAnnouncementText($("announcement-view-body"),result.data.body);
-  $("announcement-view-date").textContent="Published "+dateLabel(result.data.created_at)+(result.data.edited_at?" · Edited "+dateLabel(result.data.edited_at):"");
-}
-
 function notificationItemsForCenter(){
-  return S.notifications.filter(item=>
+  return S.notifications.filter(item=>item.kind!=="announcement"&&item.kind!=="report"&&
     !(item.kind==="message"&&item.conversation_id&&item.conversation_id===S.active)&&
-    !(item.kind==="message"&&item.conversation_id&&S.chatSettings.muted[item.conversation_id])
-  );
+    !(item.kind==="message"&&item.conversation_id&&S.chatSettings.muted[item.conversation_id]));
 }
 function notificationItemsForView(view=S.notificationView){
   const items=notificationItemsForCenter();
-  if(view==="admin"){
-    const linked=new Map();
-    S.notifications.filter(item=>item.kind==="announcement"&&item.announcement_id).forEach(item=>{
-      const group=linked.get(item.announcement_id)||[];
-      group.push(item);
-      linked.set(item.announcement_id,group);
-    });
-    return (S.announcements||[]).map(announcement=>{
-      const related=linked.get(announcement.id)||[];
-      const unread=related.some(item=>!item.read_at);
-      return {
-        id:"announcement:"+announcement.id,
-        kind:"announcement",
-        announcement_id:announcement.id,
-        announcement_history:true,
-        title:announcement.title,
-        body:announcement.body,
-        created_at:announcement.created_at,
-        read_at:unread?null:(related.find(item=>item.read_at)?.read_at||"history")
-      };
-    });
-  }
   if(view==="messages")return items.filter(item=>item.kind==="message");
-  if(view==="other")return items.filter(item=>item.kind!=="announcement"&&item.kind!=="message");
+  if(view==="other")return items.filter(item=>item.kind!=="message");
   return items;
 }
 function notificationUnreadCount(){
@@ -1118,7 +917,7 @@ function renderNotificationBadge(){
   $("notifications-mark-all").disabled=count===0;
 }
 function notificationKindLabel(kind){
-  return ({message:"New message",friend_request:"Friend request",chat_request:"Chat request",feedback_reply:"Feedback update",report:"Safety report",announcement:"Official admin announcement"})[kind]||"Gather update";
+  return ({message:"New message",friend_request:"Friend request",chat_request:"Chat request",feedback_reply:"Feedback update",})[kind]||"Gather update";
 }
 function notificationDisplayItems(items){
   if(!S.preferences.groupUnreadMessages)return items.map(item=>({notification:item,items:[item]}));
@@ -1140,7 +939,7 @@ function notificationDisplayItems(items){
   return display;
 }
 function setNotificationView(view){
-  if(!["all","admin","messages","other"].includes(view))return;
+  if(!["all","messages","other"].includes(view))return;
   S.notificationView=view;
   renderNotifications();
 }
@@ -1152,7 +951,6 @@ function renderNotifications(){
   if(!sectionItems.length){
     const emptyText={
       all:"You're all caught up. New messages and requests will appear here.",
-      admin:"There are no Gather Admin announcements in your notifications yet.",
       messages:"No recent message notifications. Messages in the conversation you're currently viewing stay out of this list.",
       other:"There are no other updates right now."
     };
@@ -1163,24 +961,16 @@ function renderNotifications(){
       const unread=items.some(notification=>!notification.read_at);
       const card=el("button","notification-center-item"+(unread?" unread":""));
       card.type="button";
-      const icon=el("span","notification-center-icon",item.kind==="announcement"?"◎":item.kind==="message"?"✉":item.kind==="friend_request"?"＋":item.kind==="chat_request"?"↗":item.kind==="report"?"⚑":"•");
+      const icon=el("span","notification-center-icon",item.kind==="message"?"✉":item.kind==="friend_request"?"＋":item.kind==="chat_request"?"↗":"•");
       const copy=el("span","notification-center-copy");
       const senderName=S.profiles[item.actor_id]?.display_name||item.title||"New messages";
-      const title=item.kind==="announcement"?(item.announcement_history?(item.title||"Gather Admin"):"Gather Admin"):item.kind==="message"&&items.length>1?senderName:(item.title||notificationKindLabel(item.kind));
-      const baseDescription=item.kind==="announcement"?"Official announcement · "+(item.body||"Open to read the full message."):(item.body||notificationKindLabel(item.kind));
+      const title=item.kind==="message"&&items.length>1?senderName:(item.title||notificationKindLabel(item.kind));
+      const baseDescription=item.body||notificationKindLabel(item.kind);
       const description=item.kind==="message"&&items.length>1?items.length+" unread messages · "+baseDescription:baseDescription;
       copy.append(el("strong","",title),el("small","",description),el("time","",dateLabel(item.created_at)));
       card.append(icon,copy);
       if(unread)card.append(el("span","notification-unread-dot",""));
-      card.addEventListener("click",async()=>{
-        if(item.announcement_history){
-          await markAnnouncementNotificationsRead(item.announcement_id);
-          $("notifications-modal").hidden=true;
-          await openAnnouncement(item.announcement_id);
-        }else{
-          await openNotification(entry);
-        }
-      });
+      card.addEventListener("click",async()=>{await openNotification(entry);});
       list.append(card);
     });
   }
@@ -1195,7 +985,7 @@ function renderNotifications(){
 }
 async function loadNotifications(){
   if(!S.user)return false;
-  const result=await db.from("notifications").select("id,recipient_id,actor_id,kind,title,body,conversation_id,message_id,feedback_thread_id,announcement_id,created_at,read_at").eq("recipient_id",S.user.id).order("created_at",{ascending:false}).limit(80);
+  const result=await db.from("notifications").select("id,recipient_id,actor_id,kind,title,body,conversation_id,message_id,feedback_thread_id,created_at,read_at").eq("recipient_id",S.user.id).order("created_at",{ascending:false}).limit(80);
   if(result.error){console.warn("Notifications could not be loaded:",result.error.message);return false;}
   S.notifications=result.data||[];renderNotifications();return true;
 }
@@ -1224,24 +1014,6 @@ async function markNotificationRead(id){
   if(result.error){console.warn("Notification could not be marked read:",result.error.message);return false;}
   const item=S.notifications.find(x=>x.id===id);if(item)item.read_at=at;
   renderNotifications();return true;
-}
-async function markAnnouncementNotificationsRead(announcementId){
-  if(!S.user||!announcementId)return true;
-  const at=new Date().toISOString();
-  const result=await db.from("notifications").update({read_at:at})
-    .eq("recipient_id",S.user.id)
-    .eq("kind","announcement")
-    .eq("announcement_id",announcementId)
-    .is("read_at",null);
-  if(result.error){
-    console.warn("Announcement notifications could not be marked read:",result.error.message);
-    return false;
-  }
-  S.notifications.forEach(item=>{
-    if(item.kind==="announcement"&&item.announcement_id===announcementId&&!item.read_at)item.read_at=at;
-  });
-  renderNotifications();
-  return true;
 }
 async function markAllNotificationsRead(){
   if(!S.user)return;
@@ -1278,9 +1050,7 @@ async function openNotification(entry){
     else toast("That conversation is no longer available.");
   }else if(item.kind==="friend_request")await openFriends();
   else if(item.kind==="chat_request")await openRequests();
-  else if(item.kind==="feedback_reply")await openFeedback(isFeedbackAdmin(S.user));
-  else if(item.kind==="report"&&isFeedbackAdmin(S.user))await openReportsAdmin();
-  else if(item.kind==="announcement"&&item.announcement_id)await openAnnouncement(item.announcement_id);
+  else if(item.kind==="feedback_reply")await openFeedback();
 }
 
 function subscribeMessages(){
@@ -2877,308 +2647,6 @@ async function editOwnMessage(message){
   Object.assign(message,result.data);renderMessages(true);toast("Message updated.");
 }
 async 
-async function adminApi(action,data={}){
-  if(!isFeedbackAdmin(S.user))throw new Error("Admin Mode is not available for this account.");
-  const {data:sessionData,error:sessionError}=await db.auth.getSession();
-  const token=sessionData?.session?.access_token;
-  if(sessionError||!token)throw new Error("Your session expired. Please sign in again.");
-  const result=await fetch(URL+"/functions/v1/gather-admin",{
-    method:"POST",
-    headers:{
-      "Content-Type":"application/json",
-      "apikey":KEY,
-      "Authorization":"Bearer "+token
-    },
-    body:JSON.stringify({action,...data})
-  });
-  let payload={};
-  try{payload=await result.json();}catch(error){}
-  if(!result.ok)throw new Error(payload.error||"Admin Mode could not complete that action.");
-  return payload;
-}
-function setAdminModeSection(section){
-  if(!["overview","accounts","reports","feedback","announcements","activity"].includes(section))return;
-  S.admin.section=section;
-  document.querySelectorAll("[data-admin-section]").forEach(button=>{
-    if(button.classList.contains("admin-mode-tab"))button.classList.toggle("active",button.dataset.adminSection===section);
-    if(button.getAttribute("role")==="tab")button.setAttribute("aria-selected",String(button.dataset.adminSection===section));
-  });
-  document.querySelectorAll("[data-admin-panel]").forEach(panel=>{
-    panel.hidden=panel.dataset.adminPanel!==section;
-  });
-  if(section==="overview")loadAdminOverview();
-  if(section==="accounts"&&!S.admin.users.length)loadAdminAccounts(true);
-  if(section==="activity")loadAdminActivity();
-}
-async function openAdminMode(){
-  if(!isFeedbackAdmin(S.user)){toast("Admin Mode is only available to the designated Gather administrator.");return;}
-  $("admin-mode-modal").hidden=false;
-  setAdminModeSection("overview");
-}
-function adminActionLabel(action){
-  return ({
-    profile_updated:"Updated a member profile",
-    user_banned:"Banned a member account",
-    user_unbanned:"Unbanned a member account",
-    user_deleted:"Deleted a member account",
-    message_reported_user:"Contacted a reported member"
-  })[action]||String(action||"Admin action").replaceAll("_"," ");
-}
-function renderAdminActivity(listId,items){
-  const list=$(listId);if(!list)return;
-  list.replaceChildren();
-  if(!items?.length){list.append(el("p","muted tiny","No admin actions have been recorded yet."));return;}
-  items.forEach(item=>{
-    const row=el("article","admin-activity-item");
-    row.append(
-      el("strong","",adminActionLabel(item.action)),
-      el("small","",dateLabel(item.created_at)+(item.target_user_id?" · Member ID "+item.target_user_id.slice(0,8):"")),
-      el("small","",Object.entries(item.details||{}).map(([key,value])=>key.replaceAll("_"," ")+": "+String(value)).join(" · "))
-    );
-    list.append(row);
-  });
-}
-async function loadAdminOverview(){
-  if(!isFeedbackAdmin(S.user))return;
-  $("admin-overview-activity").replaceChildren(el("p","muted tiny","Loading admin activity…"));
-  try{
-    const result=await adminApi("summary");
-    S.admin.summary=result.summary||{};
-    $("admin-summary-accounts").textContent=String(S.admin.summary.accounts??0);
-    $("admin-summary-reports").textContent=String(S.admin.summary.reports??0);
-    $("admin-summary-feedback").textContent=String(S.admin.summary.feedback??0);
-    $("admin-summary-announcements").textContent=String(S.admin.summary.announcements??0);
-    S.admin.activity=result.activity||[];
-    renderAdminActivity("admin-overview-activity",S.admin.activity);
-  }catch(error){
-    $("admin-overview-activity").replaceChildren(el("p","status error",error.message));
-  }
-}
-async function loadAdminAccounts(reset=false){
-  if(!isFeedbackAdmin(S.user)||S.admin.loading)return;
-  S.admin.loading=true;
-  const button=$("admin-accounts-more");
-  if(reset){S.admin.users=[];S.admin.page=0;S.admin.hasMore=false;S.admin.selectedUserId=null;}
-  button.disabled=true;
-  button.textContent="Loading accounts…";
-  $("admin-account-list").replaceChildren(el("p","muted tiny","Loading member accounts…"));
-  try{
-    const page=(reset?0:S.admin.page)+1;
-    const result=await adminApi("list_users",{page,per_page:50});
-    if(reset)S.admin.users=[];
-    S.admin.users.push(...(result.users||[]));
-    S.admin.page=result.page||page;
-    S.admin.hasMore=!!result.has_more;
-    renderAdminAccounts();
-    renderAdminAccountDetail();
-  }catch(error){
-    $("admin-account-list").replaceChildren(el("p","status error",error.message));
-  }finally{
-    S.admin.loading=false;
-    button.disabled=false;
-    button.hidden=!S.admin.hasMore;
-    button.textContent="Load more accounts";
-  }
-}
-function renderAdminAccounts(){
-  const list=$("admin-account-list");if(!list)return;
-  list.replaceChildren();
-  const term=($("admin-account-search")?.value||"").trim().toLowerCase();
-  const users=S.admin.users.filter(user=>{
-    const search=[user.display_name,user.username,user.email,user.id].join(" ").toLowerCase();
-    return !term||search.includes(term);
-  });
-  if(!users.length){
-    list.append(el("p","muted tiny",term?"No loaded accounts match that search.":"No member accounts were returned."));
-    return;
-  }
-  users.forEach(user=>{
-    const button=el("button","admin-account-item"+(S.admin.selectedUserId===user.id?" active":""));
-    button.type="button";
-    const name=user.display_name||user.username||"Unnamed account";
-    const banned=!!user.active_ban_reason||(user.banned_until&&new Date(user.banned_until)>new Date());
-    button.append(
-      el("strong","",name),
-      el("small","",user.username?"@"+user.username:"No username set"),
-      el("small","",user.email||"No email address"),
-      el("small","admin-account-item-status",banned?"Banned":"Active")
-    );
-    button.addEventListener("click",()=>{S.admin.selectedUserId=user.id;renderAdminAccounts();renderAdminAccountDetail();});
-    list.append(button);
-  });
-}
-function renderAdminAccountDetail(){
-  const detail=$("admin-account-detail");if(!detail)return;
-  detail.replaceChildren();
-  const user=S.admin.users.find(item=>item.id===S.admin.selectedUserId);
-  if(!user){
-    const empty=el("div","admin-empty-state");
-    empty.append(el("strong","","Select a member"),el("p","muted tiny","Account details and moderation controls will appear here."));
-    detail.append(empty);return;
-  }
-  const banned=!!user.active_ban_reason||(user.banned_until&&new Date(user.banned_until)>new Date());
-  const header=el("div","admin-account-detail-header");
-  header.append(el("h4","",user.display_name||"Unnamed account"),el("p","admin-account-email",user.email||"No email address on file"));
-  const meta=el("div","admin-account-meta");
-  meta.append(
-    el("span","", "Account ID: "+user.id),
-    el("span","", "Created: "+(dateLabel(user.created_at)||"Unknown")),
-    el("span","", "Last sign-in: "+(dateLabel(user.last_sign_in_at)||"Never recorded")),
-    el("span","", "Status: "+(banned?"Banned":"Active")),
-    ...(user.active_ban_reason?[el("span","","Ban reason: "+user.active_ban_reason)]:[])
-  );
-  const form=el("form","admin-account-form");form.id="admin-account-form";
-  const fields=[
-    ["Username","username",24,user.username||""],
-    ["Display name","display_name",50,user.display_name||""],
-    ["Bio","bio",160,user.bio||""],
-    ["Pronouns","pronouns",35,user.pronouns||""]
-  ];
-  fields.forEach(([label,key,maxLength,value])=>{
-    const input=key==="bio"?el("textarea",""):el("input","");
-    input.id="admin-edit-"+key;
-    input.maxLength=maxLength;
-    input.value=value;
-    if(key!=="bio")input.type="text";
-    const wrapper=el("label");
-    wrapper.append(el("span","",label),input);
-    form.append(wrapper);
-  });
-  const banner=el("select","");banner.id="admin-edit-banner_style";
-  ["violet","blue","mint","rose","amber","teal"].forEach(value=>{
-    const option=el("option","",value[0].toUpperCase()+value.slice(1));option.value=value;banner.append(option);
-  });
-  banner.value=user.banner_style||"violet";
-  const bannerLabel=el("label");bannerLabel.append(el("span","","Profile banner"),banner);form.append(bannerLabel);
-  const actions=el("div","admin-account-form-actions");
-  const save=el("button","primary","Save profile");save.type="submit";
-  const ban=el("button","outline",banned?"":"Ban account");ban.id="admin-account-ban";ban.type="button";ban.hidden=banned;
-  const unban=el("button","outline","Unban account");unban.id="admin-account-unban";unban.type="button";unban.hidden=!banned;
-  const remove=el("button","admin-danger-button","Delete account");remove.id="admin-account-delete";remove.type="button";
-  actions.append(save,ban,unban,remove);form.append(actions);
-  const saveStatus=el("p","tiny muted");saveStatus.id="admin-account-save-status";
-  const note=el("p","tiny muted","Emails are read from Auth. Passwords and password hashes are never available in this screen.");
-  detail.append(header,meta,form,saveStatus,note);
-  form.addEventListener("submit",saveAdminAccountProfile);
-  ban.addEventListener("click",()=>banAdminAccount(user.id));
-  unban.addEventListener("click",()=>unbanAdminAccount(user.id));
-  remove.addEventListener("click",()=>deleteAdminAccount(user.id));
-}
-async function saveAdminAccountProfile(event){
-  event.preventDefault();
-  const user=S.admin.users.find(item=>item.id===S.admin.selectedUserId);if(!user)return;
-  const statusNode=$("admin-account-save-status"),submit=$("admin-account-form")?.querySelector('button[type="submit"]');
-  if(submit)submit.disabled=true;
-  if(statusNode)statusNode.textContent="Saving profile…";
-  const profile={
-    username:$("admin-edit-username").value,
-    display_name:$("admin-edit-display_name").value,
-    bio:$("admin-edit-bio").value,
-    pronouns:$("admin-edit-pronouns").value,
-    banner_style:$("admin-edit-banner_style").value
-  };
-  try{
-    const result=await adminApi("update_profile",{user_id:user.id,profile});
-    Object.assign(user,result.profile||profile);
-    if(S.profiles[user.id])Object.assign(S.profiles[user.id],result.profile||profile);
-    renderAdminAccounts();renderAdminAccountDetail();toast("Member profile updated.");
-  }catch(error){
-    if(statusNode)statusNode.textContent=error.message;
-  }finally{if(submit)submit.disabled=false;}
-}
-async function banAdminAccount(userId){
-  const user=S.admin.users.find(item=>item.id===userId);if(!user)return;
-  const reason=prompt("Why is this account being banned? This reason is saved in the moderation record.");
-  if(!reason?.trim())return;
-  if(!confirm("Ban "+(user.display_name||user.username||"this member")+"? They will be blocked from signing in."))return;
-  try{
-    await adminApi("ban_user",{user_id:userId,reason:reason.trim()});
-    user.active_ban_reason=reason.trim();user.banned_until="9999-12-31T00:00:00.000Z";
-    renderAdminAccounts();renderAdminAccountDetail();toast("Account banned.");
-  }catch(error){toast(error.message);}
-}
-async function unbanAdminAccount(userId){
-  const user=S.admin.users.find(item=>item.id===userId);if(!user)return;
-  if(!confirm("Restore sign-in access for "+(user.display_name||user.username||"this member")+"?"))return;
-  try{
-    await adminApi("unban_user",{user_id:userId});
-    user.active_ban_reason="";user.banned_until=null;
-    renderAdminAccounts();renderAdminAccountDetail();toast("Account unbanned.");
-  }catch(error){toast(error.message);}
-}
-async function deleteAdminAccount(userId){
-  const user=S.admin.users.find(item=>item.id===userId);if(!user)return;
-  const confirmText=prompt("Permanently delete "+(user.display_name||user.username||"this account")+"? This cannot be undone. Type DELETE to continue.");
-  if(confirmText!=="DELETE")return;
-  if(!confirm("Final confirmation: permanently delete this member account and its linked Auth profile?"))return;
-  try{
-    await adminApi("delete_user",{user_id:userId});
-    S.admin.users=S.admin.users.filter(item=>item.id!==userId);
-    S.admin.selectedUserId=null;
-    renderAdminAccounts();renderAdminAccountDetail();await loadAdminOverview();
-    toast("Member account deleted.");
-  }catch(error){toast(error.message);}
-}
-async function loadAdminActivity(){
-  if(!isFeedbackAdmin(S.user))return;
-  $("admin-activity-list").replaceChildren(el("p","muted tiny","Loading admin activity…"));
-  try{
-    const result=await adminApi("list_audit");
-    S.admin.activity=result.activity||[];
-    renderAdminActivity("admin-activity-list",S.admin.activity);
-  }catch(error){$("admin-activity-list").replaceChildren(el("p","status error",error.message));}
-}
-async function messageReportedMember(report){
-  if(!isFeedbackAdmin(S.user)||!report?.id)return;
-  const target=S.profiles[report.target_user_id];
-  const message=prompt("Write a private Gather Admin message to "+(target?.display_name||"the reported member")+".");
-  if(!message?.trim())return;
-  try{
-    const result=await adminApi("message_reported_user",{report_id:report.id,body:message.trim()});
-    $("reports-admin-modal").hidden=true;
-    $("admin-mode-modal").hidden=true;
-    await loadChats();
-    await openChat(result.conversation_id);
-    toast("Your private message was sent.");
-  }catch(error){toast("The member could not be contacted: "+error.message);}
-}
-async function openReportsAdmin(){
-  if(!isFeedbackAdmin(S.user)){toast("Only the administrator can review reports.");return;}
-  $("reports-admin-modal").hidden=false;
-  const list=$("reports-admin-list");list.replaceChildren(el("p","muted tiny","Loading reports…"));
-  const result=await db.from("reports").select("id,reporter_id,target_user_id,message_id,reason,details,status,created_at").order("created_at",{ascending:false}).limit(100);
-  list.replaceChildren();
-  if(result.error){list.append(el("p","status error","Reports could not be loaded: "+result.error.message));return;}
-  if(!result.data?.length){list.append(el("p","muted tiny","There are no reports to review."));return;}
-  const profilesResult=await fetchProfileRecords([...new Set(result.data.flatMap(report=>[report.reporter_id,report.target_user_id]))]);
-  (profilesResult.data||[]).forEach(profile=>{S.profiles[profile.id]=profile;});
-  const reportProfiles=new Map((profilesResult.data||[]).map(profile=>[profile.id,profile]));
-  for(const report of result.data){
-    const card=el("article","admin-report-card");
-    const heading=el("div","admin-report-heading");
-    heading.append(el("strong","",report.reason.replaceAll("_"," ")),el("small","",dateLabel(report.created_at)));
-    const text=el("p","admin-report-details",report.details||(report.message_id?"A message was reported.":"An account was reported."));
-    const reporter=reportProfiles.get(report.reporter_id),target=reportProfiles.get(report.target_user_id);
-    const meta=el("small","muted", "From: "+(reporter?.display_name||"Member")+" (@"+(reporter?.username||"unknown")+") · About: "+(target?.display_name||"Member")+" (@"+(target?.username||"unknown")+")");
-    const select=el("select","admin-report-status");["new","reviewing","resolved"].forEach(value=>{const option=el("option","",value==="new"?"New":value==="reviewing"?"Reviewing":"Resolved");option.value=value;select.append(option);});select.value=report.status;
-    select.addEventListener("change",async()=>{
-      const previous=report.status;
-      select.disabled=true;
-      try{
-        const result=await adminApi("update_report_status",{report_id:report.id,status:select.value});
-        report.status=result.report?.status||select.value;
-        toast("Report status updated.");
-      }catch(error){
-        select.value=previous;
-        toast("Report status could not be updated: "+error.message);
-      }finally{select.disabled=false;}
-    });
-    const contact=el("button","outline admin-report-message","Message reported member");
-    contact.type="button";
-    contact.addEventListener("click",()=>messageReportedMember(report));
-    card.append(heading,text,meta,select,contact);list.append(card);
-  }
-}
 async function signOutOtherSessions(){
   const button=$("signout-other-sessions");button.disabled=true;
   $("session-security-status").textContent="Signing out other devices…";
@@ -3432,105 +2900,52 @@ function feedbackStatusLabel(value){
 }
 function renderFeedbackThreads(){
   const list=$("feedback-thread-list");list.replaceChildren();
-  if(!S.feedbackThreads.length){
-    list.append(el("p","muted tiny",S.feedbackAdminView?"No feedback has been submitted yet.":"You haven't sent any feedback yet."));
-    return;
-  }
+  if(!S.feedbackThreads.length){list.append(el("p","muted tiny","You haven't sent any feedback yet."));return;}
   S.feedbackThreads.forEach(thread=>{
     const button=el("button","feedback-thread-card"+(thread.id===S.activeFeedbackThreadId?" active":""));
-    button.type="button";
-    const subject=el("strong","",thread.subject);
-    const statusLine=el("span","feedback-thread-meta",feedbackStatusLabel(thread.status)+" · "+dateLabel(thread.created_at));
-    if(S.feedbackAdminView){
-      const profile=S.feedbackProfiles[thread.user_id];
-      button.append(subject,el("small","feedback-thread-member",profile?.display_name||"Gather member"),statusLine);
-    }else button.append(subject,statusLine);
-    button.addEventListener("click",()=>selectFeedbackThread(thread.id));
-    list.append(button);
+    button.type="button";button.append(el("strong","",thread.subject),el("span","feedback-thread-meta",feedbackStatusLabel(thread.status)+" · "+dateLabel(thread.created_at)));
+    button.addEventListener("click",()=>selectFeedbackThread(thread.id));list.append(button);
   });
 }
 async function loadFeedbackThreads(){
-  const result=await db.from("feedback_threads").select("id,user_id,subject,status,created_at").order("created_at",{ascending:false});
+  const result=await db.from("feedback_threads").select("id,user_id,subject,status,created_at").eq("user_id",S.user.id).order("created_at",{ascending:false});
   if(result.error){$("feedback-thread-list").replaceChildren(el("p","status error","Feedback couldn't be loaded: "+result.error.message));return false;}
-  S.feedbackThreads=result.data||[];
-  S.feedbackProfiles={};
-  if(S.feedbackAdminView&&S.feedbackThreads.length){
-    const profiles=await fetchProfileRecords(S.feedbackThreads.map(thread=>thread.user_id));
-    if(!profiles.error)(profiles.data||[]).forEach(profile=>S.feedbackProfiles[profile.id]=profile);
-  }
-  renderFeedbackThreads();
-  return true;
+  S.feedbackThreads=result.data||[];renderFeedbackThreads();return true;
 }
 function showFeedbackNewForm(){
-  if(S.feedbackAdminView){toast("The admin inbox is for replying to member requests.");return;}
-  S.activeFeedbackThreadId=null;S.feedbackMessages=[];
-  $("feedback-detail").hidden=true;$("feedback-empty").hidden=true;
-  $("feedback-new-form").hidden=false;
-  $("feedback-subject").value="";$("feedback-new-message").value="";
-  $("feedback-new-status").textContent="";
-  $("feedback-subject").focus();
-  renderFeedbackThreads();
+  S.activeFeedbackThreadId=null;S.feedbackMessages=[];$("feedback-detail").hidden=true;$("feedback-empty").hidden=true;
+  $("feedback-new-form").hidden=false;$("feedback-subject").value="";$("feedback-new-message").value="";
+  $("feedback-new-status").textContent="";$("feedback-subject").focus();renderFeedbackThreads();
 }
-async function openFeedback(adminView=false){
-  if(!S.user)return;
-  if(adminView&&!isFeedbackAdmin(S.user)){toast("This inbox is only available to the feedback administrator.");return;}
-  S.feedbackAdminView=!!adminView;
-  S.activeFeedbackThreadId=null;S.feedbackMessages=[];
-  $("feedback-request-actions").hidden=true;$("feedback-edit-form").hidden=true;
-  $("feedback-message-list").hidden=false;$("feedback-reply-form").hidden=false;
-  $("feedback-modal-title").textContent=S.feedbackAdminView?"Admin inbox":"Your feedback";
-  $("feedback-modal-eyebrow").textContent=S.feedbackAdminView?"GATHER ADMIN":"FEEDBACK AND SUPPORT";
-  $("feedback-modal-description").textContent=S.feedbackAdminView?"Review private requests from Gather members, reply, and update each thread’s status. Replies appear as Gather Admin, not your personal username.":"Send feedback or ask for help. Replies to your feedback stay private to your account.";
-  $("feedback-new").hidden=S.feedbackAdminView;
-  $("feedback-new-form").hidden=true;$("feedback-detail").hidden=true;$("feedback-empty").hidden=false;
-  $("feedback-admin-identity").hidden=!S.feedbackAdminView;
-  $("feedback-modal").classList.toggle("feedback-admin-mode",S.feedbackAdminView);
-  $("feedback-reply").placeholder=S.feedbackAdminView?"Reply as Gather Admin…":"Write a reply…";
-  $("feedback-reply-submit").textContent=S.feedbackAdminView?"Reply as Gather Admin":"Send reply";
-  $("feedback-modal").hidden=false;
-  $("feedback-empty").textContent=S.feedbackAdminView?"Select a feedback thread to read and respond.":"Choose a feedback thread or start a new one.";
-  await loadFeedbackThreads();
+async function openFeedback(){
+  if(!S.user)return;S.activeFeedbackThreadId=null;S.feedbackMessages=[];
+  $("feedback-request-actions").hidden=true;$("feedback-edit-form").hidden=true;$("feedback-message-list").hidden=false;$("feedback-reply-form").hidden=false;
+  $("feedback-modal-title").textContent="Your feedback";$("feedback-modal-eyebrow").textContent="FEEDBACK AND SUPPORT";
+  $("feedback-modal-description").textContent="Send feedback or ask for help. Replies to your feedback stay private to your account.";
+  $("feedback-new").hidden=false;$("feedback-new-form").hidden=true;$("feedback-detail").hidden=true;$("feedback-empty").hidden=false;
+  $("feedback-reply").placeholder="Write a reply…";$("feedback-reply-submit").textContent="Send reply";
+  $("feedback-modal").hidden=false;$("feedback-empty").textContent="Choose a feedback thread or start a new one.";await loadFeedbackThreads();
 }
 async function selectFeedbackThread(threadId){
-  const thread=S.feedbackThreads.find(item=>item.id===threadId);
-  if(!thread)return;
-  S.activeFeedbackThreadId=threadId;
-  $("feedback-new-form").hidden=true;$("feedback-empty").hidden=true;$("feedback-detail").hidden=false;
-  $("feedback-request-actions").hidden=S.feedbackAdminView;
-  $("feedback-edit-form").hidden=true;$("feedback-message-list").hidden=false;$("feedback-reply-form").hidden=false;
-  $("feedback-thread-subject").textContent=thread.subject;
-  const profile=S.feedbackProfiles[thread.user_id];
-  $("feedback-thread-owner").textContent=S.feedbackAdminView
-    ?("From "+(profile?.display_name||"Gather member")+" · "+dateLabel(thread.created_at))
-    :("Submitted "+dateLabel(thread.created_at));
-  $("feedback-status-label").textContent="Status: "+feedbackStatusLabel(thread.status);
-  $("feedback-status-select").value=thread.status;
-  $("feedback-status-select").hidden=!S.feedbackAdminView;
-  $("feedback-status-label").hidden=S.feedbackAdminView;
-  $("feedback-reply-status").textContent="";
-  $("feedback-reply").value="";
-  renderFeedbackThreads();
+  const thread=S.feedbackThreads.find(item=>item.id===threadId&&item.user_id===S.user?.id);if(!thread)return;
+  S.activeFeedbackThreadId=threadId;$("feedback-new-form").hidden=true;$("feedback-empty").hidden=true;$("feedback-detail").hidden=false;
+  $("feedback-request-actions").hidden=false;$("feedback-edit-form").hidden=true;$("feedback-message-list").hidden=false;$("feedback-reply-form").hidden=false;
+  $("feedback-thread-subject").textContent=thread.subject;$("feedback-thread-owner").textContent="Submitted "+dateLabel(thread.created_at);
+  $("feedback-status-label").textContent="Status: "+feedbackStatusLabel(thread.status);$("feedback-status-select").hidden=true;$("feedback-status-label").hidden=false;
+  $("feedback-reply-status").textContent="";$("feedback-reply").value="";renderFeedbackThreads();
   const result=await db.from("feedback_messages").select("id,thread_id,sender_id,body,created_at").eq("thread_id",threadId).order("created_at",{ascending:true});
   if(result.error){$("feedback-message-list").replaceChildren(el("p","status error","Messages couldn't be loaded: "+result.error.message));return;}
-  S.feedbackMessages=result.data||[];
-  renderFeedbackMessages();
+  S.feedbackMessages=result.data||[];renderFeedbackMessages();
 }
 function renderFeedbackMessages(){
-  const list=$("feedback-message-list");list.replaceChildren();
-  if(!S.feedbackMessages.length){list.append(el("p","muted tiny","No messages in this thread yet."));return;}
-  const thread=S.feedbackThreads.find(item=>item.id===S.activeFeedbackThreadId);
+  const list=$("feedback-message-list");list.replaceChildren();if(!S.feedbackMessages.length){list.append(el("p","muted tiny","No messages in this thread yet."));return;}
   S.feedbackMessages.forEach(message=>{
-    const mine=message.sender_id===S.user?.id;
-    const bubble=el("article","feedback-message"+(mine?" mine":""));
-    const sender=mine?(S.feedbackAdminView?"Gather Admin":"You"):(S.feedbackAdminView?(S.feedbackProfiles[thread?.user_id]?.display_name||"Gather member"):"Gather Admin");
-    bubble.append(el("div","feedback-message-meta",sender+" · "+dateLabel(message.created_at)),el("p","feedback-message-body",message.body));
-    list.append(bubble);
-  });
-  list.scrollTop=list.scrollHeight;
+    const mine=message.sender_id===S.user?.id,bubble=el("article","feedback-message"+(mine?" mine":""));
+    bubble.append(el("div","feedback-message-meta",(mine?"You":"Gather Support")+" · "+dateLabel(message.created_at)),el("p","feedback-message-body",message.body));list.append(bubble);
+  });list.scrollTop=list.scrollHeight;
 }
 async function createFeedbackThread(event){
   event.preventDefault();
-  if(S.feedbackAdminView){toast("The admin inbox is for replying to member requests.");return;}
   const subject=$("feedback-subject").value.trim(),body=$("feedback-new-message").value.trim();
   if(subject.length<3||subject.length>100){$("feedback-new-status").textContent="Use a subject between 3 and 100 characters.";return;}
   if(!body||body.length>4000){$("feedback-new-status").textContent="Write a message between 1 and 4,000 characters.";return;}
@@ -3546,7 +2961,7 @@ async function createFeedbackThread(event){
   toast("Feedback sent.");
 }
 function startFeedbackEdit(){
-  if(S.feedbackAdminView||!S.user||!S.activeFeedbackThreadId)return;
+  if(!S.user||!S.activeFeedbackThreadId)return;
   const thread=S.feedbackThreads.find(item=>item.id===S.activeFeedbackThreadId);
   const original=S.feedbackMessages.find(message=>message.sender_id===thread?.user_id);
   if(!thread||!original){toast("The original feedback message could not be found.");return;}
@@ -3561,13 +2976,13 @@ function startFeedbackEdit(){
 }
 function cancelFeedbackEdit(){
   $("feedback-edit-form").hidden=true;
-  $("feedback-request-actions").hidden=S.feedbackAdminView;
+  $("feedback-request-actions").hidden=false;
   $("feedback-message-list").hidden=false;
   $("feedback-reply-form").hidden=false;
 }
 async function saveFeedbackEdit(event){
   event.preventDefault();
-  if(S.feedbackAdminView||!S.user||!S.activeFeedbackThreadId)return;
+  if(!S.user||!S.activeFeedbackThreadId)return;
   const subject=$("feedback-edit-subject").value.trim();
   const message=$("feedback-edit-message").value.trim();
   if(subject.length<3||subject.length>100){
@@ -3595,10 +3010,10 @@ async function saveFeedbackEdit(event){
   toast("Your feedback was updated.");
 }
 async function deleteFeedbackRequest(){
-  if(S.feedbackAdminView||!S.user||!S.activeFeedbackThreadId)return;
+  if(!S.user||!S.activeFeedbackThreadId)return;
   const thread=S.feedbackThreads.find(item=>item.id===S.activeFeedbackThreadId);
   if(!thread||thread.user_id!==S.user.id){toast("You can only delete your own feedback.");return;}
-  const confirmed=confirm("Delete this feedback request and its entire conversation, including Gather Admin replies? This cannot be undone.");
+  const confirmed=confirm("Delete this feedback request and its entire conversation, including Gather Support replies? This cannot be undone.");
   if(!confirmed)return;
   const threadId=S.activeFeedbackThreadId;
   const button=$("feedback-delete-request");button.disabled=true;
@@ -3616,7 +3031,6 @@ async function deleteFeedbackRequest(){
 }
 async function sendFeedbackReply(event){
   event.preventDefault();
-  if(S.feedbackAdminView&&!isFeedbackAdmin(S.user)){toast("Only the Gather administrator can reply from the admin inbox.");return;}
   const body=$("feedback-reply").value.trim(),threadId=S.activeFeedbackThreadId;
   if(!threadId||!body||body.length>4000){$("feedback-reply-status").textContent="Write a message between 1 and 4,000 characters.";return;}
   const button=$("feedback-reply-submit");button.disabled=true;
@@ -3628,21 +3042,7 @@ async function sendFeedbackReply(event){
   await selectFeedbackThread(threadId);
   toast("Reply sent.");
 }
-async function updateFeedbackStatus(){
-  if(!S.feedbackAdminView||!isFeedbackAdmin(S.user)||!S.activeFeedbackThreadId)return;
-  const nextStatus=$("feedback-status-select").value;
-  const button=$("feedback-status-select");button.disabled=true;
-  const result=await db.from("feedback_threads").update({status:nextStatus}).eq("id",S.activeFeedbackThreadId).select("id,user_id,subject,status,created_at").maybeSingle();
-  button.disabled=false;
-  if(result.error||!result.data){toast("Feedback status could not be updated.");return;}
-  const index=S.feedbackThreads.findIndex(thread=>thread.id===result.data.id);
-  if(index>=0)S.feedbackThreads[index]=result.data;
-  $("feedback-status-label").textContent="Status: "+feedbackStatusLabel(nextStatus);
-  renderFeedbackThreads();
-  toast("Feedback status updated.");
-}
-
-function closeModals(){ $("admin-mode-modal").hidden=true;$("announcement-compose-modal").hidden=true;$("announcement-view-modal").hidden=true;$("announcements-page-modal").hidden=true;$("notifications-modal").hidden=true;$("member-profile-modal").hidden=true;$("report-modal").hidden=true;$("reports-admin-modal").hidden=true;$("people-modal").hidden=true;$("profile-modal").hidden=true;$("requests-modal").hidden=true;$("friends-modal").hidden=true;$("settings-modal").hidden=true;$("group-photo-modal").hidden=true;$("group-settings-modal").hidden=true;$("message-search-modal").hidden=true;$("poll-create-modal").hidden=true;$("forward-message-modal").hidden=true;$("saved-messages-modal").hidden=true;$("chat-actions-modal").hidden=true;$("feedback-modal").hidden=true; }
+function closeModals(){ $("notifications-modal").hidden=true;$("member-profile-modal").hidden=true;$("report-modal").hidden=true;$("people-modal").hidden=true;$("profile-modal").hidden=true;$("requests-modal").hidden=true;$("friends-modal").hidden=true;$("settings-modal").hidden=true;$("group-photo-modal").hidden=true;$("group-settings-modal").hidden=true;$("message-search-modal").hidden=true;$("poll-create-modal").hidden=true;$("forward-message-modal").hidden=true;$("saved-messages-modal").hidden=true;$("chat-actions-modal").hidden=true;$("feedback-modal").hidden=true; }
 function goHome(){
   closeConversationDrawer();
   saveActiveChatDraft();clearUnreadDividerState();
@@ -3725,37 +3125,15 @@ function wire(){
   $("chat-title").addEventListener("click",()=>{const chat=S.chats.find(item=>item.id===S.active);if(chat?.kind==="direct")openPublicProfile(peerForChat(chat));});
   $("settings-open").addEventListener("click",openSettings);
   $("notifications-open").addEventListener("click",openNotifications);
-  $("admin-mode-open").addEventListener("click",openAdminMode);
-  document.querySelectorAll("[data-admin-section]").forEach(button=>button.addEventListener("click",()=>setAdminModeSection(button.dataset.adminSection)));
-  $("admin-quick-accounts").addEventListener("click",()=>setAdminModeSection("accounts"));
-  $("admin-quick-reports").addEventListener("click",()=>setAdminModeSection("reports"));
-  $("admin-quick-feedback").addEventListener("click",()=>setAdminModeSection("feedback"));
-  $("admin-quick-announcements").addEventListener("click",()=>setAdminModeSection("announcements"));
-  $("admin-reports-open").addEventListener("click",openReportsAdmin);
-  $("admin-feedback-open").addEventListener("click",()=>openFeedback(true));
-  $("admin-announcements-open").addEventListener("click",openAnnouncementsPage);
-  $("admin-accounts-refresh").addEventListener("click",()=>loadAdminAccounts(true));
-  $("admin-account-search").addEventListener("input",renderAdminAccounts);
-  $("admin-accounts-more").addEventListener("click",()=>loadAdminAccounts(false));
-  $("admin-activity-refresh").addEventListener("click",loadAdminActivity);
-  $("admin-overview-activity-refresh").addEventListener("click",loadAdminOverview);
 
-  $("announcement-send-open").addEventListener("click",()=>{$("settings-modal").hidden=true;openAnnouncementComposer();});
-  $("announcement-compose-form").addEventListener("submit",publishAnnouncement);
-  $("announcement-edit-open").addEventListener("click",()=>openAnnouncementEditor(S.activeAnnouncementId));
-  $("home-announcement-open").addEventListener("click",()=>{const latest=S.announcements[0];if(latest)openAnnouncement(latest.id);});
-  $("home-announcements-all").addEventListener("click",openAnnouncementsPage);
   $("notifications-mark-all").addEventListener("click",markAllNotificationsRead);
-  $("notifications-admin-open").addEventListener("click",()=>{$("notifications-modal").hidden=true;openAnnouncementsPage();});
   $("notifications-recent-open").addEventListener("click",()=>setNotificationView("messages"));
   document.querySelectorAll("[data-notification-view]").forEach(button=>button.addEventListener("click",()=>setNotificationView(button.dataset.notificationView)));
   $("report-form").addEventListener("submit",submitReport);
   $("member-profile-report").addEventListener("click",()=>{const userId=S.publicProfileId;$("member-profile-modal").hidden=true;openReport(userId);});
-  $("reports-admin-open").addEventListener("click",()=>{$("settings-modal").hidden=true;openReportsAdmin();});
   $("signout-other-sessions").addEventListener("click",signOutOtherSessions);
   $("request-account-deletion").addEventListener("click",requestAccountDeletion);
   $("feedback-open").addEventListener("click",()=>openFeedback(false));
-  $("feedback-admin-open").addEventListener("click",()=>{$("settings-modal").hidden=true;openFeedback(true);});
   $("feedback-new").addEventListener("click",showFeedbackNewForm);
   $("feedback-refresh").addEventListener("click",async()=>{const keep=S.activeFeedbackThreadId;await loadFeedbackThreads();if(keep&&S.feedbackThreads.some(thread=>thread.id===keep))await selectFeedbackThread(keep);});
   $("feedback-new-form").addEventListener("submit",createFeedbackThread);
@@ -3764,7 +3142,6 @@ function wire(){
   $("feedback-edit-form").addEventListener("submit",saveFeedbackEdit);
   $("feedback-edit-cancel").addEventListener("click",cancelFeedbackEdit);
   $("feedback-reply-form").addEventListener("submit",sendFeedbackReply);
-  $("feedback-status-select").addEventListener("change",updateFeedbackStatus);
   document.querySelectorAll("[data-theme-mode]").forEach(b=>b.addEventListener("click",()=>setTheme(b.dataset.themeMode)));
   document.querySelectorAll("[data-accent]").forEach(b=>b.addEventListener("click",()=>setAccent(b.dataset.accent)));
   document.querySelectorAll("[data-font-size]").forEach(b=>b.addEventListener("click",()=>setFontSize(b.dataset.fontSize)));
@@ -3810,7 +3187,7 @@ document.querySelectorAll("[data-folder]").forEach(b=>b.addEventListener("click"
   $("delete-selected").addEventListener("click",deleteSelectedMessages);
   $("signout").addEventListener("click",async()=>{const r=await db.auth.signOut();if(r.error)toast(r.error.message);else closeModals();});
   document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",closeModals));
-  ["admin-mode-modal","announcement-compose-modal","announcement-view-modal","announcements-page-modal","notifications-modal","member-profile-modal","report-modal","reports-admin-modal","people-modal","profile-modal","requests-modal","friends-modal","settings-modal","group-photo-modal","group-settings-modal","message-search-modal","poll-create-modal","forward-message-modal","saved-messages-modal","chat-actions-modal","feedback-modal"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target===$(id))closeModals();}));
+  ["notifications-modal","member-profile-modal","report-modal","people-modal","profile-modal","requests-modal","friends-modal","settings-modal","group-photo-modal","group-settings-modal","message-search-modal","poll-create-modal","forward-message-modal","saved-messages-modal","chat-actions-modal","feedback-modal"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target===$(id))closeModals();}));
   document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeComposerMoreMenu();closeModals();}});
 }
 async function boot(){
