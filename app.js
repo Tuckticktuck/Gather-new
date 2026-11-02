@@ -2780,50 +2780,10 @@ async function searchConversationMessages(reset=true){
   const conversationId=S.searchConversationId,from=S.searchOffset,to=from+99;
   if(!conversationId&&!S.chats.length){$("message-search-results").replaceChildren(el("p","muted tiny","You do not have any conversations to search yet."));$("message-search-more").hidden=true;return;}
   status("message-search-status",S.searchOffset?"Loading more matches…":"Searching "+(conversationId?"this conversation":"all conversations")+"…");
-  const escapedQuery=query.replace(/[\\%_]/g,"\\function openMessageSearch(){
-  if(!S.active)return;
-  S.searchConversationId=S.active;S.searchQuery="";S.searchOffset=0;S.searchHasMore=false;
-  $("message-search-input").value="";$("message-search-results").replaceChildren(el("p","muted tiny","Search all messages in this conversation."));
-  $("message-search-more").hidden=true;status("message-search-status","");$("message-search-modal").hidden=false;$("message-search-input").focus();
-}
-async function searchConversationMessages(reset=true){
-  const query=$("message-search-input").value.trim();
-  if(reset){S.searchQuery=query;S.searchOffset=0;S.searchHasMore=false;$("message-search-results").replaceChildren();}
-  if(!query){$("message-search-results").replaceChildren(el("p","muted tiny","Enter a word or phrase to search the entire conversation."));$("message-search-more").hidden=true;return;}
-  if(query!==S.searchQuery){S.searchQuery=query;S.searchOffset=0;$("message-search-results").replaceChildren();}
-  status("message-search-status",S.searchOffset?"Loading more matches…":"Searching the conversation…");
-  const conversationId=S.searchConversationId,from=S.searchOffset,to=from+99;
-  const result=await db.from("messages").select("id,sender_id,body,created_at").eq("conversation_id",conversationId).ilike("body","%"+query+"%").order("created_at",{ascending:false}).order("id",{ascending:false}).range(from,to);
-  if(result.error){status("message-search-status","Search failed: "+result.error.message,"error");return;}
-  const rows=(result.data||[]).filter(m=>!S.deletedMessageIds.has(m.id));
-  rows.forEach(m=>{
-    const button=el("button","message-search-result");button.type="button";
-    button.append(el("strong","",((S.profiles[m.sender_id]?.display_name)||"Member")+" · "+dateLabel(m.created_at)),el("span","",m.body));
-    button.addEventListener("click",()=>openSearchResult(m));$("message-search-results").append(button);
-  });
-  S.searchOffset=to+1;S.searchHasMore=(result.data||[]).length===100;
-  $("message-search-more").hidden=!S.searchHasMore;
-  status("message-search-status",rows.length?("Found "+S.searchOffset+" matching messages"+(S.searchHasMore?" so far":".")):"No matching messages on this page.");
-}
-async function openSearchResult(message){
-  const conversationId=S.searchConversationId;$("message-search-modal").hidden=true;
-  if(S.active!==conversationId)await openChat(conversationId);
-  const result=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,edited_at,reply_to_id,attachment_path").eq("conversation_id",conversationId).lte("created_at",message.created_at).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
-  if(result.error){toast("That message could not be opened: "+result.error.message);return;}
-  if(S.active!==conversationId)return;
-  const raw=result.data||[];S.hasOlderMessages=raw.length===300;
-  S.messages=await attachReplyPreviews(raw.filter(m=>!S.deletedMessageIds.has(m.id)).reverse(),conversationId);
-  await loadMessageReactions(conversationId,S.messages.map(m=>m.id),true);
-  await loadMessageReads(conversationId,S.messages.map(m=>m.id));await markMessagesRead(conversationId,S.messages);renderMessages();
-  setTimeout(()=>{
-    const row=document.querySelector('[data-message-id="'+message.id+'"]');
-    if(row){row.scrollIntoView({block:"center"});row.classList.add("search-highlight");setTimeout(()=>row.classList.remove("search-highlight"),2200);}
-  },50);
-}");
   let request=db.from("messages").select("id,conversation_id,sender_id,body,created_at");
   if(conversationId)request=request.eq("conversation_id",conversationId);
   else request=request.in("conversation_id",S.chats.map(chat=>chat.id));
-  const result=await request.ilike("body","%"+escapedQuery+"%").order("created_at",{ascending:false}).order("id",{ascending:false}).range(from,to);
+  const result=await request.ilike("body","%"+query+"%").order("created_at",{ascending:false}).order("id",{ascending:false}).range(from,to);
   if(result.error){status("message-search-status","Search failed: "+result.error.message,"error");return;}
   const rows=(result.data||[]).filter(m=>!S.deletedMessageIds.has(m.id));
   rows.forEach(m=>{
