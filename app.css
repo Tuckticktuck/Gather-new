@@ -1988,3 +1988,9 @@ button:not(:disabled):active{transform:translateY(1px) scale(.985)}
   font-size:calc(10px * var(--font-scale,1));font-weight:800;
 }
 @media(max-width:720px){.message-undo-bar{width:calc(100% - 18px);margin-bottom:6px;padding:8px 9px}}
+
+
+/* On desktop, keep the four home shortcuts in the left sidebar only. */
+@media(min-width:721px){
+  #empty .workspace-actions{display:none}
+}
