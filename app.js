@@ -30,7 +30,7 @@ function normalizeChatSettings(raw){
   });
   return {pinned,muted,drafts,appearance};
 }
-const S = { user:null, profile:null, profiles:{}, chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, reactionSelectionMode:false, selectedReactionMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map() };
+const S = { user:null, profile:null, profiles:{}, chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map() };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function status(id, text, kind) { const n=$(id); n.textContent=text||""; n.className="status"+(kind?" "+kind:""); }
@@ -482,7 +482,7 @@ function showAuth() {
   clearTimeout(S.chatSettingsSaveTimer);S.chatSettingsSaveTimer=null;S.chatSettings=normalizeChatSettings(DEFAULT_CHAT_SETTINGS);
   S.selectingConversations=false;S.selectedConversationIds.clear();renderConversationSelectionControls();
   S.unreadTargetMessageId=null;S.unreadTargetLoaded=false;S.suppressReadDividerUpdates=false;
-  S.user=null;S.profile=null;S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.savedMessageIds=new Set();S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.reactionSelectionMode=false;S.selectedReactionMessageId=null;S.openMessageMenuId=null;S.notifications=[];S.feedbackAdminView=false;$("feedback-admin-open").hidden=true;$("feedback-admin-settings-section").hidden=true;S.profiles={};S.chats=[];S.messages=[];S.messageReads={};S.replyTo=null;S.hasOlderMessages=false;S.requests=[];S.friendRequests=[];S.friends=[];S.blockedUsers=[];S.deletedMessages=[];S.deletedMessageIds=new Set();S.lastReadAt={};S.folder="friends";S.directStatus=null;S.active=null;S.messages=[];S.loadError=null;S.avatarChanged=false;S.pendingAvatarData=null;loadUIPreferences(DEFAULT_PREFERENCES);
+  S.user=null;S.profile=null;S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.savedMessageIds=new Set();S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.openMessageMenuId=null;S.notifications=[];S.feedbackAdminView=false;$("feedback-admin-open").hidden=true;$("feedback-admin-settings-section").hidden=true;S.profiles={};S.chats=[];S.messages=[];S.messageReads={};S.replyTo=null;S.hasOlderMessages=false;S.requests=[];S.friendRequests=[];S.friends=[];S.blockedUsers=[];S.deletedMessages=[];S.deletedMessageIds=new Set();S.lastReadAt={};S.folder="friends";S.directStatus=null;S.active=null;S.messages=[];S.loadError=null;S.avatarChanged=false;S.pendingAvatarData=null;loadUIPreferences(DEFAULT_PREFERENCES);
   setChatLoadStatus("");$("auth").hidden=false;$("app").hidden=true;
 }
 function showApp(){ $("auth").hidden=true;$("app").hidden=false; }
@@ -1513,14 +1513,40 @@ function toggleConversationSelection(conversationId,selected=null){
 }
 function renderConversationSelectionControls(){
   const button=$("toggle-conversation-select"),actions=$("conversation-selection-actions");
-  const count=$("conversation-selection-count"),remove=$("delete-selected-conversations");
-  if(!button||!actions||!count||!remove)return;
+  const count=$("conversation-selection-count"),remove=$("delete-selected-conversations"),pin=$("pin-selected-conversations");
+  if(!button||!actions||!count||!remove||!pin)return;
   button.textContent=S.selectingConversations?"Cancel selection":"Select conversations";
   button.setAttribute("aria-pressed",String(S.selectingConversations));
   actions.hidden=!S.selectingConversations;
-  count.textContent=S.selectedConversationIds.size+" selected";
-  remove.disabled=S.selectedConversationIds.size===0;
-  remove.textContent="Delete selected ("+S.selectedConversationIds.size+")";
+  const selected=[...S.selectedConversationIds].filter(id=>S.chats.some(chat=>chat.id===id));
+  const total=selected.length,allPinned=total>0&&selected.every(id=>S.chatSettings.pinned.includes(id));
+  count.textContent=total+" selected";
+  remove.disabled=total===0;
+  remove.textContent="Delete selected ("+total+")";
+  pin.disabled=total===0;
+  pin.textContent=(allPinned?"Unpin selected (":"Pin selected (")+total+")";
+}
+function toggleSelectedConversationPins(){
+  if(!S.user||!S.selectingConversations||!S.selectedConversationIds.size)return;
+  const selected=[...S.selectedConversationIds].filter(id=>S.chats.some(chat=>chat.id===id));
+  if(!selected.length)return;
+  const selectedSet=new Set(selected);
+  const allPinned=selected.every(id=>S.chatSettings.pinned.includes(id));
+  if(allPinned){
+    S.chatSettings.pinned=S.chatSettings.pinned.filter(id=>!selectedSet.has(id));
+    saveChatSettings();renderChats();renderConversationSelectionControls();
+    toast(selected.length+" "+(selected.length===1?"conversation unpinned.":"conversations unpinned."));
+    return;
+  }
+  const existing=new Set(S.chatSettings.pinned);
+  const additions=selected.filter(id=>!existing.has(id));
+  if(S.chatSettings.pinned.length+additions.length>100){
+    toast("You can pin up to 100 conversations. Unpin some conversations first.");
+    return;
+  }
+  S.chatSettings.pinned=[...additions,...S.chatSettings.pinned];
+  saveChatSettings();renderChats();renderConversationSelectionControls();
+  toast(selected.length+" "+(selected.length===1?"conversation pinned.":"conversations pinned."));
 }
 async function deleteSelectedConversations(){
   if(!S.user||!S.selectingConversations||!S.selectedConversationIds.size)return;
@@ -1721,7 +1747,7 @@ async function leaveGroupChat(conversationId){
   if(result.error){toast("Could not leave group: "+result.error.message);return;}
   if(result.data?.status!=="left"){toast("You could not leave this group. Please refresh and try again.");return;}
   if(S.active===conversationId){
-    S.active=null;S.messages=[];S.messageReactions={};S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.reactionSelectionMode=false;S.selectedReactionMessageId=null;S.openMessageMenuId=null;S.directStatus=null;
+    S.active=null;S.messages=[];S.messageReactions={};S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.openMessageMenuId=null;S.directStatus=null;
     S.selectingMessages=false;S.selectedMessageIds.clear();
     renderActive();
   }
@@ -1916,7 +1942,7 @@ async function openChat(id){
   if(S.pollChannel){db.removeChannel(S.pollChannel);S.pollChannel=null;}
   clearPendingMessageImage();
   S.active=id;S.unreadTargetMessageId=null;S.unreadTargetLoaded=false;restoreChatDraft(id);S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;
-  S.messages=[];S.messageReads={};S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.reactionSelectionMode=false;S.selectedReactionMessageId=null;S.openMessageMenuId=null;S.replyTo=null;S.hasOlderMessages=false;S.loadingOlder=false;renderReplyComposer();
+  S.messages=[];S.messageReads={};S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.openMessageMenuId=null;S.replyTo=null;S.hasOlderMessages=false;S.loadingOlder=false;renderReplyComposer();
   $("messages").replaceChildren(el("p","muted messages-loading","Loading messages…"));
   $("layout").classList.remove("show-home");$("layout").classList.add("show-chat");renderActive();
   subscribeTyping(id);
@@ -1983,72 +2009,60 @@ async function loadMessageReactions(conversationId,messageIds,merge=false){
 }
 function renderMessageReactionArea(message){
   const reactions=S.messageReactions[message.id]||[];
-  if(!reactions.length)return null;
   const area=el("div","message-reaction-area");
-  const groups=new Map();
-  reactions.forEach(reaction=>{
-    const group=groups.get(reaction.emoji)||{emoji:reaction.emoji,count:0,mine:false};
-    group.count++;
-    if(reaction.user_id===S.user?.id)group.mine=true;
-    groups.set(reaction.emoji,group);
-  });
-  const badges=el("div","message-reactions");
-  groups.forEach(group=>{
-    const badge=el(S.selectingMessages?"span":"button","message-reaction"+(group.mine?" is-mine":""),
-      group.emoji+" "+group.count);
-    if(!S.selectingMessages){
-      badge.type="button";
-      badge.setAttribute("aria-label",group.emoji+" reaction, "+group.count+" total"+(group.mine?", including yours":""));
-      badge.setAttribute("aria-pressed",String(group.mine));
-      badge.addEventListener("click",()=>toggleMessageReaction(message.id,group.emoji));
-    }
-    badges.append(badge);
-  });
-  area.append(badges);
-  return area;
-}
-function renderMessageReactionTools(){
-  const statusBox=$("message-reaction-status");
-  if(!statusBox)return;
-  const hint=$("message-reaction-hint"),options=$("message-reaction-options");
-  const cancel=$("message-reaction-cancel"),react=$("message-react-mode");
-  const active=S.reactionSelectionMode||!!S.selectedReactionMessageId;
-  statusBox.hidden=!active;
-  if(react){
-    react.setAttribute("aria-pressed",String(S.reactionSelectionMode));
-    react.textContent=S.reactionSelectionMode?"Reacting…":"React";
+  if(reactions.length){
+    const groups=new Map();
+    reactions.forEach(reaction=>{
+      const group=groups.get(reaction.emoji)||{emoji:reaction.emoji,count:0,mine:false};
+      group.count++;
+      if(reaction.user_id===S.user?.id)group.mine=true;
+      groups.set(reaction.emoji,group);
+    });
+    const badges=el("div","message-reactions");
+    groups.forEach(group=>{
+      const badge=el(S.selectingMessages?"span":"button","message-reaction"+(group.mine?" is-mine":""),
+        group.emoji+" "+group.count);
+      if(!S.selectingMessages){
+        badge.type="button";
+        badge.setAttribute("aria-label",group.emoji+" reaction, "+group.count+" total"+(group.mine?", including yours":""));
+        badge.setAttribute("aria-pressed",String(group.mine));
+        badge.addEventListener("click",event=>{
+          event.stopPropagation();
+          toggleMessageReaction(message.id,group.emoji);
+        });
+      }
+      badges.append(badge);
+    });
+    area.append(badges);
   }
-  if(hint)hint.textContent=S.reactionSelectionMode
-    ?"Tap the message you want to react to."
-    :"Choose an emoji for the selected message.";
-  if(options){
-    options.replaceChildren();
-    options.hidden=!S.selectedReactionMessageId;
-    if(S.selectedReactionMessageId){
-      MESSAGE_REACTION_EMOJIS.forEach(emoji=>{
-        const option=el("button","message-reaction-option",emoji);
-        option.type="button";
-        option.setAttribute("aria-label","React with "+emoji);
-        option.addEventListener("click",()=>toggleMessageReaction(S.selectedReactionMessageId,emoji));
-        options.append(option);
+  if(!S.selectingMessages){
+    const controls=el("div","message-reaction-controls");
+    const add=el("button","message-reaction-add","＋ React");
+    add.type="button";
+    add.setAttribute("aria-label","Add a reaction to this message");
+    add.setAttribute("aria-expanded",String(S.openReactionPickerMessageId===message.id));
+    add.addEventListener("click",event=>{
+      event.stopPropagation();
+      S.openMessageMenuId=null;
+      S.openReactionPickerMessageId=S.openReactionPickerMessageId===message.id?null:message.id;
+      renderMessages(true);
+    });
+    const picker=el("div","message-reaction-picker");
+    picker.hidden=S.openReactionPickerMessageId!==message.id;
+    MESSAGE_REACTION_EMOJIS.forEach(emoji=>{
+      const option=el("button","message-reaction-option",emoji);
+      option.type="button";
+      option.setAttribute("aria-label","React with "+emoji);
+      option.addEventListener("click",event=>{
+        event.stopPropagation();
+        toggleMessageReaction(message.id,emoji);
       });
-    }
+      picker.append(option);
+    });
+    controls.append(add,picker);
+    area.append(controls);
   }
-  if(cancel)cancel.hidden=!active;
-}
-function beginMessageReactionSelection(){
-  if(S.selectingMessages){toast("Cancel message selection before reacting.");return;}
-  S.reactionSelectionMode=true;
-  S.selectedReactionMessageId=null;
-  S.openMessageMenuId=null;
-  renderMessageReactionTools();
-  renderMessages(true);
-}
-function cancelMessageReactionSelection(){
-  S.reactionSelectionMode=false;
-  S.selectedReactionMessageId=null;
-  renderMessageReactionTools();
-  renderMessages(true);
+  return area;
 }
 async function toggleMessageReaction(messageId,emoji){
   const conversationId=S.active,message=S.messages.find(item=>item.id===messageId);
@@ -2069,8 +2083,8 @@ async function toggleMessageReaction(messageId,emoji){
   }
   if(existing)updateMessageReactionCache(existing,true);
   else if(result.data)updateMessageReactionCache(result.data,false);
-  S.reactionSelectionMode=false;S.selectedReactionMessageId=null;
-  renderMessageReactionTools();
+  
+  
   renderMessages(true);
 }
 
@@ -2271,17 +2285,6 @@ function renderMessages(preserveScroll=false){
     if(S.unreadDividerMessageId===m.id)list.append(el("div","new-messages-divider","New messages"));
     const row=el("div","message"+(mine?" mine":"")+grouping+(samePrevious?" group-continued":""));
     row.dataset.messageId=m.id;
-    row.classList.toggle("reaction-target",S.selectedReactionMessageId===m.id);
-    row.classList.toggle("reaction-selectable",S.reactionSelectionMode);
-    row.addEventListener("click",event=>{
-      if(!S.reactionSelectionMode||S.selectingMessages)return;
-      event.preventDefault();event.stopPropagation();
-      S.reactionSelectionMode=false;
-      S.selectedReactionMessageId=m.id;
-      S.openMessageMenuId=null;
-      renderMessageReactionTools();
-      renderMessages(true);
-    },true);
     const bubble=el("div","bubble"),meta=el("div","meta");
     if(showSenderNames){
       if(!samePrevious){
@@ -2306,6 +2309,7 @@ function renderMessages(preserveScroll=false){
       trigger.setAttribute("aria-expanded",String(S.openMessageMenuId===m.id));
       trigger.addEventListener("click",event=>{
         event.stopPropagation();
+        S.openReactionPickerMessageId=null;
         S.openMessageMenuId=S.openMessageMenuId===m.id?null:m.id;
         renderMessages(true);
       });
@@ -3346,7 +3350,7 @@ function wire(){
   document.querySelectorAll("[data-notification-mode]").forEach(b=>b.addEventListener("click",()=>setMessageNotificationMode(b.dataset.notificationMode)));
   $("home-friends-open").addEventListener("click",openFriends);$("home-requests-open").addEventListener("click",openRequests);$("open-about-blank").addEventListener("click",openAboutBlank);
   $("toggle-conversation-select").addEventListener("click",toggleConversationSelectionMode);
-  $("delete-selected-conversations").addEventListener("click",deleteSelectedConversations);
+  $("delete-selected-conversations").addEventListener("click",deleteSelectedConversations);$("pin-selected-conversations").addEventListener("click",toggleSelectedConversationPins);
   $("filter").addEventListener("input",renderChats);document.querySelectorAll("[data-folder]").forEach(b=>b.addEventListener("click",()=>selectFolder(b.dataset.folder)));$("profile-open").addEventListener("click",openProfile);$("profile-form").addEventListener("submit",saveProfile);
   $("profile-avatar-file").addEventListener("change",handleAvatarFile);
   $("avatar-remove").addEventListener("click",()=>{
@@ -3355,7 +3359,7 @@ function wire(){
     status("profile-status","The picture will be removed when you save changes.","success");
   });
   $("password-form").addEventListener("submit",changePassword);
-  $("send-form").addEventListener("submit",sendMessage);$("message-image-file").addEventListener("change",handleMessageImageFile);$("composer-more-trigger").addEventListener("click",event=>{event.stopPropagation();toggleComposerMoreMenu();});$("composer-more-menu").addEventListener("click",event=>event.stopPropagation());$("message-react-mode").addEventListener("click",()=>{closeComposerMoreMenu();beginMessageReactionSelection();});$("message-create-poll").addEventListener("click",openPollComposer);$("poll-form").addEventListener("submit",submitPoll);$("poll-add-option").addEventListener("click",addPollOptionInput);$("poll-cancel").addEventListener("click",()=>$("poll-create-modal").hidden=true);$("saved-messages-open").addEventListener("click",openSavedMessages);document.addEventListener("click",event=>{const wrap=$("composer-more-wrap");if(wrap&&!wrap.contains(event.target))closeComposerMoreMenu();});$("message-reaction-cancel").addEventListener("click",cancelMessageReactionSelection);
+  $("send-form").addEventListener("submit",sendMessage);$("message-image-file").addEventListener("change",handleMessageImageFile);$("composer-more-trigger").addEventListener("click",event=>{event.stopPropagation();toggleComposerMoreMenu();});$("composer-more-menu").addEventListener("click",event=>event.stopPropagation());$("message-create-poll").addEventListener("click",openPollComposer);$("poll-form").addEventListener("submit",submitPoll);$("poll-add-option").addEventListener("click",addPollOptionInput);$("poll-cancel").addEventListener("click",()=>$("poll-create-modal").hidden=true);$("saved-messages-open").addEventListener("click",openSavedMessages);document.addEventListener("click",event=>{const wrap=$("composer-more-wrap");if(wrap&&!wrap.contains(event.target))closeComposerMoreMenu();if(S.openReactionPickerMessageId&&!event.target.closest(".message-reaction-area")){S.openReactionPickerMessageId=null;if(S.active)renderMessages(true);}});
   $("message").addEventListener("input",e=>{e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,120)+"px";updateLocalTyping();saveActiveChatDraft();});
   $("message").addEventListener("blur",()=>stopTyping(true));
   $("share-online-status").addEventListener("change",event=>{
@@ -3374,7 +3378,7 @@ function wire(){
   $("select-messages").addEventListener("click",()=>{
     S.selectingMessages=!S.selectingMessages;
     S.selectedMessageIds.clear();
-    if(S.selectingMessages){S.reactionSelectionMode=false;S.selectedReactionMessageId=null;S.openMessageMenuId=null;renderMessageReactionTools();}
+    if(S.selectingMessages){S.openMessageMenuId=null;S.openReactionPickerMessageId=null;}
     renderMessages();
     renderActive();
   });
