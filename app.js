@@ -2611,6 +2611,18 @@ function goHome(){
   clearPendingMessageImage();closeModals();S.active=null;S.messages=[];S.messageReads={};S.messageReactions={};S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.replyTo=null;S.hasOlderMessages=false;S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;renderReplyComposer();
   $("layout").classList.remove("show-chat");$("layout").classList.add("show-home");renderChats();renderActive();
 }
+function closeComposerMoreMenu(){
+  const menu=$("composer-more-menu"),trigger=$("composer-more-trigger");
+  if(menu)menu.hidden=true;
+  if(trigger)trigger.setAttribute("aria-expanded","false");
+}
+function toggleComposerMoreMenu(){
+  const menu=$("composer-more-menu"),trigger=$("composer-more-trigger");
+  if(!menu||!trigger)return;
+  const opening=menu.hidden;
+  menu.hidden=!opening;
+  trigger.setAttribute("aria-expanded",String(opening));
+}
 function wire(){
   document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>authMode(b.dataset.mode)));
   $("forgot-password").addEventListener("click",requestPasswordReset);
@@ -2671,7 +2683,7 @@ function wire(){
     status("profile-status","The picture will be removed when you save changes.","success");
   });
   $("password-form").addEventListener("submit",changePassword);
-  $("send-form").addEventListener("submit",sendMessage);$("message-image-file").addEventListener("change",handleMessageImageFile);$("message-react-mode").addEventListener("click",beginMessageReactionSelection);$("message-reaction-cancel").addEventListener("click",cancelMessageReactionSelection);
+  $("send-form").addEventListener("submit",sendMessage);$("message-image-file").addEventListener("change",handleMessageImageFile);$("composer-more-trigger").addEventListener("click",event=>{event.stopPropagation();toggleComposerMoreMenu();});$("composer-more-menu").addEventListener("click",event=>event.stopPropagation());$("message-react-mode").addEventListener("click",()=>{closeComposerMoreMenu();beginMessageReactionSelection();});document.addEventListener("click",event=>{const wrap=$("composer-more-wrap");if(wrap&&!wrap.contains(event.target))closeComposerMoreMenu();});$("message-reaction-cancel").addEventListener("click",cancelMessageReactionSelection);
   $("message").addEventListener("input",e=>{e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,120)+"px";updateLocalTyping();});
   $("message").addEventListener("blur",()=>stopTyping(true));
   $("share-online-status").addEventListener("change",event=>{
@@ -2698,7 +2710,7 @@ function wire(){
   $("signout").addEventListener("click",async()=>{const r=await db.auth.signOut();if(r.error)toast(r.error.message);else closeModals();});
   document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",closeModals));
   ["announcement-compose-modal","announcement-view-modal","announcements-page-modal","notifications-modal","member-profile-modal","report-modal","reports-admin-modal","people-modal","profile-modal","requests-modal","friends-modal","settings-modal","group-photo-modal","group-settings-modal","message-search-modal","chat-actions-modal","feedback-modal"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target===$(id))closeModals();}));
-  document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModals();});
+  document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeComposerMoreMenu();closeModals();}});
 }
 async function boot(){
   if(!window.supabase?.createClient){status("auth-status","The chat library did not load. Refresh and try again.","error");return;}
