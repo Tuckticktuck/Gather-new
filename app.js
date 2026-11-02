@@ -479,7 +479,7 @@ async function submitAccountApprovalRequest(){
 async function fetchProfileRecords(ids){
   const unique=[...new Set((ids||[]).filter(Boolean))];
   if(!unique.length)return {data:[],error:null};
-  const profiles=await db.from("profiles").select("id,username,display_name,bio,pronouns,banner_style").in("id",unique);
+  const profiles=await db.from("profiles").select("id,username,display_name,bio,pronouns,banner_style,status_message,profile_highlights").in("id",unique);
   if(profiles.error)return {data:null,error:profiles.error};
   const records=(profiles.data||[]).map(p=>({...p,avatar_data:null}));
   const pictures=await db.from("profile_avatars").select("user_id,image_data").in("user_id",unique);
@@ -2069,11 +2069,12 @@ function renderTypingIndicator(){
   if(!node)return;
   const chat=S.chats.find(item=>item.id===S.active);
   const users=[...S.typingUsers.keys()].filter(id=>id!==S.user?.id);
-  if(!chat||!users.length){node.hidden=true;node.textContent="";return;}
-  if(chat.kind==="direct")node.textContent="Typing…";
-  else if(users.length===1)node.textContent=(S.profiles[users[0]]?.display_name||"A group member")+" is typing…";
-  else node.textContent=users.length+" people are typing…";
-  node.hidden=false;
+  if(!chat||!users.length){node.hidden=true;node.replaceChildren();return;}
+  const label=chat.kind==="direct"?"Typing…":users.length===1?(S.profiles[users[0]]?.display_name||"A group member")+" is typing…":users.length+" people are typing…";
+  const copy=el("span","typing-indicator-copy",label);
+  const dots=el("span","typing-indicator-dots");dots.setAttribute("aria-hidden","true");
+  for(let i=0;i<3;i++)dots.append(el("span",""));
+  node.replaceChildren(copy,dots);node.hidden=false;
 }
 function sendTypingSignal(isTyping){
   const channel=S.typingChannel,userId=S.user?.id;
@@ -2143,6 +2144,17 @@ function subscribeTyping(conversationId){
   });
 }
 
+function renderMessageSkeletons(){
+  const list=$("messages");if(!list)return;
+  list.replaceChildren();list.setAttribute("aria-busy","true");
+  const widths=["58%","72%","46%","66%","52%"];
+  widths.forEach((width,index)=>{
+    const row=el("div","message-skeleton-row"+(index%2?" is-mine":""));
+    const bubble=el("div","message-skeleton-bubble");bubble.style.width=width;
+    bubble.append(el("span","message-skeleton-line"),el("span","message-skeleton-line short"));
+    row.append(bubble);list.append(row);
+  });
+}
 async function openChat(id){
   closeConversationDrawer();
   saveActiveChatDraft();
@@ -2153,7 +2165,7 @@ async function openChat(id){
   clearPendingMessageImage();
   S.active=id;S.unreadTargetMessageId=null;S.unreadTargetLoaded=false;restoreChatDraft(id);S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;
   S.messages=[];S.messageReads={};S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.openMessageMenuId=null;S.replyTo=null;S.hasOlderMessages=false;S.loadingOlder=false;renderReplyComposer();
-  $("messages").replaceChildren(el("p","muted messages-loading","Loading messages…"));
+  renderMessageSkeletons();
   $("layout").classList.remove("show-home");$("layout").classList.add("show-chat");renderActive();
   subscribeTyping(id);
   await Promise.all([refreshDirectStatus(id),loadMessages(id),loadOldestUnreadTarget(id)]);
@@ -2163,7 +2175,7 @@ async function openChat(id){
 async function loadMessages(id){
   const r=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,edited_at,reply_to_id,attachment_path,forwarded_from_id").eq("conversation_id",id).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
   if(S.active!==id)return;
-  if(r.error){$("messages").replaceChildren(el("p","status error","Messages could not be loaded. Please try again."));toast("Messages could not be loaded: "+r.error.message);return;}
+  if(r.error){$("messages").replaceChildren(el("p","status error","Messages could not be loaded. Please try again."));$("messages").setAttribute("aria-busy","false");toast("Messages could not be loaded: "+r.error.message);return;}
   const raw=r.data||[];S.hasOlderMessages=raw.length===300;
   const loadedMessages=await attachReplyPreviews(raw.filter(m=>!S.deletedMessageIds.has(m.id)).reverse(),id);
   if(S.active!==id)return;
@@ -2469,7 +2481,7 @@ async function submitPoll(e){
   $("poll-create-modal").hidden=true;b.disabled=false;await loadMessages(cid);await loadChats();toast("Poll created.");
 }
 function renderMessages(preserveScroll=false){
-  const list=$("messages"),previousHeight=list.scrollHeight,previousTop=list.scrollTop;list.replaceChildren();
+  const list=$("messages"),previousHeight=list.scrollHeight,previousTop=list.scrollTop;list.replaceChildren();list.setAttribute("aria-busy","false");
   const activeChat=S.chats.find(chat=>chat.id===S.active);
   const showSenderNames=activeChat?.kind==="group";
   const latestOwnMessageId=[...S.messages].reverse().find(message=>message.sender_id===S.user.id)?.id||null;
@@ -2921,6 +2933,13 @@ async function canViewMemberProfile(userId){
 function profileBannerClass(style){
   return "banner-"+(["violet","blue","mint","rose","amber","teal"].includes(style)?style:"violet");
 }
+function renderProfileHighlights(node,values){
+  if(!node)return;
+  node.replaceChildren();
+  const highlights=(Array.isArray(values)?values:[]).filter(value=>typeof value==="string"&&value.trim()).slice(0,3);
+  node.hidden=!highlights.length;
+  highlights.forEach(value=>node.append(el("span","profile-highlight",value.trim().slice(0,40))));
+}
 async function openPublicProfile(userId){
   if(!userId||!S.user)return;
   if(userId===S.user.id){openProfile();return;}
@@ -2929,13 +2948,15 @@ async function openPublicProfile(userId){
   $("member-profile-name").textContent="Loading profile…";
   $("member-profile-username").textContent="";
   $("member-profile-pronouns").textContent="";
+  $("member-profile-status-message").textContent="";$("member-profile-status-message").hidden=true;
+  renderProfileHighlights($("member-profile-highlights"),[]);
   $("member-profile-bio").textContent="";
   $("member-profile-mutuals").textContent="";
   S.publicProfileId=null;
   const presenceLabel=$("member-profile-presence");
   presenceLabel.textContent="";presenceLabel.hidden=true;presenceLabel.classList.remove("is-online");
   const existing=S.profiles[userId];
-  const result=await db.from("profiles").select("id,username,display_name,bio,pronouns,banner_style").eq("id",userId).maybeSingle();
+  const result=await db.from("profiles").select("id,username,display_name,bio,pronouns,banner_style,status_message,profile_highlights").eq("id",userId).maybeSingle();
   if(result.error||!result.data){$("member-profile-name").textContent="Profile unavailable";return;}
   const profile={...result.data,avatar_data:existing?.avatar_data||null};
   const picture=await db.from("profile_avatars").select("image_data").eq("user_id",userId).maybeSingle();
@@ -2946,6 +2967,8 @@ async function openPublicProfile(userId){
   $("member-profile-username").textContent="@"+profile.username;
   $("member-profile-pronouns").textContent=profile.pronouns||"";
   $("member-profile-pronouns").hidden=!profile.pronouns;
+  $("member-profile-status-message").textContent=profile.status_message||"";$("member-profile-status-message").hidden=!profile.status_message;
+  renderProfileHighlights($("member-profile-highlights"),profile.profile_highlights);
   $("member-profile-bio").textContent=profile.bio||"No bio added yet.";
   $("member-profile-banner").className="member-profile-banner "+profileBannerClass(profile.banner_style);
   paintAvatar($("member-profile-avatar"),profile.display_name,profile.avatar_data);
@@ -3447,7 +3470,7 @@ async function requestAccountDeletion(){
 function openProfile(){
   if(!S.profile)return;
   $("profile-name").value=S.profile.display_name;$("profile-username").value=S.profile.username;
-  $("profile-bio").value=S.profile.bio||"";$("profile-pronouns").value=S.profile.pronouns||"";$("profile-banner-style").value=S.profile.banner_style||"violet";
+  $("profile-bio").value=S.profile.bio||"";$("profile-pronouns").value=S.profile.pronouns||"";$("profile-status-message").value=S.profile.status_message||"";$("profile-highlights").value=(Array.isArray(S.profile.profile_highlights)?S.profile.profile_highlights:[]).join(", ");$("profile-banner-style").value=S.profile.banner_style||"violet";
   $("current-password").value="";$("new-password").value="";$("confirm-password").value="";
   status("profile-status","");status("password-status","");
   S.pendingAvatarData=null;S.avatarChanged=false;
@@ -3624,10 +3647,12 @@ async function handleAvatarFile(){
 async function saveProfile(e){
   e.preventDefault();
   const display_name=$("profile-name").value.trim(),username=$("profile-username").value.trim().toLowerCase();
-  const bio=$("profile-bio").value.trim(),pronouns=$("profile-pronouns").value.trim(),banner_style=$("profile-banner-style").value;
+  const bio=$("profile-bio").value.trim(),pronouns=$("profile-pronouns").value.trim(),banner_style=$("profile-banner-style").value,status_message=$("profile-status-message").value.trim();
+  const profile_highlights=$("profile-highlights").value.split(/[;\n,]/).map(value=>value.trim()).filter(Boolean);
+  if(profile_highlights.length>3||profile_highlights.some(value=>value.length>40)){status("profile-status","Use up to 3 highlights, each 40 characters or fewer.","error");return;}
   if(!display_name||!/^[a-z0-9_]{3,24}$/.test(username)){status("profile-status","Check the name and username format.","error");return;}
   const save=$("profile-save");save.disabled=true;
-  const r=await db.from("profiles").update({display_name,username,bio,pronouns,banner_style}).eq("id",S.user.id).select("*").single();
+  const r=await db.from("profiles").update({display_name,username,bio,pronouns,banner_style,status_message,profile_highlights}).eq("id",S.user.id).select("*").single();
   if(r.error){save.disabled=false;status("profile-status",r.error.message,"error");return;}
   S.profile={...r.data,avatar_data:S.profile.avatar_data||null};
   if(S.avatarChanged){
