@@ -2009,6 +2009,8 @@ async function loadMessageReactions(conversationId,messageIds,merge=false){
 }
 function renderMessageReactionArea(message){
   const reactions=S.messageReactions[message.id]||[];
+  const pickerOpen=!S.selectingMessages&&S.openReactionPickerMessageId===message.id;
+  if(!reactions.length&&!pickerOpen)return null;
   const area=el("div","message-reaction-area");
   if(reactions.length){
     const groups=new Map();
@@ -2035,20 +2037,10 @@ function renderMessageReactionArea(message){
     });
     area.append(badges);
   }
-  if(!S.selectingMessages){
-    const controls=el("div","message-reaction-controls");
-    const add=el("button","message-reaction-add","＋ React");
-    add.type="button";
-    add.setAttribute("aria-label","Add a reaction to this message");
-    add.setAttribute("aria-expanded",String(S.openReactionPickerMessageId===message.id));
-    add.addEventListener("click",event=>{
-      event.stopPropagation();
-      S.openMessageMenuId=null;
-      S.openReactionPickerMessageId=S.openReactionPickerMessageId===message.id?null:message.id;
-      renderMessages(true);
-    });
+  if(pickerOpen){
     const picker=el("div","message-reaction-picker");
-    picker.hidden=S.openReactionPickerMessageId!==message.id;
+    picker.setAttribute("role","group");
+    picker.setAttribute("aria-label","Choose a reaction");
     MESSAGE_REACTION_EMOJIS.forEach(emoji=>{
       const option=el("button","message-reaction-option",emoji);
       option.type="button";
@@ -2059,8 +2051,7 @@ function renderMessageReactionArea(message){
       });
       picker.append(option);
     });
-    controls.append(add,picker);
-    area.append(controls);
+    area.append(picker);
   }
   return area;
 }
@@ -2310,6 +2301,7 @@ function renderMessages(preserveScroll=false){
       trigger.addEventListener("click",event=>{
         event.stopPropagation();
         S.openReactionPickerMessageId=null;
+        S.openReactionPickerMessageId=null;
         S.openMessageMenuId=S.openMessageMenuId===m.id?null:m.id;
         renderMessages(true);
       });
@@ -2329,6 +2321,7 @@ function renderMessages(preserveScroll=false){
         menu.append(action);
       };
       addAction("Reply",()=>beginReply(m));
+      addAction(S.openReactionPickerMessageId===m.id?"Close reaction picker":"React",()=>{S.openReactionPickerMessageId=S.openReactionPickerMessageId===m.id?null:m.id;renderMessages(true);});
       if(mine&&m.body)addAction("Edit",()=>editOwnMessage(m));
       addAction("Copy message",()=>copyMessage(m));
       addAction("Forward message",()=>openForwardMessage(m));
