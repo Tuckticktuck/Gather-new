@@ -2690,6 +2690,7 @@ async function loadFeedbackThreads(){
   return true;
 }
 function showFeedbackNewForm(){
+  if(S.feedbackAdminView){toast("The admin inbox is for replying to member requests.");return;}
   S.activeFeedbackThreadId=null;S.feedbackMessages=[];
   $("feedback-detail").hidden=true;$("feedback-empty").hidden=true;
   $("feedback-new-form").hidden=false;
@@ -2703,11 +2704,15 @@ async function openFeedback(adminView=false){
   if(adminView&&!isFeedbackAdmin(S.user)){toast("This inbox is only available to the feedback administrator.");return;}
   S.feedbackAdminView=!!adminView;
   S.activeFeedbackThreadId=null;S.feedbackMessages=[];
-  $("feedback-modal-title").textContent=S.feedbackAdminView?"Feedback inbox":"Your feedback";
+  $("feedback-modal-title").textContent=S.feedbackAdminView?"Admin inbox":"Your feedback";
   $("feedback-modal-eyebrow").textContent=S.feedbackAdminView?"GATHER ADMIN":"FEEDBACK AND SUPPORT";
-  $("feedback-modal-description").textContent=S.feedbackAdminView?"Review messages from Gather members, reply, and update each thread's status.":"Send feedback or ask for help. Replies to your feedback stay private to your account.";
-  $("feedback-new").hidden=false;
+  $("feedback-modal-description").textContent=S.feedbackAdminView?"Review private requests from Gather members, reply, and update each thread’s status. Replies appear as Gather Admin, not your personal username.":"Send feedback or ask for help. Replies to your feedback stay private to your account.";
+  $("feedback-new").hidden=S.feedbackAdminView;
   $("feedback-new-form").hidden=true;$("feedback-detail").hidden=true;$("feedback-empty").hidden=false;
+  $("feedback-admin-identity").hidden=!S.feedbackAdminView;
+  $("feedback-modal").classList.toggle("feedback-admin-mode",S.feedbackAdminView);
+  $("feedback-reply").placeholder=S.feedbackAdminView?"Reply as Gather Admin…":"Write a reply…";
+  $("feedback-reply-submit").textContent=S.feedbackAdminView?"Reply as Gather Admin":"Send reply";
   $("feedback-modal").hidden=false;
   $("feedback-empty").textContent=S.feedbackAdminView?"Select a feedback thread to read and respond.":"Choose a feedback thread or start a new one.";
   await loadFeedbackThreads();
@@ -2741,7 +2746,7 @@ function renderFeedbackMessages(){
   S.feedbackMessages.forEach(message=>{
     const mine=message.sender_id===S.user?.id;
     const bubble=el("article","feedback-message"+(mine?" mine":""));
-    const sender=mine?"You":(S.feedbackAdminView?(S.feedbackProfiles[thread?.user_id]?.display_name||"Gather member"):"Gather support");
+    const sender=mine?(S.feedbackAdminView?"Gather Admin":"You"):(S.feedbackAdminView?(S.feedbackProfiles[thread?.user_id]?.display_name||"Gather member"):"Gather Admin");
     bubble.append(el("div","feedback-message-meta",sender+" · "+dateLabel(message.created_at)),el("p","feedback-message-body",message.body));
     list.append(bubble);
   });
@@ -2749,6 +2754,7 @@ function renderFeedbackMessages(){
 }
 async function createFeedbackThread(event){
   event.preventDefault();
+  if(S.feedbackAdminView){toast("The admin inbox is for replying to member requests.");return;}
   const subject=$("feedback-subject").value.trim(),body=$("feedback-new-message").value.trim();
   if(subject.length<3||subject.length>100){$("feedback-new-status").textContent="Use a subject between 3 and 100 characters.";return;}
   if(!body||body.length>4000){$("feedback-new-status").textContent="Write a message between 1 and 4,000 characters.";return;}
@@ -2765,6 +2771,7 @@ async function createFeedbackThread(event){
 }
 async function sendFeedbackReply(event){
   event.preventDefault();
+  if(S.feedbackAdminView&&!isFeedbackAdmin(S.user)){toast("Only the Gather administrator can reply from the admin inbox.");return;}
   const body=$("feedback-reply").value.trim(),threadId=S.activeFeedbackThreadId;
   if(!threadId||!body||body.length>4000){$("feedback-reply-status").textContent="Write a message between 1 and 4,000 characters.";return;}
   const button=$("feedback-reply-submit");button.disabled=true;
