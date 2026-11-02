@@ -411,6 +411,9 @@ async function loadOwnApprovalRequests(){
   return true;
 }
 function renderAccountApprovalSettings(){
+  const section=$("account-approval-settings-section");
+  if(section)section.hidden=isFeedbackAdmin(S.user);
+  if(isFeedbackAdmin(S.user))return;
   const statusNode=$("account-approval-status"),noteLabel=$("account-approval-message-label"),note=$("account-approval-message"),button=$("account-approval-submit");
   if(!statusNode||!button)return;
   const latest=S.ownApprovalRequests[0]||null,approved=!!S.user&&S.approvedUserIds.has(S.user.id);
@@ -3141,7 +3144,7 @@ async function reviewAdminApproval(requestId,decision,note,approveButton,decline
     toast(decision==="approve"?"Account approved.":"Approval request declined.");
     await Promise.all([loadAdminApprovals(),loadAdminOverview()]);
     await loadApprovedUserIds();
-    renderChats();renderFriends();
+    renderChats();renderFriends();if(S.active)renderMessages(true);
   }catch(error){
     toast("The approval request could not be updated: "+error.message);
     approveButton.disabled=false;declineButton.disabled=false;
@@ -3156,7 +3159,7 @@ async function revokeAdminApproval(userId,button){
     await adminApi("revoke_account_approval",{user_id:userId});
     toast("Approved status revoked.");
     await Promise.all([loadAdminApprovals(),loadAdminOverview(),loadApprovedUserIds()]);
-    renderChats();renderFriends();
+    renderChats();renderFriends();if(S.active)renderMessages(true);
   }catch(error){
     toast("Approved status could not be revoked: "+error.message);button.disabled=false;
   }
