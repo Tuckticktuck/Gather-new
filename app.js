@@ -127,6 +127,7 @@ function saveUIPreferences(){
       return;
     }
     S.profile.preferences=result.data.preferences;
+    try{localStorage.removeItem("gather_chat_drafts_"+userId);}catch(error){}
     await syncOwnPresence();
     $("settings-note").textContent="Saved to your account. Your settings follow you across devices.";
   },180);
@@ -193,24 +194,33 @@ function updateChatAppearance(){
   };
   applyChatAppearance(id);saveChatSettings();
 }
-function saveLocalChatDrafts(){
-  if(!S.user)return;
-  try{localStorage.setItem("gather_chat_drafts_"+S.user.id,JSON.stringify(S.chatSettings.drafts));}catch(error){}
+function saveLocalChatDraftOverride(id,value){
+  if(!S.user||!id)return;
+  try{
+    const key="gather_chat_drafts_"+S.user.id;
+    const overrides=JSON.parse(localStorage.getItem(key)||"{}");
+    overrides[id]=String(value||"").slice(0,4000);
+    localStorage.setItem(key,JSON.stringify(overrides));
+  }catch(error){}
 }
 function saveActiveChatDraft(){
   const id=S.active;if(!id)return;
   const value=$("message").value.slice(0,4000);
   if(value){delete S.chatSettings.drafts[id];S.chatSettings.drafts[id]=value;}
   else delete S.chatSettings.drafts[id];
-  saveLocalChatDrafts();
+  saveLocalChatDraftOverride(id,value);
   clearTimeout(S.draftSaveTimer);
   S.draftSaveTimer=setTimeout(saveChatSettings,450);
 }
 function restoreChatDraft(id){
-  if(!S.chatSettings.drafts[id]&&S.user){
+  if(S.user){
     try{
       const local=JSON.parse(localStorage.getItem("gather_chat_drafts_"+S.user.id)||"{}");
-      if(typeof local[id]==="string"&&local[id])S.chatSettings.drafts[id]=local[id].slice(0,4000);
+      if(Object.hasOwn(local,id)){
+        if(typeof local[id]==="string"&&local[id])S.chatSettings.drafts[id]=local[id].slice(0,4000);
+        else delete S.chatSettings.drafts[id];
+        clearTimeout(S.draftSaveTimer);S.draftSaveTimer=setTimeout(saveChatSettings,250);
+      }
     }catch(error){}
   }
   $("message").value=S.chatSettings.drafts[id]||"";
@@ -2413,7 +2423,7 @@ async function sendMessage(e){
     send.disabled=false;toast("Message not sent: "+r.error.message);return;
   }
   stopTyping(true);
-  $("message").value="";$("message").style.height="auto";delete S.chatSettings.drafts[conversationId];saveLocalChatDrafts();clearTimeout(S.draftSaveTimer);saveChatSettings();clearPendingMessageImage();cancelReply();
+  $("message").value="";$("message").style.height="auto";delete S.chatSettings.drafts[conversationId];saveLocalChatDraftOverride(conversationId,"");clearTimeout(S.draftSaveTimer);saveChatSettings();clearPendingMessageImage();cancelReply();
   const [withReply]=await attachReplyPreviews([r.data],conversationId);
   if(!S.messages.some(x=>x.id===r.data.id)){S.messages.push({...withReply,reply_preview:reply||null});S.messageReactions[r.data.id]=[];renderMessages();}
   if(S.active===conversationId&&activeChat){
