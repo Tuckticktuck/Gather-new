@@ -220,11 +220,12 @@ function applyChatAppearance(id=S.active){
   chat.classList.toggle("chat-appearance-custom",custom);
   if(custom){
     chat.style.setProperty("--conversation-accent",accent.accent);
+    chat.style.setProperty("--conversation-accent-ink",accent.ink);
     chat.style.setProperty("--conversation-accent-soft",accent.soft);
     chat.style.setProperty("--conversation-accent-border",accent.border);
     chat.style.setProperty("--conversation-background",background||(S.preferences.theme==="light"?"#f5f6fa":"#171923"));
   }else{
-    ["--conversation-accent","--conversation-accent-soft","--conversation-accent-border","--conversation-background"].forEach(key=>chat.style.removeProperty(key));
+    ["--conversation-accent","--conversation-accent-ink","--conversation-accent-soft","--conversation-accent-border","--conversation-background"].forEach(key=>chat.style.removeProperty(key));
   }
 }
 function renderChatOptions(){
