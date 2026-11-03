@@ -4219,12 +4219,13 @@ function syncModalBackButtons(){
 }
 function installModalBackButtons(){
   document.querySelectorAll(".overlay > .modal").forEach(modal=>{
-    if(["admin-mode-modal","password-recovery-modal"].includes(modal.id))return;
+    const overlayId=modal.closest(".overlay")?.id;
+    if(["admin-mode-modal","password-recovery-modal"].includes(overlayId))return;
     if(modal.querySelector(":scope > .modal-back-button"))return;
     const button=el("button","modal-back-button","← Back");
     button.type="button";
     button.setAttribute("aria-label","Go back");
-    button.addEventListener("click",()=>handleModalBack(modal.id));
+    button.addEventListener("click",()=>handleModalBack(overlayId));
     modal.insertBefore(button,modal.firstChild);
   });
   syncModalBackButtons();
