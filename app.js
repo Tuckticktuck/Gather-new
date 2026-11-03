@@ -720,7 +720,9 @@ async function signedIn(user,retry=false){
 }
 function chatTitle(c){
   if(c.kind==="group")return c.title||"Group chat";
-  const other=c.members.find(m=>m.user_id!==S.user.id);return other&&S.profiles[other.user_id]?S.profiles[other.user_id].display_name:"Direct message";
+  const other=c.members.find(m=>m.user_id!==S.user.id);
+  if(c.admin_initiated&&other?.user_id===c.created_by)return "Gather Admin";
+  return other&&S.profiles[other.user_id]?S.profiles[other.user_id].display_name:"Direct message";
 }
 function chatSub(c){
   if(c.kind==="group"){const names=c.members.map(m=>S.profiles[m.user_id]?.display_name||"Member");return c.members.length+" members"+(c.description?" · "+c.description:" · "+names.slice(0,3).join(", "));}
@@ -733,13 +735,13 @@ async function loadChats(){
   const hidden=await db.from("user_deleted_messages").select("message_id").eq("user_id",S.user.id);
   if(hidden.error){S.loadError="Deleted-message settings could not be loaded: "+hidden.error.message;toast(S.loadError);return false;}
   S.deletedMessageIds=new Set((hidden.data||[]).map(x=>x.message_id));
-  const m=await db.from("conversation_members").select("conversation_id,role,conversations!inner(id,kind,title,description,updated_at)").eq("user_id",S.user.id);
+  const m=await db.from("conversation_members").select("conversation_id,role,conversations!inner(id,kind,title,description,updated_at,created_by,admin_initiated)").eq("user_id",S.user.id);
   if(m.error){S.loadError="Chats could not be loaded: "+m.error.message;toast(S.loadError);return false;}
   const rows=m.data||[],ids=[...new Set(rows.map(x=>x.conversation_id))];
   if(!ids.length){S.chats=[];S.profiles={};await loadUnreadCounts();renderChats();renderActive();return await loadRequests();}
   const [members,msgs,groupPics]=await Promise.all([
     db.from("conversation_members").select("conversation_id,user_id,role").in("conversation_id",ids),
-    db.from("messages").select("id,conversation_id,sender_id,body,created_at,edited_at,attachment_path,forwarded_from_id").in("conversation_id",ids).order("created_at",{ascending:false}).limit(1000),
+    db.from("messages").select("id,conversation_id,sender_id,body,created_at,edited_at,attachment_path,forwarded_from_id,is_admin_message").in("conversation_id",ids).order("created_at",{ascending:false}).limit(1000),
     db.from("group_avatars").select("conversation_id,image_data").in("conversation_id",ids)
   ]);
   if(members.error){S.loadError="Chat members could not be loaded: "+members.error.message;toast(S.loadError);return false;}
@@ -2069,7 +2071,7 @@ async function loadDeletedMessages(){
   const ids=(markers.data||[]).map(x=>x.message_id);
   S.deletedMessageIds=new Set(ids);
   if(!ids.length){S.deletedMessages=[];renderChats();return true;}
-  const messages=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,edited_at,attachment_path,forwarded_from_id").in("id",ids);
+  const messages=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,edited_at,attachment_path,forwarded_from_id,is_admin_message").in("id",ids);
   if(messages.error){toast("Deleted messages could not be loaded: "+messages.error.message);return false;}
   const byId=new Map((messages.data||[]).map(x=>[x.id,x]));
   S.deletedMessages=(markers.data||[]).flatMap(marker=>{
@@ -2195,7 +2197,7 @@ async function attachReplyPreviews(rows,conversationId){
   if(!messages.length)return messages;
   const ids=[...new Set(messages.map(m=>m.reply_to_id).filter(id=>id&&!S.deletedMessageIds.has(id)))];
   if(ids.length){
-    const result=await db.from("messages").select("id,sender_id,body,attachment_path").eq("conversation_id",conversationId).in("id",ids);
+    const result=await db.from("messages").select("id,sender_id,body,attachment_path,is_admin_message").eq("conversation_id",conversationId).in("id",ids);
     if(result.error)console.warn("Reply previews could not be loaded:",result.error.message);
     const byId=new Map((result.data||[]).map(m=>[m.id,m]));
     messages=messages.map(m=>({...m,reply_preview:m.reply_to_id?(S.deletedMessageIds.has(m.reply_to_id)?{body:"Message hidden"}:(byId.get(m.reply_to_id)||{body:"Original message unavailable"})):null}));
@@ -2262,7 +2264,7 @@ function cancelReply(){S.replyTo=null;renderReplyComposer();}
 async function loadOlderMessages(){
   if(!S.active||!S.hasOlderMessages||S.loadingOlder||!S.messages.length)return;
   const conversationId=S.active,oldest=S.messages[0].created_at;S.loadingOlder=true;
-  const result=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,edited_at,reply_to_id,attachment_path,forwarded_from_id").eq("conversation_id",conversationId).or("created_at.lt."+oldest+",and(created_at.eq."+oldest+",id.lt."+S.messages[0].id+")").order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
+  const result=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,edited_at,reply_to_id,attachment_path,forwarded_from_id,is_admin_message").eq("conversation_id",conversationId).or("created_at.lt."+oldest+",and(created_at.eq."+oldest+",id.lt."+S.messages[0].id+")").order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
   S.loadingOlder=false;
   if(result.error){toast("Older messages could not be loaded: "+result.error.message);return;}
   if(S.active!==conversationId)return;
@@ -2389,7 +2391,7 @@ async function openChat(id){
   subscribeMessageReads(id);subscribePollVotes(id);await loadUnreadCounts();renderChats();
 }
 async function loadMessages(id){
-  const r=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,edited_at,reply_to_id,attachment_path,forwarded_from_id").eq("conversation_id",id).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
+  const r=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,edited_at,reply_to_id,attachment_path,forwarded_from_id,is_admin_message").eq("conversation_id",id).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
   if(S.active!==id)return;
   if(r.error){$("messages").replaceChildren(el("p","status error","Messages could not be loaded. Please try again."));$("messages").setAttribute("aria-busy","false");toast("Messages could not be loaded: "+r.error.message);return;}
   const raw=r.data||[];S.hasOlderMessages=raw.length===300;
@@ -2775,6 +2777,7 @@ function renderMessages(preserveScroll=false){
         }
       }else meta.classList.add("meta-continued");
     }
+    if(m.is_admin_message)meta.append(el("small","message-admin-label","Gather Admin"));
     meta.append(el("time","",new Date(m.created_at).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})));
     if(m.forwarded_from_id)meta.append(el("small","message-forwarded-label","Forwarded"));
     if(m.edited_at)meta.append(el("small","message-edited-label","edited"));
@@ -2809,7 +2812,7 @@ function renderMessages(preserveScroll=false){
       };
       addAction("Reply",()=>beginReply(m));
       addAction(S.openReactionPickerMessageId===m.id?"Close reaction picker":"React",()=>{S.openReactionPickerMessageId=S.openReactionPickerMessageId===m.id?null:m.id;renderMessages(true);});
-      if(mine&&m.body)addAction("Edit",()=>editOwnMessage(m));
+      if(mine&&m.body&&!m.is_admin_message)addAction("Edit",()=>editOwnMessage(m));
       if(mine&&m._undoExpiresAt>Date.now())addAction("Undo send",()=>undoSendMessage(m));
       addAction("Copy message",()=>copyMessage(m));
       addAction("Forward message",()=>openForwardMessage(m));
@@ -2828,7 +2831,7 @@ function renderMessages(preserveScroll=false){
     bubble.append(meta);
     if(m.reply_to_id){
       const quote=el("div","reply-preview"),target=m.reply_preview;
-      const quoteName=target?.sender_id?(target.sender_id===S.user.id?"You":(S.profiles[target.sender_id]?.display_name||"Member")):"Reply";
+      const quoteName=target?.is_admin_message?"Gather Admin":(target?.sender_id?(target.sender_id===S.user.id?"You":(S.profiles[target.sender_id]?.display_name||"Member")):"Reply");
       if(showSenderNames)quote.append(el("strong","",quoteName));
       const quoteText=el("span");
       if(target?.body)appendFormattedMessageText(quoteText,target.body);
@@ -3404,7 +3407,7 @@ async function adminApi(action,data={}){
   if(!result.ok)throw new Error(payload.error||"Admin Mode could not complete that action.");
   return payload;
 }
-const ADMIN_CHILD_MODAL_IDS=["announcement-compose-modal","announcements-page-modal","announcement-view-modal","reports-admin-modal","feedback-modal"];
+const ADMIN_CHILD_MODAL_IDS=["announcement-compose-modal","announcements-page-modal","announcement-view-modal","reports-admin-modal","feedback-modal","admin-direct-message-modal"];
 function updateAdminModalStack(){
   const stack=S.admin.modalStack||[];
   ADMIN_CHILD_MODAL_IDS.forEach(id=>{
@@ -3481,7 +3484,8 @@ function adminActionLabel(action){
     user_banned:"Banned a member account",
     user_unbanned:"Unbanned a member account",
     user_deleted:"Deleted a member account",
-    message_reported_user:"Contacted a reported member"
+    message_reported_user:"Contacted a reported member",
+    admin_direct_message_sent:"Sent a direct message as Gather Admin"
   })[action]||String(action||"Admin action").replaceAll("_"," ");
 }
 function renderAdminActivity(listId,items){
@@ -3688,18 +3692,66 @@ function renderAdminAccountDetail(){
   banner.value=user.banner_style||"violet";
   const bannerLabel=el("label");bannerLabel.append(el("span","","Profile banner"),banner);form.append(bannerLabel);
   const actions=el("div","admin-account-form-actions");
+  const messageAsAdmin=el("button","secondary-action","Message as Gather Admin");
+  messageAsAdmin.type="button";
+  messageAsAdmin.disabled=user.id===S.user.id;
+  if(messageAsAdmin.disabled)messageAsAdmin.title="You cannot message your own account.";
   const save=el("button","primary","Save profile");save.type="submit";
   const ban=el("button","outline",banned?"":"Ban account");ban.id="admin-account-ban";ban.type="button";ban.hidden=banned;
   const unban=el("button","outline","Unban account");unban.id="admin-account-unban";unban.type="button";unban.hidden=!banned;
   const remove=el("button","admin-danger-button","Delete account");remove.id="admin-account-delete";remove.type="button";
-  actions.append(save,ban,unban,remove);form.append(actions);
+  actions.append(messageAsAdmin,save,ban,unban,remove);form.append(actions);
   const saveStatus=el("p","tiny muted");saveStatus.id="admin-account-save-status";
   const note=el("p","tiny muted","Emails are read from Auth. Passwords and password hashes are never available in this screen.");
   detail.append(header,meta,form,saveStatus,note);
   form.addEventListener("submit",saveAdminAccountProfile);
+  messageAsAdmin.addEventListener("click",()=>openAdminDirectMessage(user.id));
   ban.addEventListener("click",()=>banAdminAccount(user.id));
   unban.addEventListener("click",()=>unbanAdminAccount(user.id));
   remove.addEventListener("click",()=>deleteAdminAccount(user.id));
+}
+function openAdminDirectMessage(userId){
+  if(!isFeedbackAdmin(S.user)){toast("Only Gather Admin can send official direct messages.");return;}
+  const user=S.admin.users.find(item=>item.id===userId);
+  if(!user||user.id===S.user.id){toast("Choose another member account.");return;}
+  S.admin.directMessageTargetId=user.id;
+  const name=user.display_name||user.username||"member";
+  $("admin-direct-message-title").textContent="Message "+name;
+  $("admin-direct-message-recipient").textContent=(user.username?"@"+user.username+" · ":"")+(user.email||"Gather member account");
+  $("admin-direct-message-body").value="";
+  $("admin-direct-message-status").textContent="";
+  $("admin-direct-message-submit").disabled=false;
+  $("admin-direct-message-submit").textContent="Send as Gather Admin";
+  showAdminChildModal("admin-direct-message-modal");
+}
+async function sendAdminDirectMessage(event){
+  event.preventDefault();
+  if(!isFeedbackAdmin(S.user)){toast("Only Gather Admin can send official direct messages.");return;}
+  const user=S.admin.users.find(item=>item.id===S.admin.directMessageTargetId);
+  const body=$("admin-direct-message-body").value.trim();
+  const statusNode=$("admin-direct-message-status"),submit=$("admin-direct-message-submit");
+  if(!user||user.id===S.user.id){statusNode.textContent="Choose another member account.";return;}
+  if(!body){statusNode.textContent="Write a message before sending.";return;}
+  submit.disabled=true;
+  submit.textContent="Sending…";
+  statusNode.textContent="Sending as Gather Admin…";
+  try{
+    const result=await adminApi("admin_direct_message",{user_id:user.id,body});
+    if(!result.conversation_id)throw new Error("The Admin conversation could not be created.");
+    dismissAdminChildModal("admin-direct-message-modal");
+    clearAdminChildNavigation();
+    $("admin-mode-modal").hidden=true;
+    await loadChats();
+    await openChat(result.conversation_id);
+    toast("Your message was sent as Gather Admin.");
+  }catch(error){
+    statusNode.textContent=error.message||"The message could not be sent.";
+  }finally{
+    if(!$("admin-direct-message-modal").hidden){
+      submit.disabled=false;
+      submit.textContent="Send as Gather Admin";
+    }
+  }
 }
 async function saveAdminAccountProfile(event){
   event.preventDefault();
@@ -4456,6 +4508,7 @@ function wire(){
   $("admin-announcements-open").addEventListener("click",openAnnouncementsPage);
   $("admin-accounts-refresh").addEventListener("click",()=>loadAdminAccounts(true));
   $("admin-account-search").addEventListener("input",renderAdminAccounts);
+  $("admin-direct-message-form").addEventListener("submit",sendAdminDirectMessage);
   $("admin-accounts-more").addEventListener("click",()=>loadAdminAccounts(false));
   $("admin-activity-refresh").addEventListener("click",loadAdminActivity);
   $("admin-overview-activity-refresh").addEventListener("click",loadAdminOverview);
