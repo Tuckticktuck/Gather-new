@@ -843,7 +843,7 @@ function renderFriendActivity(){
   const list=$("friend-activity-list");if(!list)return;
   list.replaceChildren();
   if(!S.friendActivityPosts.length){
-    list.append(el("p","muted tiny friend-activity-empty","No activity yet. Share a quick update to start your feed."));
+    list.append(el("p","muted tiny friend-activity-empty","No friend activity to show yet."));
     return;
   }
   S.friendActivityPosts.forEach(post=>{
@@ -892,21 +892,6 @@ async function loadFriendActivity(){
   }
   if(S.user?.id!==userId)return false;
   renderFriendActivity();return true;
-}
-async function postFriendActivity(event){
-  event.preventDefault();
-  if(!S.user)return;
-  const field=$("friend-activity-input"),body=field.value.trim(),button=$("friend-activity-submit");
-  if(!body||body.length>280){toast("Write an update between 1 and 280 characters.");return;}
-  button.disabled=true;button.textContent="Posting…";
-  const result=await db.from("friend_activity_posts")
-    .insert({author_id:S.user.id,body})
-    .select("id,author_id,body,created_at").single();
-  button.disabled=false;button.textContent="Post update";
-  if(result.error){toast("Your update could not be posted: "+result.error.message);return;}
-  field.value="";
-  S.friendActivityPosts=[result.data,...S.friendActivityPosts.filter(post=>post.id!==result.data.id)].slice(0,40);
-  renderFriendActivity();toast("Update shared with your friends.");
 }
 async function deleteFriendActivity(post){
   if(!S.user||post?.author_id!==S.user.id)return;
@@ -4298,7 +4283,6 @@ function wire(){
   $("empty-private").addEventListener("click",()=>openPeople("direct"));$("empty-group").addEventListener("click",()=>openPeople("group"));
   $("chat-actions-open").addEventListener("click",()=>{renderChatOptions();$("chat-actions-modal").hidden=false;});
   $("mark-chat-unread").addEventListener("click",markActiveConversationUnread);
-  $("global-message-search-open").addEventListener("click",()=>openMessageSearch("all"));
   $("toggle-chat-pin").addEventListener("click",()=>togglePinnedConversation());
   $("toggle-chat-mute").addEventListener("click",()=>toggleMutedConversation());
   $("chat-appearance-accent").addEventListener("change",updateChatAppearance);
@@ -4374,7 +4358,6 @@ document.querySelectorAll("[data-folder]").forEach(b=>b.addEventListener("click"
   $("password-form").addEventListener("submit",changePassword);
   $("send-form").addEventListener("submit",sendMessage);
   $("message-undo").addEventListener("click",undoLastSend);
-  $("friend-activity-form").addEventListener("submit",postFriendActivity);
   $("friend-activity-refresh").addEventListener("click",()=>loadFriendActivity());$("message-image-file").addEventListener("change",handleMessageImageFile);$("composer-more-trigger").addEventListener("click",event=>{event.stopPropagation();toggleComposerMoreMenu();});$("composer-more-menu").addEventListener("click",event=>event.stopPropagation());$("message-create-poll").addEventListener("click",openPollComposer);$("poll-form").addEventListener("submit",submitPoll);$("poll-add-option").addEventListener("click",addPollOptionInput);$("poll-cancel").addEventListener("click",()=>$("poll-create-modal").hidden=true);$("saved-messages-open").addEventListener("click",openSavedMessages);document.addEventListener("click",event=>{const wrap=$("composer-more-wrap");if(wrap&&!wrap.contains(event.target))closeComposerMoreMenu();if(S.openReactionPickerMessageId&&!event.target.closest(".message-reaction-area")){S.openReactionPickerMessageId=null;if(S.active)renderMessages(true);}});
   $("message").addEventListener("input",e=>{e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,120)+"px";updateLocalTyping();saveActiveChatDraft();});
   $("message").addEventListener("blur",()=>stopTyping(true));
