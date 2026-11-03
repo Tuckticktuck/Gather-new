@@ -4806,7 +4806,10 @@ document.querySelectorAll("[data-folder]").forEach(b=>b.addEventListener("click"
   }));
   document.addEventListener("visibilitychange",()=>{
     if(document.hidden){stopTyping(true);return;}
-    if(S.user)void loadApprovedUserIds().then(ok=>{if(ok)refreshApprovedBadgeUI();});
+    if(S.user){
+      void loadApprovedUserIds().then(ok=>{if(ok)refreshApprovedBadgeUI();});
+      void loadMessageRestriction();
+    }
   });
   $("messages").addEventListener("scroll",()=>{repositionFloatingMessageActionMenu();if($("messages").scrollTop<80)loadOlderMessages();checkUnreadDividerVisibility();},{passive:true});
   window.addEventListener("resize",repositionFloatingMessageActionMenu);
