@@ -162,6 +162,7 @@ Deno.serve(async (request: Request) => {
             profile_created_at: profile.created_at ?? null,
             active_ban_reason: ban?.reason ?? "",
             message_restriction: restrictionById.get(user.id) ?? null,
+            is_gather_admin: user.app_metadata?.gather_role === "admin",
             is_approved: approvedById.has(user.id),
             approved_at: approvedById.get(user.id)?.approved_at ?? null,
           };
