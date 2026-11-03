@@ -1684,7 +1684,8 @@ function renderChatSection(kind,listId,countId,term,sourceChats=null){
   chats.forEach(c=>{
     const row=el("div","chat-row");
     const peer=c.members.find(m=>m.user_id!==S.user.id),peerProfile=peer&&S.profiles[peer.user_id];
-    const profileShortcut=!S.selectingConversations&&c.kind==="direct"&&!!peer?.user_id;
+    const isGatherAdminPeer=!!c.admin_initiated&&peer?.user_id===c.created_by;
+    const profileShortcut=!S.selectingConversations&&c.kind==="direct"&&!!peer?.user_id&&!isGatherAdminPeer;
     const avatarImage=c.kind==="group"?c.avatar_data:peerProfile?.avatar_data;
     const avatarNode=profileShortcut?el("button","avatar chat-peer-profile-target"):avatar(chatTitle(c),avatarImage);
     if(profileShortcut){
@@ -1998,6 +1999,10 @@ function renderChats(){
   const pinnedChats=S.chatSettings.pinned.map(id=>S.chats.find(chat=>chat.id===id)).filter(Boolean);
   $("pinned-chat-section").hidden=!pinnedChats.length;
   renderChatSection("direct","pinned-chat-list","pinned-chat-count",term,pinnedChats);
+  const adminChats=S.chats.filter(chat=>chat.kind==="direct"&&chat.admin_initiated&&!pinnedIds.has(chat.id));
+  $("admin-message-section").hidden=!adminChats.length;
+  $("admin-message-heading").textContent=isFeedbackAdmin(S.user)?"Admin conversations":"Gather Admin";
+  renderChatSection("direct","admin-message-list","admin-message-count",term,adminChats);
   standard.hidden=!isStandard;blocked.hidden=S.folder!=="blocked";deleted.hidden=S.folder!=="deleted";
   document.querySelectorAll("[data-folder]").forEach(b=>{
     const active=b.dataset.folder===S.folder;
@@ -2007,7 +2012,7 @@ function renderChats(){
     $("private-chat-heading").textContent=S.folder==="friends"?"Friends":"Non-friends";
     const friends=new Set(S.friends.map(x=>x.friend_id)),blockedIds=new Set(S.blockedUsers.map(x=>x.blocked_id));
     const chats=S.chats.filter(c=>{
-      if(c.kind!=="direct"||pinnedIds.has(c.id))return false;
+      if(c.kind!=="direct"||c.admin_initiated||pinnedIds.has(c.id))return false;
       const peer=peerForChat(c);if(!peer||blockedIds.has(peer))return false;
       return S.folder==="friends"?friends.has(peer):!friends.has(peer);
     });
@@ -2077,7 +2082,7 @@ async function loadDeletedMessages(){
   S.deletedMessages=(markers.data||[]).flatMap(marker=>{
     const m=byId.get(marker.message_id);if(!m)return [];
     const chat=S.chats.find(c=>c.id===m.conversation_id);
-    return [{...m,message_id:m.id,deleted_at:marker.deleted_at,sender_name:m.sender_id===S.user.id?"You":(S.profiles[m.sender_id]?.display_name||"Member"),conversation_title:chat?chatTitle(chat):"Conversation"}];
+    return [{...m,message_id:m.id,deleted_at:marker.deleted_at,sender_name:m.is_admin_message?"Gather Admin":(m.sender_id===S.user.id?"You":(S.profiles[m.sender_id]?.display_name||"Member")),conversation_title:chat?chatTitle(chat):"Conversation"}];
   });
   renderChats();return true;
 }
