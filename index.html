@@ -153,6 +153,10 @@ if (!window.supabase?.createClient) {
           <div class="folder-panel-heading"><strong>Pinned conversations</strong><span id="pinned-chat-count" class="section-count">0</span></div>
           <div id="pinned-chat-list" class="workspace-chat-list"></div>
         </section>
+        <section id="admin-message-section" class="workspace-group-section admin-message-section" hidden>
+          <div class="folder-panel-heading"><strong id="admin-message-heading">Gather Admin</strong><span id="admin-message-count" class="section-count">0</span></div>
+          <div id="admin-message-list" class="workspace-chat-list"></div>
+        </section>
         <nav class="folder-tabs workspace-tabs" role="tablist" aria-label="Message folders">
           <button class="folder-tab active" type="button" role="tab" aria-selected="true" data-folder="friends">Friends</button>
           <button class="folder-tab" type="button" role="tab" aria-selected="false" data-folder="nonfriends">Non-friends</button>
