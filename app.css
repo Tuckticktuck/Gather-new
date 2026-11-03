@@ -1989,12 +1989,16 @@ button:not(:disabled):active{transform:translateY(1px) scale(.985)}
 .friend-list-item>.friend-list-avatar{width:46px;height:46px;grid-column:1;grid-row:1}
 .friend-list-copy{grid-column:2;grid-row:1;min-width:0;max-width:100%;display:grid;align-content:center;gap:4px}
 .friend-list-copy .friend-list-name{display:block;min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere;word-break:break-word;line-height:1.3}
-.friend-list-copy .friend-list-username,.friend-list-copy .presence-label,.friend-swipe-hint{
+.friend-list-copy .friend-list-username,.friend-list-copy .presence-label{
   display:block;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .friend-list-copy .friend-list-username{margin:0}
 .friend-list-copy .presence-label{margin:0}
-.friend-swipe-hint{color:var(--accent-muted);font-size:calc(9px * var(--font-scale,1));line-height:1.3}
+.friend-swipe-instructions{
+  margin:12px 0 14px;padding:10px 12px;border:1px solid var(--accent-outline-soft);
+  border-radius:10px;color:var(--accent-muted);background:var(--accent-panel);
+  font-size:calc(10px * var(--font-scale,1));line-height:1.45
+}
 .friend-list-actions{grid-column:3;grid-row:1;display:flex;align-items:center;justify-content:flex-end;gap:7px;min-width:0;width:auto;padding:0}
 .friend-list-actions .friend-profile-button{flex:none;min-width:62px;min-height:36px;padding:7px 9px}
 .friend-icon-button{
