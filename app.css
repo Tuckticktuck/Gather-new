@@ -1941,7 +1941,7 @@ button:not(:disabled):active{transform:translateY(1px) scale(.985)}
 }
 .message-undo-bar[hidden]{display:none!important}
 .message-undo-bar span{font-weight:750}
-.message-undo-bar small{flex:1;color:var(--muted);font-size:calc(9px * var(--font-scale,1))}
+.message-undo-bar small{flex:1;color:var(--muted);font-size:calc(9px * var(--font-scale,1));font-variant-numeric:tabular-nums}
 .message-undo-bar button{
   flex:none;width:auto;height:auto;min-height:30px;margin:0;padding:6px 11px;
   border:1px solid var(--accent-outline-soft);border-radius:8px;
