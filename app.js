@@ -2697,7 +2697,55 @@ async function submitPoll(e){
   if(o.error){await db.from("messages").delete().eq("id",m.data.id);b.disabled=false;status("poll-status",o.error.message,"error");return;}
   $("poll-create-modal").hidden=true;b.disabled=false;await loadMessages(cid);await loadChats();toast("Poll created.");
 }
+function positionMessageActionMenu(menu,trigger){
+  if(!menu||!trigger||!menu.isConnected||!trigger.isConnected)return;
+  const viewport=window.visualViewport;
+  const viewportWidth=viewport?.width||document.documentElement.clientWidth||window.innerWidth;
+  const viewportHeight=viewport?.height||window.innerHeight;
+  const offsetLeft=viewport?.offsetLeft||0;
+  const offsetTop=viewport?.offsetTop||0;
+  const margin=10,gap=7;
+  menu.style.position="fixed";
+  menu.style.right="auto";
+  menu.style.bottom="auto";
+  menu.style.left=margin+"px";
+  menu.style.top=margin+"px";
+  menu.style.width="max-content";
+  menu.style.maxWidth=Math.max(0,viewportWidth-margin*2)+"px";
+  menu.style.maxHeight=Math.max(60,viewportHeight-margin*2)+"px";
+  menu.style.overflowY="auto";
+  menu.style.visibility="hidden";
+  const menuRect=menu.getBoundingClientRect();
+  const anchor=trigger.getBoundingClientRect();
+  const maxWidth=Math.max(0,viewportWidth-margin*2);
+  const menuWidth=Math.min(menuRect.width,maxWidth);
+  const rightAlignedLeft=anchor.right-menuWidth;
+  const leftAlignedLeft=anchor.left;
+  let left=rightAlignedLeft;
+  if(left<offsetLeft+margin&&leftAlignedLeft+menuWidth<=offsetLeft+viewportWidth-margin){
+    left=leftAlignedLeft;
+  }
+  left=Math.max(offsetLeft+margin,Math.min(left,offsetLeft+viewportWidth-margin-menuWidth));
+  const topLimit=offsetTop+margin;
+  const bottomLimit=offsetTop+viewportHeight-margin;
+  const belowSpace=Math.max(0,bottomLimit-(anchor.bottom+gap));
+  const aboveSpace=Math.max(0,(anchor.top-gap)-topLimit);
+  const openBelow=belowSpace>=menuRect.height||belowSpace>=aboveSpace;
+  const availableSpace=openBelow?belowSpace:aboveSpace;
+  menu.style.maxHeight=Math.max(60,Math.min(viewportHeight-margin*2,availableSpace))+"px";
+  const finalHeight=menu.getBoundingClientRect().height;
+  let top=openBelow?anchor.bottom+gap:anchor.top-gap-finalHeight;
+  top=Math.max(topLimit,Math.min(top,bottomLimit-finalHeight));
+  menu.style.left=left+"px";
+  menu.style.top=top+"px";
+  menu.style.visibility="";
+}
+function repositionFloatingMessageActionMenu(){
+  const menu=document.querySelector(".message-action-menu[data-floating-menu='true']");
+  if(menu?._anchorTrigger)positionMessageActionMenu(menu,menu._anchorTrigger);
+}
 function renderMessages(preserveScroll=false){
+  document.querySelectorAll(".message-action-menu[data-floating-menu='true']").forEach(menu=>menu.remove());
   const list=$("messages"),previousHeight=list.scrollHeight,previousTop=list.scrollTop;list.replaceChildren();list.setAttribute("aria-busy","false");
   const activeChat=S.chats.find(chat=>chat.id===S.active);
   const showSenderNames=activeChat?.kind==="group";
@@ -2770,6 +2818,12 @@ function renderMessages(preserveScroll=false){
       if(!mine&&m.sender_id)addAction("Report",()=>openReport(m.sender_id,m.id));
       menuWrap.append(trigger,menu);
       meta.append(menuWrap);
+      if(!menu.hidden){
+        menu.dataset.floatingMenu="true";
+        menu._anchorTrigger=trigger;
+        document.body.append(menu);
+        requestAnimationFrame(()=>positionMessageActionMenu(menu,trigger));
+      }
     }
     bubble.append(meta);
     if(m.reply_to_id){
@@ -4463,7 +4517,10 @@ document.querySelectorAll("[data-folder]").forEach(b=>b.addEventListener("click"
     if(document.hidden){stopTyping(true);return;}
     if(S.user)void loadApprovedUserIds().then(ok=>{if(ok)refreshApprovedBadgeUI();});
   });
-  $("messages").addEventListener("scroll",()=>{if($("messages").scrollTop<80)loadOlderMessages();checkUnreadDividerVisibility();},{passive:true});
+  $("messages").addEventListener("scroll",()=>{repositionFloatingMessageActionMenu();if($("messages").scrollTop<80)loadOlderMessages();checkUnreadDividerVisibility();},{passive:true});
+  window.addEventListener("resize",repositionFloatingMessageActionMenu);
+  window.visualViewport?.addEventListener("resize",repositionFloatingMessageActionMenu);
+  window.visualViewport?.addEventListener("scroll",repositionFloatingMessageActionMenu);
   $("cancel-reply").addEventListener("click",cancelReply);
   $("search-messages-open").addEventListener("click",openMessageSearch);
   $("message-search-input").addEventListener("input",()=>{clearTimeout(S.searchTimer);S.searchTimer=setTimeout(()=>searchConversationMessages(true),250);});
