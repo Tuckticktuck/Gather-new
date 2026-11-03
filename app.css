@@ -2021,6 +2021,31 @@ button:not(:disabled):active{transform:translateY(1px) scale(.985)}
   .friend-list-actions .friend-icon-button{width:36px;min-width:36px;height:36px;min-height:36px}
 }
 
+
+/* The home workspace is a flex column; prevent the results card from shrinking
+   shorter than its full contents when several matches are returned. */
+#empty #home-search-results:not([hidden]){
+  display:grid;
+  flex:0 0 auto;
+  align-self:stretch;
+  height:auto;
+  min-height:max-content;
+}
+#empty #home-search-results .home-search-panel:not([hidden]){
+  display:block;
+  flex:0 0 auto;
+  height:auto;
+  min-height:max-content;
+}
+#empty #home-search-results .home-search-results-list{
+  display:grid;
+  flex:0 0 auto;
+  height:auto;
+  min-height:max-content;
+  max-height:none;
+  overflow:visible;
+}
+
 /* Search results must remain inside the results panel on narrow screens. */
 .home-search-results{width:100%;min-width:0;max-width:100%;box-sizing:border-box;overflow:visible}
 .home-search-panel{width:100%;min-width:0;max-width:100%;box-sizing:border-box;overflow:visible}
