@@ -1975,7 +1975,7 @@ button:not(:disabled):active{transform:translateY(1px) scale(.985)}
 .home-search-profile-copy strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:calc(11px * var(--font-scale,1))}
 .home-search-profile-copy small{font-size:calc(10px * var(--font-scale,1))}
 .home-search-profile-result>button:last-child{flex:none;width:auto;min-height:34px;margin:0;padding:7px 10px;font-size:calc(10px * var(--font-scale,1))}
-@media(max-width:720px){.home-search-results{padding:11px}.home-search-results-list{max-height:48vh}.home-search-profile-result{gap:8px;padding:9px}.home-search-profile-result>button:last-child{padding:7px 8px}}
+@media(max-width:720px){.home-search-results{padding:11px}.home-search-results-list{max-height:none;overflow:visible}.home-search-profile-result{gap:8px;padding:9px}.home-search-profile-result>button:last-child{padding:7px 8px}}
 
 
 /* Friends list: protect profile details from action-button overflow. */
@@ -2022,9 +2022,9 @@ button:not(:disabled):active{transform:translateY(1px) scale(.985)}
 }
 
 /* Search results must remain inside the results panel on narrow screens. */
-.home-search-results{width:100%;min-width:0;max-width:100%;box-sizing:border-box;overflow:hidden}
-.home-search-panel{width:100%;min-width:0;max-width:100%;box-sizing:border-box;overflow:hidden}
-.home-search-results-list{width:100%;min-width:0;max-width:100%;box-sizing:border-box;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain}
+.home-search-results{width:100%;min-width:0;max-width:100%;box-sizing:border-box;overflow:visible}
+.home-search-panel{width:100%;min-width:0;max-width:100%;box-sizing:border-box;overflow:visible}
+.home-search-results-list{display:grid;width:100%;min-width:0;max-width:100%;box-sizing:border-box;max-height:none;overflow:visible;overscroll-behavior:auto}
 .home-search-message-result{display:grid;width:100%;min-width:0;max-width:100%;box-sizing:border-box;overflow:hidden}
 .home-search-message-result strong,.home-search-message-result span{display:block;width:100%;min-width:0;max-width:100%;box-sizing:border-box;white-space:normal;overflow-wrap:anywhere;word-break:break-word}
 .home-search-profile-result{width:100%;min-width:0;max-width:100%;box-sizing:border-box;overflow:hidden}
