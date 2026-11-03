@@ -3112,7 +3112,7 @@ function renderUndoSend(){
   const bar=$("message-undo-bar");if(!bar)return;
   const pending=S.pendingUndoSend;
   const remainingMs=pending?pending.expiresAt-Date.now():0;
-  const visible=!!pending&&remainingMs>0&&pending.conversationId===S.active;
+  const visible=!!pending&&!pending.dismissed&&remainingMs>0&&pending.conversationId===S.active;
   bar.hidden=!visible;
   const countdown=$("message-undo-countdown");
   if(countdown&&pending&&remainingMs>0){
@@ -4497,6 +4497,11 @@ document.querySelectorAll("[data-folder]").forEach(b=>b.addEventListener("click"
   $("password-form").addEventListener("submit",changePassword);
   $("send-form").addEventListener("submit",sendMessage);
   $("message-undo").addEventListener("click",undoLastSend);
+  $("message-undo-dismiss").addEventListener("click",()=>{
+    if(!S.pendingUndoSend)return;
+    S.pendingUndoSend.dismissed=true;
+    renderUndoSend();
+  });
   $("message-image-file").addEventListener("change",handleMessageImageFile);$("composer-more-trigger").addEventListener("click",event=>{event.stopPropagation();toggleComposerMoreMenu();});$("composer-more-menu").addEventListener("click",event=>event.stopPropagation());$("message-create-poll").addEventListener("click",openPollComposer);$("poll-form").addEventListener("submit",submitPoll);$("poll-add-option").addEventListener("click",addPollOptionInput);$("poll-cancel").addEventListener("click",()=>$("poll-create-modal").hidden=true);$("saved-messages-open").addEventListener("click",openSavedMessages);document.addEventListener("click",event=>{const wrap=$("composer-more-wrap");if(wrap&&!wrap.contains(event.target))closeComposerMoreMenu();if(S.openReactionPickerMessageId&&!event.target.closest(".message-reaction-area")){S.openReactionPickerMessageId=null;if(S.active)renderMessages(true);}});
   $("message").addEventListener("input",e=>{e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,120)+"px";updateLocalTyping();saveActiveChatDraft();});
   $("message").addEventListener("blur",()=>stopTyping(true));
