@@ -2098,3 +2098,33 @@ button:not(:disabled):active{transform:translateY(1px) scale(.985)}
   .admin-direct-message-actions{display:grid;grid-template-columns:1fr 1fr}
   .admin-direct-message-actions button{width:100%;min-width:0}
 }
+
+
+.message-restriction-banner{
+  flex:none;margin:12px 18px 10px;padding:12px 14px;border:1px solid #d49a5255;
+  border-radius:12px;color:var(--text);background:var(--accent-panel);
+  box-shadow:0 8px 24px #00000012
+}
+.message-restriction-banner strong{display:block;color:var(--accent-text);font-size:calc(11px * var(--font-scale,1));font-weight:800}
+.message-restriction-banner p{margin:5px 0 0;color:var(--text);font-size:calc(10px * var(--font-scale,1));line-height:1.5;overflow-wrap:anywhere}
+.message-restriction-banner button{margin-top:8px;width:auto;padding:6px 10px}
+.admin-message-restriction-card{
+  display:grid;gap:10px;margin:14px 0;padding:14px;border:1px solid var(--accent-outline-soft);
+  border-radius:12px;background:var(--accent-panel)
+}
+.admin-message-restriction-card h4{margin:0;font-size:calc(12px * var(--font-scale,1))}
+.admin-message-restriction-card p{margin:0;line-height:1.5}
+.admin-message-restriction-card .admin-restriction-active{color:#e3b46f}
+.admin-restriction-field{display:grid;gap:6px;color:var(--text);font-size:calc(10px * var(--font-scale,1));font-weight:700}
+.admin-restriction-field select,.admin-restriction-field textarea{
+  width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:9px;
+  color:var(--text);background:var(--input-bg,var(--panel));font:inherit;font-weight:450
+}
+.admin-restriction-field textarea{min-height:70px;resize:vertical;line-height:1.45}
+.admin-restriction-actions{display:flex;flex-wrap:wrap;gap:8px}
+.admin-restriction-actions button{width:auto;min-width:130px}
+@media(max-width:520px){
+  .message-restriction-banner{margin:8px 9px;padding:10px 11px}
+  .admin-restriction-actions{display:grid;grid-template-columns:1fr 1fr}
+  .admin-restriction-actions button{width:100%;min-width:0}
+}
