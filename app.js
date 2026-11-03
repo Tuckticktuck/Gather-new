@@ -30,7 +30,7 @@ function normalizeChatSettings(raw){
   });
   return {pinned,muted,drafts,appearance};
 }
-const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], favoriteFriendIds:new Set(), blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingUndoSend:null, undoSendTimer:null, undoCountdownInterval:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, homeSearchQuery:"", homeSearchTab:"messages", homeSearchMessages:[], homeSearchProfiles:[], homeSearchLoading:false, homeSearchErrors:{messages:"",profiles:""}, homeSearchTimer:null, homeSearchRequestId:0, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
+const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], favoriteFriendIds:new Set(), blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingUndoSend:null, undoSendTimer:null, undoCountdownInterval:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, homeSearchQuery:"", homeSearchTab:"messages", homeSearchMessages:[], homeSearchProfiles:[], homeSearchLoading:false, homeSearchErrors:{messages:"",profiles:""}, homeSearchTimer:null, homeSearchRequestId:0, directStatus:null, messageRestriction:null, messageRestrictionLoaded:false, messageRestrictionError:"", messageRestrictionChannel:null, messageRestrictionTimer:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function appendFormattedMessageText(parent,value){
@@ -612,6 +612,10 @@ function showAuth() {
   $("password-recovery-modal").hidden=true;S.passwordRecovery=false;
   if(S.channel){db.removeChannel(S.channel);S.channel=null;}
   if(S.requestChannel){db.removeChannel(S.requestChannel);S.requestChannel=null;}
+  if(S.messageRestrictionChannel){db.removeChannel(S.messageRestrictionChannel);S.messageRestrictionChannel=null;}
+  if(S.messageRestrictionTimer){clearInterval(S.messageRestrictionTimer);S.messageRestrictionTimer=null;}
+  S.messageRestriction=null;S.messageRestrictionLoaded=false;S.messageRestrictionError="";
+  renderMessageRestrictionNotice();
   if(S.undoSendTimer){clearTimeout(S.undoSendTimer);S.undoSendTimer=null;}
   S.pendingUndoSend=null;renderUndoSend();
   S.favoriteFriendIds=new Set();
@@ -683,6 +687,106 @@ async function ensureProfile(user){
   const created=await db.from("profiles").insert({id:user.id,username,display_name}).select("*").single();
   if(created.error)throw created.error;return created.data;
 }
+function activeMessageRestriction(){
+  const restriction=S.messageRestriction;
+  return restriction&&Number.isFinite(Date.parse(restriction.expires_at))&&Date.parse(restriction.expires_at)>Date.now()?restriction:null;
+}
+function formatRestrictionRemaining(milliseconds){
+  let seconds=Math.max(0,Math.ceil(milliseconds/1000));
+  const days=Math.floor(seconds/86400);seconds%=86400;
+  const hours=Math.floor(seconds/3600);seconds%=3600;
+  const minutes=Math.floor(seconds/60);seconds%=60;
+  const parts=[];
+  if(days)parts.push(days+"d");
+  if(hours)parts.push(hours+"h");
+  if(minutes)parts.push(minutes+"m");
+  if(seconds||!parts.length)parts.push(seconds+"s");
+  return parts.slice(0,2).join(" ");
+}
+function renderMessageRestrictionNotice(){
+  const bannerIds=["home-message-restriction","chat-message-restriction"];
+  const restriction=activeMessageRestriction();
+  bannerIds.forEach(id=>{
+    const banner=$(id);if(!banner)return;
+    banner.hidden=!!S.messageRestrictionLoaded&&!restriction;
+    const title=banner.querySelector(".message-restriction-title");
+    const detail=banner.querySelector(".message-restriction-detail");
+    const retry=banner.querySelector(".message-restriction-retry");
+    if(!S.messageRestrictionLoaded){
+      if(title)title.textContent="Checking messaging permissions";
+      if(detail)detail.textContent=S.messageRestrictionError||"Gather is checking whether your account can send messages.";
+      if(retry)retry.hidden=!S.messageRestrictionError;
+    }else if(restriction){
+      const remaining=formatRestrictionRemaining(Date.parse(restriction.expires_at)-Date.now());
+      if(title)title.textContent="Messaging temporarily restricted";
+      if(detail)detail.textContent="You can send messages again in "+remaining+" ( "+new Date(restriction.expires_at).toLocaleString()+"). "+restriction.notice;
+      if(retry)retry.hidden=true;
+    }
+  });
+}
+function syncMessageRestrictionTimer(){
+  if(S.messageRestrictionTimer){clearInterval(S.messageRestrictionTimer);S.messageRestrictionTimer=null;}
+  if(!activeMessageRestriction())return;
+  S.messageRestrictionTimer=setInterval(()=>{
+    if(!activeMessageRestriction()){
+      S.messageRestriction=null;
+      clearInterval(S.messageRestrictionTimer);S.messageRestrictionTimer=null;
+      renderMessageRestrictionNotice();
+      renderDirectControls();
+      return;
+    }
+    renderMessageRestrictionNotice();
+  },1000);
+}
+async function loadMessageRestriction(userId=S.user?.id){
+  if(!userId)return false;
+  const result=await db.from("message_restrictions")
+    .select("user_id,expires_at,notice,created_at,created_by")
+    .eq("user_id",userId)
+    .maybeSingle();
+  if(S.user?.id!==userId)return false;
+  if(result.error){
+    S.messageRestrictionLoaded=false;
+    S.messageRestrictionError="Messaging permissions could not be verified. Sending is disabled until this check succeeds.";
+    renderMessageRestrictionNotice();renderDirectControls();
+    console.warn("Messaging restriction could not be checked:",result.error.message);
+    return false;
+  }
+  S.messageRestrictionLoaded=true;
+  S.messageRestrictionError="";
+  S.messageRestriction=result.data&&Date.parse(result.data.expires_at)>Date.now()?result.data:null;
+  syncMessageRestrictionTimer();
+  renderMessageRestrictionNotice();renderDirectControls();
+  return true;
+}
+function subscribeMessageRestriction(userId=S.user?.id){
+  if(S.messageRestrictionChannel){db.removeChannel(S.messageRestrictionChannel);S.messageRestrictionChannel=null;}
+  if(!userId)return;
+  const channel=db.channel("message-restrictions-"+userId)
+    .on("postgres_changes",{event:"*",schema:"public",table:"message_restrictions"},payload=>{
+      if(S.user?.id!==userId)return;
+      const row=payload.new?.user_id===userId?payload.new:payload.old?.user_id===userId?payload.old:null;
+      if(!row)return;
+      if(payload.eventType==="DELETE")S.messageRestriction=null;
+      else if(payload.new?.user_id===userId){
+        S.messageRestriction=Date.parse(payload.new.expires_at)>Date.now()?payload.new:null;
+      }
+      S.messageRestrictionLoaded=true;S.messageRestrictionError="";
+      syncMessageRestrictionTimer();
+      renderMessageRestrictionNotice();renderDirectControls();
+      if(S.admin.selectedUserId===userId){
+        const member=S.admin.users.find(item=>item.id===userId);
+        if(member){member.message_restriction=S.messageRestriction;renderAdminAccountDetail();}
+      }
+    })
+    .subscribe((status,error)=>{
+      if(status==="CHANNEL_ERROR"||status==="TIMED_OUT"){
+        console.warn("Messaging restriction live updates are unavailable:",error||status);
+        void loadMessageRestriction(userId);
+      }
+    });
+  S.messageRestrictionChannel=channel;
+}
 async function signedIn(user,retry=false){
   if(!user||S.loading===user.id)return;
   if(!retry&&S.user&&S.user.id===user.id&&S.profile)return;
@@ -690,6 +794,9 @@ async function signedIn(user,retry=false){
   try{
     S.profile=await ensureProfile(user);
     if(S.user?.id!==user.id)return;
+    await loadMessageRestriction(user.id);
+    if(S.user?.id!==user.id)return;
+    subscribeMessageRestriction(user.id);
     await Promise.all([loadApprovedUserIds(),loadOwnApprovalRequests()]);
     if(S.user?.id!==user.id)return;
     renderAccountApprovalSettings();
@@ -2143,19 +2250,32 @@ function renderActive(){
 }
 function renderDirectControls(){
   const c=S.chats.find(x=>x.id===S.active),isDirect=c?.kind==="direct";
+  const restrictionPending=!S.messageRestrictionLoaded;
+  const messageRestricted=!!activeMessageRestriction();
+  const sendingDisabled=restrictionPending||messageRestricted;
   applyChatAppearance(S.active);
   $("block-user").hidden=!isDirect;
   $("select-messages").hidden=false;
   $("select-messages").textContent=S.selectingMessages?"Cancel":"Select";
   $("delete-selected").hidden=!S.selectingMessages||S.selectedMessageIds.size===0;
   $("delete-selected").textContent="Delete selected ("+S.selectedMessageIds.size+")";
-  if(!isDirect){$("chat-notice").hidden=true;$("message").disabled=false;$("message").placeholder="Write a message…";$("send").disabled=false;return;}
+  if(!isDirect){
+    $("chat-notice").hidden=true;
+    $("message").disabled=sendingDisabled;
+    $("message").placeholder=restrictionPending?"Checking messaging permissions…":messageRestricted?"Messaging temporarily restricted":"Write a message…";
+    $("send").disabled=sendingDisabled;
+    $("message-image-file").disabled=sendingDisabled;
+    $("composer-more-trigger").disabled=sendingDisabled;
+    return;
+  }
   const d=S.directStatus,blocked=!d?.can_message;
   $("chat-title").hidden=!d?.can_message;
   $("block-user").disabled=!d||!!d.error;
   $("block-user").textContent=d?.i_blocked?"Unblock":"Block";
-  $("message").disabled=blocked;$("send").disabled=blocked;
-  $("message").placeholder=blocked?"Private messaging unavailable":"Write a message…";
+  $("message").disabled=blocked||sendingDisabled;$("send").disabled=blocked||sendingDisabled;
+  $("message-image-file").disabled=blocked||sendingDisabled;
+  $("composer-more-trigger").disabled=blocked||sendingDisabled;
+  $("message").placeholder=restrictionPending?"Checking messaging permissions…":messageRestricted?"Messaging temporarily restricted":blocked?"Private messaging unavailable":"Write a message…";
   $("chat-notice").hidden=!blocked;
   $("chat-notice").textContent=!d?"Checking private chat permissions…":d.error?"Could not verify chat permissions. Refresh the page and try again.":d.i_blocked?"You blocked this member. Unblock them to send private messages. Your previous messages remain visible.":"Private messaging is unavailable in this conversation. Your previous messages remain visible.";
 }
@@ -3195,6 +3315,8 @@ async function undoLastSend(){
 
 async function sendMessage(e){
   e.preventDefault();
+  if(!S.messageRestrictionLoaded){toast("Gather is still checking your messaging permissions. Please try again in a moment.");return;}
+  if(activeMessageRestriction()){toast("Messaging is temporarily restricted for your account.");return;}
   const body=$("message").value.trim(),file=S.pendingImageFile;
   if((!body&&!file)||!S.active)return;
   const conversationId=S.active,activeChat=S.chats.find(x=>x.id===conversationId);
@@ -3494,7 +3616,9 @@ function adminActionLabel(action){
     user_unbanned:"Unbanned a member account",
     user_deleted:"Deleted a member account",
     message_reported_user:"Contacted a reported member",
-    admin_direct_message_sent:"Sent a direct message as Gather Admin"
+    admin_direct_message_sent:"Sent a direct message as Gather Admin",
+    messaging_restricted:"Temporarily restricted a member's messaging",
+    messaging_restriction_removed:"Removed a member's messaging restriction"
   })[action]||String(action||"Admin action").replaceAll("_"," ");
 }
 function renderAdminActivity(listId,items){
@@ -3678,6 +3802,31 @@ function renderAdminAccountDetail(){
     el("span","", "Status: "+(banned?"Banned":"Active")),
     ...(user.active_ban_reason?[el("span","","Ban reason: "+user.active_ban_reason)]:[])
   );
+  const restriction=user.message_restriction&&Date.parse(user.message_restriction.expires_at)>Date.now()?user.message_restriction:null;
+  const restrictionCard=el("section","admin-message-restriction-card");
+  restrictionCard.append(el("h4","","Messaging restriction"));
+  const restrictionStatus=el("p","tiny "+(restriction?"admin-restriction-active":"muted"));
+  restrictionStatus.textContent=restriction
+    ?"Restricted until "+new Date(restriction.expires_at).toLocaleString()+". "+restriction.notice
+    :"This member can currently send messages.";
+  restrictionCard.append(restrictionStatus);
+  const restrictionDuration=el("select","");restrictionDuration.id="admin-message-restriction-duration";
+  [[15,"15 minutes"],[30,"30 minutes"],[60,"1 hour"],[360,"6 hours"],[1440,"24 hours"],[4320,"3 days"],[10080,"7 days"]].forEach(([value,label])=>{
+    const option=el("option","",label);option.value=String(value);restrictionDuration.append(option);
+  });
+  const restrictionDurationLabel=el("label","admin-restriction-field");
+  restrictionDurationLabel.append(el("span","","Duration"),restrictionDuration);
+  const restrictionNotice=el("textarea","");restrictionNotice.id="admin-message-restriction-notice";
+  restrictionNotice.rows=3;restrictionNotice.maxLength=500;
+  restrictionNotice.placeholder="Write the message the member will see while messaging is restricted.";
+  const restrictionNoticeLabel=el("label","admin-restriction-field");
+  restrictionNoticeLabel.append(el("span","","Message shown to member"),restrictionNotice);
+  const restrictionActions=el("div","admin-restriction-actions");
+  const restrictionApply=el("button","primary","Apply messaging restriction");restrictionApply.type="button";
+  const restrictionLift=el("button","outline","Lift restriction");restrictionLift.type="button";restrictionLift.hidden=!restriction;
+  restrictionActions.append(restrictionApply,restrictionLift);
+  const restrictionFeedback=el("p","tiny muted");restrictionFeedback.id="admin-message-restriction-status";
+  restrictionCard.append(restrictionDurationLabel,restrictionNoticeLabel,restrictionActions,restrictionFeedback);
   const form=el("form","admin-account-form");form.id="admin-account-form";
   const fields=[
     ["Username","username",24,user.username||""],
@@ -3709,7 +3858,9 @@ function renderAdminAccountDetail(){
   actions.append(save,ban,unban,remove);form.append(actions);
   const saveStatus=el("p","tiny muted");saveStatus.id="admin-account-save-status";
   const note=el("p","tiny muted","Emails are read from Auth. Passwords and password hashes are never available in this screen.");
-  detail.append(header,meta,form,saveStatus,note);
+  detail.append(header,meta,restrictionCard,form,saveStatus,note);
+  restrictionApply.addEventListener("click",()=>setAdminMessagingRestriction(user.id));
+  restrictionLift.addEventListener("click",()=>clearAdminMessagingRestriction(user.id));
   form.addEventListener("submit",saveAdminAccountProfile);
   ban.addEventListener("click",()=>banAdminAccount(user.id));
   unban.addEventListener("click",()=>unbanAdminAccount(user.id));
@@ -3784,6 +3935,39 @@ async function sendAdminDirectMessage(event){
       submit.disabled=false;
       submit.textContent="Send as Gather Admin";
     }
+  }
+}
+async function setAdminMessagingRestriction(userId){
+  const user=S.admin.users.find(item=>item.id===userId);if(!user||!isFeedbackAdmin(S.user))return;
+  const duration=Number($("admin-message-restriction-duration").value);
+  const notice=$("admin-message-restriction-notice").value.trim();
+  const statusNode=$("admin-message-restriction-status"),button=$("admin-account-detail")?.querySelector(".admin-restriction-actions .primary");
+  if(!notice){statusNode.textContent="Write a message for the member before applying the restriction.";return;}
+  if(button)button.disabled=true;
+  statusNode.textContent="Applying messaging restriction…";
+  try{
+    const result=await adminApi("set_messaging_restriction",{user_id:userId,duration_minutes:duration,notice});
+    user.message_restriction=result.restriction;
+    renderAdminAccounts();renderAdminAccountDetail();
+    toast("Messaging restriction applied.");
+  }catch(error){
+    statusNode.textContent="Restriction could not be applied: "+error.message;
+    if(button)button.disabled=false;
+  }
+}
+async function clearAdminMessagingRestriction(userId){
+  const user=S.admin.users.find(item=>item.id===userId);if(!user||!isFeedbackAdmin(S.user))return;
+  const statusNode=$("admin-message-restriction-status"),button=$("admin-account-detail")?.querySelector(".admin-restriction-actions .outline");
+  if(button)button.disabled=true;
+  if(statusNode)statusNode.textContent="Lifting messaging restriction…";
+  try{
+    await adminApi("clear_messaging_restriction",{user_id:userId});
+    user.message_restriction=null;
+    renderAdminAccounts();renderAdminAccountDetail();
+    toast("Messaging restriction lifted.");
+  }catch(error){
+    if(statusNode)statusNode.textContent="Restriction could not be removed: "+error.message;
+    if(button)button.disabled=false;
   }
 }
 async function saveAdminAccountProfile(event){
@@ -4541,6 +4725,7 @@ function wire(){
   $("admin-announcements-open").addEventListener("click",openAnnouncementsPage);
   $("admin-accounts-refresh").addEventListener("click",()=>loadAdminAccounts(true));
   $("admin-account-search").addEventListener("input",renderAdminAccounts);
+  document.querySelectorAll(".message-restriction-retry").forEach(button=>button.addEventListener("click",()=>loadMessageRestriction()));
   $("admin-direct-message-form").addEventListener("submit",sendAdminDirectMessage);
   $("admin-message-search").addEventListener("input",renderAdminMessageRecipients);
   $("admin-message-more").addEventListener("click",async()=>{
