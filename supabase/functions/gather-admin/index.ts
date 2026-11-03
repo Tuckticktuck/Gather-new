@@ -122,7 +122,7 @@ Deno.serve(async (request: Request) => {
       if (error) return adminError(500, "Member accounts could not be loaded.");
       const users = data.users ?? [];
       const ids = users.map((user) => user.id);
-      const [profileResult, banResult, approvedResult] = await Promise.all([
+      const [profileResult, banResult, approvedResult, restrictionResult] = await Promise.all([
         ids.length
           ? adminClient.from("profiles").select("id,username,display_name,bio,pronouns,banner_style,created_at").in("id", ids)
           : Promise.resolve({ data: [], error: null }),
@@ -132,12 +132,16 @@ Deno.serve(async (request: Request) => {
         ids.length
           ? adminClient.from("approved_accounts").select("user_id,approved_at").in("user_id", ids)
           : Promise.resolve({ data: [], error: null }),
+        ids.length
+          ? adminClient.from("message_restrictions").select("user_id,expires_at,notice,created_at,created_by").in("user_id", ids).gt("expires_at", new Date().toISOString())
+          : Promise.resolve({ data: [], error: null }),
       ]);
-      if (profileResult.error || banResult.error || approvedResult.error) return adminError(500, "Member account details could not be loaded.");
+      if (profileResult.error || banResult.error || approvedResult.error || restrictionResult.error) return adminError(500, "Member account details could not be loaded.");
       const profileById = new Map((profileResult.data ?? []).map((profile) => [profile.id, profile]));
       const banById = new Map();
       for (const ban of banResult.data ?? []) if (!banById.has(ban.user_id)) banById.set(ban.user_id, ban);
       const approvedById = new Map((approvedResult.data ?? []).map((item) => [item.user_id, item]));
+      const restrictionById = new Map((restrictionResult.data ?? []).map((item) => [item.user_id, item]));
       return response(200, {
         users: users.map((user) => {
           const profile = profileById.get(user.id) ?? {};
@@ -157,6 +161,7 @@ Deno.serve(async (request: Request) => {
             banner_style: profile.banner_style ?? "violet",
             profile_created_at: profile.created_at ?? null,
             active_ban_reason: ban?.reason ?? "",
+            message_restriction: restrictionById.get(user.id) ?? null,
             is_approved: approvedById.has(user.id),
             approved_at: approvedById.get(user.id)?.approved_at ?? null,
           };
@@ -165,6 +170,56 @@ Deno.serve(async (request: Request) => {
         per_page: perPage,
         has_more: users.length === perPage,
       });
+    }
+
+    if (action === "set_messaging_restriction") {
+      if (!targetId || targetId === actorId) return adminError(400, "Choose another member account.");
+      const durationMinutes = Number(payload.duration_minutes);
+      const allowedDurations = [15, 30, 60, 360, 1440, 4320, 10080];
+      if (!allowedDurations.includes(durationMinutes)) return adminError(400, "Choose a valid restriction duration.");
+      const notice = cleanString(payload.notice, 500);
+      if (!notice) return adminError(400, "Add a message explaining the restriction.");
+      const { data: targetResult, error: targetError } = await adminClient.auth.admin.getUserById(targetId);
+      const target = targetResult?.user;
+      if (targetError || !target) return adminError(404, "That member account could not be found.");
+      if (target.app_metadata?.gather_role === "admin") return adminError(400, "The designated Gather administrator account cannot be restricted.");
+      const createdAt = new Date();
+      const expiresAt = new Date(createdAt.getTime() + durationMinutes * 60 * 1000).toISOString();
+      const { data, error } = await adminClient.from("message_restrictions").upsert({
+        user_id: targetId,
+        expires_at: expiresAt,
+        notice,
+        created_by: actorId,
+        created_at: createdAt.toISOString(),
+      }, { onConflict: "user_id" })
+        .select("user_id,expires_at,notice,created_at,created_by")
+        .single();
+      if (error || !data) {
+        console.error("Messaging restriction could not be saved:", error?.message);
+        return adminError(500, "The messaging restriction could not be saved.");
+      }
+      await writeAdminLog(adminClient, actorId, targetId, "messaging_restricted", {
+        expires_at: expiresAt,
+        duration_minutes: durationMinutes,
+        notice,
+      });
+      return response(200, { restriction: data });
+    }
+
+    if (action === "clear_messaging_restriction") {
+      if (!targetId || targetId === actorId) return adminError(400, "Choose another member account.");
+      const { data: targetResult, error: targetError } = await adminClient.auth.admin.getUserById(targetId);
+      const target = targetResult?.user;
+      if (targetError || !target) return adminError(404, "That member account could not be found.");
+      if (target.app_metadata?.gather_role === "admin") return adminError(400, "The designated Gather administrator account is protected.");
+      const { data, error } = await adminClient.from("message_restrictions")
+        .delete()
+        .eq("user_id", targetId)
+        .select("user_id")
+        .maybeSingle();
+      if (error) return adminError(500, "The messaging restriction could not be removed.");
+      if (data) await writeAdminLog(adminClient, actorId, targetId, "messaging_restriction_removed", {});
+      return response(200, { success: true, removed: !!data });
     }
 
     if (action === "update_profile") {
