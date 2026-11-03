@@ -708,6 +708,7 @@ function renderMessageRestrictionNotice(){
   const restriction=activeMessageRestriction();
   bannerIds.forEach(id=>{
     const banner=$(id);if(!banner)return;
+    if(!S.user){banner.hidden=true;return;}
     banner.hidden=!!S.messageRestrictionLoaded&&!restriction;
     const title=banner.querySelector(".message-restriction-title");
     const detail=banner.querySelector(".message-restriction-detail");
@@ -3824,6 +3825,9 @@ function renderAdminAccountDetail(){
   const restrictionActions=el("div","admin-restriction-actions");
   const restrictionApply=el("button","primary","Apply messaging restriction");restrictionApply.type="button";
   const restrictionLift=el("button","outline","Lift restriction");restrictionLift.type="button";restrictionLift.hidden=!restriction;
+  restrictionApply.disabled=!!user.is_gather_admin||user.id===S.user.id;
+  restrictionLift.disabled=!!user.is_gather_admin||user.id===S.user.id;
+  if(user.is_gather_admin)restrictionStatus.textContent="Administrator accounts cannot be restricted.";
   restrictionActions.append(restrictionApply,restrictionLift);
   const restrictionFeedback=el("p","tiny muted");restrictionFeedback.id="admin-message-restriction-status";
   restrictionCard.append(restrictionDurationLabel,restrictionNoticeLabel,restrictionActions,restrictionFeedback);
