@@ -3463,7 +3463,7 @@ function clearAdminChildNavigation(){
   updateAdminModalStack();
 }
 function setAdminModeSection(section){
-  if(!["overview","accounts","reports","feedback","announcements","approvals","activity"].includes(section))return;
+  if(!["overview","accounts","messages","reports","feedback","announcements","approvals","activity"].includes(section))return;
   S.admin.section=section;
   document.querySelectorAll("[data-admin-section]").forEach(button=>{
     if(button.classList.contains("admin-mode-tab"))button.classList.toggle("active",button.dataset.adminSection===section);
