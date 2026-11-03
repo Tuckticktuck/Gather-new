@@ -30,7 +30,7 @@ function normalizeChatSettings(raw){
   });
   return {pinned,muted,drafts,appearance};
 }
-const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], favoriteFriendIds:new Set(), blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingUndoSend:null, undoSendTimer:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
+const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], favoriteFriendIds:new Set(), blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingUndoSend:null, undoSendTimer:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, homeSearchQuery:"", homeSearchTab:"messages", homeSearchMessages:[], homeSearchProfiles:[], homeSearchLoading:false, homeSearchErrors:{messages:"",profiles:""}, homeSearchTimer:null, homeSearchRequestId:0, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function appendFormattedMessageText(parent,value){
@@ -624,7 +624,7 @@ function showAuth() {
   clearTimeout(S.chatSettingsSaveTimer);S.chatSettingsSaveTimer=null;S.chatSettings=normalizeChatSettings(DEFAULT_CHAT_SETTINGS);
   S.selectingConversations=false;S.selectedConversationIds.clear();renderConversationSelectionControls();
   S.unreadTargetMessageId=null;S.unreadTargetLoaded=false;S.suppressReadDividerUpdates=false;
-  S.user=null;S.profile=null;S.modalBackTargets={};syncAdminModeButton();S.admin={users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[]};S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.savedMessageIds=new Set();S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.openMessageMenuId=null;S.notifications=[];S.feedbackAdminView=false;$("feedback-admin-open").hidden=true;$("feedback-admin-settings-section").hidden=true;S.profiles={};S.chats=[];S.messages=[];S.messageReads={};S.replyTo=null;S.hasOlderMessages=false;S.requests=[];S.friendRequests=[];S.friends=[];S.blockedUsers=[];S.deletedMessages=[];S.deletedMessageIds=new Set();S.lastReadAt={};S.folder="friends";S.directStatus=null;S.active=null;S.messages=[];S.loadError=null;S.avatarChanged=false;S.pendingAvatarData=null;loadUIPreferences(DEFAULT_PREFERENCES);
+  S.user=null;S.profile=null;S.homeSearchQuery="";S.homeSearchMessages=[];S.homeSearchProfiles=[];S.homeSearchRequestId++;S.homeSearchLoading=false;S.modalBackTargets={};syncAdminModeButton();S.admin={users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[]};S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.savedMessageIds=new Set();S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.openMessageMenuId=null;S.notifications=[];S.feedbackAdminView=false;$("feedback-admin-open").hidden=true;$("feedback-admin-settings-section").hidden=true;S.profiles={};S.chats=[];S.messages=[];S.messageReads={};S.replyTo=null;S.hasOlderMessages=false;S.requests=[];S.friendRequests=[];S.friends=[];S.blockedUsers=[];S.deletedMessages=[];S.deletedMessageIds=new Set();S.lastReadAt={};S.folder="friends";S.directStatus=null;S.active=null;S.messages=[];S.loadError=null;S.avatarChanged=false;S.pendingAvatarData=null;loadUIPreferences(DEFAULT_PREFERENCES);
   setChatLoadStatus("");$("auth").hidden=false;$("app").hidden=true;
 }
 function showApp(){ $("auth").hidden=true;$("app").hidden=false; }
@@ -1854,8 +1854,106 @@ async function deleteSelectedConversations(){
   renderChats();renderConversationSelectionControls();
   toast(moved.length+" messages from "+count+" "+(count===1?"conversation":"conversations")+" moved to Deleted messages. You can restore them there.");
 }
+function setHomeSearchTab(tab){
+  if(!["messages","profiles"].includes(tab))return;
+  S.homeSearchTab=tab;renderHomeSearchResults();
+}
+function renderHomeSearchResults(){
+  const query=S.homeSearchQuery;
+  const messagesTab=$("home-search-tab-messages"),profilesTab=$("home-search-tab-profiles");
+  const messagesPanel=$("home-search-messages-panel"),profilesPanel=$("home-search-profiles-panel");
+  const messagesCount=$("home-search-messages-count"),profilesCount=$("home-search-profiles-count");
+  if(!messagesTab||!profilesTab||!messagesPanel||!profilesPanel)return;
+  messagesCount.textContent=String(S.homeSearchMessages.length);profilesCount.textContent=String(S.homeSearchProfiles.length);
+  const showMessages=S.homeSearchTab==="messages";
+  messagesTab.classList.toggle("active",showMessages);messagesTab.setAttribute("aria-selected",String(showMessages));
+  profilesTab.classList.toggle("active",!showMessages);profilesTab.setAttribute("aria-selected",String(!showMessages));
+  messagesPanel.hidden=!showMessages;profilesPanel.hidden=showMessages;
+  const messageList=$("home-search-messages-list"),profileList=$("home-search-profiles-list");
+  if(!query||query.length<2){
+    const note="Type at least 2 characters to search.";
+    messageList.replaceChildren(el("p","muted tiny home-search-empty",note));profileList.replaceChildren(el("p","muted tiny home-search-empty",note));return;
+  }
+  messageList.replaceChildren();
+  if(S.homeSearchLoading&&!S.homeSearchMessages.length)messageList.append(el("p","muted tiny home-search-empty","Searching messages..."));
+  else if(S.homeSearchErrors.messages)messageList.append(el("p","status error home-search-empty","Messages could not be searched: "+S.homeSearchErrors.messages));
+  else if(!S.homeSearchMessages.length)messageList.append(el("p","muted tiny home-search-empty","No matching messages found."));
+  S.homeSearchMessages.forEach(message=>{
+    const button=el("button","message-search-result home-search-message-result");button.type="button";
+    const chat=S.chats.find(item=>item.id===message.conversation_id);
+    const sender=S.profiles[message.sender_id]?.display_name||"Gather member";
+    const title=[chat?chatTitle(chat):"Conversation",sender,dateLabel(message.created_at)].join(" · ");
+    button.append(el("strong","",title),el("span","",message.body||""));
+    button.addEventListener("click",()=>openSearchResult(message));messageList.append(button);
+  });
+  profileList.replaceChildren();
+  if(S.homeSearchLoading&&!S.homeSearchProfiles.length)profileList.append(el("p","muted tiny home-search-empty","Searching profiles..."));
+  else if(S.homeSearchErrors.profiles)profileList.append(el("p","status error home-search-empty","Profiles could not be searched: "+S.homeSearchErrors.profiles));
+  else if(!S.homeSearchProfiles.length)profileList.append(el("p","muted tiny home-search-empty","No matching profiles found."));
+  S.homeSearchProfiles.forEach(profile=>{
+    const row=el("article","home-search-profile-result");row.append(avatar(profile.display_name,profile.avatar_data));
+    const copy=el("div","home-search-profile-copy");
+    copy.append(el("strong","",profile.display_name),el("small","muted","@"+profile.username));appendApprovedBadge(copy,profile.id,"profile");row.append(copy);
+    const isSelf=profile.id===S.user?.id;
+    const isFriend=S.friends.some(friend=>friend.friend_id===profile.id);
+    const sharedChat=S.chats.some(chat=>chat.members.some(member=>member.user_id===profile.id));
+    const incoming=S.friendRequests.find(request=>request.sender_id===profile.id&&request.recipient_id===S.user?.id&&request.status==="pending");
+    const outgoing=S.friendRequests.some(request=>request.sender_id===S.user?.id&&request.recipient_id===profile.id&&request.status==="pending");
+    const label=isSelf?"Your profile":incoming?"Accept request":outgoing?"Request sent":(isFriend||sharedChat)?"View profile":"Add friend";
+    const action=el("button","secondary-action home-search-profile-action",label);action.type="button";action.disabled=outgoing;
+    if(isSelf)action.addEventListener("click",openProfile);
+    else if(incoming)action.addEventListener("click",()=>respondToFriendRequest(incoming.id,true));
+    else if(isFriend||sharedChat)action.addEventListener("click",()=>openPublicProfile(profile.id));
+    else if(!outgoing)action.addEventListener("click",()=>addFriendFromHomeSearch(profile,action));
+    row.append(action);profileList.append(row);
+  });
+}
+function handleHomeSearchInput(){
+  const query=$("filter").value.trim().slice(0,120);
+  if(S.homeSearchTimer){clearTimeout(S.homeSearchTimer);S.homeSearchTimer=null;}
+  const requestId=++S.homeSearchRequestId;
+  S.homeSearchQuery=query;S.homeSearchMessages=[];S.homeSearchProfiles=[];S.homeSearchErrors={messages:"",profiles:""};
+  S.homeSearchLoading=query.length>=2;renderChats();
+  if(query.length<2){S.homeSearchLoading=false;renderHomeSearchResults();return;}
+  renderHomeSearchResults();S.homeSearchTimer=setTimeout(()=>performHomeSearch(query,requestId),240);
+}
+async function performHomeSearch(query,requestId){
+  const pattern="%"+query+"%";
+  const conversationIds=[...new Set(S.chats.map(chat=>chat.id))];
+  const messageSearch=conversationIds.length?db.from("messages").select("id,conversation_id,sender_id,body,created_at").in("conversation_id",conversationIds).ilike("body",pattern).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(50):Promise.resolve({data:[],error:null});
+  const [messageResult,usernameResult,displayResult]=await Promise.all([
+    messageSearch,db.from("profiles").select("id,username,display_name").ilike("username",pattern).limit(25),
+    db.from("profiles").select("id,username,display_name").ilike("display_name",pattern).limit(25)
+  ]);
+  if(requestId!==S.homeSearchRequestId||$("filter").value.trim().slice(0,120)!==query)return;
+  if(messageResult.error)S.homeSearchErrors.messages=messageResult.error.message;
+  else S.homeSearchMessages=(messageResult.data||[]).filter(message=>!S.deletedMessageIds.has(message.id));
+  if(usernameResult.error||displayResult.error)S.homeSearchErrors.profiles=(usernameResult.error||displayResult.error).message;
+  else{
+    const unique=new Map();[...(usernameResult.data||[]),...(displayResult.data||[])].forEach(profile=>unique.set(profile.id,profile));
+    const records=await fetchProfileRecords([...unique.keys()]);
+    if(requestId!==S.homeSearchRequestId||$("filter").value.trim().slice(0,120)!==query)return;
+    if(records.error)S.homeSearchErrors.profiles=records.error.message;
+    else S.homeSearchProfiles=(records.data||[]).sort((a,b)=>a.display_name.localeCompare(b.display_name)).slice(0,30);
+  }
+  if(requestId!==S.homeSearchRequestId)return;
+  S.homeSearchLoading=false;S.homeSearchTimer=null;renderHomeSearchResults();
+}
+async function addFriendFromHomeSearch(profile,button){
+  if(!S.user||!profile?.id)return;button.disabled=true;
+  const result=await db.rpc("send_friend_request",{p_recipient_id:profile.id});button.disabled=false;
+  if(result.error){toast("Friend request could not be sent: "+result.error.message);return;}
+  await loadFriends();
+  if(result.data?.status==="blocked")toast("This member is unavailable for a friend request.");
+  else if(result.data?.status==="incoming"){toast("They already sent you a friend request. You can accept it in Friends.");$("friends-modal").hidden=false;}
+  else if(result.data?.status==="friends")toast("You are already friends.");else toast("Friend request sent.");
+}
 function renderChats(){
-  const term=$("filter").value.trim().toLowerCase();
+  const rawTerm=$("filter").value.trim();
+  const term=rawTerm.toLowerCase();
+  const searching=!!rawTerm;
+  $("home-search-results").hidden=!searching;$("home-browse-content").hidden=searching;
+  if(searching){renderHomeSearchResults();return;}
   const standard=$("private-folder-panel"),blocked=$("blocked-panel"),deleted=$("deleted-panel");
   const isStandard=S.folder==="friends"||S.folder==="nonfriends";
   const pinnedIds=new Set(S.chatSettings.pinned);
@@ -4270,7 +4368,8 @@ function wire(){
   $("home-friends-open").addEventListener("click",openFriends);$("home-requests-open").addEventListener("click",openRequests);$("open-about-blank").addEventListener("click",openAboutBlank);
   $("toggle-conversation-select").addEventListener("click",toggleConversationSelectionMode);
   $("delete-selected-conversations").addEventListener("click",deleteSelectedConversations);$("pin-selected-conversations").addEventListener("click",toggleSelectedConversationPins);
-  $("filter").addEventListener("input",renderChats);
+  $("filter").addEventListener("input",handleHomeSearchInput);
+  document.querySelectorAll("[data-home-search-tab]").forEach(button=>button.addEventListener("click",()=>setHomeSearchTab(button.dataset.homeSearchTab)));
   $("in-chat-filter").addEventListener("input",renderInChatSidebar);
   $("conversation-drawer-toggle").addEventListener("click",()=>setConversationDrawer(!$("layout").classList.contains("conversation-drawer-open")));
   $("conversation-drawer-backdrop").addEventListener("click",closeConversationDrawer);
