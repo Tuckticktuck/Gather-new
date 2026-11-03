@@ -247,6 +247,24 @@ Deno.serve(async (request: Request) => {
       return response(200, { success: true });
     }
 
+    if (action === "admin_direct_message") {
+      if (!targetId) return adminError(400, "Choose a member account first.");
+      const body = cleanString(payload.body, 4000);
+      if (!body) return adminError(400, "Write a message before sending.");
+      const { data, error } = await userClient.rpc("admin_send_direct_message", {
+        p_user_id: targetId,
+        p_body: body,
+      });
+      if (error || !data?.conversation_id) {
+        console.error("Admin direct message failed:", error?.message ?? "No conversation returned.");
+        return adminError(400, error?.message ?? "The Admin message could not be sent.");
+      }
+      return response(200, {
+        conversation_id: data.conversation_id,
+        message_id: data.message_id,
+      });
+    }
+
     if (action === "message_reported_user") {
       const reportId = cleanString(payload.report_id, 80);
       const body = cleanString(payload.body, 4000);
@@ -259,56 +277,19 @@ Deno.serve(async (request: Request) => {
       if (reportError || !report) return adminError(404, "That report could not be found.");
       const targetId = report.target_user_id;
       if (!targetId || targetId === actorId) return adminError(400, "That reported account cannot be contacted.");
-      const { data: targetProfile, error: profileError } = await adminClient.from("profiles")
-        .select("id")
-        .eq("id", targetId)
-        .maybeSingle();
-      if (profileError || !targetProfile) return adminError(404, "The reported member account is no longer available.");
-
-      const [adminMemberships, targetMemberships] = await Promise.all([
-        adminClient.from("conversation_members").select("conversation_id").eq("user_id", actorId),
-        adminClient.from("conversation_members").select("conversation_id").eq("user_id", targetId),
-      ]);
-      if (adminMemberships.error || targetMemberships.error) return adminError(500, "Private conversation lookup failed.");
-      const targetConversationIds = new Set((targetMemberships.data ?? []).map((row) => row.conversation_id));
-      const sharedIds = (adminMemberships.data ?? [])
-        .map((row) => row.conversation_id)
-        .filter((id) => targetConversationIds.has(id));
-      let conversationId: string | null = null;
-      if (sharedIds.length) {
-        const { data: conversation, error } = await adminClient.from("conversations")
-          .select("id,kind,updated_at")
-          .in("id", sharedIds)
-          .eq("kind", "direct")
-          .order("updated_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (error) return adminError(500, "Private conversation lookup failed.");
-        conversationId = conversation?.id ?? null;
+      const { data, error } = await userClient.rpc("admin_send_direct_message", {
+        p_user_id: targetId,
+        p_body: body,
+      });
+      if (error || !data?.conversation_id) {
+        console.error("Admin report follow-up message failed:", error?.message ?? "No conversation returned.");
+        return adminError(400, error?.message ?? "The private message could not be sent.");
       }
-      if (!conversationId) {
-        const { data: conversation, error } = await adminClient.from("conversations")
-          .insert({ kind: "direct", created_by: actorId })
-          .select("id")
-          .single();
-        if (error || !conversation) return adminError(500, "A private conversation could not be created.");
-        conversationId = conversation.id;
-        const { error: membershipError } = await adminClient.from("conversation_members").insert([
-          { conversation_id: conversationId, user_id: actorId, role: "member" },
-          { conversation_id: conversationId, user_id: targetId, role: "member" },
-        ]);
-        if (membershipError) return adminError(500, "The private conversation could not be prepared.");
-      }
-      const { data: sentMessage, error: messageError } = await adminClient.from("messages")
-        .insert({ conversation_id: conversationId, sender_id: actorId, body })
-        .select("id")
-        .single();
-      if (messageError || !sentMessage) return adminError(500, "The private message could not be sent.");
       await writeAdminLog(adminClient, actorId, targetId, "message_reported_user", {
         report_id: reportId,
-        message_id: sentMessage.id,
+        message_id: data.message_id,
       });
-      return response(200, { conversation_id: conversationId });
+      return response(200, { conversation_id: data.conversation_id });
     }
 
     if (action === "update_report_status") {
