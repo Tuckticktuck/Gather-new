@@ -1551,7 +1551,7 @@ function renderFriends(){
     const name=el("strong","friend-list-name",p.display_name);
     copy.append(name,el("small","friend-list-username","@"+(p.username||"member")));
     appendFriendPresenceLabel(copy,f.friend_id);
-    copy.append(el("small","friend-swipe-hint",isFavorite?"Swipe left to unfavorite":"Swipe left to favorite"));
+
     row.append(copy);
     const actions=el("div","request-actions friend-list-actions");
     const profile=el("button","outline friend-profile-button","Profile");
