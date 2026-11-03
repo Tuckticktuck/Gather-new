@@ -1541,21 +1541,56 @@ function renderFriends(){
   if(!S.friends.length)list.append(el("p","muted tiny","You have not added any friends yet."));
   const orderedFriends=[...S.friends].sort((a,b)=>Number(S.favoriteFriendIds.has(b.friend_id))-Number(S.favoriteFriendIds.has(a.friend_id)));
   orderedFriends.forEach(f=>{
+    const isFavorite=S.favoriteFriendIds.has(f.friend_id);
     const p=S.profiles[f.friend_id]||{id:f.friend_id,display_name:"Gather member",username:"member"};
-    const row=el("div","request-item"+(S.favoriteFriendIds.has(f.friend_id)?" is-favorite-friend":""));row.append(avatar(p.display_name,p.avatar_data));
-    const copy=el("div","request-copy"),name=el("strong","",p.display_name);copy.append(name,el("small","","@"+p.username));appendFriendPresenceLabel(copy,f.friend_id);row.append(copy);
-    const actions=el("div","request-actions");
-    const favorite=el("button","favorite-friend-toggle"+(S.favoriteFriendIds.has(f.friend_id)?" active":""),S.favoriteFriendIds.has(f.friend_id)?"★":"☆");
-    favorite.type="button";favorite.setAttribute("aria-pressed",String(S.favoriteFriendIds.has(f.friend_id)));
-    favorite.setAttribute("aria-label",S.favoriteFriendIds.has(f.friend_id)?"Remove from favorites":"Add to favorites");
-    favorite.title=favorite.getAttribute("aria-label");
-    favorite.addEventListener("click",()=>toggleFavoriteFriend(f.friend_id));
-    const profile=el("button","outline friend-profile-button","Profile"),message=el("button","request-accept","Message"),remove=el("button","request-decline","Remove");
+    const row=el("div","request-item friend-list-item"+(isFavorite?" is-favorite-friend":""));
+    row.tabIndex=0;row.setAttribute("role","group");
+    row.setAttribute("aria-label",p.display_name+". Swipe left or press Enter to "+(isFavorite?"remove from":"add to")+" favorites.");
+    const picture=avatar(p.display_name,p.avatar_data);picture.classList.add("friend-list-avatar");row.append(picture);
+    const copy=el("div","request-copy friend-list-copy");
+    const name=el("strong","friend-list-name",p.display_name);
+    copy.append(name,el("small","friend-list-username","@"+(p.username||"member")));
+    appendFriendPresenceLabel(copy,f.friend_id);
+    copy.append(el("small","friend-swipe-hint",isFavorite?"Swipe left to unfavorite":"Swipe left to favorite"));
+    row.append(copy);
+    const actions=el("div","request-actions friend-list-actions");
+    const profile=el("button","outline friend-profile-button","Profile");
+    const message=el("button","request-accept friend-icon-button friend-message-button");
+    const messageGlyph=el("span","friend-message-icon");messageGlyph.setAttribute("aria-hidden","true");message.append(messageGlyph);
+    const remove=el("button","request-decline friend-icon-button friend-remove-button","×");
     profile.type=message.type=remove.type="button";
+    message.setAttribute("aria-label","Message "+p.display_name);message.title="Message";
+    remove.setAttribute("aria-label","Remove "+p.display_name+" as a friend");remove.title="Remove friend";
     profile.addEventListener("click",()=>openPublicProfile(f.friend_id));
-    message.addEventListener("click",async()=>{ $("friends-modal").hidden=true;await directChat(p); });
+    message.addEventListener("click",async()=>{$("friends-modal").hidden=true;await directChat(p);});
     remove.addEventListener("click",()=>removeFriend(f.friend_id));
-    actions.append(favorite,profile,message,remove);row.append(actions);list.append(row);
+    actions.append(profile,message,remove);row.append(actions);
+    let swipeStart=null,suppressClick=false;
+    const toggleFromSwipe=()=>{
+      suppressClick=true;row.classList.add("swipe-favorite-complete");
+      void toggleFavoriteFriend(f.friend_id);
+      window.setTimeout(()=>{suppressClick=false;row.classList.remove("swipe-favorite-complete");},500);
+    };
+    row.addEventListener("pointerdown",event=>{
+      if(event.pointerType==="mouse"&&event.button!==0)return;
+      if(event.target.closest("button,a,input,select,textarea"))return;
+      swipeStart={x:event.clientX,y:event.clientY,pointerId:event.pointerId};
+    });
+    row.addEventListener("pointerup",event=>{
+      if(!swipeStart||event.pointerId!==swipeStart.pointerId)return;
+      const dx=event.clientX-swipeStart.x,dy=event.clientY-swipeStart.y;
+      swipeStart=null;
+      if(dx < -48 && Math.abs(dx)>Math.abs(dy)*1.2)toggleFromSwipe();
+    });
+    row.addEventListener("pointercancel",()=>{swipeStart=null;});
+    row.addEventListener("click",event=>{
+      if(suppressClick){event.preventDefault();event.stopPropagation();}
+    },true);
+    row.addEventListener("keydown",event=>{
+      if(event.target!==row)return;
+      if(event.key==="Enter"||event.key===" "){event.preventDefault();toggleFromSwipe();}
+    });
+    list.append(row);
   });
   if(!ins.length)incoming.append(el("p","muted tiny","No new friend requests."));
   if(!outs.length)outgoing.append(el("p","muted tiny","You have no pending sent requests."));
