@@ -2938,10 +2938,10 @@ function renderMessages(preserveScroll=false){
       };
       addAction("Reply",()=>beginReply(m));
       addAction(S.openReactionPickerMessageId===m.id?"Close reaction picker":"React",()=>{S.openReactionPickerMessageId=S.openReactionPickerMessageId===m.id?null:m.id;renderMessages(true);});
-      if(mine&&m.body&&!m.is_admin_message)addAction("Edit",()=>editOwnMessage(m));
+      if(mine&&m.body&&!m.is_admin_message&&S.messageRestrictionLoaded&&!activeMessageRestriction())addAction("Edit",()=>editOwnMessage(m));
       if(mine&&m._undoExpiresAt>Date.now())addAction("Undo send",()=>undoSendMessage(m));
       addAction("Copy message",()=>copyMessage(m));
-      addAction("Forward message",()=>openForwardMessage(m));
+      if(S.messageRestrictionLoaded&&!activeMessageRestriction())addAction("Forward message",()=>openForwardMessage(m));
       addAction(S.pinnedMessages.some(x=>x.message_id===m.id)?"Unpin message":"Pin message",()=>togglePinnedMessage(m));
       addAction(S.savedMessageIds.has(m.id)?"Remove saved message":"Save message",()=>toggleSavedMessage(m));
       if(!mine&&m.sender_id)addAction("Report",()=>openReport(m.sender_id,m.id));
