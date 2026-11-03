@@ -102,6 +102,10 @@ if (!window.supabase?.createClient) {
     </aside>
     <main class="main">
       <section id="empty" class="home-workspace">
+        <div id="home-message-restriction" class="message-restriction-banner" hidden role="status" aria-live="polite">
+          <strong class="message-restriction-title"></strong><p class="message-restriction-detail"></p>
+          <button class="message-restriction-retry outline" type="button" hidden>Retry check</button>
+        </div>
         <header class="workspace-header">
           <div><p class="eyebrow">YOUR SPACE</p><h1>Your conversations</h1><p class="muted workspace-subtitle">Find a conversation, manage your connections, or pick up where you left off.</p><p id="workspace-unread-summary" class="workspace-unread-summary" hidden></p></div>
           <div class="workspace-actions">
@@ -184,6 +188,10 @@ if (!window.supabase?.createClient) {
         </div>
       </section>
       <section id="chat" class="chat" hidden>
+        <div id="chat-message-restriction" class="message-restriction-banner" hidden role="status" aria-live="polite">
+          <strong class="message-restriction-title"></strong><p class="message-restriction-detail"></p>
+          <button class="message-restriction-retry outline" type="button" hidden>Retry check</button>
+        </div>
         <header class="chat-head"><button id="back" class="back" aria-label="Back to home">←</button><button id="conversation-drawer-toggle" class="outline conversation-drawer-toggle" type="button" aria-label="Open conversations" aria-controls="in-chat-sidebar" aria-expanded="false">☰</button><span id="chat-avatar" class="avatar">?</span><div class="chat-title"><button id="chat-title" class="chat-title-profile" type="button" hidden></button><small id="chat-subtitle"></small><small id="chat-presence-status" class="presence-label" hidden></small><small id="chat-typing-indicator" class="chat-typing-indicator" aria-live="polite" hidden></small></div><button id="chat-actions-open" class="outline chat-actions-trigger" type="button" aria-label="Open chat options" aria-haspopup="dialog">Chat options <span aria-hidden="true">⌄</span></button></header>
         <div id="messages" class="messages"></div>
         <p id="chat-notice" class="chat-notice" hidden></p>
