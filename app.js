@@ -30,7 +30,7 @@ function normalizeChatSettings(raw){
   });
   return {pinned,muted,drafts,appearance};
 }
-const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], favoriteFriendIds:new Set(), blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingUndoSend:null, undoSendTimer:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, homeSearchQuery:"", homeSearchTab:"messages", homeSearchMessages:[], homeSearchProfiles:[], homeSearchLoading:false, homeSearchErrors:{messages:"",profiles:""}, homeSearchTimer:null, homeSearchRequestId:0, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
+const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], favoriteFriendIds:new Set(), blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingUndoSend:null, undoSendTimer:null, undoCountdownInterval:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, homeSearchQuery:"", homeSearchTab:"messages", homeSearchMessages:[], homeSearchProfiles:[], homeSearchLoading:false, homeSearchErrors:{messages:"",profiles:""}, homeSearchTimer:null, homeSearchRequestId:0, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function appendFormattedMessageText(parent,value){
@@ -3057,16 +3057,38 @@ async function uploadMessageImage(file,path){
 function renderUndoSend(){
   const bar=$("message-undo-bar");if(!bar)return;
   const pending=S.pendingUndoSend;
-  const visible=!!pending&&pending.expiresAt>Date.now()&&pending.conversationId===S.active;
+  const remainingMs=pending?pending.expiresAt-Date.now():0;
+  const visible=!!pending&&remainingMs>0&&pending.conversationId===S.active;
   bar.hidden=!visible;
+  const countdown=$("message-undo-countdown");
+  if(countdown&&pending&&remainingMs>0){
+    countdown.textContent="Undo available · "+Math.ceil(remainingMs/1000)+"s";
+  }
+  if((!pending||remainingMs<=0)&&S.undoCountdownInterval){
+    clearInterval(S.undoCountdownInterval);
+    S.undoCountdownInterval=null;
+  }
 }
 function armUndoSend(message){
   if(S.undoSendTimer)clearTimeout(S.undoSendTimer);
+  if(S.undoCountdownInterval)clearInterval(S.undoCountdownInterval);
+  S.undoCountdownInterval=null;
   const expiresAt=message?._undoExpiresAt||0;
-  if(!message||expiresAt<=Date.now()){S.pendingUndoSend=null;renderUndoSend();return;}
+  if(!message||expiresAt<=Date.now()){
+    S.pendingUndoSend=null;
+    renderUndoSend();
+    return;
+  }
   S.pendingUndoSend={message,conversationId:message.conversation_id,expiresAt};
+  S.undoCountdownInterval=setInterval(renderUndoSend,200);
   S.undoSendTimer=setTimeout(()=>{
-    if(S.pendingUndoSend?.message.id===message.id){S.pendingUndoSend=null;S.undoSendTimer=null;renderUndoSend();}
+    if(S.pendingUndoSend?.message.id===message.id){
+      S.pendingUndoSend=null;
+      S.undoSendTimer=null;
+      if(S.undoCountdownInterval)clearInterval(S.undoCountdownInterval);
+      S.undoCountdownInterval=null;
+      renderUndoSend();
+    }
   },Math.max(0,expiresAt-Date.now()));
   renderUndoSend();
 }
@@ -3085,7 +3107,8 @@ async function undoSendMessage(message){
   }
   if(S.pendingUndoSend?.message.id===message.id){
     if(S.undoSendTimer)clearTimeout(S.undoSendTimer);
-    S.undoSendTimer=null;S.pendingUndoSend=null;
+    if(S.undoCountdownInterval)clearInterval(S.undoCountdownInterval);
+    S.undoSendTimer=null;S.undoCountdownInterval=null;S.pendingUndoSend=null;
   }
   S.messages=S.messages.filter(item=>item.id!==message.id);
   if(S.active===message.conversation_id)await loadMessages(message.conversation_id);
