@@ -7,7 +7,7 @@
 <meta name="description" content="Private direct and group conversations.">
 <title>Gather</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="app.css?v=20261102-75">
+<link rel="stylesheet" href="app.css?v=20261102-76">
 <script src="https://unpkg.com/@supabase/supabase-js@2.118.0"></script>
 <script>
 if (!window.supabase?.createClient) {
@@ -15,7 +15,7 @@ if (!window.supabase?.createClient) {
 }
 </script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script defer src="app.js?v=20261102-84" onerror="const s=document.getElementById('auth-status');if(s){s.textContent='Gather could not load its app script. Check your connection and reload the page.';s.classList.add('error');}"></script>
+<script defer src="app.js?v=20261102-85" onerror="const s=document.getElementById('auth-status');if(s){s.textContent='Gather could not load its app script. Check your connection and reload the page.';s.classList.add('error');}"></script>
 </head>
 <body>
 <section id="auth" class="auth-shell">
@@ -126,8 +126,21 @@ if (!window.supabase?.createClient) {
         </section>
 
         <div class="workspace-search-controls">
-          <label class="workspace-search">Search conversations<input id="filter" class="search" type="search" placeholder="Search by name or message"></label>
+          <label class="workspace-search">Search Gather<input id="filter" class="search" type="search" placeholder="Search messages or profiles"></label>
         </div>
+<div id="home-search-results" class="home-search-results" hidden>
+          <nav class="home-search-tabs" role="tablist" aria-label="Search sections">
+            <button id="home-search-tab-messages" class="home-search-tab active" type="button" role="tab" aria-selected="true" data-home-search-tab="messages">Messages <span id="home-search-messages-count">0</span></button>
+            <button id="home-search-tab-profiles" class="home-search-tab" type="button" role="tab" aria-selected="false" data-home-search-tab="profiles">Profiles <span id="home-search-profiles-count">0</span></button>
+          </nav>
+          <section id="home-search-messages-panel" class="home-search-panel" role="tabpanel" aria-labelledby="home-search-tab-messages">
+            <div id="home-search-messages-list" class="home-search-results-list"><p class="muted tiny">Type at least 2 characters to search.</p></div>
+          </section>
+          <section id="home-search-profiles-panel" class="home-search-panel" role="tabpanel" aria-labelledby="home-search-tab-profiles" hidden>
+            <div id="home-search-profiles-list" class="home-search-results-list"><p class="muted tiny">Type at least 2 characters to search.</p></div>
+          </section>
+        </div>
+        <div id="home-browse-content">
         <div class="conversation-selection-toolbar">
           <button id="toggle-conversation-select" class="secondary-action conversation-select-toggle" type="button" aria-pressed="false">Select conversations</button>
           <div id="conversation-selection-actions" class="conversation-selection-actions" hidden>
@@ -164,6 +177,7 @@ if (!window.supabase?.createClient) {
           <div class="folder-panel-heading"><strong>Group chats</strong><span id="group-chat-count" class="section-count">0</span></div>
           <div id="group-chat-list" class="workspace-chat-list"><p class="muted tiny">Your group chats will appear here.</p></div>
         </section>
+        </div>
       </section>
       <section id="chat" class="chat" hidden>
         <header class="chat-head"><button id="back" class="back" aria-label="Back to home">←</button><button id="conversation-drawer-toggle" class="outline conversation-drawer-toggle" type="button" aria-label="Open conversations" aria-controls="in-chat-sidebar" aria-expanded="false">☰</button><span id="chat-avatar" class="avatar">?</span><div class="chat-title"><button id="chat-title" class="chat-title-profile" type="button" hidden></button><small id="chat-subtitle"></small><small id="chat-presence-status" class="presence-label" hidden></small><small id="chat-typing-indicator" class="chat-typing-indicator" aria-live="polite" hidden></small></div><button id="chat-actions-open" class="outline chat-actions-trigger" type="button" aria-label="Open chat options" aria-haspopup="dialog">Chat options <span aria-hidden="true">⌄</span></button></header>
