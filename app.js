@@ -3474,6 +3474,10 @@ function setAdminModeSection(section){
   });
   if(section==="overview")loadAdminOverview();
   if(section==="accounts"&&!S.admin.users.length)loadAdminAccounts(true);
+  if(section==="messages"){
+    if(!S.admin.users.length)loadAdminAccounts(true);
+    else renderAdminMessageRecipients();
+  }
   if(section==="activity")loadAdminActivity();
   if(section==="approvals")loadAdminApprovals();
 }
@@ -3617,6 +3621,7 @@ async function loadAdminAccounts(reset=false){
     S.admin.hasMore=!!result.has_more;
     renderAdminAccounts();
     renderAdminAccountDetail();
+    renderAdminMessageRecipients();
   }catch(error){
     $("admin-account-list").replaceChildren(el("p","status error",error.message));
   }finally{
@@ -3697,23 +3702,46 @@ function renderAdminAccountDetail(){
   banner.value=user.banner_style||"violet";
   const bannerLabel=el("label");bannerLabel.append(el("span","","Profile banner"),banner);form.append(bannerLabel);
   const actions=el("div","admin-account-form-actions");
-  const messageAsAdmin=el("button","secondary-action","Message as Gather Admin");
-  messageAsAdmin.type="button";
-  messageAsAdmin.disabled=user.id===S.user.id;
-  if(messageAsAdmin.disabled)messageAsAdmin.title="You cannot message your own account.";
   const save=el("button","primary","Save profile");save.type="submit";
   const ban=el("button","outline",banned?"":"Ban account");ban.id="admin-account-ban";ban.type="button";ban.hidden=banned;
   const unban=el("button","outline","Unban account");unban.id="admin-account-unban";unban.type="button";unban.hidden=!banned;
   const remove=el("button","admin-danger-button","Delete account");remove.id="admin-account-delete";remove.type="button";
-  actions.append(messageAsAdmin,save,ban,unban,remove);form.append(actions);
+  actions.append(save,ban,unban,remove);form.append(actions);
   const saveStatus=el("p","tiny muted");saveStatus.id="admin-account-save-status";
   const note=el("p","tiny muted","Emails are read from Auth. Passwords and password hashes are never available in this screen.");
   detail.append(header,meta,form,saveStatus,note);
   form.addEventListener("submit",saveAdminAccountProfile);
-  messageAsAdmin.addEventListener("click",()=>openAdminDirectMessage(user.id));
   ban.addEventListener("click",()=>banAdminAccount(user.id));
   unban.addEventListener("click",()=>unbanAdminAccount(user.id));
   remove.addEventListener("click",()=>deleteAdminAccount(user.id));
+}
+function renderAdminMessageRecipients(){
+  const list=$("admin-message-recipient-list");
+  const more=$("admin-message-more");
+  if(!list||!more)return;
+  list.replaceChildren();
+  const term=($("admin-message-search")?.value||"").trim().toLowerCase();
+  const users=S.admin.users.filter(user=>user.id!==S.user?.id&&
+    [user.display_name,user.username,user.email,user.id].join(" ").toLowerCase().includes(term));
+  if(!users.length){
+    list.append(el("p","muted tiny",term?"No loaded accounts match that search.":"No other member accounts were found."));
+  }else{
+    users.forEach(user=>{
+      const button=el("button","admin-account-item");
+      button.type="button";
+      button.append(
+        el("strong","",user.display_name||user.username||"Unnamed account"),
+        el("small","",user.username?"@"+user.username:"No username set"),
+        el("small","",user.email||"Gather member account"),
+        el("small","admin-account-item-status","Send official message")
+      );
+      button.addEventListener("click",()=>openAdminDirectMessage(user.id));
+      list.append(button);
+    });
+  }
+  more.hidden=!S.admin.hasMore;
+  more.disabled=S.admin.loading;
+  more.textContent=S.admin.loading?"Loading members…":"Load more members";
 }
 function openAdminDirectMessage(userId){
   if(!isFeedbackAdmin(S.user)){toast("Only Gather Admin can send official direct messages.");return;}
@@ -4514,6 +4542,11 @@ function wire(){
   $("admin-accounts-refresh").addEventListener("click",()=>loadAdminAccounts(true));
   $("admin-account-search").addEventListener("input",renderAdminAccounts);
   $("admin-direct-message-form").addEventListener("submit",sendAdminDirectMessage);
+  $("admin-message-search").addEventListener("input",renderAdminMessageRecipients);
+  $("admin-message-more").addEventListener("click",async()=>{
+    await loadAdminAccounts(false);
+    renderAdminMessageRecipients();
+  });
   $("admin-accounts-more").addEventListener("click",()=>loadAdminAccounts(false));
   $("admin-activity-refresh").addEventListener("click",loadAdminActivity);
   $("admin-overview-activity-refresh").addEventListener("click",loadAdminOverview);
