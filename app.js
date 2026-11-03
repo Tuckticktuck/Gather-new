@@ -30,7 +30,7 @@ function normalizeChatSettings(raw){
   });
   return {pinned,muted,drafts,appearance};
 }
-const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], favoriteFriendIds:new Set(), friendActivityPosts:[], friendActivityChannel:null, blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingUndoSend:null, undoSendTimer:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
+const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], favoriteFriendIds:new Set(), blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingUndoSend:null, undoSendTimer:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, directStatus:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function appendFormattedMessageText(parent,value){
@@ -612,10 +612,9 @@ function showAuth() {
   $("password-recovery-modal").hidden=true;S.passwordRecovery=false;
   if(S.channel){db.removeChannel(S.channel);S.channel=null;}
   if(S.requestChannel){db.removeChannel(S.requestChannel);S.requestChannel=null;}
-  if(S.friendActivityChannel){db.removeChannel(S.friendActivityChannel);S.friendActivityChannel=null;}
   if(S.undoSendTimer){clearTimeout(S.undoSendTimer);S.undoSendTimer=null;}
   S.pendingUndoSend=null;renderUndoSend();
-  S.friendActivityPosts=[];S.favoriteFriendIds=new Set();
+  S.favoriteFriendIds=new Set();
   if(S.readChannel){db.removeChannel(S.readChannel);S.readChannel=null;}
   if(S.pollChannel){db.removeChannel(S.pollChannel);S.pollChannel=null;}
   if(S.notificationChannel){db.removeChannel(S.notificationChannel);S.notificationChannel=null;}
@@ -711,7 +710,6 @@ async function signedIn(user,retry=false){
     await loadAnnouncements();subscribeAnnouncements();
     setChatLoadStatus("");
     if(!await loadFriends())console.warn("Gather friend list could not be loaded.");
-    await loadFriendActivity();subscribeFriendActivity();
     if(!await loadBlocked())console.warn("Gather blocked list could not be loaded.");
     renderChats();
   }catch(e){
@@ -823,7 +821,6 @@ async function loadFriends(){
   ensurePresenceDisplayTimer();
   await syncOwnPresence();
   renderFriends();renderChats();
-  void loadFriendActivity();
   return true;
 }
 
@@ -839,77 +836,6 @@ async function toggleFavoriteFriend(friendId){
   renderFriends();renderChats();
   toast(isFavorite?"Friend removed from favorites.":"Friend added to favorites.");
 }
-function renderFriendActivity(){
-  const list=$("friend-activity-list");if(!list)return;
-  list.replaceChildren();
-  if(!S.friendActivityPosts.length){
-    list.append(el("p","muted tiny friend-activity-empty","No friend activity to show yet."));
-    return;
-  }
-  S.friendActivityPosts.forEach(post=>{
-    const profile=S.profiles[post.author_id]||{id:post.author_id,display_name:"Gather member",username:"member"};
-    const card=el("article","friend-activity-item");
-    const top=el("div","friend-activity-top");
-    const avatarButton=el("button","friend-activity-avatar-button");
-    avatarButton.type="button";avatarButton.setAttribute("aria-label","Open "+profile.display_name+"'s profile");
-    avatarButton.append(avatar(profile.display_name,profile.avatar_data));
-    avatarButton.addEventListener("click",()=>openPublicProfile(post.author_id));
-    const details=el("div","friend-activity-author");
-    const name=el("button","friend-activity-name",profile.display_name);
-    name.type="button";name.addEventListener("click",()=>openPublicProfile(post.author_id));
-    details.append(name,el("small","muted","@"+(profile.username||"member")+" · "+formatLastSeen(post.created_at)));
-    top.append(avatarButton,details);
-    if(post.author_id===S.user?.id){
-      const remove=el("button","friend-activity-delete","Delete");
-      remove.type="button";remove.setAttribute("aria-label","Delete your activity update");
-      remove.addEventListener("click",()=>deleteFriendActivity(post));
-      top.append(remove);
-    }
-    card.append(top,el("p","friend-activity-body",post.body));
-    list.append(card);
-  });
-}
-async function loadFriendActivity(){
-  if(!S.user)return false;
-  const userId=S.user.id,list=$("friend-activity-list");
-  if(list&&!S.friendActivityPosts.length)list.replaceChildren(el("p","muted tiny friend-activity-empty","Loading friend activity…"));
-  const result=await db.from("friend_activity_posts")
-    .select("id,author_id,body,created_at")
-    .order("created_at",{ascending:false})
-    .limit(40);
-  if(S.user?.id!==userId)return false;
-  if(result.error){
-    console.warn("Friend activity could not be loaded:",result.error.message);
-    if(list){list.replaceChildren(el("p","muted tiny friend-activity-empty","Friend activity couldn't be loaded. Please try again."));}
-    return false;
-  }
-  S.friendActivityPosts=result.data||[];
-  const missing=[...new Set(S.friendActivityPosts.map(post=>post.author_id).filter(id=>!S.profiles[id]))];
-  if(missing.length){
-    const profiles=await fetchProfileRecords(missing);
-    if(profiles.error)console.warn("Friend activity profiles could not be loaded:",profiles.error.message);
-    else profiles.data.forEach(profile=>S.profiles[profile.id]=profile);
-  }
-  if(S.user?.id!==userId)return false;
-  renderFriendActivity();return true;
-}
-async function deleteFriendActivity(post){
-  if(!S.user||post?.author_id!==S.user.id)return;
-  if(!confirm("Delete this activity update?"))return;
-  const result=await db.from("friend_activity_posts").delete().eq("id",post.id).eq("author_id",S.user.id);
-  if(result.error){toast("Activity update could not be deleted: "+result.error.message);return;}
-  S.friendActivityPosts=S.friendActivityPosts.filter(item=>item.id!==post.id);
-  renderFriendActivity();toast("Activity update deleted.");
-}
-function subscribeFriendActivity(){
-  if(S.friendActivityChannel){db.removeChannel(S.friendActivityChannel);S.friendActivityChannel=null;}
-  if(!S.user)return;
-  const uid=S.user.id;
-  S.friendActivityChannel=db.channel("friend-activity-"+uid)
-    .on("postgres_changes",{event:"*",schema:"public",table:"friend_activity_posts"},()=>{void loadFriendActivity();})
-    .subscribe();
-}
-
 function formatLastSeen(value){
   if(!value)return "";
   const seconds=Math.max(0,Math.floor((Date.now()-new Date(value).getTime())/1000));
@@ -4358,7 +4284,7 @@ document.querySelectorAll("[data-folder]").forEach(b=>b.addEventListener("click"
   $("password-form").addEventListener("submit",changePassword);
   $("send-form").addEventListener("submit",sendMessage);
   $("message-undo").addEventListener("click",undoLastSend);
-  $("friend-activity-refresh").addEventListener("click",()=>loadFriendActivity());$("message-image-file").addEventListener("change",handleMessageImageFile);$("composer-more-trigger").addEventListener("click",event=>{event.stopPropagation();toggleComposerMoreMenu();});$("composer-more-menu").addEventListener("click",event=>event.stopPropagation());$("message-create-poll").addEventListener("click",openPollComposer);$("poll-form").addEventListener("submit",submitPoll);$("poll-add-option").addEventListener("click",addPollOptionInput);$("poll-cancel").addEventListener("click",()=>$("poll-create-modal").hidden=true);$("saved-messages-open").addEventListener("click",openSavedMessages);document.addEventListener("click",event=>{const wrap=$("composer-more-wrap");if(wrap&&!wrap.contains(event.target))closeComposerMoreMenu();if(S.openReactionPickerMessageId&&!event.target.closest(".message-reaction-area")){S.openReactionPickerMessageId=null;if(S.active)renderMessages(true);}});
+  $("message-image-file").addEventListener("change",handleMessageImageFile);$("composer-more-trigger").addEventListener("click",event=>{event.stopPropagation();toggleComposerMoreMenu();});$("composer-more-menu").addEventListener("click",event=>event.stopPropagation());$("message-create-poll").addEventListener("click",openPollComposer);$("poll-form").addEventListener("submit",submitPoll);$("poll-add-option").addEventListener("click",addPollOptionInput);$("poll-cancel").addEventListener("click",()=>$("poll-create-modal").hidden=true);$("saved-messages-open").addEventListener("click",openSavedMessages);document.addEventListener("click",event=>{const wrap=$("composer-more-wrap");if(wrap&&!wrap.contains(event.target))closeComposerMoreMenu();if(S.openReactionPickerMessageId&&!event.target.closest(".message-reaction-area")){S.openReactionPickerMessageId=null;if(S.active)renderMessages(true);}});
   $("message").addEventListener("input",e=>{e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,120)+"px";updateLocalTyping();saveActiveChatDraft();});
   $("message").addEventListener("blur",()=>stopTyping(true));
   $("share-online-status").addEventListener("change",event=>{
