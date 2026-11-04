@@ -548,8 +548,10 @@ function updateUnreadSummary(){
     workspaceSummary.textContent=total+" unread "+(total===1?"message":"messages")+" across your conversations";
     workspaceSummary.hidden=total===0;
   }
+  const markAllButton=$("mark-all-unread-messages");
+  if(markAllButton)markAllButton.hidden=total===0;
 }
-async function loadUnreadCounts(){
+  async function loadUnreadCounts(){
   if(!S.user)return false;
   const result=await db.rpc("get_my_unread_counts");
   if(result.error){console.warn("Unread counts could not be loaded:",result.error.message);S.unreadCountsLoaded=false;updateUnreadSummary();return false;}
@@ -583,6 +585,73 @@ async function markConversationRead(chatId){
   if(result.error){console.warn("Conversation read status could not be saved:",result.error.message);return false;}
   await markConversationNotificationsRead(chatId);
   await loadUnreadCounts();renderChats();return true;
+}
+async function markAllUnreadMessagesRead(){
+  const button=$("mark-all-unread-messages");
+  if(!S.user||button?.disabled)return;
+
+  if(button){
+    button.disabled=true;
+    button.textContent="Marking as read…";
+  }
+
+  try{
+    const loaded=await loadUnreadCounts();
+    if(!loaded){
+      toast("Unread conversations could not be loaded. Please try again.");
+      return;
+    }
+
+    const conversationIds=Object.keys(S.unreadCounts)
+      .filter(id=>Number(S.unreadCounts[id])>0);
+
+    if(!conversationIds.length){
+      toast("You're all caught up.");
+      return;
+    }
+
+    let failed=0;
+
+    for(const conversationId of conversationIds){
+      const result=await db.rpc("mark_conversation_read",{
+        p_conversation_id:conversationId
+      });
+
+      if(result.error){
+        failed++;
+        console.warn(
+          "Conversation could not be marked read:",
+          conversationId,
+          result.error.message
+        );
+        continue;
+      }
+
+      // Also clear message notifications for this conversation.
+      await markConversationNotificationsRead(conversationId);
+    }
+
+    const refreshed=await loadUnreadCounts();
+    renderChats();
+
+    if(failed){
+      toast(failed+" of "+conversationIds.length+
+        " conversations could not be marked read. Please try again.");
+    }else if(!refreshed){
+      toast("Messages were marked read, but the unread count could not be refreshed.");
+    }else{
+      toast("All unread messages marked as read.");
+    }
+  }catch(error){
+    console.error("Could not mark all unread messages as read:",error);
+    toast("Unread messages could not all be marked as read. Please try again.");
+  }finally{
+    if(button){
+      button.disabled=false;
+      button.textContent="Mark all unread as read";
+    }
+    updateUnreadSummary();
+  }
 }
 async function markActiveConversationUnread(){
   const conversationId=S.active;
@@ -4719,6 +4788,7 @@ function toggleComposerMoreMenu(){
 }
 function wire(){
   installModalBackButtons();
+  $("mark-all-unread-messages").addEventListener("click",markAllUnreadMessagesRead);
   document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>authMode(b.dataset.mode)));
   $("forgot-password").addEventListener("click",requestPasswordReset);
   $("recovery-password-form").addEventListener("submit",completePasswordRecovery);
