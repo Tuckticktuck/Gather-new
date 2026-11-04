@@ -107,7 +107,10 @@ if (!window.supabase?.createClient) {
           <button class="message-restriction-retry outline" type="button" hidden>Retry check</button>
         </div>
         <header class="workspace-header">
-          <div><p class="eyebrow">YOUR SPACE</p><h1>Your conversations</h1><p class="muted workspace-subtitle">Find a conversation, manage your connections, or pick up where you left off.</p><p id="workspace-unread-summary" class="workspace-unread-summary" hidden></p></div>
+          <div><p class="eyebrow">YOUR SPACE</p><h1>Your conversations</h1><p class="muted workspace-subtitle">Find a conversation, manage your connections, or pick up where you left off.</p><p id="workspace-unread-summary" class="workspace-unread-summary" hidden></p><p id="workspace-unread-summary" class="workspace-unread-summary" hidden></p>
+<button id="mark-all-unread-messages" class="secondary-action" type="button" hidden>
+  Mark all unread as read
+</button></div>
           <div class="workspace-actions">
             <button id="empty-private" class="primary" type="button">＋ New private message</button>
             <button id="empty-group" class="secondary-action" type="button">＋ Create group chat</button>
