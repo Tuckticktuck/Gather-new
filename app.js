@@ -13,7 +13,7 @@ const ACCENTS = {
   teal:{accent:"#9be2e4",strong:"#50b9be",ink:"#14373a",soft:"#234649",border:"#9be2e455"}
 };
 const FONT_SCALES = {small:"0.9",normal:"1",large:"1.15"};
-const MESSAGE_REACTION_EMOJIS = ["👍","❤️","😂","😮","😢","🎉"];
+const MESSAGE_REACTION_EMOJIS = ["👍","❤️","😂","🔥","😢","🎉"];
 const DEFAULT_PREFERENCES = {accent:"lavender",fontSize:"normal",theme:"dark",messageNotificationMode:"temporary",groupUnreadMessages:false,shareOnlineStatus:true,quietHoursEnabled:false,quietHoursStart:"22:00",quietHoursEnd:"07:00"};
 const DEFAULT_CHAT_SETTINGS = {pinned:[],muted:{},drafts:{},appearance:{}};
 const CHAT_BACKGROUNDS = {default:null,slate:"#202a37",forest:"#1d302b",plum:"#302438",sand:"#40382d"};
