@@ -482,6 +482,7 @@ if (!window.supabase?.createClient) {
     <label>Username<input id="profile-username" minlength="3" maxlength="24" pattern="[a-z0-9_]{3,24}" required><small>3–24 lowercase letters, numbers, or underscores.</small></label>
     <label>Bio <small class="muted">Up to 160 characters</small><textarea id="profile-bio" rows="3" maxlength="160" placeholder="A little about you…"></textarea></label>
     <label>Pronouns <small class="muted">Optional</small><input id="profile-pronouns" maxlength="35" placeholder="e.g. they/them"></label>
+    <label>Birth date <small class="muted">Optional</small><input id="profile-birth-date" type="date"></label>
     <label>Quick status <small class="muted">Up to 80 characters</small><input id="profile-status-message" maxlength="80" placeholder="What are you up to?"></label>
     <label>Profile highlights <small class="muted">Up to 3 short items, separated by commas</small><input id="profile-highlights" maxlength="125" placeholder="Music, art, games"></label>
     <label>Profile banner<select id="profile-banner-style"><option value="violet">Violet</option><option value="blue">Ocean blue</option><option value="mint">Mint</option><option value="rose">Rose</option><option value="amber">Amber</option><option value="teal">Teal</option></select></label>
