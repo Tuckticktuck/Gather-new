@@ -1099,15 +1099,24 @@ async function signedIn(user,retry=false){
   }finally{if(S.loading===user.id)S.loading=null;}
 }
 function chatTitle(c){
-  if(c.kind==="group")return c.title||"Group chat";
+  if(c.kind==="group")return c.title?.trim()||"Group chat";
   const other=c.members.find(m=>m.user_id!==S.user.id);
   if(c.admin_initiated&&other?.user_id===c.created_by)return "Gather Admin";
-  return other&&S.profiles[other.user_id]?S.profiles[other.user_id].display_name:"Direct message";
+  const profile=other&&S.profiles[other.user_id];
+  const displayName=profile?.display_name?.trim();
+  const username=profile?.username?.trim();
+  return displayName||(username?"@"+username:"Gather member");
 }
 function chatSub(c){
-  if(c.kind==="group"){const names=c.members.map(m=>S.profiles[m.user_id]?.display_name||"Member");return c.members.length+" members"+(c.description?" · "+c.description:" · "+names.slice(0,3).join(", "));}
-  const other=c.members.find(m=>m.user_id!==S.user.id),p=other&&S.profiles[other.user_id];
-  return p?"@"+p.username:"Private conversation";
+  if(c.kind==="group"){
+    const names=c.members.map(member=>{
+      const profile=S.profiles[member.user_id];
+      return profile?.display_name?.trim()||(profile?.username?.trim()?"@"+profile.username.trim():"Member");
+    });
+    return c.members.length+" members"+(c.description?" · "+c.description:" · "+names.slice(0,3).join(", "));
+  }
+  const other=c.members.find(m=>m.user_id!==S.user.id),profile=other&&S.profiles[other.user_id];
+  return profile?.username?.trim()?"@"+profile.username.trim():profile?.display_name?.trim()||"Private conversation";
 }
 async function loadChats(){
   if(!S.user)return false;
@@ -2150,7 +2159,7 @@ function renderChatSection(kind,listId,countId,term,sourceChats=null){
     copy.append(name);
     let preview=c.last?(c.last.body||(c.last.attachment_path?"Sent an image":"")):chatSub(c);
     if(c.last&&c.last.sender_id===S.user.id)preview="You: "+preview;
-    else if(c.kind==="group"&&c.last)preview=(S.profiles[c.last.sender_id]?.display_name||"Member")+": "+preview;
+    else if(c.kind==="group"&&c.last){const senderProfile=S.profiles[c.last.sender_id];preview=(senderProfile?.display_name?.trim()||(senderProfile?.username?.trim()?"@"+senderProfile.username.trim():"Member"))+": "+preview;}
     copy.append(el("span","",preview));
     if(S.chatSettings.drafts[c.id])copy.append(el("small","chat-draft-label","Draft saved"));
     if(c.kind==="direct")appendFriendPresenceLabel(copy,peer?.user_id);
