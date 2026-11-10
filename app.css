@@ -2167,3 +2167,174 @@ button:not(:disabled):active{transform:translateY(1px) scale(.985)}
 .profile-age-section button{width:100%}
 .profile-age-section .status{margin:0}
 .admin-age-change-heading{margin-top:22px}
+
+
+/* Gather motion polish: give both entrances and exits the same calm timing. */
+:root{
+  --gather-motion-ease:cubic-bezier(.22,.68,0,1);
+  --gather-motion-fast:160ms;
+  --gather-motion:240ms;
+}
+button:not(:disabled){
+  transition:
+    color var(--gather-motion-fast) ease,
+    background-color var(--gather-motion-fast) ease,
+    border-color var(--gather-motion-fast) ease,
+    box-shadow var(--gather-motion-fast) ease,
+    opacity var(--gather-motion-fast) ease,
+    transform var(--gather-motion-fast) var(--gather-motion-ease),
+    filter var(--gather-motion-fast) ease;
+}
+:where(input,textarea,select){
+  transition:
+    border-color var(--gather-motion-fast) ease,
+    background-color var(--gather-motion-fast) ease,
+    box-shadow var(--gather-motion-fast) ease,
+    opacity var(--gather-motion-fast) ease;
+}
+.chat-item,.person,.request-item,.friend-list-item,.folder-tab,
+.notification-center-item,.pinned-message-banner,.composer,.bubble,
+.profile-pill,.chat-section summary,.secondary-action,.outline{
+  transition:
+    color var(--gather-motion-fast) ease,
+    background-color var(--gather-motion-fast) ease,
+    border-color var(--gather-motion-fast) ease,
+    box-shadow var(--gather-motion-fast) ease,
+    opacity var(--gather-motion-fast) ease,
+    transform var(--gather-motion-fast) var(--gather-motion-ease);
+}
+
+/* Modals fade out before their hidden state removes them from layout.
+   Discrete display transitions are supported by current Safari and Chromium. */
+.overlay{
+  opacity:1;
+  transition:
+    opacity var(--gather-motion) var(--gather-motion-ease),
+    display var(--gather-motion) allow-discrete;
+  transition-behavior:allow-discrete;
+}
+.overlay[hidden]{
+  opacity:0;
+  pointer-events:none;
+}
+.overlay:not([hidden]){opacity:1}
+.overlay>.modal{
+  opacity:1;
+  transform:translateY(0) scale(1);
+  transition:
+    opacity var(--gather-motion) var(--gather-motion-ease),
+    transform var(--gather-motion) var(--gather-motion-ease);
+  will-change:opacity,transform;
+}
+.overlay[hidden]>.modal{
+  opacity:0;
+  transform:translateY(10px) scale(.985);
+}
+.overlay:not([hidden])>.modal{animation:none}
+@starting-style{
+  .overlay:not([hidden]){opacity:0}
+  .overlay:not([hidden])>.modal{
+    opacity:0;
+    transform:translateY(10px) scale(.985);
+  }
+}
+
+/* Floating menus now ease in and out instead of abruptly vanishing. */
+.message-action-menu,.composer-more-menu{
+  opacity:1;
+  transform:translateY(0) scale(1);
+  transform-origin:top center;
+  transition:
+    opacity var(--gather-motion-fast) var(--gather-motion-ease),
+    transform var(--gather-motion-fast) var(--gather-motion-ease),
+    display var(--gather-motion-fast) allow-discrete;
+  transition-behavior:allow-discrete;
+}
+.message-action-menu[hidden],.composer-more-menu[hidden]{
+  opacity:0;
+  transform:translateY(6px) scale(.98);
+  pointer-events:none;
+}
+@starting-style{
+  .message-action-menu:not([hidden]),.composer-more-menu:not([hidden]){
+    opacity:0;
+    transform:translateY(6px) scale(.98);
+  }
+}
+
+/* Notifications slide and fade away cleanly, including manual dismissal. */
+.message-notifications{
+  opacity:1;
+  transform:translateY(0);
+  transition:
+    opacity var(--gather-motion) var(--gather-motion-ease),
+    transform var(--gather-motion) var(--gather-motion-ease),
+    display var(--gather-motion) allow-discrete;
+  transition-behavior:allow-discrete;
+}
+.message-notifications[hidden]{
+  opacity:0;
+  transform:translateY(-8px);
+  pointer-events:none;
+}
+.message-notification{
+  transition:
+    opacity var(--gather-motion) var(--gather-motion-ease),
+    transform var(--gather-motion) var(--gather-motion-ease),
+    border-color var(--gather-motion-fast) ease,
+    box-shadow var(--gather-motion-fast) ease;
+}
+.message-notification.is-dismissing{
+  opacity:0;
+  transform:translateX(12px) scale(.985);
+  pointer-events:none;
+}
+@starting-style{
+  .message-notifications:not([hidden]){
+    opacity:0;
+    transform:translateY(-8px);
+  }
+}
+
+/* Keep the in-chat conversation drawer and its backdrop in sync. */
+@media(max-width:720px){
+  .layout.show-chat.conversation-drawer-open .sidebar{
+    opacity:1;
+    transform:translateX(0);
+    transition:
+      opacity var(--gather-motion) var(--gather-motion-ease),
+      transform var(--gather-motion) var(--gather-motion-ease),
+      display var(--gather-motion) allow-discrete;
+    transition-behavior:allow-discrete;
+  }
+  .layout.show-chat:not(.conversation-drawer-open) .sidebar{
+    opacity:0;
+    transform:translateX(-12px);
+  }
+  .conversation-drawer-backdrop{
+    opacity:0;
+    transition:
+      opacity var(--gather-motion) var(--gather-motion-ease),
+      display var(--gather-motion) allow-discrete;
+    transition-behavior:allow-discrete;
+  }
+  .conversation-drawer-backdrop:not([hidden]){opacity:1}
+  @starting-style{
+    .layout.show-chat.conversation-drawer-open .sidebar{
+      opacity:0;
+      transform:translateX(-12px);
+    }
+    .conversation-drawer-backdrop:not([hidden]){opacity:0}
+  }
+}
+
+/* Toasts and selected controls respond with a softer, less abrupt motion. */
+.toast{
+  transition:
+    opacity var(--gather-motion) var(--gather-motion-ease),
+    transform var(--gather-motion) var(--gather-motion-ease),
+    background-color var(--gather-motion-fast) ease;
+}
+.chat-item:hover,.person:hover,.request-item:hover,.pinned-message-banner:hover{
+  transform:translateY(-1px);
+}
