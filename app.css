@@ -3055,3 +3055,30 @@ html[data-theme="light"]{
 @media(prefers-reduced-motion:reduce){
   .chat-permission-retry{transition:none}
 }
+
+
+/* Gather feature pack: compact archive, scheduling, events, shared media and history surfaces. */
+.feature-modal{width:min(100%,560px);display:flex;flex-direction:column;gap:12px}
+.feature-list{display:grid;gap:9px;max-height:56vh;overflow:auto}
+.feature-list-item{display:grid;gap:7px;padding:11px;border:1px solid var(--accent-outline-soft);border-radius:11px;background:var(--accent-panel-raised)}
+.feature-list-item p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.feature-list-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--muted);font-size:calc(10px * var(--font-scale,1))}
+.feature-list-actions{display:flex;flex-wrap:wrap;gap:6px}
+.feature-list-actions button{min-height:32px;width:auto;padding:6px 10px;font-size:calc(10px * var(--font-scale,1))}
+.feature-list-item button{width:auto}
+.search-filter-grid{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:8px}
+.search-filter-grid label,.settings-select-label{display:grid;gap:5px;color:var(--text);font-size:calc(10px * var(--font-scale,1));font-weight:650}
+.search-filter-grid input,.search-filter-grid select,.settings-select-label select{width:100%;min-width:0}
+.shared-media-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;max-height:62vh;overflow:auto}
+.shared-media-item{display:block;width:100%;padding:0;overflow:hidden;border:1px solid var(--line);border-radius:10px;background:var(--accent-panel-raised);aspect-ratio:1}
+.shared-media-item img{width:100%;height:100%;object-fit:cover}
+.image-viewer-modal{width:min(96vw,1000px);max-height:92vh;padding:44px 12px 12px;display:grid;place-items:center}
+.image-viewer-modal img{display:block;max-width:100%;max-height:80vh;object-fit:contain}
+.message-link{color:var(--accent-text);text-decoration:underline;text-underline-offset:2px;overflow-wrap:anywhere}
+#archived-panel .workspace-chat-list{margin-bottom:14px}
+@media(max-width:520px){
+  .search-filter-grid{grid-template-columns:1fr 1fr}
+  .search-filter-grid label:first-child{grid-column:1/-1}
+  .shared-media-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+  .feature-modal{max-height:92vh;padding:20px}
+}
