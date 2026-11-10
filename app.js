@@ -5629,6 +5629,8 @@ function wire(){
   $("group-events-open").addEventListener("click",()=>{$("chat-actions-modal").hidden=true;void openGroupEvents();});
   $("scheduled-messages-chat-open").addEventListener("click",()=>{$("chat-actions-modal").hidden=true;$("scheduled-messages-modal").hidden=false;void loadScheduledMessages();});
   $("shared-media-open").addEventListener("click",()=>{$("chat-actions-modal").hidden=true;void openSharedMedia();});
+  $("shared-media-back").addEventListener("click",()=>{ $("shared-media-modal").hidden=true;renderChatOptions();$("chat-actions-modal").hidden=false; });
+  $("shared-media-modal").addEventListener("click",event=>{if(event.target===$("shared-media-modal")){$("shared-media-modal").hidden=true;renderChatOptions();$("chat-actions-modal").hidden=false;}});
   $("mark-chat-unread").addEventListener("click",markActiveConversationUnread);
   $("toggle-chat-pin").addEventListener("click",()=>togglePinnedConversation());
   $("toggle-chat-mute").addEventListener("click",()=>toggleMutedConversation());
