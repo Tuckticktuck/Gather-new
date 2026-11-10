@@ -256,7 +256,7 @@ function applyChatAppearance(id=S.active){
     chat.style.setProperty("--conversation-accent-ink",accent.ink);
     chat.style.setProperty("--conversation-accent-soft",accent.soft);
     chat.style.setProperty("--conversation-accent-border",accent.border);
-    chat.style.setProperty("--conversation-background",background||(S.preferences.theme==="light"?"#f5f6fa":"#171923"));
+    chat.style.setProperty("--conversation-background",background||(S.preferences.theme==="light"?"#f5f6fa":"#000000"));
   }else{
     ["--conversation-accent","--conversation-accent-ink","--conversation-accent-soft","--conversation-accent-border","--conversation-background"].forEach(key=>chat.style.removeProperty(key));
   }
@@ -3511,10 +3511,10 @@ function openAboutBlank(){
   try{
     const doc=target.document;
     doc.title="Gather";
-    doc.documentElement.style.cssText="width:100%;height:100%;margin:0;background:#171923;";
+    doc.documentElement.style.cssText="width:100%;height:100%;margin:0;background:#000000;";
     const viewport=doc.createElement("meta");viewport.name="viewport";viewport.content="width=device-width,initial-scale=1,viewport-fit=cover";
-    const theme=doc.createElement("meta");theme.name="theme-color";theme.content="#171923";
-    const style=doc.createElement("style");style.textContent="html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#171923}iframe{display:block;width:100%;height:100%;border:0;background:#171923}";
+    const theme=doc.createElement("meta");theme.name="theme-color";theme.content="#000000";
+    const style=doc.createElement("style");style.textContent="html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#000000}iframe{display:block;width:100%;height:100%;border:0;background:#000000}";
     doc.head.replaceChildren(viewport,theme,style);
     const frame=doc.createElement("iframe");
     frame.title="Gather";
