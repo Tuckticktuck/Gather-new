@@ -2782,3 +2782,177 @@ html:not([data-theme="light"]) .auth-shell{
     font-size:calc(10px * var(--font-scale,1));
   }
 }
+
+
+/* More expressive fades: slow enough to notice, still quick enough to feel responsive. */
+:root{
+  --gather-motion-ease:cubic-bezier(.2,.72,.22,1);
+  --gather-motion-fast:230ms;
+  --gather-motion:460ms;
+}
+
+/* Make screen-to-screen changes visibly dissolve and settle into place. */
+::view-transition-group(gather-main){
+  animation-duration:480ms;
+  animation-timing-function:var(--gather-motion-ease);
+}
+::view-transition-old(gather-main){
+  animation:gather-main-out 390ms ease-in both;
+}
+::view-transition-new(gather-main){
+  animation:gather-main-in 480ms var(--gather-motion-ease) both;
+}
+@keyframes gather-main-out{
+  from{opacity:1;transform:translateY(0) scale(1)}
+  to{opacity:0;transform:translateY(-12px) scale(.99)}
+}
+@keyframes gather-main-in{
+  from{opacity:0;transform:translateY(14px) scale(.99)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+@keyframes gather-fallback-screen-in{
+  from{opacity:0;transform:translateY(14px) scale(.99)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+.main.gather-screen-enter{
+  animation:gather-fallback-screen-in 460ms var(--gather-motion-ease) both;
+}
+
+/* The mobile/desktop workspace swap also gets a full fade instead of a quick flash. */
+@keyframes gather-view-enter{
+  from{opacity:0;transform:translateY(14px) scale(.99)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+.layout.show-chat .main,.layout.show-home .main{
+  animation:gather-view-enter 460ms var(--gather-motion-ease) both;
+}
+
+/* Give newly added messages and conversation rows a clearer entrance. */
+@keyframes gather-list-item-in{
+  from{opacity:0;transform:translateY(12px)}
+  to{opacity:1;transform:translateY(0)}
+}
+@keyframes gather-message-in{
+  from{opacity:0;transform:translateY(13px) scale(.985)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+.gather-list-enter{animation:gather-list-item-in 350ms var(--gather-motion-ease) both}
+.gather-message-enter{animation:gather-message-in 380ms var(--gather-motion-ease) both}
+
+/* Clearer modal, popover, notification and drawer fades in both directions. */
+.overlay{
+  transition:
+    opacity 460ms var(--gather-motion-ease),
+    display 460ms allow-discrete;
+  transition-behavior:allow-discrete;
+}
+.overlay>.modal{
+  transition:
+    opacity 460ms var(--gather-motion-ease),
+    transform 460ms var(--gather-motion-ease);
+}
+.overlay[hidden]>.modal{
+  opacity:0;
+  transform:translateY(18px) scale(.975);
+}
+@starting-style{
+  .overlay:not([hidden])>.modal{
+    opacity:0;
+    transform:translateY(18px) scale(.975);
+  }
+}
+.message-action-menu,.composer-more-menu{
+  transition:
+    opacity 280ms var(--gather-motion-ease),
+    transform 280ms var(--gather-motion-ease),
+    display 280ms allow-discrete;
+  transition-behavior:allow-discrete;
+}
+.message-action-menu[hidden],.composer-more-menu[hidden]{
+  opacity:0;
+  transform:translateY(12px) scale(.97);
+}
+@starting-style{
+  .message-action-menu:not([hidden]),.composer-more-menu:not([hidden]){
+    opacity:0;
+    transform:translateY(12px) scale(.97);
+  }
+}
+.message-notifications{
+  transition:
+    opacity 460ms var(--gather-motion-ease),
+    transform 460ms var(--gather-motion-ease),
+    display 460ms allow-discrete;
+  transition-behavior:allow-discrete;
+}
+.message-notifications[hidden]{
+  opacity:0;
+  transform:translateY(-16px);
+}
+.message-notification{
+  transition:
+    opacity 460ms var(--gather-motion-ease),
+    transform 460ms var(--gather-motion-ease),
+    border-color 230ms ease,
+    box-shadow 230ms ease;
+}
+.message-notification.is-dismissing{
+  opacity:0;
+  transform:translateX(22px) scale(.975);
+  pointer-events:none;
+}
+@media(max-width:720px){
+  .layout.show-chat.conversation-drawer-open .sidebar,
+  .layout.show-chat:not(.conversation-drawer-open) .sidebar{
+    transition:
+      opacity 460ms var(--gather-motion-ease),
+      transform 460ms var(--gather-motion-ease),
+      display 460ms allow-discrete;
+    transition-behavior:allow-discrete;
+  }
+  .layout.show-chat:not(.conversation-drawer-open) .sidebar{
+    opacity:0;
+    transform:translateX(-22px);
+  }
+  .conversation-drawer-backdrop{
+    transition:
+      opacity 460ms var(--gather-motion-ease),
+      display 460ms allow-discrete;
+    transition-behavior:allow-discrete;
+  }
+}
+
+/* Toasts and notification-center entries should visibly appear and disappear. */
+.toast{
+  transition:
+    opacity 420ms var(--gather-motion-ease),
+    transform 420ms var(--gather-motion-ease),
+    background-color 230ms ease;
+}
+@keyframes gather-notification-enter{
+  from{opacity:0;transform:translateY(12px)}
+  to{opacity:1;transform:translateY(0)}
+}
+#notifications-list .notification-center-item:nth-child(-n+5){
+  animation:gather-notification-enter 340ms var(--gather-motion-ease) both;
+}
+
+/* Respect the device's reduced-motion setting. */
+@media(prefers-reduced-motion:reduce){
+  :root{
+    --gather-motion-fast:1ms;
+    --gather-motion:1ms;
+  }
+  ::view-transition-group(gather-main),
+  ::view-transition-old(gather-main),
+  ::view-transition-new(gather-main){animation:none!important}
+  .main.gather-screen-enter,
+  .layout.show-chat .main,.layout.show-home .main,
+  .gather-list-enter,.gather-message-enter,
+  #notifications-list .notification-center-item{animation:none!important}
+  .overlay,.overlay>.modal,
+  .message-action-menu,.composer-more-menu,
+  .message-notifications,.message-notification,.toast{
+    transition:none!important;
+  }
+}
