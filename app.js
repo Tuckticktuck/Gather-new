@@ -4753,6 +4753,7 @@ async function signOutOtherSessions(){
   const audit=await db.rpc("record_other_sessions_signed_out");
   if(audit.error)console.warn("Session-security activity could not be recorded:",audit.error.message);
   $("session-security-status").textContent="Other sessions have been revoked. Their existing access tokens may remain valid until they expire; this device stays signed in.";
+  if(!$("active-sessions-modal").hidden)await loadActiveSessions();
 }
 async function requestAccountDeletion(){
   const ok=confirm("Send a private request to Gather support to delete your account? This will not sign you out or delete anything automatically.");
@@ -5545,6 +5546,32 @@ async function openGroupEvents(){
   $("group-events-modal").hidden=false;
   await loadGroupEvents();
 }
+function sessionDeviceLabel(userAgent){
+  const ua=String(userAgent||"");
+  const platform=/iPhone/i.test(ua)?"iPhone":/iPad/i.test(ua)?"iPad":/Android/i.test(ua)?"Android":/Windows/i.test(ua)?"Windows":/(Macintosh|Mac OS)/i.test(ua)?"Mac":/Linux/i.test(ua)?"Linux":"Unknown device";
+  const browser=/Edg\//i.test(ua)?"Edge":/Firefox\//i.test(ua)?"Firefox":/CriOS\//i.test(ua)?"Chrome on iOS":/Chrome\//i.test(ua)?"Chrome":/Safari\//i.test(ua)?"Safari":"Browser";
+  return browser+" · "+platform;
+}
+async function loadActiveSessions(){
+  const list=$("active-sessions-list");
+  list.replaceChildren(el("p","muted tiny","Loading sessions…"));
+  $("active-sessions-modal").hidden=false;
+  const result=await db.rpc("list_my_sessions");
+  if(result.error){list.replaceChildren(el("p","status error","Active sessions could not be loaded: "+result.error.message));return;}
+  list.replaceChildren();
+  (result.data||[]).forEach(session=>{
+    const row=el("article","session-row");
+    const details=el("div");
+    details.append(el("strong","",sessionDeviceLabel(session.user_agent)));
+    details.append(el("small","", "Last active · "+(session.last_active_at?new Date(session.last_active_at).toLocaleString():"Unknown")));
+    details.append(el("small","", "Signed in · "+(session.created_at?new Date(session.created_at).toLocaleString():"Unknown")));
+    row.append(details);
+    if(session.is_current)row.append(el("span","session-current","This device"));
+    else row.append(el("span","session-current","Other device"));
+    list.append(row);
+  });
+  if(!result.data?.length)list.append(el("p","muted tiny","No active sessions were returned."));
+}
 function wire(){
   installModalBackButtons();
   document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>authMode(b.dataset.mode)));
@@ -5654,6 +5681,8 @@ function wire(){
   $("member-profile-report").addEventListener("click",()=>{const userId=S.publicProfileId;setModalBackTarget("report-modal","member-profile-modal");$("member-profile-modal").hidden=true;openReport(userId);});
   $("reports-admin-open").addEventListener("click",()=>{setModalBackTarget("reports-admin-modal","settings-modal");$("settings-modal").hidden=true;openReportsAdmin();});
   $("signout-other-sessions").addEventListener("click",signOutOtherSessions);
+  $("sessions-list-open").addEventListener("click",loadActiveSessions);
+  $("sessions-signout-others").addEventListener("click",signOutOtherSessions);
   $("security-activity-open").addEventListener("click",loadSecurityActivity);
   $("scheduled-message-form").addEventListener("submit",submitScheduledMessage);
   $("scheduled-message-cancel").addEventListener("click",()=>$("scheduled-message-modal").hidden=true);
