@@ -3718,6 +3718,7 @@ async function openSearchResult(message){
   const result=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,edited_at,reply_to_id,attachment_path").eq("conversation_id",conversationId).lte("created_at",message.created_at).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
   if(result.error){toast("That message could not be opened: "+result.error.message);return;}
   if(S.active!==conversationId)return;
+  releaseInitialChatScrollLock();
   const raw=result.data||[];S.hasOlderMessages=raw.length===300;
   S.messages=await attachReplyPreviews(raw.filter(m=>!S.deletedMessageIds.has(m.id)).reverse(),conversationId);
   await loadMessageReactions(conversationId,S.messages.map(m=>m.id),true);
@@ -5821,7 +5822,7 @@ document.querySelectorAll("[data-folder]").forEach(b=>b.addEventListener("click"
       }).catch(error=>console.warn("Age status refresh failed:",error));
     }
   });
-  $("messages").addEventListener("scroll",()=>{repositionFloatingMessageActionMenu();if($("messages").scrollTop<80)loadOlderMessages();checkUnreadDividerVisibility();},{passive:true});
+  $("messages").addEventListener("scroll",()=>{repositionFloatingMessageActionMenu();if($("messages").scrollTop<80&&S.initialChatScrollLockId!==S.active)loadOlderMessages();checkUnreadDividerVisibility();},{passive:true});
   $("messages").addEventListener("wheel",()=>{if(S.initialChatScrollLockId===S.active)releaseInitialChatScrollLock();},{passive:true});
   $("messages").addEventListener("touchmove",()=>{if(S.initialChatScrollLockId===S.active)releaseInitialChatScrollLock();},{passive:true});
   $("messages").addEventListener("keydown",event=>{
