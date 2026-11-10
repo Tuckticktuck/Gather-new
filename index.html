@@ -39,6 +39,20 @@ if (!window.supabase?.createClient) {
   </form>
 </section>
 
+<div id="age-verification-modal" class="overlay age-verification-overlay" hidden>
+  <section class="modal age-verification-modal" role="dialog" aria-modal="true" aria-labelledby="age-verification-title">
+    <p class="eyebrow">GATHER ACCOUNT SAFETY</p>
+    <h2 id="age-verification-title">Confirm your age</h2>
+    <p class="muted tiny">Gather is for members aged 12–18. Accounts are placed into the 12–14 or 15–18 messaging group.</p>
+    <p id="age-verification-note" class="age-verification-note"></p>
+    <form id="age-verification-form">
+      <label>Date of birth<input id="age-birth-date" type="date" required autocomplete="bday"></label>
+      <p id="age-verification-status" class="status" role="status"></p>
+      <button id="age-verification-submit" class="primary" type="submit">Confirm age</button>
+    </form>
+    <button id="age-verification-signout" class="outline" type="button">Sign out</button>
+  </section>
+</div>
 <div id="password-recovery-modal" class="overlay" hidden><section class="modal reset-password-modal" role="dialog" aria-modal="true" aria-labelledby="recovery-title">
   <p class="eyebrow">ACCOUNT RECOVERY</p><h2 id="recovery-title">Choose a new password</h2>
   <p class="tiny muted">Create a strong, unique password for your Gather account. You must use the link sent to your account email to reach this screen.</p>
