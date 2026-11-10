@@ -2507,3 +2507,11 @@ button:not(:disabled){
   ::view-transition-new(gather-main){animation:none!important}
   .main.gather-screen-enter,.gather-list-enter,.gather-message-enter{animation:none!important}
 }
+
+
+/* Floating message action menus remain mounted just long enough to fade away. */
+.message-action-menu.is-dismissing{
+  opacity:0;
+  transform:translateY(6px) scale(.98);
+  pointer-events:none;
+}
