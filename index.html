@@ -6,8 +6,8 @@
 <meta name="theme-color" content="#171923">
 <meta name="description" content="Private direct and group conversations.">
 <title>Gather</title>
-<link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="app.css?v=20261110-1">
+<link rel="icon" type="image/svg+xml" href="favicon.svg?v=20261110-2">
+<link rel="stylesheet" href="app.css?v=20261110-2">
 <script src="https://unpkg.com/@supabase/supabase-js@2.118.0"></script>
 <script>
 if (!window.supabase?.createClient) {
@@ -20,7 +20,7 @@ if (!window.supabase?.createClient) {
 <body>
 <section id="auth" class="auth-shell">
   <form id="auth-form" class="auth-card" onsubmit="event.preventDefault();">
-    <div class="brand"><span class="brand-icon"><img src="favicon.svg" alt="" aria-hidden="true"></span><span>gather</span></div>
+    <div class="brand"><span class="brand-icon"><img src="favicon.svg?v=20261110-2" alt="" aria-hidden="true"></span><span>gather</span></div>
     <p class="eyebrow">MESSAGING SPACE</p>
     <h1 id="auth-title">Welcome back.</h1>
     <p id="auth-subtitle" class="muted">Sign in to see your conversations.</p>
@@ -69,7 +69,7 @@ if (!window.supabase?.createClient) {
 <section id="app" hidden>
   <header class="topbar">
     <div class="topbar-left">
-      <div class="brand"><span class="brand-icon"><img src="favicon.svg" alt="" aria-hidden="true"></span><span>gather</span></div>
+      <div class="brand"><span class="brand-icon"><img src="favicon.svg?v=20261110-2" alt="" aria-hidden="true"></span><span>gather</span></div>
       <button id="home-open" class="home-button" type="button" aria-label="Return to home" title="Return to home"><span class="home-glyph" aria-hidden="true">⌂</span><span>Home</span></button>
     </div>
     <div class="topbar-actions">
@@ -131,7 +131,7 @@ if (!window.supabase?.createClient) {
           </div>
         </header>
         <section id="home-announcement-card" class="home-announcement-card" hidden aria-label="Latest Gather Admin announcement">
-          <div class="home-announcement-mark brand-mark" aria-hidden="true"><img src="favicon.svg" alt=""></div>
+          <div class="home-announcement-mark brand-mark" aria-hidden="true"><img src="favicon.svg?v=20261110-2" alt=""></div>
           <div class="home-announcement-copy">
             <p class="eyebrow">LATEST FROM GATHER ADMIN</p>
             <strong id="home-announcement-title"></strong>
@@ -280,7 +280,7 @@ if (!window.supabase?.createClient) {
 <div id="announcement-view-modal" class="overlay" hidden><section class="modal announcement-view-modal" role="dialog" aria-modal="true" aria-labelledby="announcement-view-title">
   <button class="admin-child-back" type="button" data-admin-back hidden aria-label="Back to Admin Mode"><span aria-hidden="true">←</span><span>Back</span></button>
   <button class="close" data-close aria-label="Close">×</button>
-  <div class="announcement-sender"><span class="announcement-admin-mark brand-mark" aria-hidden="true"><img src="favicon.svg" alt=""></span><span><strong>Gather Admin</strong><small>Official announcement</small></span></div>
+  <div class="announcement-sender"><span class="announcement-admin-mark brand-mark" aria-hidden="true"><img src="favicon.svg?v=20261110-2" alt=""></span><span><strong>Gather Admin</strong><small>Official announcement</small></span></div>
   <h2 id="announcement-view-title"></h2><p id="announcement-view-date" class="tiny muted"></p>
   <div id="announcement-view-body" class="announcement-view-body"></div>
   <div class="announcement-view-actions"><button id="announcement-edit-open" class="outline" type="button" hidden>Edit announcement</button></div>
