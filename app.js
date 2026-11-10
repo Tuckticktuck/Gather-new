@@ -2088,19 +2088,56 @@ function renderBlockedUsers(term){
 }
 function renderDeletedMessages(term){
   const list=$("deleted-list");list.replaceChildren();
-  const items=S.deletedMessages.filter(x=>((x.body||(x.attachment_path?"Image attachment":""))+" "+x.sender_name+" "+x.conversation_title).toLowerCase().includes(term));
+  const items=S.deletedMessages
+    .filter(x=>((x.body||(x.attachment_path?"Image attachment":""))+" "+x.sender_name+" "+x.conversation_title).toLowerCase().includes(term))
+    .sort((a,b)=>new Date(b.deleted_at||b.created_at).getTime()-new Date(a.deleted_at||a.created_at).getTime());
   $("deleted-count").textContent=items.length;
-  if(!items.length){list.append(el("p","muted tiny section-empty",term?"No matching deleted messages.":"No deleted messages. Messages you hide will appear here."));return;}
+  if(!items.length){
+    list.append(el("p","muted tiny section-empty",term?"No matching deleted messages.":"No deleted messages. Messages you hide will appear here."));
+    return;
+  }
+
+  const conversations=new Map();
   items.forEach(item=>{
-    const row=el("div","deleted-item");
-    row.append(avatar(item.sender_name,S.profiles[item.sender_id]?.avatar_data));
-    const copy=el("div","deleted-copy");
-    copy.append(el("strong","",item.sender_name));
-    copy.append(el("small","",item.conversation_title+" · "+dateLabel(item.created_at)));
-    copy.append(el("p","deleted-preview",item.body||(item.attachment_path?"Image attachment":"")));
-    const restore=el("button","request-accept","Restore");restore.type="button";
-    restore.addEventListener("click",()=>restoreMessage(item.message_id));
-    row.append(copy,restore);list.append(row);
+    const key=String(item.conversation_id||item.conversation_title||"conversation");
+    if(!conversations.has(key)){
+      conversations.set(key,{title:item.conversation_title||"Conversation",items:[]});
+    }
+    conversations.get(key).items.push(item);
+  });
+
+  conversations.forEach(group=>{
+    const section=document.createElement("details");
+    section.className="deleted-conversation-group";
+    section.open=true;
+
+    const heading=document.createElement("summary");
+    heading.className="deleted-conversation-heading";
+    heading.append(el("strong","deleted-conversation-title",group.title));
+    heading.append(el("span","section-count",String(group.items.length)));
+    section.append(heading);
+
+    const messages=el("div","deleted-conversation-messages");
+    group.items.forEach(item=>{
+      const row=el("article","deleted-item");
+      row.append(avatar(item.sender_name,S.profiles[item.sender_id]?.avatar_data));
+
+      const copy=el("div","deleted-copy");
+      copy.append(el("strong","",item.sender_name));
+      const sentAt=dateLabel(item.created_at);
+      const deletedAt=item.deleted_at?dateLabel(item.deleted_at):"";
+      copy.append(el("small","",deletedAt?"Sent "+sentAt+" · Deleted "+deletedAt:"Sent "+sentAt));
+      copy.append(el("p","deleted-preview",item.body||(item.attachment_path?"Image attachment":"")));
+
+      const restore=el("button","request-accept","Restore");
+      restore.type="button";
+      restore.setAttribute("aria-label","Restore message from "+item.sender_name+" in "+group.title);
+      restore.addEventListener("click",()=>restoreMessage(item.message_id));
+      row.append(copy,restore);
+      messages.append(row);
+    });
+    section.append(messages);
+    list.append(section);
   });
 }
 function toggleConversationSelectionMode(){
