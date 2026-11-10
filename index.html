@@ -279,6 +279,7 @@ if (!window.supabase?.createClient) {
     <button class="admin-mode-tab active" type="button" data-admin-section="overview">Overview</button>
     <button class="admin-mode-tab" type="button" data-admin-section="accounts">Accounts</button>
     <button class="admin-mode-tab" type="button" data-admin-section="messages">Messages</button>
+    <button class="admin-mode-tab" type="button" data-admin-section="age-access">Age access</button>
     <button class="admin-mode-tab" type="button" data-admin-section="reports">Reports</button>
     <button class="admin-mode-tab" type="button" data-admin-section="feedback">Feedback</button>
     <button class="admin-mode-tab" type="button" data-admin-section="announcements">Announcements</button>
@@ -322,6 +323,13 @@ if (!window.supabase?.createClient) {
       <label class="admin-account-search">Find a recipient<input id="admin-message-search" type="search" placeholder="Search name, username, or email"></label>
       <div id="admin-message-recipient-list" class="admin-account-list"><p class="muted tiny">Loading member accounts…</p></div>
       <button id="admin-message-more" class="secondary-action admin-load-more" type="button" hidden>Load more members</button>
+    </section>
+    <section class="admin-mode-panel" data-admin-panel="age-access" hidden>
+      <div class="admin-section-heading">
+        <div><h3>Intergroup messaging approvals</h3><p class="tiny muted">Review requests from members who want to message someone in the other age group. Approval applies only to the specific pair shown.</p></div>
+        <button id="admin-intergroup-refresh" class="outline" type="button">Refresh</button>
+      </div>
+      <div id="admin-intergroup-request-list" class="admin-intergroup-request-list"><p class="muted tiny">Open this tab to load requests.</p></div>
     </section>
     <section class="admin-mode-panel" data-admin-panel="reports" hidden>
       <div class="admin-mode-card admin-feature-card"><span class="eyebrow">SAFETY & MODERATION</span><h3>Member reports</h3><p class="muted tiny">Review reports, update their status, and contact the reported member privately when follow-up is needed.</p><button id="admin-reports-open" class="primary" type="button">Open report inbox</button></div>
