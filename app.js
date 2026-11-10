@@ -819,8 +819,13 @@ function renderProfileAgeSection(){
   const section=$("profile-age-section"),summary=$("profile-age-summary"),form=$("profile-age-form");
   const date=$("profile-age-birth-date"),button=$("profile-age-submit");
   if(!section||!summary||!form||!date||!button)return;
-  if(isFeedbackAdmin(S.user)){section.hidden=true;return;}
   section.hidden=false;
+  if(isFeedbackAdmin(S.user)){
+    summary.textContent="Gather Admin accounts bypass member age-group restrictions. Age-group corrections are not required for administrator access.";
+    form.hidden=true;
+    status("profile-age-status","Administrator access is managed separately from member age verification.","");
+    return;
+  }
   const age=S.ageStatus||{},request=S.ageChangeStatus||{};
   const verified=age.verified===true&&age.eligible===true;
   const pending=request.status==="pending";
