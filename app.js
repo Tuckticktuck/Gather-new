@@ -30,7 +30,7 @@ function normalizeChatSettings(raw){
   });
   return {pinned,muted,drafts,appearance};
 }
-const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], favoriteFriendIds:new Set(), blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingUndoSend:null, undoSendTimer:null, undoCountdownInterval:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, homeSearchQuery:"", homeSearchTab:"messages", homeSearchMessages:[], homeSearchProfiles:[], homeSearchLoading:false, homeSearchErrors:{messages:"",profiles:""}, homeSearchTimer:null, homeSearchRequestId:0, directStatus:null, groupMessageStatus:null, ageStatus:null, ageRequestChannel:null, messageRestriction:null, messageRestrictionLoaded:false, messageRestrictionError:"", messageRestrictionChannel:null, messageRestrictionTimer:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],intergroupRequests:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
+const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], favoriteFriendIds:new Set(), blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingUndoSend:null, undoSendTimer:null, undoCountdownInterval:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, homeSearchQuery:"", homeSearchTab:"messages", homeSearchMessages:[], homeSearchProfiles:[], homeSearchLoading:false, homeSearchErrors:{messages:"",profiles:""}, homeSearchTimer:null, homeSearchRequestId:0, directStatus:null, groupMessageStatus:null, ageStatus:null, ageChangeStatus:null, ageRequestChannel:null, messageRestriction:null, messageRestrictionLoaded:false, messageRestrictionError:"", messageRestrictionChannel:null, messageRestrictionTimer:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],intergroupRequests:[],ageChangeRequests:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function appendFormattedMessageText(parent,value){
@@ -794,6 +794,7 @@ function showAgeVerificationGate(ageStatus){
   S.ageStatus=ageStatus||null;
   const modal=$("age-verification-modal"),form=$("age-verification-form"),date=$("age-birth-date"),submit=$("age-verification-submit"),statusNode=$("age-verification-status"),note=$("age-verification-note");
   modal.hidden=false;statusNode.textContent="";
+  const profileLink=$("age-verification-open-profile");if(profileLink)profileLink.hidden=!S.profile;
   if(ageStatus?.verified&&ageStatus?.eligible===false){
     note.textContent="This account is outside Gather's supported age range of 12–18. Messaging is unavailable on this account.";
     form.hidden=true;
@@ -808,6 +809,85 @@ async function loadMyAgeStatus(){
   S.ageStatus=result.data||null;
   return S.ageStatus;
 }
+async function loadMyAgeChangeStatus(){
+  const result=await db.rpc("get_my_age_change_status");
+  if(result.error)throw result.error;
+  S.ageChangeStatus=result.data||{};
+  return S.ageChangeStatus;
+}
+function renderProfileAgeSection(){
+  const section=$("profile-age-section"),summary=$("profile-age-summary"),form=$("profile-age-form");
+  const date=$("profile-age-birth-date"),button=$("profile-age-submit");
+  if(!section||!summary||!form||!date||!button)return;
+  if(isFeedbackAdmin(S.user)){section.hidden=true;return;}
+  section.hidden=false;
+  const age=S.ageStatus||{},request=S.ageChangeStatus||{};
+  const verified=age.verified===true&&age.eligible===true;
+  const pending=request.status==="pending";
+  const today=new Date();
+  date.max=today.getFullYear()+"-"+String(today.getMonth()+1).padStart(2,"0")+"-"+String(today.getDate()).padStart(2,"0");
+  date.value="";
+  if(verified){
+    summary.textContent="Current age group: "+(age.age_group||"Confirmed")+". Your exact date of birth stays private. A correction is reviewed by Gather Admin before it changes your age group.";
+    form.hidden=false;date.disabled=pending;button.disabled=pending;
+    button.textContent=pending?"Correction awaiting review":"Request age correction";
+    if(pending)status("profile-age-status","Your age correction to "+(request.proposed_age_group||"the requested group")+" is pending Admin review.","pending");
+    else if(request.status==="declined")status("profile-age-status","Your last age correction request was declined. You may submit a new correction if needed.","error");
+    else if(request.status==="approved")status("profile-age-status","Your latest age correction was approved on "+dateLabel(request.reviewed_at)+".","success");
+    else status("profile-age-status","Age confirmed. You can request a correction below.","");
+  }else if(age.verified===true&&age.eligible===false){
+    summary.textContent="This account is outside Gather’s supported age range of 12–18. Age changes require help from Gather Admin.";
+    form.hidden=true;status("profile-age-status","Contact Gather Admin for an age-record review.","error");
+  }else{
+    summary.textContent="Add your date of birth to finish setting up your existing account. Gather uses it to assign the 12–14 or 15–18 group. Your date of birth is kept private.";
+    form.hidden=false;date.disabled=false;button.disabled=false;button.textContent="Confirm age";
+    status("profile-age-status","This is a self-declared age check, not independent identity verification.","");
+  }
+}
+async function refreshProfileAgeSettings(){
+  try{
+    await loadMyAgeStatus();
+    await loadMyAgeChangeStatus();
+    renderProfileAgeSection();
+  }catch(error){
+    status("profile-age-status","Age information could not be loaded. Please close Profile and try again.","error");
+  }
+}
+async function submitProfileAgeForm(event){
+  event.preventDefault();
+  const birthDate=$("profile-age-birth-date").value;
+  if(!birthDate){status("profile-age-status","Enter your date of birth.","error");return;}
+  const button=$("profile-age-submit");button.disabled=true;
+  const changing=S.ageStatus?.verified===true&&S.ageStatus?.eligible===true;
+  status("profile-age-status",changing?"Submitting age correction for review…":"Confirming your age…");
+  const result=changing
+    ?await db.rpc("request_my_age_change",{p_new_birth_date:birthDate})
+    :await db.rpc("confirm_my_age",{p_birth_date:birthDate});
+  button.disabled=false;
+  if(result.error){status("profile-age-status",result.error.message,"error");return;}
+  if(changing){
+    await loadMyAgeChangeStatus();
+    renderProfileAgeSection();
+    toast("Your age correction was submitted for Gather Admin review.");
+    return;
+  }
+  S.ageStatus=result.data||null;
+  if(!S.ageStatus?.eligible){
+    renderProfileAgeSection();
+    status("profile-age-status","This account is not eligible to use Gather.","error");
+    return;
+  }
+  $("profile-modal").hidden=true;
+  $("age-verification-modal").hidden=true;
+  toast("Age confirmed. Your age group is "+S.ageStatus.age_group+".");
+  const user=S.user;if(user)await signedIn(user,true);
+}
+function openProfileFromAgeGate(){
+  if(!S.profile)return;
+  openProfile();
+  $("profile-modal").style.zIndex="21";
+}
+
 async function submitAgeVerification(event){
   event.preventDefault();
   const birthDate=$("age-birth-date").value;
@@ -3711,7 +3791,7 @@ function setAdminModeSection(section){
   }
   if(section==="activity")loadAdminActivity();
   if(section==="approvals")loadAdminApprovals();
-  if(section==="age-access")loadAdminIntergroupRequests();
+  if(section==="age-access"){loadAdminIntergroupRequests();loadAdminAgeChangeRequests();}
 }
 async function openAdminMode(){
   if(!isFeedbackAdmin(S.user)){toast("Admin Mode is only available to the designated Gather administrator.");return;}
@@ -3732,8 +3812,50 @@ function adminActionLabel(action){
     intergroup_request_approved:"Approved intergroup messaging",
     intergroup_request_declined:"Declined an intergroup messaging request",
     intergroup_permission_revoked:"Revoked intergroup messaging permission",
-    age_confirmation_reset:"Reset a member's age confirmation"
+    age_confirmation_reset:"Reset a member's age confirmation",
+    age_change_approved:"Verified and approved an age correction",
+    age_change_declined:"Declined an age correction"
   })[action]||String(action||"Admin action").replaceAll("_"," ");
+}
+async function loadAdminAgeChangeRequests(){
+  if(!isFeedbackAdmin(S.user))return;
+  const list=$("admin-age-change-request-list");if(!list)return;
+  list.replaceChildren(el("p","muted tiny","Loading age correction requests…"));
+  try{
+    const result=await adminApi("list_age_change_requests");
+    S.admin.ageChangeRequests=result.requests||[];
+    renderAdminAgeChangeRequests();
+  }catch(error){list.replaceChildren(el("p","status error",error.message));}
+}
+function renderAdminAgeChangeRequests(){
+  const list=$("admin-age-change-request-list");if(!list)return;
+  list.replaceChildren();
+  const items=S.admin.ageChangeRequests||[];
+  if(!items.length){list.append(el("p","muted tiny","There are no pending age correction requests."));return;}
+  items.forEach(item=>{
+    const row=el("article","admin-intergroup-request");
+    const member=item.profile?.display_name||item.profile?.username||"Gather member";
+    row.append(
+      el("strong","",member+" · "+(item.current_age_group||"Unconfirmed")+" → "+(item.proposed_age_group||"Unconfirmed")),
+      el("small","",dateLabel(item.submitted_at)+" · Date of birth is not shown to Admin")
+    );
+    const actions=el("div","admin-intergroup-actions");
+    const approve=el("button","primary","Verify & approve");approve.type="button";
+    const decline=el("button","outline","Decline");decline.type="button";
+    approve.addEventListener("click",()=>reviewAgeChangeRequest(item.request_id,true));
+    decline.addEventListener("click",()=>reviewAgeChangeRequest(item.request_id,false));
+    actions.append(approve,decline);row.append(actions);list.append(row);
+  });
+}
+async function reviewAgeChangeRequest(requestId,approve){
+  if(!isFeedbackAdmin(S.user))return;
+  const action=approve?"approve this age correction":"decline this age correction";
+  if(!confirm("Are you sure you want to "+action+"? The member’s age-group assignment changes only when you approve."))return;
+  try{
+    await adminApi("review_age_change_request",{request_id:requestId,decision:approve?"approved":"declined"});
+    await loadAdminAgeChangeRequests();
+    toast(approve?"Age correction verified and approved.":"Age correction declined.");
+  }catch(error){toast("Age correction could not be reviewed: "+error.message);}
 }
 async function loadAdminIntergroupRequests(){
   if(!isFeedbackAdmin(S.user))return;
@@ -4306,7 +4428,9 @@ function openProfile(){
   S.pendingAvatarData=null;S.avatarChanged=false;
   paintAvatar($("profile-avatar-preview"),S.profile.display_name,S.profile.avatar_data);
   $("profile-avatar-file").value="";
+  $("profile-modal").style.removeProperty("z-index");
   $("profile-modal").hidden=false;
+  void refreshProfileAgeSettings();
 }
 function openGroupSettings(){
   const chat=S.chats.find(x=>x.id===S.active);
@@ -4850,6 +4974,8 @@ function wire(){
   $("forgot-password").addEventListener("click",requestPasswordReset);
   $("recovery-password-form").addEventListener("submit",completePasswordRecovery);
   $("age-verification-form").addEventListener("submit",submitAgeVerification);
+  $("age-verification-open-profile").addEventListener("click",openProfileFromAgeGate);
+  $("profile-age-form").addEventListener("submit",submitProfileAgeForm);
   $("age-verification-signout").addEventListener("click",async()=>{
     const result=await db.auth.signOut();
     if(result.error)status("age-verification-status",result.error.message,"error");
@@ -4930,6 +5056,7 @@ function wire(){
   $("admin-activity-refresh").addEventListener("click",loadAdminActivity);
   $("admin-overview-activity-refresh").addEventListener("click",loadAdminOverview);
   $("admin-intergroup-refresh").addEventListener("click",loadAdminIntergroupRequests);
+  $("admin-age-change-refresh").addEventListener("click",loadAdminAgeChangeRequests);
 
   $("announcement-send-open").addEventListener("click",()=>{$("settings-modal").hidden=true;openAnnouncementComposer();});
   $("announcement-compose-form").addEventListener("submit",publishAnnouncement);
