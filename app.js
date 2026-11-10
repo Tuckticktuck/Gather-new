@@ -602,10 +602,36 @@ async function markConversationNotificationsRead(chatId){
 }
 async function markConversationRead(chatId){
   if(!S.user||!chatId)return false;
-  const result=await db.rpc("mark_conversation_read",{p_conversation_id:chatId});
-  if(result.error){console.warn("Conversation read status could not be saved:",result.error.message);return false;}
-  await markConversationNotificationsRead(chatId);
-  await loadUnreadCounts();renderChats();return true;
+  const requestingUserId=S.user.id;
+  const wasActive=S.active===chatId;
+  if(wasActive)S.suppressReadDividerUpdates=true;
+  try{
+    const result=await db.rpc("mark_conversation_read",{p_conversation_id:chatId});
+    if(result.error){
+      console.warn("Conversation read status could not be saved:",result.error.message);
+      if(wasActive&&S.active===chatId)toast("Messages could not be marked as seen. Please try again.");
+      return false;
+    }
+    if(S.user?.id!==requestingUserId)return false;
+    if(S.active===chatId){
+      clearUnreadDividerState();
+      S.unreadTargetMessageId=null;
+      S.unreadTargetLoaded=true;
+      const lastIncoming=[...S.messages].reverse().find(message=>message.sender_id!==S.user.id);
+      if(lastIncoming)markChatRead(chatId,lastIncoming.created_at);
+      await loadMessageReads(chatId,S.messages.map(message=>message.id));
+      if(S.active!==chatId)return true;
+      renderMessages(true);
+    }
+    await markConversationNotificationsRead(chatId);
+    if(S.user?.id!==requestingUserId)return false;
+    await loadUnreadCounts();
+    if(S.active===chatId)renderMessages(true);
+    renderChats();
+    return true;
+  }finally{
+    if(wasActive&&S.active===chatId)S.suppressReadDividerUpdates=false;
+  }
 }
 async function markActiveConversationUnread(){
   const conversationId=S.active;
@@ -2749,7 +2775,7 @@ function subscribeMessageReads(conversationId){
       const receipt=payload.new;if(!receipt?.message_id||!receipt.user_id)return;
       const readers=S.messageReads[receipt.message_id]||(S.messageReads[receipt.message_id]=[]);
       if(!readers.some(x=>x.user_id===receipt.user_id))readers.push(receipt);
-      if(receipt.user_id===S.user.id&&!S.suppressReadDividerUpdates)await loadOldestUnreadTarget(conversationId);
+      if(receipt.user_id===S.user.id&&!S.suppressReadDividerUpdates){S.unreadTargetMessageId=null;S.unreadTargetLoaded=true;}
       renderMessages();
     }).subscribe();
 }
@@ -2891,7 +2917,7 @@ async function openChat(id){
   if(S.pollChannel){db.removeChannel(S.pollChannel);S.pollChannel=null;}
   clearPendingMessageImage();
   runScreenTransition(()=>{
-    S.active=id;S.unreadTargetMessageId=null;S.unreadTargetLoaded=false;restoreChatDraft(id);S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=cachedStatus;S.groupMessageStatus=null;
+    S.active=id;S.unreadTargetMessageId=null;S.unreadTargetLoaded=true;restoreChatDraft(id);S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=cachedStatus;S.groupMessageStatus=null;
     S.messages=[];S.messageReads={};S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.openMessageMenuId=null;S.replyTo=null;S.hasOlderMessages=false;S.loadingOlder=false;renderReplyComposer();
     renderMessageSkeletons();
     $("layout").classList.remove("show-home");$("layout").classList.add("show-chat");renderActive();
@@ -2900,8 +2926,11 @@ async function openChat(id){
     if(!permissionCheckIsFresh)void refreshDirectStatus(id);
   });
   subscribeTyping(id);
-  await Promise.all([loadMessages(id),loadOldestUnreadTarget(id)]);
+  await loadMessages(id);
   if(S.active!==id)return;
+  // Opening the conversation marks its existing incoming messages as seen.
+  // Do not wait for the read update before displaying the conversation.
+  void markConversationRead(id);
   subscribeMessageReads(id);subscribePollVotes(id);await loadUnreadCounts();renderChats();
 }
 async function loadMessages(id){
