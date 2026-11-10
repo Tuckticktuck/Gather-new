@@ -1826,6 +1826,7 @@ async function respondToRequest(id,accept){
   const r=await db.rpc("respond_to_direct_chat_request",{p_request_id:id,p_accept:accept});
   if(r.error){toast("Request could not be updated: "+r.error.message);return;}
   if(r.data?.status==="blocked"){toast("This request cannot be accepted because private messaging is blocked.");await loadRequests();return;}
+  if(r.data?.status==="intergroup_approval_required"){toast("Gather Admin approval is required before this cross-group chat can open.");await loadRequests();return;}
   if(accept&&r.data?.conversation_id){
     $("requests-modal").hidden=true;toast("Request accepted. You can now message each other.");await loadChats();await openChat(r.data.conversation_id);
   }else{toast("Request declined.");await loadRequests();}
@@ -2328,7 +2329,7 @@ function renderDirectControls(){
     $("composer-more-trigger").disabled=sendingDisabled;
     return;
   }
-  const d=S.directStatus,blocked=!d?.can_message;
+  const d=S.directStatus,ageApprovalNeeded=!!d?.is_intergroup&&!d?.intergroup_permission,blocked=!d?.can_message;
   $("chat-title").hidden=!d?.can_message;
   $("block-user").disabled=!d||!!d.error;
   $("block-user").textContent=d?.i_blocked?"Unblock":"Block";
@@ -2337,7 +2338,7 @@ function renderDirectControls(){
   $("composer-more-trigger").disabled=blocked||sendingDisabled;
   $("message").placeholder=restrictionPending?"Checking messaging permissions…":messageRestricted?"Messaging temporarily restricted":blocked?"Private messaging unavailable":"Write a message…";
   $("chat-notice").hidden=!blocked;
-  $("chat-notice").textContent=!d?"Checking private chat permissions…":d.error?"Could not verify chat permissions. Refresh the page and try again.":d.i_blocked?"You blocked this member. Unblock them to send private messages. Your previous messages remain visible.":"Private messaging is unavailable in this conversation. Your previous messages remain visible.";
+  $("chat-notice").textContent=!d?"Checking private chat permissions…":d.error?"Could not verify chat permissions. Refresh the page and try again.":d.i_blocked?"You blocked this member. Unblock them to send private messages. Your previous messages remain visible.":ageApprovalNeeded?"This member is in the "+d.other_age_group+" age group. Cross-group messaging requires Gather Admin approval. You can request approval from New private message.":"Private messaging is unavailable in this conversation. Your previous messages remain visible.";
 }
 async function refreshDirectStatus(conversationId=S.active){
   if(!conversationId||S.active!==conversationId)return;
@@ -3453,8 +3454,6 @@ async function searchPeople(){
   });
 }
 async function directChat(p){
-  const existing=S.chats.find(c=>c.kind==="direct"&&c.members.length===2&&c.members.some(m=>m.user_id===p.id)&&c.members.some(m=>m.user_id===S.user.id));
-  if(existing){$("people-modal").hidden=true;await openChat(existing.id);return;}
   const access=await db.rpc("get_direct_chat_status",{p_other_user_id:p.id});
   if(access.error){status("people-status","Messaging eligibility could not be checked: "+access.error.message,"error");return;}
   if(access.data?.i_blocked||access.data?.they_blocked){status("people-status","This member is not available for messaging.","error");return;}
@@ -3467,6 +3466,8 @@ async function directChat(p){
       :"Intergroup messaging is already approved. You can now send a chat request.");
     return;
   }
+  const existing=S.chats.find(c=>c.kind==="direct"&&c.members.length===2&&c.members.some(m=>m.user_id===p.id)&&c.members.some(m=>m.user_id===S.user.id));
+  if(existing){$("people-modal").hidden=true;await openChat(existing.id);return;}
   const r=await db.rpc("send_direct_chat_request",{p_recipient_id:p.id});
   if(r.error){status("people-status","Request could not be sent: "+r.error.message,"error");return;}
   if(r.data?.status==="age_verification_required"){status("people-status","Both members must complete age confirmation before messaging.","error");return;}
