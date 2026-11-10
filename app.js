@@ -547,13 +547,27 @@ async function fetchProfileRecords(ids){
   if(!unique.length)return {data:[],error:null};
   const profiles=await db.from("profiles").select("id,username,display_name,bio,pronouns,banner_style,status_message,profile_highlights").in("id",unique);
   if(profiles.error)return {data:null,error:profiles.error};
-  const records=(profiles.data||[]).map(p=>({...p,avatar_data:null}));
+  const profileById=new Map((profiles.data||[]).map(profile=>[profile.id,profile]));
+  const missing=unique.filter(userId=>!profileById.has(userId));
+  if(missing.length){
+    // RLS intentionally hides full profiles for accounts that aren't age-eligible.
+    // Conversation members may still identify one another by display name/username only.
+    const sharedNames=await db.rpc("get_shared_conversation_names",{p_user_ids:missing});
+    if(sharedNames.error){
+      console.warn("Shared-conversation member names could not be loaded:",sharedNames.error.message);
+    }else{
+      (sharedNames.data||[]).forEach(profile=>{
+        if(!profileById.has(profile.id))profileById.set(profile.id,profile);
+      });
+    }
+  }
+  const records=[...profileById.values()].map(profile=>({...profile,avatar_data:null}));
   const pictures=await db.from("profile_avatars").select("user_id,image_data").in("user_id",unique);
   if(pictures.error){
     console.warn("Gather profile pictures could not be loaded:",pictures.error.message);
   }else{
     const byUser=new Map((pictures.data||[]).map(x=>[x.user_id,x.image_data]));
-    records.forEach(p=>p.avatar_data=byUser.get(p.id)||null);
+    records.forEach(profile=>profile.avatar_data=byUser.get(profile.id)||null);
   }
   return {data:records,error:null};
 }
