@@ -168,6 +168,12 @@ if (!window.supabase?.createClient) {
             <button id="delete-selected-conversations" class="danger-action" type="button" disabled>Delete selected (0)</button>
           </div>
         </div>
+        <nav class="folder-tabs workspace-tabs" role="tablist" aria-label="Message folders">
+          <button class="folder-tab active" type="button" role="tab" aria-selected="true" data-folder="friends">Friends</button>
+          <button class="folder-tab" type="button" role="tab" aria-selected="false" data-folder="nonfriends">Non-friends</button>
+          <button class="folder-tab" type="button" role="tab" aria-selected="false" data-folder="blocked">Blocked</button>
+          <button class="folder-tab" type="button" role="tab" aria-selected="false" data-folder="deleted">Deleted messages</button>
+        </nav>
         <section id="pinned-chat-section" class="workspace-group-section pinned-chat-section" hidden>
           <div class="folder-panel-heading"><strong>Pinned conversations</strong><span id="pinned-chat-count" class="section-count">0</span></div>
           <div id="pinned-chat-list" class="workspace-chat-list"></div>
@@ -176,12 +182,6 @@ if (!window.supabase?.createClient) {
           <div class="folder-panel-heading"><strong id="admin-message-heading">Gather Admin</strong><span id="admin-message-count" class="section-count">0</span></div>
           <div id="admin-message-list" class="workspace-chat-list"></div>
         </section>
-        <nav class="folder-tabs workspace-tabs" role="tablist" aria-label="Message folders">
-          <button class="folder-tab active" type="button" role="tab" aria-selected="true" data-folder="friends">Friends</button>
-          <button class="folder-tab" type="button" role="tab" aria-selected="false" data-folder="nonfriends">Non-friends</button>
-          <button class="folder-tab" type="button" role="tab" aria-selected="false" data-folder="blocked">Blocked</button>
-          <button class="folder-tab" type="button" role="tab" aria-selected="false" data-folder="deleted">Deleted messages</button>
-        </nav>
         <section id="private-folder-panel" class="folder-panel workspace-folder">
           <div class="folder-panel-heading"><strong id="private-chat-heading">Friends</strong><span id="private-chat-count" class="section-count">0</span></div>
           <div id="private-chat-list" class="workspace-chat-list"><p class="muted tiny">Your conversations will appear here.</p></div>
