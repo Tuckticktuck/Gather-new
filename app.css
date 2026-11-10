@@ -770,7 +770,7 @@ input::placeholder,textarea::placeholder{color:var(--accent-muted)}
 .announcement-modal #announcement-publish{width:100%}
 .announcement-view-modal{width:min(100%,560px)}
 .announcement-sender{display:flex;align-items:center;gap:10px;margin:5px 0 17px;padding:11px 12px;border:1px solid var(--accent-outline-soft);border-radius:12px;background:var(--accent-panel)}
-.announcement-admin-mark{display:grid;place-items:center;width:38px;height:38px;border-radius:12px;color:var(--accent-contrast);background:var(--accent);font-size:19px;font-weight:850}
+.announcement-admin-mark{display:grid;place-items:center;width:38px;height:38px;border-radius:12px;color:var(--accent-contrast);background:var(--accent);font-size:19px;font-weight:850}.announcement-admin-mark.brand-mark,.home-announcement-mark.brand-mark{font-family:Georgia,serif;font-weight:800;line-height:1;text-transform:lowercase}
 .announcement-sender>span:last-child{display:grid;gap:3px}
 .announcement-sender strong{color:var(--accent-text);font-size:calc(11px * var(--font-scale,1))}
 .announcement-sender small{color:var(--muted);font-size:calc(9px * var(--font-scale,1))}
