@@ -3697,7 +3697,8 @@ function adminActionLabel(action){
     messaging_restriction_removed:"Removed a member's messaging restriction",
     intergroup_request_approved:"Approved intergroup messaging",
     intergroup_request_declined:"Declined an intergroup messaging request",
-    intergroup_permission_revoked:"Revoked intergroup messaging permission"
+    intergroup_permission_revoked:"Revoked intergroup messaging permission",
+    age_confirmation_reset:"Reset a member's age confirmation"
   })[action]||String(action||"Admin action").replaceAll("_"," ");
 }
 async function loadAdminIntergroupRequests(){
@@ -3934,6 +3935,7 @@ function renderAdminAccountDetail(){
     el("span","", "Created: "+(dateLabel(user.created_at)||"Unknown")),
     el("span","", "Last sign-in: "+(dateLabel(user.last_sign_in_at)||"Never recorded")),
     el("span","", "Status: "+(banned?"Banned":"Active")),
+    el("span","", "Age group: "+(user.age_group||"Not confirmed / outside age range")),
     ...(user.active_ban_reason?[el("span","","Ban reason: "+user.active_ban_reason)]:[])
   );
   const restriction=user.message_restriction&&Date.parse(user.message_restriction.expires_at)>Date.now()?user.message_restriction:null;
@@ -3991,8 +3993,11 @@ function renderAdminAccountDetail(){
   const save=el("button","primary","Save profile");save.type="submit";
   const ban=el("button","outline",banned?"":"Ban account");ban.id="admin-account-ban";ban.type="button";ban.hidden=banned;
   const unban=el("button","outline","Unban account");unban.id="admin-account-unban";unban.type="button";unban.hidden=!banned;
+  const resetAge=el("button","outline","Reset age confirmation");resetAge.type="button";
+  resetAge.disabled=!!user.is_gather_admin;
+  if(user.is_gather_admin)resetAge.title="Administrator accounts do not use age groups.";
   const remove=el("button","admin-danger-button","Delete account");remove.id="admin-account-delete";remove.type="button";
-  actions.append(save,ban,unban,remove);form.append(actions);
+  actions.append(save,ban,unban,resetAge,remove);form.append(actions);
   const saveStatus=el("p","tiny muted");saveStatus.id="admin-account-save-status";
   const note=el("p","tiny muted","Emails are read from Auth. Passwords and password hashes are never available in this screen.");
   detail.append(header,meta,restrictionCard,form,saveStatus,note);
@@ -4001,6 +4006,7 @@ function renderAdminAccountDetail(){
   form.addEventListener("submit",saveAdminAccountProfile);
   ban.addEventListener("click",()=>banAdminAccount(user.id));
   unban.addEventListener("click",()=>unbanAdminAccount(user.id));
+  resetAge.addEventListener("click",()=>resetAdminAgeConfirmation(user.id));
   remove.addEventListener("click",()=>deleteAdminAccount(user.id));
 }
 function renderAdminMessageRecipients(){
@@ -4106,6 +4112,17 @@ async function clearAdminMessagingRestriction(userId){
     if(statusNode)statusNode.textContent="Restriction could not be removed: "+error.message;
     if(button)button.disabled=false;
   }
+}
+async function resetAdminAgeConfirmation(userId){
+  const user=S.admin.users.find(item=>item.id===userId);
+  if(!user||!isFeedbackAdmin(S.user)||user.is_gather_admin)return;
+  if(!confirm("Reset age confirmation for this member? They will be required to enter their date of birth again before using Gather."))return;
+  try{
+    await adminApi("reset_age_confirmation",{user_id:userId});
+    user.age_group=null;
+    renderAdminAccounts();renderAdminAccountDetail();
+    toast("Age confirmation reset. The member must confirm again before using Gather.");
+  }catch(error){toast("Age confirmation could not be reset: "+error.message);}
 }
 async function saveAdminAccountProfile(event){
   event.preventDefault();
