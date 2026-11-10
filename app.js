@@ -30,7 +30,7 @@ function normalizeChatSettings(raw){
   });
   return {pinned,muted,drafts,appearance};
 }
-const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], favoriteFriendIds:new Set(), archivedConversationIds:new Set(), blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingUndoSend:null, undoSendTimer:null, undoCountdownInterval:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, homeSearchQuery:"", homeSearchTab:"messages", homeSearchMessages:[], homeSearchProfiles:[], homeSearchLoading:false, homeSearchErrors:{messages:"",profiles:""}, homeSearchTimer:null, homeSearchRequestId:0, directStatus:null, directStatusCache:new Map(), directStatusChecks:new Map(), groupMessageStatus:null, ageStatus:null, ageChangeStatus:null, ageRequestChannel:null, messageRestriction:null, messageRestrictionLoaded:false, messageRestrictionError:"", messageRestrictionChannel:null, messageRestrictionTimer:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],intergroupRequests:[],ageChangeRequests:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
+const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], favoriteFriendIds:new Set(), archivedConversationIds:new Set(), blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingUndoSend:null, undoSendTimer:null, undoCountdownInterval:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, homeSearchQuery:"", homeSearchTab:"messages", homeSearchMessages:[], homeSearchProfiles:[], homeSearchLoading:false, homeSearchErrors:{messages:"",profiles:""}, homeSearchTimer:null, homeSearchRequestId:0, directStatus:null, directStatusCache:new Map(), directStatusChecks:new Map(), groupMessageStatus:null, ageStatus:null, ageChangeStatus:null, ageRequestChannel:null, messageRestriction:null, messageRestrictionLoaded:false, messageRestrictionError:"", messageRestrictionChannel:null, messageRestrictionTimer:null, active:null, messages:[], initialChatScrollLockId:null, channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],intergroupRequests:[],ageChangeRequests:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function appendSafeText(parent,value){
@@ -3001,7 +3001,7 @@ async function openChat(id){
   if(S.pollChannel){db.removeChannel(S.pollChannel);S.pollChannel=null;}
   clearPendingMessageImage();
   runScreenTransition(()=>{
-    S.active=id;S.unreadTargetMessageId=null;S.unreadTargetLoaded=true;restoreChatDraft(id);S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=cachedStatus;S.groupMessageStatus=null;
+    S.active=id;S.initialChatScrollLockId=id;S.unreadTargetMessageId=null;S.unreadTargetLoaded=true;restoreChatDraft(id);S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=cachedStatus;S.groupMessageStatus=null;
     S.messages=[];S.messageReads={};S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.openMessageMenuId=null;S.replyTo=null;S.hasOlderMessages=false;S.loadingOlder=false;renderReplyComposer();
     renderMessageSkeletons();
     $("layout").classList.remove("show-home");$("layout").classList.add("show-chat");renderActive();
@@ -3037,6 +3037,7 @@ async function loadMessages(id){
   if(S.active!==id)return;
   updateUnreadDivider(id);
   renderMessages(true);
+  scrollMessagesToLatest(id);
 }
 
 function updateMessageReactionCache(record,removed=false){
@@ -3219,7 +3220,7 @@ function renderPinnedMessageBanner(){
 }
 async function jumpToPinnedMessage(id){
   const cid=S.active;while(S.active===cid&&!S.messages.some(x=>x.id===id)&&S.hasOlderMessages)await loadOlderMessages();
-  const row=document.querySelector('[data-message-id="'+id+'"]');if(row){row.scrollIntoView({block:"center",behavior:"smooth"});row.classList.add("search-highlight");setTimeout(()=>row.classList.remove("search-highlight"),2400);}else toast("Pinned message could not be loaded.");
+  const row=document.querySelector('[data-message-id="'+id+'"]');if(row){releaseInitialChatScrollLock();row.scrollIntoView({block:"center",behavior:"smooth"});row.classList.add("search-highlight");setTimeout(()=>row.classList.remove("search-highlight"),2400);}else toast("Pinned message could not be loaded.");
 }
 async function toggleSavedMessage(m){
   const saved=S.savedMessageIds.has(m.id),r=saved?await db.from("saved_messages").delete().eq("user_id",S.user.id).eq("message_id",m.id):await db.from("saved_messages").insert({user_id:S.user.id,message_id:m.id,conversation_id:m.conversation_id||S.active});
@@ -3298,7 +3299,7 @@ async function removeSavedMessage(id){const r=await db.from("saved_messages").de
 async function openSavedMessage(m){
   $("saved-messages-modal").hidden=true;await openChat(m.conversation_id);let row=document.querySelector('[data-message-id="'+m.id+'"]');
   while(!row&&S.hasOlderMessages){await loadOlderMessages();row=document.querySelector('[data-message-id="'+m.id+'"]');}
-  if(row)row.scrollIntoView({block:"center",behavior:"smooth"});else toast("Saved message could not be loaded.");
+  if(row){releaseInitialChatScrollLock();row.scrollIntoView({block:"center",behavior:"smooth"});}else toast("Saved message could not be loaded.");
 }
 function openPollComposer(){
   closeComposerMoreMenu();if(!S.active){toast("Open a group chat first.");return;}const c=S.chats.find(x=>x.id===S.active);
@@ -3372,6 +3373,22 @@ function positionMessageActionMenu(menu,trigger){
 function repositionFloatingMessageActionMenu(){
   const menu=document.querySelector(".message-action-menu[data-floating-menu='true']");
   if(menu?._anchorTrigger)positionMessageActionMenu(menu,menu._anchorTrigger);
+}
+function scrollMessagesToLatest(conversationId=S.active){
+  if(!conversationId||S.active!==conversationId||S.initialChatScrollLockId!==conversationId)return;
+  const list=$("messages");
+  const scroll=()=>{
+    if(S.active!==conversationId||S.initialChatScrollLockId!==conversationId)return;
+    list.scrollTop=list.scrollHeight;
+  };
+  scroll();
+  requestAnimationFrame(()=>{
+    scroll();
+    requestAnimationFrame(scroll);
+  });
+}
+function releaseInitialChatScrollLock(){
+  S.initialChatScrollLockId=null;
 }
 function renderMessages(preserveScroll=false){
   document.querySelectorAll(".message-action-menu[data-floating-menu='true']").forEach(menu=>{
@@ -3483,7 +3500,9 @@ function renderMessages(preserveScroll=false){
         const image=el("img","message-image");
         image.src=m.image_url;image.alt="Image sent by "+(p?.display_name||"a Gather member");
         image.loading="lazy";image.decoding="async";
+        image.addEventListener("load",()=>scrollMessagesToLatest(S.active),{once:true});
         link.append(image);bubble.append(link);
+        if(image.complete)queueMicrotask(()=>scrollMessagesToLatest(S.active));
       }else bubble.append(el("p","message-image-unavailable","Image unavailable"));
     }
     if(m.body&&!S.messagePolls[m.id]){
@@ -3538,8 +3557,15 @@ function renderMessages(preserveScroll=false){
     }
     row.append(bubble);list.append(row);
   });
-  if(preserveScroll)list.scrollTop=previousTop+(list.scrollHeight-previousHeight);
-  else list.scrollTop=list.scrollHeight;
+  if(S.initialChatScrollLockId===S.active){
+    // Keep the view anchored to the latest message while message content
+    // (especially lazy-loaded images) is still changing its scroll height.
+    scrollMessagesToLatest(S.active);
+  }else if(preserveScroll){
+    list.scrollTop=previousTop+(list.scrollHeight-previousHeight);
+  }else{
+    list.scrollTop=list.scrollHeight;
+  }
   checkUnreadDividerVisibility();
 }
 async function deleteConversationMessages(conversationId){
@@ -3686,6 +3712,7 @@ async function searchConversationMessages(reset=true){
 async function openSearchResult(message){
   const conversationId=message.conversation_id||S.searchConversationId;
   $("message-search-modal").hidden=true;
+  releaseInitialChatScrollLock();
   if(!conversationId||!S.chats.some(chat=>chat.id===conversationId)){toast("That conversation is no longer available.");return;}
   if(S.active!==conversationId)await openChat(conversationId);
   const result=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,edited_at,reply_to_id,attachment_path").eq("conversation_id",conversationId).lte("created_at",message.created_at).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
@@ -5795,6 +5822,11 @@ document.querySelectorAll("[data-folder]").forEach(b=>b.addEventListener("click"
     }
   });
   $("messages").addEventListener("scroll",()=>{repositionFloatingMessageActionMenu();if($("messages").scrollTop<80)loadOlderMessages();checkUnreadDividerVisibility();},{passive:true});
+  $("messages").addEventListener("wheel",()=>{if(S.initialChatScrollLockId===S.active)releaseInitialChatScrollLock();},{passive:true});
+  $("messages").addEventListener("touchmove",()=>{if(S.initialChatScrollLockId===S.active)releaseInitialChatScrollLock();},{passive:true});
+  $("messages").addEventListener("keydown",event=>{
+    if(S.initialChatScrollLockId===S.active&&["ArrowUp","PageUp","Home"].includes(event.key))releaseInitialChatScrollLock();
+  });
   window.addEventListener("resize",repositionFloatingMessageActionMenu);
   window.visualViewport?.addEventListener("resize",repositionFloatingMessageActionMenu);
   window.visualViewport?.addEventListener("scroll",repositionFloatingMessageActionMenu);
