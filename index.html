@@ -50,6 +50,7 @@ if (!window.supabase?.createClient) {
       <p id="age-verification-status" class="status" role="status"></p>
       <button id="age-verification-submit" class="primary" type="submit">Confirm age</button>
     </form>
+    <button id="age-verification-open-profile" class="outline" type="button">Open Profile age settings</button>
     <button id="age-verification-signout" class="outline" type="button">Sign out</button>
   </section>
 </div>
@@ -344,6 +345,8 @@ if (!window.supabase?.createClient) {
         <button id="admin-intergroup-refresh" class="outline" type="button">Refresh</button>
       </div>
       <div id="admin-intergroup-request-list" class="admin-intergroup-request-list"><p class="muted tiny">Open this tab to load requests.</p></div>
+      <div class="admin-section-heading admin-age-change-heading"><div><h3>Age correction verification</h3><p class="tiny muted">Review age changes submitted in member Profile. Admin sees proposed age groups only, never dates of birth.</p></div><button id="admin-age-change-refresh" class="outline" type="button">Refresh</button></div>
+      <div id="admin-age-change-request-list" class="admin-intergroup-request-list"><p class="muted tiny">Open this tab to load age correction requests.</p></div>
     </section>
     <section class="admin-mode-panel" data-admin-panel="reports" hidden>
       <div class="admin-mode-card admin-feature-card"><span class="eyebrow">SAFETY & MODERATION</span><h3>Member reports</h3><p class="muted tiny">Review reports, update their status, and contact the reported member privately when follow-up is needed.</p><button id="admin-reports-open" class="primary" type="button">Open report inbox</button></div>
@@ -510,6 +513,15 @@ if (!window.supabase?.createClient) {
     <p id="profile-status" class="status"></p>
     <button id="profile-save" class="primary" type="submit">Save changes</button>
   </form>
+  <section id="profile-age-section" class="profile-age-section">
+    <h3>Age & verification</h3>
+    <p id="profile-age-summary" class="tiny muted">Loading your age information…</p>
+    <form id="profile-age-form">
+      <label>Date of birth<input id="profile-age-birth-date" type="date" required autocomplete="bday"></label>
+      <p id="profile-age-status" class="status" role="status"></p>
+      <button id="profile-age-submit" class="primary" type="submit">Confirm age</button>
+    </form>
+  </section>
   <form id="password-form" class="password-form">
     <h3>Account security</h3>
     <p class="tiny muted">Change your password. Use at least 12 characters with uppercase and lowercase letters, a number, and a symbol.</p>
