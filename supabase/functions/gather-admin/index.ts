@@ -287,6 +287,36 @@ Deno.serve(async (request: Request) => {
       return response(200, { request: updated });
     }
 
+    if (action === "list_age_change_requests") {
+      const { data, error } = await userClient.rpc("admin_list_age_change_requests");
+      if (error) return adminError(400, error.message || "Age correction requests could not be loaded.");
+      const rows = Array.isArray(data) ? data : [];
+      const ids = [...new Set(rows.map((item) => item.user_id).filter(Boolean))];
+      const { data: profiles, error: profileError } = ids.length
+        ? await adminClient.from("profiles").select("id,username,display_name").in("id", ids)
+        : { data: [], error: null };
+      if (profileError) return adminError(500, "Member profiles for age correction requests could not be loaded.");
+      const profileById = new Map((profiles ?? []).map((profile) => [profile.id, profile]));
+      return response(200, { requests: rows.map((item) => ({
+        ...item,
+        profile: profileById.get(item.user_id) ?? null,
+      })) });
+    }
+
+    if (action === "review_age_change_request") {
+      const requestId = cleanString(payload.request_id, 80);
+      const decision = cleanString(payload.decision, 20);
+      if (!requestId || !["approved", "declined"].includes(decision)) {
+        return adminError(400, "Choose an age correction and approve or decline it.");
+      }
+      const { data, error } = await userClient.rpc("admin_review_age_change_request", {
+        p_request_id: requestId,
+        p_approve: decision === "approved",
+      });
+      if (error) return adminError(400, error.message || "The age correction could not be reviewed.");
+      return response(200, { result: data });
+    }
+
     if (action === "reset_age_confirmation") {
       if (!targetId || targetId === actorId) return adminError(400, "Choose another member account.");
       const { data: targetResult, error: targetError } = await adminClient.auth.admin.getUserById(targetId);
