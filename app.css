@@ -1932,30 +1932,79 @@ button:not(:disabled):active{transform:translateY(1px) scale(.985)}
   .request-actions{flex-wrap:wrap}
 }
 
-/* Brief post-send undo control. It removes the message for everyone in the chat. */
+/* Compact post-send undo control beside the composer overflow button. */
+.composer-utility-actions{
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:6px;
+  flex:none;
+  min-width:0;
+}
 .message-undo-bar{
-  display:flex;align-items:center;gap:10px;flex:none;
-  width:calc(100% - 42px);max-width:900px;margin:0 auto 8px;padding:9px 11px;
-  border:1px solid var(--accent-outline-soft);border-radius:12px;
-  color:var(--text);background:var(--accent-panel);font-size:calc(10px * var(--font-scale,1));
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  flex:none;
+  width:auto;
+  max-width:min(52vw,190px);
+  margin:0;
+  padding:3px 5px;
+  border:1px solid var(--accent-outline-soft);
+  border-radius:9px;
+  color:var(--text);
+  background:var(--accent-panel);
+  font-size:calc(9px * var(--font-scale,1));
+  white-space:nowrap;
 }
 .message-undo-bar[hidden]{display:none!important}
-.message-undo-bar span{font-weight:750}
-.message-undo-bar small{flex:1;color:var(--muted);font-size:calc(9px * var(--font-scale,1));font-variant-numeric:tabular-nums}
+.message-undo-bar small{
+  flex:none;
+  color:var(--muted);
+  font-size:calc(9px * var(--font-scale,1));
+  font-variant-numeric:tabular-nums;
+}
 .message-undo-bar button{
-  flex:none;width:auto;height:auto;min-height:30px;margin:0;padding:6px 11px;
-  border:1px solid var(--accent-outline-soft);border-radius:8px;
-  color:var(--accent-text);background:var(--accent-surface);
-  font-size:calc(10px * var(--font-scale,1));font-weight:800;
+  flex:none;
+  width:auto;
+  height:26px;
+  min-height:26px;
+  margin:0;
+  padding:3px 7px;
+  border:1px solid var(--accent-outline-soft);
+  border-radius:7px;
+  color:var(--accent-text);
+  background:var(--accent-surface);
+  font-size:calc(9px * var(--font-scale,1));
+  font-weight:800;
+  line-height:1;
 }
 .message-undo-bar .message-undo-dismiss{
-  display:grid;place-items:center;flex:none;width:30px;min-width:30px;height:30px;min-height:30px;
-  padding:0;border:1px solid transparent;border-radius:8px;color:var(--muted);
-  background:transparent;font-size:20px;font-weight:500;line-height:1;cursor:pointer;
+  display:grid;
+  place-items:center;
+  width:22px;
+  min-width:22px;
+  height:24px;
+  min-height:24px;
+  padding:0;
+  border:1px solid transparent;
+  border-radius:6px;
+  color:var(--muted);
+  background:transparent;
+  font-size:17px;
+  font-weight:500;
+  line-height:1;
+  cursor:pointer;
 }
 .message-undo-bar .message-undo-dismiss:hover{border-color:var(--line);color:var(--text);background:var(--accent-hover)}
-.message-undo-bar .message-undo-dismiss:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-@media(max-width:720px){.message-undo-bar{width:calc(100% - 18px);margin-bottom:6px;padding:8px 9px}}
+.message-undo-bar button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media(max-width:520px){
+  .composer-utility-actions{gap:5px}
+  .message-undo-bar{gap:4px;padding:3px 4px}
+  .message-undo-bar button{padding-inline:6px}
+}
 
 
 /* On desktop, keep the four home shortcuts in the left sidebar only. */
