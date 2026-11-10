@@ -1280,7 +1280,11 @@ function renderPresenceUI(){
 }
 function ensurePresenceDisplayTimer(){
   if(S.presenceDisplayTimer)return;
-  S.presenceDisplayTimer=setInterval(renderPresenceUI,30000);
+  S.presenceDisplayTimer=setInterval(()=>{
+    renderPresenceUI();
+    // Heartbeat fallback keeps status accurate if a Realtime presence event is missed.
+    void refreshFriendLastSeen();
+  },30000);
 }
 async function refreshFriendLastSeen(userId=null){
   if(!S.user)return false;
@@ -1293,7 +1297,14 @@ async function refreshFriendLastSeen(userId=null){
   const next={...S.onlineStatuses};
   ids.forEach(id=>next[id]={...(next[id]||{}),online:!!next[id]?.online,lastSeenAt:null,statusUnavailable:true});
   (result.data||[]).forEach(row=>{
-    next[row.user_id]={...(next[row.user_id]||{}),lastSeenAt:row.last_seen_at,statusUnavailable:false};
+    const lastSeenTime=new Date(row.last_seen_at).getTime();
+    const recentHeartbeat=Number.isFinite(lastSeenTime)&&Date.now()-lastSeenTime<=90000;
+    next[row.user_id]={
+      ...(next[row.user_id]||{}),
+      online:!!next[row.user_id]?.online||recentHeartbeat,
+      lastSeenAt:row.last_seen_at,
+      statusUnavailable:false
+    };
   });
   S.onlineStatuses=next;
   renderPresenceUI();
