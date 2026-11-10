@@ -2956,3 +2956,53 @@ html:not([data-theme="light"]) .auth-shell{
     transition:none!important;
   }
 }
+
+
+/* Keep iOS Safari's page/safe-area chrome aligned with the app's selected theme. */
+html{background:var(--bg)}
+html:not([data-theme="light"]){
+  color-scheme:dark;
+  background:#000000;
+}
+html:not([data-theme="light"]) body{
+  background:#000000;
+}
+html:not([data-theme="light"]) .overlay{
+  background:rgba(0,0,0,.84);
+}
+html[data-theme="light"]{
+  color-scheme:light;
+  background:#f3f5fa;
+}
+
+/* A pending private-chat check is informative, not a red error banner. */
+.chat-notice.checking{
+  border-color:var(--accent-outline-soft);
+  color:var(--accent-text);
+  background:var(--accent-surface);
+}
+.chat-notice.verification-error{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.chat-permission-retry{
+  flex:none;
+  min-height:29px;
+  padding:5px 10px;
+  border:1px solid var(--accent-outline);
+  border-radius:8px;
+  color:var(--accent-text);
+  background:var(--accent-surface);
+  font-size:inherit;
+  font-weight:700;
+}
+.chat-permission-retry:focus-visible{
+  outline:2px solid var(--accent);
+  outline-offset:2px;
+}
+@media(prefers-reduced-motion:reduce){
+  .chat-permission-retry{transition:none}
+}
