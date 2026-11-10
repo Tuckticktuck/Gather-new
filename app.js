@@ -2470,10 +2470,10 @@ function renderChats(){
   const pinnedIds=new Set(S.chatSettings.pinned);
   const isArchivedChat=chat=>S.archivedConversationIds instanceof Set&&S.archivedConversationIds.has(chat.id);
   const pinnedChats=S.chatSettings.pinned.map(id=>S.chats.find(chat=>chat.id===id)).filter(chat=>chat&&!isArchivedChat(chat));
-  $("pinned-chat-section").hidden=!pinnedChats.length;
+  $("pinned-chat-section").hidden=!pinnedChats.length||isArchived;
   renderChatSection("direct","pinned-chat-list","pinned-chat-count",term,pinnedChats);
   const adminChats=S.chats.filter(chat=>chat.kind==="direct"&&chat.admin_initiated&&!pinnedIds.has(chat.id)&&!isArchivedChat(chat));
-  $("admin-message-section").hidden=!adminChats.length;
+  $("admin-message-section").hidden=!adminChats.length||isArchived;
   $("admin-message-heading").textContent=isFeedbackAdmin(S.user)?"Admin conversations":"Gather Admin";
   renderChatSection("direct","admin-message-list","admin-message-count",term,adminChats);
   standard.hidden=!isStandard;blocked.hidden=S.folder!=="blocked";deleted.hidden=S.folder!=="deleted";
@@ -2495,7 +2495,7 @@ function renderChats(){
   }else if(S.folder==="blocked")renderBlockedUsers(term);
   else if(S.folder==="deleted")renderDeletedMessages(term);
   else if(isArchived){
-    const archived=S.chats.filter(chat=>isArchivedChat(chat)&&!chat.admin_initiated);
+    const archived=S.chats.filter(chat=>isArchivedChat(chat));
     renderChatSection("direct","archived-direct-list","archived-direct-count",term,archived.filter(chat=>chat.kind==="direct"));
     renderChatSection("group","archived-group-list","archived-group-count",term,archived.filter(chat=>chat.kind==="group"));
   }
@@ -5578,13 +5578,14 @@ function wire(){
   $("chat-actions-open").addEventListener("click",()=>{renderChatOptions();$("chat-actions-modal").hidden=false;});
   $("archive-conversation").addEventListener("click",toggleArchiveConversation);
   $("group-events-open").addEventListener("click",()=>{$("chat-actions-modal").hidden=true;void openGroupEvents();});
+  $("scheduled-messages-chat-open").addEventListener("click",()=>{$("chat-actions-modal").hidden=true;$("scheduled-messages-modal").hidden=false;void loadScheduledMessages();});
   $("shared-media-open").addEventListener("click",()=>{$("chat-actions-modal").hidden=true;void openSharedMedia();});
   $("mark-chat-unread").addEventListener("click",markActiveConversationUnread);
   $("toggle-chat-pin").addEventListener("click",()=>togglePinnedConversation());
   $("toggle-chat-mute").addEventListener("click",()=>toggleMutedConversation());
   $("chat-appearance-accent").addEventListener("change",updateChatAppearance);
   $("chat-appearance-background").addEventListener("change",updateChatAppearance);
-  ["add-people","edit-group-photo","group-settings-open","group-events-open","shared-media-open","search-messages-open","saved-messages-open","leave-chat","block-user","select-messages","delete-selected","archive-conversation"].forEach(id=>$(id).addEventListener("click",()=>{$("chat-actions-modal").hidden=true;}));
+  ["add-people","edit-group-photo","group-settings-open","group-events-open","shared-media-open","scheduled-messages-chat-open","search-messages-open","saved-messages-open","leave-chat","block-user","select-messages","delete-selected","archive-conversation"].forEach(id=>$(id).addEventListener("click",()=>{$("chat-actions-modal").hidden=true;}));
   $("add-people").addEventListener("click",()=>openPeople("add"));$("edit-group-photo").addEventListener("click",openGroupPhoto);$("group-settings-open").addEventListener("click",openGroupSettings);$("group-settings-save").addEventListener("click",saveGroupSettings);$("group-avatar-file").addEventListener("change",handleGroupAvatarFile);$("group-avatar-remove").addEventListener("click",removeGroupAvatar);$("group-avatar-save").addEventListener("click",saveGroupAvatar);$("leave-chat").addEventListener("click",()=>{if(S.active)leaveGroupChat(S.active);});$("requests-open").addEventListener("click",openRequests);$("friends-open").addEventListener("click",openFriends);$("friends-find").addEventListener("click",()=>{setModalBackTarget("people-modal","friends-modal");$("friends-modal").hidden=true;openPeople("friend");});$("block-user").addEventListener("click",toggleBlock);
   $("people-search").addEventListener("input",()=>{clearTimeout(S.timer);S.timer=setTimeout(searchPeople,220);});$("people-create").addEventListener("click",createGroupOrAdd);
   $("home-open").addEventListener("click",goHome);
