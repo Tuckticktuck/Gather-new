@@ -5382,7 +5382,7 @@ async function loadSecurityActivity(){
   const result=await db.from("user_security_activity").select("id,action,details,created_at").eq("user_id",S.user.id).order("created_at",{ascending:false}).limit(50);
   if(result.error){list.replaceChildren(el("p","status error","Account activity could not be loaded: "+result.error.message));return;}
   list.replaceChildren();
-  const labels={profile_updated:"Profile information updated",member_blocked:"A member was blocked",member_unblocked:"A member was unblocked",other_sessions_signed_out:"Other devices were signed out"};
+  const labels={login_success:"Signed in to Gather",profile_updated:"Profile information updated",member_blocked:"A member was blocked",member_unblocked:"A member was unblocked",other_sessions_signed_out:"Other devices were signed out"};
   (result.data||[]).forEach(row=>{
     const card=el("article","feature-list-item");
     card.append(el("strong","",labels[row.action]||"Account activity"),el("small","muted tiny",dateLabel(row.created_at)));
@@ -5559,6 +5559,8 @@ function wire(){
         status("auth-status","Account created and automatically submitted for administrator review. Check your email for the confirmation link, then sign in here. You'll confirm your age before you can access Gather.","success");
       }else if(result.data.session?.user){
         status("auth-status","Signed in. Loading chats…","success");
+        const loginAudit=await db.rpc("record_login_activity");
+        if(loginAudit.error)console.warn("Login activity could not be recorded:",loginAudit.error.message);
         await signedIn(result.data.session.user);
       }else{
         status("auth-status","Gather did not return a sign-in session. Please try again.","error");
