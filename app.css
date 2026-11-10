@@ -3109,3 +3109,22 @@ html[data-theme="light"]{
   outline:2px solid var(--accent);
   outline-offset:3px;
 }
+
+/* The image viewer back control returns to the surface that opened the image. */
+#image-viewer-back{
+  z-index:3;
+  display:grid;
+  place-items:center;
+  width:36px;
+  height:36px;
+  min-width:36px;
+  padding:0;
+  font-size:24px;
+  line-height:1;
+  touch-action:manipulation;
+  cursor:pointer;
+}
+#image-viewer-back:focus-visible{
+  outline:2px solid var(--accent);
+  outline-offset:3px;
+}
