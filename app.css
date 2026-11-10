@@ -2151,3 +2151,19 @@ button:not(:disabled):active{transform:translateY(1px) scale(.985)}
 .admin-intergroup-actions{display:flex;gap:8px;flex-wrap:wrap}
 .admin-intergroup-actions button,.admin-intergroup-revoke{width:auto;min-width:96px;padding:7px 10px}
 .admin-intergroup-revoke{justify-self:start}
+
+
+/* Profile age confirmation and Admin-reviewed corrections. */
+#profile-modal{z-index:21}
+.profile-age-section{
+  display:grid;gap:10px;margin:18px 0;padding:15px;
+  border:1px solid var(--accent-outline-soft);border-radius:13px;
+  background:var(--accent-panel)
+}
+.profile-age-section h3{margin:0;font-size:calc(14px * var(--font-scale,1))}
+.profile-age-section form{display:grid;gap:10px}
+.profile-age-section label{display:grid;gap:7px;font-size:calc(11px * var(--font-scale,1));font-weight:700}
+.profile-age-section input{width:100%;min-height:42px;padding:9px 10px;border:1px solid var(--line);border-radius:9px;color:var(--text);background:var(--input-bg,var(--panel));font:inherit}
+.profile-age-section button{width:100%}
+.profile-age-section .status{margin:0}
+.admin-age-change-heading{margin-top:22px}
