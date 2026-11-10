@@ -526,7 +526,29 @@ function syncOwnAvatar(){
   paintAvatar($("user-initial"),S.profile.display_name,S.profile.avatar_data);
   paintAvatar($("profile-avatar-preview"),S.profile.display_name,S.profile.avatar_data);
 }
-function dateLabel(s) { if(!s)return ""; const d=new Date(s), now=new Date(); return d.toDateString()===now.toDateString()?d.toLocaleTimeString([],{hour:"numeric",minute:"2-digit"}):d.toLocaleDateString([],{month:"short",day:"numeric"}); }
+function dateLabel(s){
+  if(!s)return "";
+  const date=new Date(s);
+  if(Number.isNaN(date.getTime()))return "";
+
+  const now=new Date();
+  const todayUtc=Date.UTC(now.getFullYear(),now.getMonth(),now.getDate());
+  const dateUtc=Date.UTC(date.getFullYear(),date.getMonth(),date.getDate());
+  const dayDifference=Math.round((todayUtc-dateUtc)/86400000);
+
+  if(dayDifference===0){
+    return date.toLocaleTimeString([],{hour:"numeric",minute:"2-digit"});
+  }
+  if(dayDifference===1)return "Yesterday";
+  if(dayDifference>1&&dayDifference<7)return dayDifference+" days ago";
+  if(dayDifference>=7){
+    const weeks=Math.floor(dayDifference/7);
+    return weeks+" week"+(weeks===1?"":"s")+" ago";
+  }
+  if(dayDifference===-1)return "Tomorrow";
+  if(dayDifference< -1)return "In "+Math.abs(dayDifference)+" days";
+  return date.toLocaleDateString([],{month:"short",day:"numeric"});
+}
 function loadReadState(){
   if(!S.user){S.lastReadAt={};return;}
   try{
