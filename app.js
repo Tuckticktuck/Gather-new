@@ -30,7 +30,7 @@ function normalizeChatSettings(raw){
   });
   return {pinned,muted,drafts,appearance};
 }
-const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], favoriteFriendIds:new Set(), blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingUndoSend:null, undoSendTimer:null, undoCountdownInterval:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, homeSearchQuery:"", homeSearchTab:"messages", homeSearchMessages:[], homeSearchProfiles:[], homeSearchLoading:false, homeSearchErrors:{messages:"",profiles:""}, homeSearchTimer:null, homeSearchRequestId:0, directStatus:null, ageStatus:null, ageRequestChannel:null, messageRestriction:null, messageRestrictionLoaded:false, messageRestrictionError:"", messageRestrictionChannel:null, messageRestrictionTimer:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],intergroupRequests:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
+const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], favoriteFriendIds:new Set(), blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingUndoSend:null, undoSendTimer:null, undoCountdownInterval:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, homeSearchQuery:"", homeSearchTab:"messages", homeSearchMessages:[], homeSearchProfiles:[], homeSearchLoading:false, homeSearchErrors:{messages:"",profiles:""}, homeSearchTimer:null, homeSearchRequestId:0, directStatus:null, groupMessageStatus:null, ageStatus:null, ageRequestChannel:null, messageRestriction:null, messageRestrictionLoaded:false, messageRestrictionError:"", messageRestrictionChannel:null, messageRestrictionTimer:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],intergroupRequests:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function appendFormattedMessageText(parent,value){
@@ -2329,12 +2329,20 @@ function renderDirectControls(){
   $("delete-selected").hidden=!S.selectingMessages||S.selectedMessageIds.size===0;
   $("delete-selected").textContent="Delete selected ("+S.selectedMessageIds.size+")";
   if(!isDirect){
-    $("chat-notice").hidden=true;
-    $("message").disabled=sendingDisabled;
-    $("message").placeholder=restrictionPending?"Checking messaging permissions…":messageRestricted?"Messaging temporarily restricted":"Write a message…";
-    $("send").disabled=sendingDisabled;
-    $("message-image-file").disabled=sendingDisabled;
-    $("composer-more-trigger").disabled=sendingDisabled;
+    const groupCheckPending=c?.kind==="group"&&!S.groupMessageStatus;
+    const groupBlocked=c?.kind==="group"&&!!S.groupMessageStatus&&!S.groupMessageStatus.can_message;
+    const disabled=sendingDisabled||groupCheckPending||groupBlocked;
+    $("message").disabled=disabled;
+    $("message").placeholder=restrictionPending?"Checking messaging permissions…":messageRestricted?"Messaging temporarily restricted":groupCheckPending?"Checking group messaging access…":groupBlocked?"Group messaging unavailable":"Write a message…";
+    $("send").disabled=disabled;
+    $("message-image-file").disabled=disabled;
+    $("composer-more-trigger").disabled=disabled;
+    $("chat-notice").hidden=!groupBlocked;
+    $("chat-notice").textContent=groupBlocked
+      ?(S.groupMessageStatus.age_restricted
+        ?"This group includes members from another age group. Gather Admin must approve each cross-group member pair before messages can be sent."
+        :"Messaging is unavailable because a member has blocked someone in this group.")
+      :"";
     return;
   }
   const d=S.directStatus,ageApprovalNeeded=!!d?.is_intergroup&&!d?.intergroup_permission,blocked=!d?.can_message;
@@ -2350,11 +2358,22 @@ function renderDirectControls(){
 }
 async function refreshDirectStatus(conversationId=S.active){
   if(!conversationId||S.active!==conversationId)return;
-  const c=S.chats.find(x=>x.id===conversationId),peer=c?.members.find(m=>m.user_id!==S.user.id);
-  if(!c||c.kind!=="direct"||!peer){if(S.active!==conversationId)return;S.directStatus=null;renderDirectControls();return;}
+  const c=S.chats.find(x=>x.id===conversationId);
+  if(!c){if(S.active!==conversationId)return;S.directStatus=null;S.groupMessageStatus=null;renderDirectControls();return;}
+  if(c.kind==="group"){
+    const groupResult=await db.rpc("get_conversation_message_status",{p_conversation_id:conversationId});
+    if(S.active!==conversationId)return;
+    S.groupMessageStatus=groupResult.error?{can_message:false,age_restricted:false,blocked_pair:false,error:groupResult.error.message}:(groupResult.data||{can_message:false});
+    S.directStatus=null;
+    renderDirectControls();
+    return;
+  }
+  const peer=c.members.find(m=>m.user_id!==S.user.id);
+  if(!peer){if(S.active!==conversationId)return;S.directStatus=null;renderDirectControls();return;}
   const r=await db.rpc("get_direct_chat_status",{p_other_user_id:peer.user_id});
   if(S.active!==conversationId)return;
   S.directStatus=r.error?{i_blocked:false,can_message:false,error:r.error.message}:(r.data||{i_blocked:false,can_message:false,error:"No status returned"});
+  S.groupMessageStatus=null;
   renderDirectControls();
 }
 async function leaveGroupChat(conversationId){
@@ -2575,7 +2594,7 @@ async function openChat(id){
   if(S.readChannel){db.removeChannel(S.readChannel);S.readChannel=null;}
   if(S.pollChannel){db.removeChannel(S.pollChannel);S.pollChannel=null;}
   clearPendingMessageImage();
-  S.active=id;S.unreadTargetMessageId=null;S.unreadTargetLoaded=false;restoreChatDraft(id);S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;
+  S.active=id;S.unreadTargetMessageId=null;S.unreadTargetLoaded=false;restoreChatDraft(id);S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;S.groupMessageStatus=null;
   S.messages=[];S.messageReads={};S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.openMessageMenuId=null;S.replyTo=null;S.hasOlderMessages=false;S.loadingOlder=false;renderReplyComposer();
   renderMessageSkeletons();
   $("layout").classList.remove("show-home");$("layout").classList.add("show-chat");renderActive();
@@ -3390,6 +3409,7 @@ async function sendMessage(e){
   if((!body&&!file)||!S.active)return;
   const conversationId=S.active,activeChat=S.chats.find(x=>x.id===conversationId);
   if(activeChat?.kind==="direct"&&!S.directStatus?.can_message){toast("Private messaging is unavailable in this conversation.");return;}
+  if(activeChat?.kind==="group"&&!S.groupMessageStatus?.can_message){toast("Group messaging is unavailable until age-group and block permissions are satisfied.");return;}
   const reply=S.replyTo;const send=$("send");send.disabled=true;
   let attachmentPath=null;
   if(file){
