@@ -2139,3 +2139,15 @@ button:not(:disabled):active{transform:translateY(1px) scale(.985)}
 .age-verification-modal input{width:100%;min-height:42px;padding:9px 10px;border:1px solid var(--line);border-radius:9px;color:var(--text);background:var(--input-bg,var(--panel));font:inherit}
 .age-verification-modal>button{margin-top:10px}
 @media(max-width:520px){.age-verification-modal{width:100%;max-height:calc(100dvh - 14px);padding:18px 14px}}
+
+
+.admin-intergroup-request-list{display:grid;gap:10px}
+.admin-intergroup-request{
+  display:grid;gap:8px;padding:13px;border:1px solid var(--line);
+  border-radius:11px;background:var(--card,var(--panel))
+}
+.admin-intergroup-request>strong{font-size:calc(11px * var(--font-scale,1));line-height:1.4;overflow-wrap:anywhere}
+.admin-intergroup-request>small{color:var(--muted);font-size:calc(9px * var(--font-scale,1))}
+.admin-intergroup-actions{display:flex;gap:8px;flex-wrap:wrap}
+.admin-intergroup-actions button,.admin-intergroup-revoke{width:auto;min-width:96px;padding:7px 10px}
+.admin-intergroup-revoke{justify-self:start}
