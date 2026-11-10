@@ -1285,8 +1285,22 @@ function dismissMessageNotification(messageId){
   if(!id)return;
   if(S.notificationTimers[id]){clearTimeout(S.notificationTimers[id]);delete S.notificationTimers[id];}
   const card=$("message-notification-"+id);
-  if(card)card.remove();
   const container=$("message-notifications");
+  if(card){
+    if(card.classList.contains("is-dismissing"))return;
+    card.classList.add("is-dismissing");
+    let removed=false;
+    const finishRemoval=()=>{
+      if(removed)return;
+      removed=true;
+      card.removeEventListener("transitionend",finishRemoval);
+      card.remove();
+      if(container)container.hidden=container.childElementCount===0;
+    };
+    card.addEventListener("transitionend",finishRemoval);
+    setTimeout(finishRemoval,260);
+    return;
+  }
   if(container)container.hidden=container.childElementCount===0;
 }
 function clearMessageNotifications(){
