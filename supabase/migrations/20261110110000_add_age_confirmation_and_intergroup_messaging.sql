@@ -532,4 +532,53 @@ begin
 end
 $publication$;
 
+create or replace function private.get_conversation_message_status(p_conversation_id uuid)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path=''
+as $function$
+declare
+  v_user_id uuid := (select auth.uid());
+  v_can_message boolean;
+  v_age_restricted boolean;
+  v_blocked boolean;
+begin
+  if v_user_id is null then raise exception 'You must be signed in.'; end if;
+  if not private.is_conversation_member(p_conversation_id) then
+    raise exception using errcode='42501',message='You are not a member of this conversation.';
+  end if;
+  v_can_message:=private.can_send_message(p_conversation_id);
+  select exists(
+    select 1 from public.conversation_members a
+    join public.conversation_members b
+      on b.conversation_id=a.conversation_id and b.user_id>a.user_id
+    where a.conversation_id=p_conversation_id
+      and not private.users_are_blocked(a.user_id,b.user_id)
+      and not private.can_pair_message(a.user_id,b.user_id)
+  ) into v_age_restricted;
+  select exists(
+    select 1 from public.conversation_members a
+    join public.conversation_members b
+      on b.conversation_id=a.conversation_id and b.user_id>a.user_id
+    where a.conversation_id=p_conversation_id
+      and private.users_are_blocked(a.user_id,b.user_id)
+  ) into v_blocked;
+  return jsonb_build_object('can_message',v_can_message,'age_restricted',v_age_restricted,'blocked_pair',v_blocked);
+end;
+$function$;
+
+create or replace function public.get_conversation_message_status(p_conversation_id uuid)
+returns jsonb
+language sql
+security invoker
+set search_path=''
+as $function$ select private.get_conversation_message_status(p_conversation_id); $function$;
+
+revoke all on function private.get_conversation_message_status(uuid) from public,anon;
+grant execute on function private.get_conversation_message_status(uuid) to authenticated;
+revoke all on function public.get_conversation_message_status(uuid) from public,anon;
+grant execute on function public.get_conversation_message_status(uuid) to authenticated;
+
 notify pgrst,'reload schema';
