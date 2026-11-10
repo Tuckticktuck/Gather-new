@@ -1975,7 +1975,9 @@ async function openConversationMemberProfile(userId){
   else toast("This member is not currently available for private messaging.");
 }
 function renderChatSection(kind,listId,countId,term,sourceChats=null){
-  const list=$(listId);list.replaceChildren();
+  const list=$(listId);
+  const existingChatIds=new Set([...list.querySelectorAll(".chat-row[data-conversation-id]")].map(row=>row.dataset.conversationId));
+  list.replaceChildren();
   const chats=(sourceChats||S.chats.filter(c=>c.kind===kind)).filter(c=>{
     const searchable=[chatTitle(c),chatSub(c),c.last?.body||""].join(" ").toLowerCase();
     return (!c.hasMessages||!!c.last)&&searchable.includes(term);
@@ -1989,6 +1991,8 @@ function renderChatSection(kind,listId,countId,term,sourceChats=null){
   }
   chats.forEach(c=>{
     const row=el("div","chat-row");
+    row.dataset.conversationId=String(c.id);
+    if(!existingChatIds.has(String(c.id)))row.classList.add("gather-list-enter");
     const peer=c.members.find(m=>m.user_id!==S.user.id),peerProfile=peer&&S.profiles[peer.user_id];
     const isGatherAdminPeer=!!c.admin_initiated&&peer?.user_id===c.created_by;
     const profileShortcut=!S.selectingConversations&&c.kind==="direct"&&!!peer?.user_id&&!isGatherAdminPeer;
@@ -2223,7 +2227,7 @@ function renderHomeSearchResults(){
   else if(S.homeSearchErrors.messages)messageList.append(el("p","status error home-search-empty","Messages could not be searched: "+S.homeSearchErrors.messages));
   else if(!S.homeSearchMessages.length)messageList.append(el("p","muted tiny home-search-empty","No matching messages found."));
   S.homeSearchMessages.forEach(message=>{
-    const button=el("button","message-search-result home-search-message-result");button.type="button";
+    const button=el("button","message-search-result home-search-message-result gather-list-enter");button.type="button";
     const chat=S.chats.find(item=>item.id===message.conversation_id);
     const sender=S.profiles[message.sender_id]?.display_name||"Gather member";
     const title=[chat?chatTitle(chat):"Conversation",sender,dateLabel(message.created_at)].join(" · ");
@@ -2235,7 +2239,7 @@ function renderHomeSearchResults(){
   else if(S.homeSearchErrors.profiles)profileList.append(el("p","status error home-search-empty","Profiles could not be searched: "+S.homeSearchErrors.profiles));
   else if(!S.homeSearchProfiles.length)profileList.append(el("p","muted tiny home-search-empty","No matching profiles found."));
   S.homeSearchProfiles.forEach(profile=>{
-    const row=el("article","home-search-profile-result");row.append(avatar(profile.display_name,profile.avatar_data));
+    const row=el("article","home-search-profile-result gather-list-enter");row.append(avatar(profile.display_name,profile.avatar_data));
     const copy=el("div","home-search-profile-copy");
     copy.append(el("strong","",profile.display_name),el("small","muted","@"+profile.username));appendApprovedBadge(copy,profile.id,"profile");row.append(copy);
     const isSelf=profile.id===S.user?.id;
