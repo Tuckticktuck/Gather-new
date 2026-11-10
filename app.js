@@ -33,18 +33,48 @@ function normalizeChatSettings(raw){
 const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], favoriteFriendIds:new Set(), archivedConversationIds:new Set(), blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingUndoSend:null, undoSendTimer:null, undoCountdownInterval:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, homeSearchQuery:"", homeSearchTab:"messages", homeSearchMessages:[], homeSearchProfiles:[], homeSearchLoading:false, homeSearchErrors:{messages:"",profiles:""}, homeSearchTimer:null, homeSearchRequestId:0, directStatus:null, directStatusCache:new Map(), directStatusChecks:new Map(), groupMessageStatus:null, ageStatus:null, ageChangeStatus:null, ageRequestChannel:null, messageRestriction:null, messageRestrictionLoaded:false, messageRestrictionError:"", messageRestrictionChannel:null, messageRestrictionTimer:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],intergroupRequests:[],ageChangeRequests:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
+function appendSafeText(parent,value){
+  const source=String(value??"");
+  const pattern=/https?:\/\/[^\s<>"']+/gi;
+  let last=0,match;
+  while((match=pattern.exec(source))){
+    let raw=match[0],urlText=raw;
+    while(/[.,!?;:)]$/.test(urlText))urlText=urlText.slice(0,-1);
+    if(match.index>last)parent.append(document.createTextNode(source.slice(last,match.index)));
+    let safeUrl=null;
+    try{
+      const parsed=new URL(urlText);
+      if(parsed.protocol==="http:"||parsed.protocol==="https:")safeUrl=parsed.href;
+    }catch(error){}
+    if(!safeUrl){parent.append(document.createTextNode(raw));last=match.index+raw.length;continue;}
+    const link=el("a","message-link",urlText);
+    link.href=safeUrl;link.target="_blank";link.rel="noopener noreferrer nofollow";
+    link.addEventListener("click",event=>{
+      event.preventDefault();
+      let host;
+      try{host=new URL(safeUrl).hostname;}catch(error){return;}
+      if(confirm("You're opening an external website ("+host+"). Only continue if you trust this link.")){
+        window.open(safeUrl,"_blank","noopener,noreferrer");
+      }
+    });
+    parent.append(link);
+    if(urlText.length<raw.length)parent.append(document.createTextNode(raw.slice(urlText.length)));
+    last=match.index+raw.length;
+  }
+  if(last<source.length)parent.append(document.createTextNode(source.slice(last)));
+}
 function appendFormattedMessageText(parent,value){
   const source=String(value??"");
   const pattern=/\*\*([\s\S]+?)\*\*|#([\s\S]+?)#/g;
   let last=0,match;
   while((match=pattern.exec(source))){
-    if(match.index>last)parent.append(document.createTextNode(source.slice(last,match.index)));
+    if(match.index>last)appendSafeText(parent,source.slice(last,match.index));
     const formatted=document.createElement(match[1]!==undefined?"strong":"em");
     appendFormattedMessageText(formatted,match[1]??match[2]);
     parent.append(formatted);
     last=pattern.lastIndex;
   }
-  if(last<source.length)parent.append(document.createTextNode(source.slice(last)));
+  if(last<source.length)appendSafeText(parent,source.slice(last));
 }
 function status(id, text, kind) { const n=$(id); n.textContent=text||""; n.className="status"+(kind?" "+kind:""); }
 function isFeedbackAdmin(user){return !!user&&!user.is_anonymous&&user.app_metadata?.gather_role==="admin";}
@@ -1413,6 +1443,27 @@ function isWithinQuietHours(now=new Date()){
   const current=now.getHours()*60+now.getMinutes();
   return start<end?(current>=start&&current<end):(current>=start||current<end);
 }
+function playNotificationSound(){
+  const mode=S.preferences.notificationSound;
+  if(mode==="off")return;
+  try{
+    const AudioCtx=window.AudioContext||window.webkitAudioContext;
+    if(!AudioCtx)return;
+    const context=new AudioCtx();
+    const frequencies=mode==="chime"?[660,880]:[520];
+    const now=context.currentTime;
+    frequencies.forEach((frequency,index)=>{
+      const oscillator=context.createOscillator(),gain=context.createGain();
+      oscillator.type="sine";oscillator.frequency.setValueAtTime(frequency,now+index*.12);
+      gain.gain.setValueAtTime(.0001,now+index*.12);
+      gain.gain.exponentialRampToValueAtTime(.045,now+index*.12+.02);
+      gain.gain.exponentialRampToValueAtTime(.0001,now+index*.12+.15);
+      oscillator.connect(gain);gain.connect(context.destination);
+      oscillator.start(now+index*.12);oscillator.stop(now+index*.12+.17);
+    });
+    setTimeout(()=>{try{context.close();}catch(error){}},650);
+  }catch(error){/* Browser audio can be unavailable until the user interacts with the page. */}
+}
 function showMessageNotification(message,chat){
   if(!message||!chat||!S.user||message.sender_id===S.user.id||S.active===chat.id||S.chatSettings.muted[chat.id]||isWithinQuietHours())return;
   const container=$("message-notifications");
@@ -1441,6 +1492,7 @@ function showMessageNotification(message,chat){
   card.append(open,dismiss);
   container.prepend(card);
   container.hidden=false;
+  playNotificationSound();
   if(S.preferences.messageNotificationMode!=="persistent"){
     S.notificationTimers[message.id]=setTimeout(()=>dismissMessageNotification(message.id),5000);
   }
@@ -1849,6 +1901,10 @@ function subscribeMessages(){
       if(!message?.id||!message.conversation_id||S.deletedMessageIds.has(message.id))return;
       const chat=S.chats.find(x=>x.id===message.conversation_id);
       if(!chat){loadChats();return;}
+      if(message.sender_id!==uid&&S.archivedConversationIds.has(chat.id)){
+        const restored=await db.from("user_archived_conversations").delete().eq("user_id",uid).eq("conversation_id",chat.id);
+        if(!restored.error){S.archivedConversationIds.delete(chat.id);toast("A new message moved an archived conversation back to your inbox.");}
+      }
       if(!chat.last||new Date(message.created_at)>=new Date(chat.last.created_at)){chat.last=message;chat.updated_at=message.created_at;}
       chat.hasMessages=true;
       if(S.active===chat.id){
@@ -3392,6 +3448,7 @@ function renderMessages(preserveScroll=false){
       addAction("Reply",()=>beginReply(m));
       addAction(S.openReactionPickerMessageId===m.id?"Close reaction picker":"React",()=>{S.openReactionPickerMessageId=S.openReactionPickerMessageId===m.id?null:m.id;renderMessages(true);});
       if(mine&&m.body&&!m.is_admin_message&&S.messageRestrictionLoaded&&!activeMessageRestriction())addAction("Edit",()=>editOwnMessage(m));
+      if(m.edited_at)addAction("View edit history",()=>openMessageEditHistory(m));
       if(mine&&m._undoExpiresAt>Date.now())addAction("Undo send",()=>undoSendMessage(m));
       addAction("Copy message",()=>copyMessage(m));
       if(S.messageRestrictionLoaded&&!activeMessageRestriction())addAction("Forward message",()=>openForwardMessage(m));
@@ -3421,8 +3478,8 @@ function renderMessages(preserveScroll=false){
     if(m.attachment_path){
       if(m.image_url){
         const link=el("a","message-image-link");
-        link.href=m.image_url;link.target="_blank";link.rel="noopener noreferrer";
-        link.setAttribute("aria-label","Open image in a new tab");
+        link.href=m.image_url;link.setAttribute("aria-label","View image");
+        link.addEventListener("click",event=>{event.preventDefault();openImageViewer(m.image_url,"Image shared in "+chatTitle(activeChat||{kind:"direct",members:[]}));});
         const image=el("img","message-image");
         image.src=m.image_url;image.alt="Image sent by "+(p?.display_name||"a Gather member");
         image.loading="lazy";image.decoding="async";
@@ -3588,6 +3645,11 @@ function openMessageSearch(scope="conversation"){
   $("message-search-label").textContent=conversationId?"Search this conversation":"Search all conversations";
   $("message-search-input").placeholder=conversationId?"Find a word or phrase":"Find a word or phrase in any chat";
   $("message-search-input").value="";
+  $("message-search-sender").replaceChildren(new Option("Anyone",""));
+  const scopeIds=conversationId?[conversationId]:S.chats.map(chat=>chat.id);
+  const scopeMembers=[...new Set(S.chats.filter(chat=>scopeIds.includes(chat.id)).flatMap(chat=>chat.members.map(member=>member.user_id)))];
+  scopeMembers.forEach(userId=>{const profile=S.profiles[userId];$("message-search-sender").add(new Option(userId===S.user.id?"You":profile?.display_name||"Member",userId));});
+  $("message-search-from").value="";$("message-search-to").value="";
   $("message-search-results").replaceChildren(el("p","muted tiny",conversationId?"Search all messages in this conversation.":"Search messages across your Gather conversations."));
   $("message-search-more").hidden=true;status("message-search-status","");$("message-search-modal").hidden=false;$("message-search-input").focus();
 }
@@ -3602,6 +3664,10 @@ async function searchConversationMessages(reset=true){
   let request=db.from("messages").select("id,conversation_id,sender_id,body,created_at");
   if(conversationId)request=request.eq("conversation_id",conversationId);
   else request=request.in("conversation_id",S.chats.map(chat=>chat.id));
+  const senderId=$("message-search-sender").value,fromDate=$("message-search-from").value,toDate=$("message-search-to").value;
+  if(senderId)request=request.eq("sender_id",senderId);
+  if(fromDate){const startDate=new Date(fromDate+"T00:00:00");if(Number.isFinite(startDate.getTime()))request=request.gte("created_at",startDate.toISOString());}
+  if(toDate){const endDate=new Date(toDate+"T00:00:00");endDate.setDate(endDate.getDate()+1);if(Number.isFinite(endDate.getTime()))request=request.lt("created_at",endDate.toISOString());}
   const result=await request.ilike("body","%"+query+"%").order("created_at",{ascending:false}).order("id",{ascending:false}).range(from,to);
   if(result.error){status("message-search-status","Search failed: "+result.error.message,"error");return;}
   const rows=(result.data||[]).filter(m=>!S.deletedMessageIds.has(m.id));
@@ -5262,6 +5328,201 @@ function toggleComposerMoreMenu(){
   menu.hidden=!opening;
   trigger.setAttribute("aria-expanded",String(opening));
 }
+async function openMessageEditHistory(message){
+  if(!message?.id)return;
+  const list=$("message-edit-history-list");
+  list.replaceChildren(el("p","muted tiny","Loading edit history…"));
+  $("message-edit-history-modal").hidden=false;
+  const result=await db.from("message_edit_history").select("previous_body,edited_at,editor_id").eq("message_id",message.id).order("edited_at",{ascending:false}).limit(30);
+  if(result.error){list.replaceChildren(el("p","status error","Edit history could not be loaded: "+result.error.message));return;}
+  list.replaceChildren();
+  const current=el("article","feature-list-item");
+  current.append(el("strong","","Current version"),el("p","",message.body||"(No text)"),el("small","muted tiny","Current"));
+  list.append(current);
+  (result.data||[]).forEach((entry,index)=>{
+    const card=el("article","feature-list-item");
+    card.append(el("strong","","Previous version "+(index+1)),el("p","",entry.previous_body),el("small","muted tiny",dateLabel(entry.edited_at)));
+    list.append(card);
+  });
+  if(!result.data?.length)list.append(el("p","muted tiny","No earlier versions were recorded for this message."));
+}
+function openImageViewer(src,alt="Shared image"){
+  if(!src)return;
+  $("image-viewer-image").src=src;
+  $("image-viewer-image").alt=alt;
+  $("image-viewer-modal").hidden=false;
+}
+async function openSharedMedia(){
+  const chat=S.chats.find(item=>item.id===S.active);
+  if(!chat)return;
+  const list=$("shared-media-list");
+  list.replaceChildren(el("p","muted tiny","Loading shared media…"));
+  $("shared-media-modal").hidden=false;
+  const result=await db.from("messages").select("id,sender_id,attachment_path,created_at").eq("conversation_id",chat.id).not("attachment_path","is",null).order("created_at",{ascending:false}).limit(150);
+  if(result.error){list.replaceChildren(el("p","status error","Shared media could not be loaded: "+result.error.message));return;}
+  const rows=(result.data||[]).filter(row=>!S.deletedMessageIds.has(row.id)&&row.attachment_path);
+  if(!rows.length){list.replaceChildren(el("p","muted tiny","No shared images in this conversation yet."));return;}
+  const signed=await db.storage.from("gather-message-images").createSignedUrls(rows.map(row=>row.attachment_path),3600);
+  if(signed.error){list.replaceChildren(el("p","status error","Images could not be opened: "+signed.error.message));return;}
+  const byPath=new Map((signed.data||[]).filter(row=>row.signedUrl).map(row=>[row.path,row.signedUrl]));
+  list.replaceChildren();
+  rows.forEach(row=>{
+    const src=byPath.get(row.attachment_path);if(!src)return;
+    const button=el("button","shared-media-item");button.type="button";
+    const image=el("img");image.src=src;image.alt="Shared image";image.loading="lazy";
+    button.append(image);button.addEventListener("click",()=>openImageViewer(src,"Image shared in "+chatTitle(chat)));
+    list.append(button);
+  });
+  if(!list.children.length)list.append(el("p","muted tiny","No shared images are available right now."));
+}
+async function loadSecurityActivity(){
+  const list=$("security-activity-list");
+  list.replaceChildren(el("p","muted tiny","Loading account activity…"));
+  $("security-activity-modal").hidden=false;
+  const result=await db.from("user_security_activity").select("id,action,details,created_at").eq("user_id",S.user.id).order("created_at",{ascending:false}).limit(50);
+  if(result.error){list.replaceChildren(el("p","status error","Account activity could not be loaded: "+result.error.message));return;}
+  list.replaceChildren();
+  const labels={profile_updated:"Profile information updated",member_blocked:"A member was blocked",member_unblocked:"A member was unblocked",other_sessions_signed_out:"Other devices were signed out"};
+  (result.data||[]).forEach(row=>{
+    const card=el("article","feature-list-item");
+    card.append(el("strong","",labels[row.action]||"Account activity"),el("small","muted tiny",dateLabel(row.created_at)));
+    list.append(card);
+  });
+  if(!result.data?.length)list.append(el("p","muted tiny","No account activity has been recorded yet."));
+}
+async function loadScheduledMessages(){
+  const list=$("scheduled-messages-list"),conversationId=S.active;
+  if(!conversationId){list.replaceChildren(el("p","muted tiny","Open a conversation to manage its scheduled messages."));return;}
+  list.replaceChildren(el("p","muted tiny","Loading scheduled messages…"));
+  const result=await db.from("scheduled_messages").select("id,body,scheduled_for,sent_at,cancelled_at,failed_at,last_error").eq("conversation_id",conversationId).eq("sender_id",S.user.id).order("scheduled_for",{ascending:true}).limit(50);
+  if(result.error){list.replaceChildren(el("p","status error","Scheduled messages could not be loaded: "+result.error.message));return;}
+  list.replaceChildren();
+  (result.data||[]).forEach(row=>{
+    const card=el("article","feature-list-item");
+    const state=row.sent_at?"Sent":row.cancelled_at?"Cancelled":row.failed_at?"Not sent":"Scheduled";
+    card.append(el("strong","",state+" · "+new Date(row.scheduled_for).toLocaleString()),el("p","",row.body));
+    if(row.last_error)card.append(el("small","muted tiny",row.last_error));
+    if(!row.sent_at&&!row.cancelled_at&&!row.failed_at){
+      const actions=el("div","feature-list-actions"),cancel=el("button","outline","Cancel");
+      cancel.type="button";cancel.addEventListener("click",async()=>{
+        const update=await db.from("scheduled_messages").update({cancelled_at:new Date().toISOString()}).eq("id",row.id).eq("sender_id",S.user.id).is("sent_at",null).is("cancelled_at",null).is("failed_at",null);
+        if(update.error){toast("Scheduled message could not be cancelled: "+update.error.message);return;}
+        await loadScheduledMessages();
+      });
+      actions.append(cancel);card.append(actions);
+    }
+    list.append(card);
+  });
+  if(!result.data?.length)list.append(el("p","muted tiny","No scheduled messages for this conversation."));
+}
+function openScheduleMessage(){
+  if(!S.active)return;
+  const chat=S.chats.find(item=>item.id===S.active);
+  const allowed=chat?.kind==="direct"?!!S.directStatus?.can_message:!!S.groupMessageStatus?.can_message;
+  if(!S.messageRestrictionLoaded||activeMessageRestriction()||!allowed){toast("You can schedule a message only when messaging is currently permitted.");return;}
+  const value=new Date(Date.now()+15*60*1000),pad=n=>String(n).padStart(2,"0");
+  $("scheduled-message-time").value=value.getFullYear()+"-"+pad(value.getMonth()+1)+"-"+pad(value.getDate())+"T"+pad(value.getHours())+":"+pad(value.getMinutes());
+  status("scheduled-message-status","");
+  $("scheduled-message-modal").hidden=false;
+  closeComposerMoreMenu();
+}
+async function submitScheduledMessage(event){
+  event.preventDefault();
+  const body=$("message").value.trim();
+  if(!body){status("scheduled-message-status","Write a message in the composer before scheduling it.","error");return;}
+  const scheduledFor=new Date($("scheduled-message-time").value);
+  const now=Date.now();
+  if(!Number.isFinite(scheduledFor.getTime())||scheduledFor.getTime()<now+60000||scheduledFor.getTime()>now+30*86400000){
+    status("scheduled-message-status","Choose a time at least one minute from now and within the next 30 days.","error");return;
+  }
+  const chat=S.chats.find(item=>item.id===S.active);
+  const allowed=chat?.kind==="direct"?!!S.directStatus?.can_message:!!S.groupMessageStatus?.can_message;
+  if(!S.messageRestrictionLoaded||activeMessageRestriction()||!allowed){status("scheduled-message-status","Messaging is no longer permitted in this conversation.","error");return;}
+  const button=$("scheduled-message-submit");button.disabled=true;
+  const result=await db.from("scheduled_messages").insert({
+    conversation_id:S.active,sender_id:S.user.id,body,scheduled_for:scheduledFor.toISOString()
+  }).select("id").single();
+  button.disabled=false;
+  if(result.error){status("scheduled-message-status","The message could not be scheduled: "+result.error.message,"error");return;}
+  $("scheduled-message-modal").hidden=true;
+  $("message").value="";$("message").style.height="auto";saveLocalChatDraftOverride(S.active,"");delete S.chatSettings.drafts[S.active];saveChatSettings();
+  toast("Message scheduled. Gather will recheck permissions when it is due.");
+}
+async function loadGroupEvents(){
+  const chat=S.chats.find(item=>item.id===S.active);
+  const list=$("group-events-list");
+  if(!chat||chat.kind!=="group"){list.replaceChildren(el("p","muted tiny","Group events are only available inside group conversations."));return;}
+  const result=await db.from("group_events").select("id,conversation_id,created_by,title,details,starts_at,ends_at,created_at").eq("conversation_id",chat.id).order("starts_at",{ascending:true}).limit(100);
+  if(result.error){list.replaceChildren(el("p","status error","Events could not be loaded: "+result.error.message));return;}
+  const events=result.data||[];
+  const ids=events.map(row=>row.id);
+  let rsvps=[];
+  if(ids.length){
+    const response=await db.from("group_event_rsvps").select("event_id,user_id,response").eq("conversation_id",chat.id).in("event_id",ids);
+    if(response.error)console.warn("Event RSVPs could not be loaded:",response.error.message);
+    else rsvps=response.data||[];
+  }
+  list.replaceChildren();
+  events.forEach(event=>{
+    const card=el("article","feature-list-item");
+    card.append(el("strong","",event.title),el("small","muted tiny",new Date(event.starts_at).toLocaleString()+(event.ends_at?" – "+new Date(event.ends_at).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"}):"")));
+    if(event.details)card.append(el("p","",event.details));
+    const mine=rsvps.find(row=>row.event_id===event.id&&row.user_id===S.user.id);
+    const actions=el("div","feature-list-actions");
+    [["going","Going"],["maybe","Maybe"],["not_going","Can't go"]].forEach(([value,label])=>{
+      const button=el("button","outline"+(mine?.response===value?" active":""),label);
+      button.type="button";button.addEventListener("click",()=>respondToGroupEvent(event,value));
+      actions.append(button);
+    });
+    const counts=["going","maybe","not_going"].map(value=>value+": "+rsvps.filter(row=>row.event_id===event.id&&row.response===value).length).join(" · ");
+    card.append(actions,el("small","muted tiny",counts));
+    const me=chat.members.find(member=>member.user_id===S.user.id);
+    if(me?.role==="owner"||me?.role==="moderator"){
+      const remove=el("button","outline","Delete event");remove.type="button";
+      remove.addEventListener("click",async()=>{
+        if(!confirm("Delete this group event?"))return;
+        const deleted=await db.from("group_events").delete().eq("id",event.id).eq("conversation_id",chat.id);
+        if(deleted.error){toast("Event could not be deleted: "+deleted.error.message);return;}
+        await loadGroupEvents();
+      });
+      actions.append(remove);
+    }
+    list.append(card);
+  });
+  if(!events.length)list.append(el("p","muted tiny","No group events yet."));
+}
+async function respondToGroupEvent(event,response){
+  const result=await db.from("group_event_rsvps").upsert({
+    event_id:event.id,conversation_id:event.conversation_id,user_id:S.user.id,response,updated_at:new Date().toISOString()
+  },{onConflict:"event_id,user_id"});
+  if(result.error){toast("Your RSVP could not be saved: "+result.error.message);return;}
+  await loadGroupEvents();
+}
+async function submitGroupEvent(event){
+  event.preventDefault();
+  const chat=S.chats.find(item=>item.id===S.active);
+  if(!chat||chat.kind!=="group")return;
+  const title=$("group-event-name").value.trim(),details=$("group-event-details").value.trim();
+  const startsAt=new Date($("group-event-start").value),endsRaw=$("group-event-end").value,endsAt=endsRaw?new Date(endsRaw):null;
+  if(!title||title.length>100||!Number.isFinite(startsAt.getTime())){status("group-event-status","Enter an event name and a valid start time.","error");return;}
+  if(endsAt&&(!Number.isFinite(endsAt.getTime())||endsAt<=startsAt)){status("group-event-status","The end time must be after the start time.","error");return;}
+  const button=$("group-event-form").querySelector('button[type="submit"]');button.disabled=true;
+  const result=await db.from("group_events").insert({
+    conversation_id:chat.id,created_by:S.user.id,title,details:details||null,starts_at:startsAt.toISOString(),ends_at:endsAt?endsAt.toISOString():null
+  });
+  button.disabled=false;
+  if(result.error){status("group-event-status","Event could not be created: "+result.error.message,"error");return;}
+  $("group-event-form").reset();status("group-event-status","");
+  await loadGroupEvents();toast("Group event created.");
+}
+async function openGroupEvents(){
+  const chat=S.chats.find(item=>item.id===S.active);
+  if(!chat||chat.kind!=="group")return;
+  const role=chat.members.find(member=>member.user_id===S.user.id)?.role;
+  $("group-event-form").hidden=!(role==="owner"||role==="moderator");
+  $("group-events-modal").hidden=false;
+  await loadGroupEvents();
+}
 function wire(){
   installModalBackButtons();
   document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>authMode(b.dataset.mode)));
@@ -5313,12 +5574,15 @@ function wire(){
   $("retry-load-chats").addEventListener("click",()=>{if(S.user&&!S.loading)signedIn(S.user,true);});
   $("empty-private").addEventListener("click",()=>openPeople("direct"));$("empty-group").addEventListener("click",()=>openPeople("group"));
   $("chat-actions-open").addEventListener("click",()=>{renderChatOptions();$("chat-actions-modal").hidden=false;});
+  $("archive-conversation").addEventListener("click",toggleArchiveConversation);
+  $("group-events-open").addEventListener("click",()=>{$("chat-actions-modal").hidden=true;void openGroupEvents();});
+  $("shared-media-open").addEventListener("click",()=>{$("chat-actions-modal").hidden=true;void openSharedMedia();});
   $("mark-chat-unread").addEventListener("click",markActiveConversationUnread);
   $("toggle-chat-pin").addEventListener("click",()=>togglePinnedConversation());
   $("toggle-chat-mute").addEventListener("click",()=>toggleMutedConversation());
   $("chat-appearance-accent").addEventListener("change",updateChatAppearance);
   $("chat-appearance-background").addEventListener("change",updateChatAppearance);
-  ["add-people","edit-group-photo","group-settings-open","search-messages-open","saved-messages-open","leave-chat","block-user","select-messages","delete-selected"].forEach(id=>$(id).addEventListener("click",()=>{$("chat-actions-modal").hidden=true;}));
+  ["add-people","edit-group-photo","group-settings-open","group-events-open","shared-media-open","search-messages-open","saved-messages-open","leave-chat","block-user","select-messages","delete-selected","archive-conversation"].forEach(id=>$(id).addEventListener("click",()=>{$("chat-actions-modal").hidden=true;}));
   $("add-people").addEventListener("click",()=>openPeople("add"));$("edit-group-photo").addEventListener("click",openGroupPhoto);$("group-settings-open").addEventListener("click",openGroupSettings);$("group-settings-save").addEventListener("click",saveGroupSettings);$("group-avatar-file").addEventListener("change",handleGroupAvatarFile);$("group-avatar-remove").addEventListener("click",removeGroupAvatar);$("group-avatar-save").addEventListener("click",saveGroupAvatar);$("leave-chat").addEventListener("click",()=>{if(S.active)leaveGroupChat(S.active);});$("requests-open").addEventListener("click",openRequests);$("friends-open").addEventListener("click",openFriends);$("friends-find").addEventListener("click",()=>{setModalBackTarget("people-modal","friends-modal");$("friends-modal").hidden=true;openPeople("friend");});$("block-user").addEventListener("click",toggleBlock);
   $("people-search").addEventListener("input",()=>{clearTimeout(S.timer);S.timer=setTimeout(searchPeople,220);});$("people-create").addEventListener("click",createGroupOrAdd);
   $("home-open").addEventListener("click",goHome);
@@ -5365,6 +5629,12 @@ function wire(){
   $("member-profile-report").addEventListener("click",()=>{const userId=S.publicProfileId;setModalBackTarget("report-modal","member-profile-modal");$("member-profile-modal").hidden=true;openReport(userId);});
   $("reports-admin-open").addEventListener("click",()=>{setModalBackTarget("reports-admin-modal","settings-modal");$("settings-modal").hidden=true;openReportsAdmin();});
   $("signout-other-sessions").addEventListener("click",signOutOtherSessions);
+  $("security-activity-open").addEventListener("click",loadSecurityActivity);
+  $("scheduled-message-form").addEventListener("submit",submitScheduledMessage);
+  $("scheduled-message-cancel").addEventListener("click",()=>$("scheduled-message-modal").hidden=true);
+  $("group-event-form").addEventListener("submit",submitGroupEvent);
+  $("scheduled-message-open").addEventListener("click",openScheduleMessage);
+  $("scheduled-messages-open").addEventListener("click",()=>{$("scheduled-messages-modal").hidden=false;void loadScheduledMessages();closeComposerMoreMenu();});
   $("request-account-deletion").addEventListener("click",requestAccountDeletion);
   $("feedback-open").addEventListener("click",()=>openFeedback(false));
   $("feedback-admin-open").addEventListener("click",()=>{setModalBackTarget("feedback-modal","settings-modal");$("settings-modal").hidden=true;openFeedback(true);});
@@ -5443,7 +5713,7 @@ document.querySelectorAll("[data-folder]").forEach(b=>b.addEventListener("click"
   window.visualViewport?.addEventListener("scroll",repositionFloatingMessageActionMenu);
   $("cancel-reply").addEventListener("click",cancelReply);
   $("search-messages-open").addEventListener("click",openMessageSearch);
-  $("message-search-input").addEventListener("input",()=>{clearTimeout(S.searchTimer);S.searchTimer=setTimeout(()=>searchConversationMessages(true),250);});
+  ["message-search-input","message-search-sender","message-search-from","message-search-to"].forEach(id=>$(id).addEventListener(id==="message-search-input"?"input":"change",()=>{clearTimeout(S.searchTimer);S.searchTimer=setTimeout(()=>searchConversationMessages(true),250);}));
   $("message-search-more").addEventListener("click",()=>searchConversationMessages(false));
   $("message").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing){e.preventDefault();$("send-form").requestSubmit();}});
   $("back").addEventListener("click",goHome);
