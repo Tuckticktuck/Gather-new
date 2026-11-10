@@ -2680,3 +2680,105 @@ html:not([data-theme="light"]) .auth-shell{
     #000000 70%
   );
 }
+
+
+/* Compact the Gather home screen on phones without removing any actions. */
+@media(max-width:720px){
+  .home-workspace{
+    gap:10px;
+    padding:12px 11px 18px;
+  }
+  .workspace-header{
+    gap:9px;
+    padding-bottom:10px;
+  }
+  .workspace-header h1{
+    margin-bottom:5px;
+    font-size:calc(21px * var(--font-scale,1));
+    letter-spacing:-.45px;
+  }
+  .workspace-subtitle{
+    font-size:calc(10px * var(--font-scale,1));
+    line-height:1.45;
+  }
+  .workspace-actions{
+    gap:5px;
+  }
+  .workspace-actions button{
+    min-height:35px;
+    padding:7px 5px;
+    font-size:calc(9px * var(--font-scale,1));
+    line-height:1.2;
+  }
+
+  /* Keep the latest announcement as a compact preview rather than a tall card. */
+  .home-announcement-card{
+    display:grid;
+    grid-template-columns:40px minmax(0,1fr);
+    align-items:center;
+    gap:7px 9px;
+    padding:9px;
+    border-radius:13px;
+  }
+  .home-announcement-mark.brand-mark{
+    grid-column:1;
+    grid-row:1;
+    width:40px;
+    height:40px;
+    border-radius:11px;
+  }
+  .home-announcement-copy{
+    grid-column:2;
+    grid-row:1;
+    min-width:0;
+  }
+  .home-announcement-copy .eyebrow{
+    margin-bottom:3px;
+    font-size:8px;
+    letter-spacing:.8px;
+  }
+  .home-announcement-copy strong{
+    font-size:calc(12px * var(--font-scale,1));
+  }
+  .home-announcement-copy p:not(.eyebrow){
+    margin:3px 0;
+    font-size:calc(10px * var(--font-scale,1));
+    line-height:1.35;
+    -webkit-line-clamp:1;
+  }
+  .home-announcement-copy small{
+    font-size:8px;
+  }
+  .home-announcement-actions{
+    grid-column:1 / -1;
+    width:100%;
+    padding:0;
+    gap:6px;
+  }
+  .home-announcement-actions button{
+    min-height:34px;
+    padding:7px 9px;
+    font-size:calc(9px * var(--font-scale,1));
+  }
+
+  .workspace-search-controls{
+    margin:0;
+  }
+  .workspace-search{
+    font-size:calc(9px * var(--font-scale,1));
+  }
+  .workspace-search .search{
+    margin-top:4px;
+    padding:9px 11px;
+    font-size:16px;
+  }
+  .conversation-selection-toolbar{
+    gap:6px;
+    margin:4px 0 7px;
+  }
+  .conversation-select-toggle{
+    min-height:35px;
+    padding:7px 10px;
+    font-size:calc(10px * var(--font-scale,1));
+  }
+}
