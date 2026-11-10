@@ -637,15 +637,22 @@ function runScreenTransition(update){
   if(typeof update!=="function")return;
   const main=document.querySelector(".main");
   const reduceMotion=!!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  let updateApplied=false;
+  const applyUpdate=()=>{
+    if(updateApplied)return;
+    updateApplied=true;
+    update();
+  };
   if(!reduceMotion&&typeof document.startViewTransition==="function"){
     try{
-      document.startViewTransition(()=>update());
+      document.startViewTransition(applyUpdate);
       return;
     }catch(error){
-      // The normal render path below remains available when view transitions fail.
+      // Use the fallback if the browser cannot start a view transition.
+      if(updateApplied)return;
     }
   }
-  update();
+  applyUpdate();
   if(reduceMotion||!main)return;
   main.classList.remove("gather-screen-enter");
   void main.offsetWidth;
@@ -3096,7 +3103,12 @@ function repositionFloatingMessageActionMenu(){
   if(menu?._anchorTrigger)positionMessageActionMenu(menu,menu._anchorTrigger);
 }
 function renderMessages(preserveScroll=false){
-  document.querySelectorAll(".message-action-menu[data-floating-menu='true']").forEach(menu=>menu.remove());
+  document.querySelectorAll(".message-action-menu[data-floating-menu='true']").forEach(menu=>{
+    menu.classList.add("is-dismissing");
+    const removeMenu=()=>menu.remove();
+    menu.addEventListener("transitionend",removeMenu,{once:true});
+    setTimeout(removeMenu,190);
+  });
   const list=$("messages"),previousHeight=list.scrollHeight,previousTop=list.scrollTop;
   const existingMessageIds=new Set([...list.querySelectorAll(".message[data-message-id]")].map(row=>row.dataset.messageId));
   list.replaceChildren();list.setAttribute("aria-busy","false");
