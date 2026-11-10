@@ -138,10 +138,13 @@ Deno.serve(async (request: Request) => {
       ]);
       if (profileResult.error || banResult.error || approvedResult.error || restrictionResult.error) return adminError(500, "Member account details could not be loaded.");
       const profileById = new Map((profileResult.data ?? []).map((profile) => [profile.id, profile]));
+      const { data: ageGroups, error: ageGroupError } = await userClient.rpc("admin_get_age_groups", { p_user_ids: ids });
+      if (ageGroupError) return adminError(500, "Member age groups could not be loaded.");
       const banById = new Map();
       for (const ban of banResult.data ?? []) if (!banById.has(ban.user_id)) banById.set(ban.user_id, ban);
       const approvedById = new Map((approvedResult.data ?? []).map((item) => [item.user_id, item]));
       const restrictionById = new Map((restrictionResult.data ?? []).map((item) => [item.user_id, item]));
+      const ageGroupById = new Map((ageGroups ?? []).map((item) => [item.user_id, item.age_group]));
       return response(200, {
         users: users.map((user) => {
           const profile = profileById.get(user.id) ?? {};
@@ -163,6 +166,7 @@ Deno.serve(async (request: Request) => {
             active_ban_reason: ban?.reason ?? "",
             message_restriction: restrictionById.get(user.id) ?? null,
             is_gather_admin: user.app_metadata?.gather_role === "admin",
+            age_group: ageGroupById.get(user.id) ?? null,
             is_approved: approvedById.has(user.id),
             approved_at: approvedById.get(user.id)?.approved_at ?? null,
           };
@@ -281,6 +285,17 @@ Deno.serve(async (request: Request) => {
         other_user_id: updated.target_user_id,
       });
       return response(200, { request: updated });
+    }
+
+    if (action === "reset_age_confirmation") {
+      if (!targetId || targetId === actorId) return adminError(400, "Choose another member account.");
+      const { data: targetResult, error: targetError } = await adminClient.auth.admin.getUserById(targetId);
+      const target = targetResult?.user;
+      if (targetError || !target) return adminError(404, "That member account could not be found.");
+      if (target.app_metadata?.gather_role === "admin") return adminError(400, "The Gather administrator account is protected.");
+      const { data, error } = await userClient.rpc("reset_member_age_confirmation", { p_user_id: targetId });
+      if (error) return adminError(400, error.message || "Age confirmation could not be reset.");
+      return response(200, { reset: !!data?.reset });
     }
 
     if (action === "update_profile") {
