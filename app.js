@@ -5351,7 +5351,18 @@ function openImageViewer(src,alt="Shared image"){
   if(!src)return;
   $("image-viewer-image").src=src;
   $("image-viewer-image").alt=alt;
+  // Keep the prior surface open underneath the viewer. Back returns to it:
+  // Shared media remains open when launched there; message scroll remains untouched
+  // when launched directly from a message.
   $("image-viewer-modal").hidden=false;
+}
+function closeImageViewer(){
+  const viewer=$("image-viewer-modal");
+  if(!viewer||viewer.hidden)return;
+  viewer.hidden=true;
+  const image=$("image-viewer-image");
+  image.removeAttribute("src");
+  image.alt="";
 }
 async function openSharedMedia(){
   const chat=S.chats.find(item=>item.id===S.active);
@@ -5586,6 +5597,8 @@ function wire(){
     renderChatOptions();
     $("chat-actions-modal").hidden=false;
   },true);
+  $("image-viewer-back").addEventListener("click",closeImageViewer);
+  $("image-viewer-modal").addEventListener("click",event=>{if(event.target===$("image-viewer-modal"))closeImageViewer();});
   $("shared-media-modal").addEventListener("click",event=>{
     if(event.target!==$("shared-media-modal"))return;
     $("shared-media-modal").hidden=true;
@@ -5803,7 +5816,7 @@ document.querySelectorAll("[data-folder]").forEach(b=>b.addEventListener("click"
   document.querySelectorAll("[data-admin-back]").forEach(b=>b.addEventListener("click",()=>handleModalBack(b.closest(".overlay")?.id)));
   document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",()=>closeModals()));
   ["admin-mode-modal","announcement-compose-modal","announcement-view-modal","announcements-page-modal","notifications-modal","member-profile-modal","report-modal","reports-admin-modal","people-modal","profile-modal","requests-modal","friends-modal","settings-modal","group-photo-modal","group-settings-modal","message-search-modal","poll-create-modal","forward-message-modal","saved-messages-modal","chat-actions-modal","feedback-modal"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target===$(id))closeModals();}));
-  document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeComposerMoreMenu();closeModals();}});
+  document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeComposerMoreMenu();if(!$("image-viewer-modal").hidden){closeImageViewer();return;}closeModals();}});
 }
 async function boot(){
   try{
