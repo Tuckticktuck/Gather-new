@@ -847,6 +847,12 @@ function subscribeIntergroupRequests(){
           :"Gather Admin approved intergroup messaging for a member. You may receive a chat request.");
       }else if(payload.eventType==="UPDATE"&&row.status==="declined"&&row.requester_id===uid)toast("Your intergroup messaging request was declined.");
       else if(payload.eventType==="UPDATE"&&row.status==="revoked")toast("An intergroup messaging permission was revoked.");
+      if(!admin&&payload.eventType==="UPDATE"&&["approved","revoked","declined"].includes(row.status)&&S.active){
+        const activeChat=S.chats.find(item=>item.id===S.active);
+        const includesRequester=activeChat?.members.some(member=>member.user_id===row.requester_id);
+        const includesTarget=activeChat?.members.some(member=>member.user_id===row.target_user_id);
+        if(includesRequester&&includesTarget)void refreshDirectStatus(S.active);
+      }
     }).subscribe();
 }
 async function signedIn(user,retry=false){
