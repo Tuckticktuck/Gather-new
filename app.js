@@ -798,7 +798,7 @@ function showAgeVerificationGate(ageStatus){
     note.textContent="This account is outside Gather's supported age range of 12–18. Messaging is unavailable on this account.";
     form.hidden=true;
   }else{
-    note.textContent="Enter your date of birth to confirm you're between 12 and 18. Gather stores the birth date privately; other members and admins see only your age group.";
+    note.textContent="Enter your date of birth to confirm you're between 12 and 18. This is a self-declared age check, not independent identity verification. Gather stores the birth date privately; other members and admins see only your age group.";
     form.hidden=false;date.value="";submit.disabled=false;
   }
 }
@@ -4849,7 +4849,7 @@ function wire(){
       if(result.error){
         status("auth-status",result.error.message,"error");
       }else if(isNew&&!result.data.session){
-        status("auth-status","Account created and automatically submitted for administrator review. Check your email for the confirmation link, then sign in here. You can use Gather normally while it is pending.","success");
+        status("auth-status","Account created and automatically submitted for administrator review. Check your email for the confirmation link, then sign in here. You'll confirm your age before you can access Gather.","success");
       }else if(result.data.session?.user){
         status("auth-status","Signed in. Loading chats…","success");
         await signedIn(result.data.session.user);
