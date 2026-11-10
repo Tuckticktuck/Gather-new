@@ -3655,7 +3655,7 @@ function renderUndoSend(){
   bar.hidden=!visible;
   const countdown=$("message-undo-countdown");
   if(countdown&&pending&&remainingMs>0){
-    countdown.textContent="Undo available · "+Math.ceil(remainingMs/1000)+"s";
+    countdown.textContent=Math.ceil(remainingMs/1000)+"s";
   }
   if((!pending||remainingMs<=0)&&S.undoCountdownInterval){
     clearInterval(S.undoCountdownInterval);
