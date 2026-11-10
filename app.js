@@ -5297,7 +5297,7 @@ function closeModals(forceAll=false){
   if(!forceAll&&S.admin.modalStack?.length&&$("admin-mode-modal")&&!$("admin-mode-modal").hidden){closeAdminChildNavigation();return;}
   clearAdminChildNavigation();
   S.modalBackTargets={};
-  $("admin-mode-modal").hidden=true;$("announcement-compose-modal").hidden=true;$("announcement-view-modal").hidden=true;$("announcements-page-modal").hidden=true;$("notifications-modal").hidden=true;$("member-profile-modal").hidden=true;$("report-modal").hidden=true;$("reports-admin-modal").hidden=true;$("people-modal").hidden=true;$("profile-modal").hidden=true;$("requests-modal").hidden=true;$("friends-modal").hidden=true;$("settings-modal").hidden=true;$("group-photo-modal").hidden=true;$("group-settings-modal").hidden=true;$("message-search-modal").hidden=true;$("poll-create-modal").hidden=true;$("forward-message-modal").hidden=true;$("saved-messages-modal").hidden=true;$("chat-actions-modal").hidden=true;$("feedback-modal").hidden=true; }
+  $("admin-mode-modal").hidden=true;$("announcement-compose-modal").hidden=true;$("announcement-view-modal").hidden=true;$("announcements-page-modal").hidden=true;$("notifications-modal").hidden=true;$("member-profile-modal").hidden=true;$("report-modal").hidden=true;$("reports-admin-modal").hidden=true;$("people-modal").hidden=true;$("profile-modal").hidden=true;$("requests-modal").hidden=true;$("friends-modal").hidden=true;$("settings-modal").hidden=true;$("group-photo-modal").hidden=true;$("group-settings-modal").hidden=true;$("message-search-modal").hidden=true;$("poll-create-modal").hidden=true;$("forward-message-modal").hidden=true;$("saved-messages-modal").hidden=true;$("chat-actions-modal").hidden=true;$("shared-media-modal").hidden=true;$("image-viewer-modal").hidden=true;$("active-sessions-modal").hidden=true;$("security-activity-modal").hidden=true;$("group-events-modal").hidden=true;$("scheduled-message-modal").hidden=true;$("scheduled-messages-modal").hidden=true;$("message-edit-history-modal").hidden=true;$("feedback-modal").hidden=true; }
 function goHome(){
   closeConversationDrawer();
   saveActiveChatDraft();clearUnreadDividerState();
@@ -5574,6 +5574,25 @@ async function loadActiveSessions(){
 }
 function wire(){
   installModalBackButtons();
+  // Capture the shared-media back action before other modal or delegated handlers.
+  // This keeps the navigation working even if other composer/modal handlers stop bubbling.
+  document.addEventListener("click",event=>{
+    const backButton=event.target instanceof Element?event.target.closest("#shared-media-back"):null;
+    if(!backButton)return;
+    event.preventDefault();
+    event.stopPropagation();
+    $("shared-media-modal").hidden=true;
+    S.modalBackTargets={};
+    renderChatOptions();
+    $("chat-actions-modal").hidden=false;
+  },true);
+  $("shared-media-modal").addEventListener("click",event=>{
+    if(event.target!==$("shared-media-modal"))return;
+    $("shared-media-modal").hidden=true;
+    S.modalBackTargets={};
+    renderChatOptions();
+    $("chat-actions-modal").hidden=false;
+  });
   document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>authMode(b.dataset.mode)));
   $("forgot-password").addEventListener("click",requestPasswordReset);
   $("recovery-password-form").addEventListener("submit",completePasswordRecovery);
@@ -5629,8 +5648,7 @@ function wire(){
   $("group-events-open").addEventListener("click",()=>{$("chat-actions-modal").hidden=true;void openGroupEvents();});
   $("scheduled-messages-chat-open").addEventListener("click",()=>{$("chat-actions-modal").hidden=true;$("scheduled-messages-modal").hidden=false;void loadScheduledMessages();});
   $("shared-media-open").addEventListener("click",()=>{$("chat-actions-modal").hidden=true;void openSharedMedia();});
-  $("shared-media-back").addEventListener("click",()=>{ $("shared-media-modal").hidden=true;renderChatOptions();$("chat-actions-modal").hidden=false; });
-  $("shared-media-modal").addEventListener("click",event=>{if(event.target===$("shared-media-modal")){$("shared-media-modal").hidden=true;renderChatOptions();$("chat-actions-modal").hidden=false;}});
+
   $("mark-chat-unread").addEventListener("click",markActiveConversationUnread);
   $("toggle-chat-pin").addEventListener("click",()=>togglePinnedConversation());
   $("toggle-chat-mute").addEventListener("click",()=>toggleMutedConversation());
