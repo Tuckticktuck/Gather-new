@@ -30,7 +30,7 @@ function normalizeChatSettings(raw){
   });
   return {pinned,muted,drafts,appearance};
 }
-const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], favoriteFriendIds:new Set(), archivedConversationIds:new Set(), blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingUndoSend:null, undoSendTimer:null, undoCountdownInterval:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, homeSearchQuery:"", homeSearchTab:"messages", homeSearchMessages:[], homeSearchProfiles:[], homeSearchLoading:false, homeSearchErrors:{messages:"",profiles:""}, homeSearchTimer:null, homeSearchRequestId:0, directStatus:null, directStatusCache:new Map(), directStatusChecks:new Map(), groupMessageStatus:null, ageStatus:null, ageChangeStatus:null, ageRequestChannel:null, messageRestriction:null, messageRestrictionLoaded:false, messageRestrictionError:"", messageRestrictionChannel:null, messageRestrictionTimer:null, active:null, messages:[], initialChatScrollLockId:null, channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],intergroupRequests:[],ageChangeRequests:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
+const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], favoriteFriendIds:new Set(), archivedConversationIds:new Set(), blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingUndoSend:null, undoSendTimer:null, undoCountdownInterval:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, homeSearchQuery:"", homeSearchTab:"messages", homeSearchMessages:[], homeSearchProfiles:[], homeSearchLoading:false, homeSearchErrors:{messages:"",profiles:""}, homeSearchTimer:null, homeSearchRequestId:0, directStatus:null, directStatusCache:new Map(), directStatusChecks:new Map(), groupMessageStatus:null, ageStatus:null, ageChangeStatus:null, ageRequestChannel:null, messageRestriction:null, messageRestrictionLoaded:false, messageRestrictionError:"", messageRestrictionChannel:null, messageRestrictionTimer:null, active:null, messages:[], initialChatScrollLockId:null, channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), friendPresenceRetryTimers:new Map(), friendPresenceRetryAttempts:new Map(), ownPresenceChannel:null, ownPresenceRetryTimer:null, ownPresenceRetryAttempt:0, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],intergroupRequests:[],ageChangeRequests:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function appendSafeText(parent,value){
@@ -1308,25 +1308,53 @@ function handleFriendPresenceSync(friendId,channel){
   if(!online)refreshFriendLastSeen(friendId);
   else renderPresenceUI();
 }
+function scheduleFriendPresenceRetry(friendId){
+  if(!S.user||!S.friends.some(friend=>friend.friend_id===friendId))return;
+  if(!(S.friendPresenceRetryTimers instanceof Map))S.friendPresenceRetryTimers=new Map();
+  if(S.friendPresenceRetryTimers.has(friendId))return;
+  const attempts=S.friendPresenceRetryAttempts.get(friendId)||0;
+  const delay=Math.min(30000,1500*Math.pow(2,Math.min(attempts,4)));
+  S.friendPresenceRetryAttempts.set(friendId,attempts+1);
+  const timer=setTimeout(()=>{
+    S.friendPresenceRetryTimers.delete(friendId);
+    if(!S.user||!S.friends.some(friend=>friend.friend_id===friendId))return;
+    if(!S.friendPresenceChannels.has(friendId))syncFriendPresenceChannels();
+  },delay);
+  S.friendPresenceRetryTimers.set(friendId,timer);
+}
+function clearFriendPresenceRetry(friendId){
+  const timer=S.friendPresenceRetryTimers?.get(friendId);
+  if(timer)clearTimeout(timer);
+  S.friendPresenceRetryTimers?.delete(friendId);
+  S.friendPresenceRetryAttempts?.delete(friendId);
+}
 function syncFriendPresenceChannels(){
   if(!S.user)return;
   const friendIds=new Set(S.friends.map(friend=>friend.friend_id));
   for(const [friendId,channel] of [...S.friendPresenceChannels.entries()]){
     if(friendIds.has(friendId))continue;
     S.friendPresenceChannels.delete(friendId);
+    clearFriendPresenceRetry(friendId);
     delete S.onlineStatuses[friendId];
-    db.removeChannel(channel);
+    void db.removeChannel(channel);
   }
   for(const friendId of friendIds){
     if(S.friendPresenceChannels.has(friendId))continue;
     const channel=db.channel("gather-presence:"+friendId,{config:{private:true}});
     channel.on("presence",{event:"sync"},()=>handleFriendPresenceSync(friendId,channel));
     channel.subscribe((status,error)=>{
-      if(status==="SUBSCRIBED")handleFriendPresenceSync(friendId,channel);
-      else if(status==="CHANNEL_ERROR"||status==="TIMED_OUT"){
-        console.warn("Friend online status subscription failed:",error||status);
+      if(status==="SUBSCRIBED"){
+        if(S.friendPresenceChannels.get(friendId)!==channel)return;
+        clearFriendPresenceRetry(friendId);
+        handleFriendPresenceSync(friendId,channel);
+      }else if(status==="CHANNEL_ERROR"||status==="TIMED_OUT"||status==="CLOSED"){
+        if(S.friendPresenceChannels.get(friendId)!==channel)return;
+        console.warn("Friend online status subscription failed; retrying:",error||status);
+        S.friendPresenceChannels.delete(friendId);
         S.onlineStatuses[friendId]={...(S.onlineStatuses[friendId]||{}),online:false,statusUnavailable:true};
         renderPresenceUI();
+        void db.removeChannel(channel);
+        scheduleFriendPresenceRetry(friendId);
       }
     });
     S.friendPresenceChannels.set(friendId,channel);
@@ -1341,10 +1369,22 @@ async function recordLastSeen(userId=S.user?.id){
   if(result.error){console.warn("Last-seen heartbeat could not be saved:",result.error.message);return false;}
   return true;
 }
+function scheduleOwnPresenceRetry(){
+  if(!S.user||S.preferences.shareOnlineStatus===false||S.ownPresenceRetryTimer)return;
+  const attempts=S.ownPresenceRetryAttempt||0;
+  const delay=Math.min(30000,1500*Math.pow(2,Math.min(attempts,4)));
+  S.ownPresenceRetryAttempt=attempts+1;
+  S.ownPresenceRetryTimer=setTimeout(()=>{
+    S.ownPresenceRetryTimer=null;
+    if(S.user&&S.preferences.shareOnlineStatus!==false&&!S.ownPresenceChannel)void syncOwnPresence();
+  },delay);
+}
 async function syncOwnPresence(){
   const uid=S.user?.id;
   if(!uid)return;
   if(S.preferences.shareOnlineStatus===false){
+    if(S.ownPresenceRetryTimer){clearTimeout(S.ownPresenceRetryTimer);S.ownPresenceRetryTimer=null;}
+    S.ownPresenceRetryAttempt=0;
     if(S.lastSeenHeartbeatTimer){clearInterval(S.lastSeenHeartbeatTimer);S.lastSeenHeartbeatTimer=null;}
     const old=S.ownPresenceChannel;S.ownPresenceChannel=null;
     if(old){
@@ -1354,27 +1394,47 @@ async function syncOwnPresence(){
     return;
   }
   if(S.ownPresenceChannel)return;
+  if(S.ownPresenceRetryTimer){clearTimeout(S.ownPresenceRetryTimer);S.ownPresenceRetryTimer=null;}
   const channel=db.channel("gather-presence:"+uid,{config:{private:true}});
   S.ownPresenceChannel=channel;
-  channel.subscribe(async status=>{
-    if(status!=="SUBSCRIBED"||S.user?.id!==uid||S.preferences.shareOnlineStatus===false||S.ownPresenceChannel!==channel)return;
-    try{
-      const result=await channel.track({user_id:uid,online_at:new Date().toISOString()});
-      if(result!=="ok")console.warn("Gather online presence could not be published:",result);
-      await recordLastSeen(uid);
-      if(S.lastSeenHeartbeatTimer)clearInterval(S.lastSeenHeartbeatTimer);
-      S.lastSeenHeartbeatTimer=setInterval(()=>recordLastSeen(uid),60000);
-    }catch(error){console.warn("Gather online presence could not be started:",error);}
+  const handleOwnChannelFailure=(status,error)=>{
+    if(S.ownPresenceChannel!==channel)return;
+    console.warn("Gather online presence connection failed; retrying:",error||status);
+    S.ownPresenceChannel=null;
+    if(S.lastSeenHeartbeatTimer){clearInterval(S.lastSeenHeartbeatTimer);S.lastSeenHeartbeatTimer=null;}
+    void db.removeChannel(channel);
+    scheduleOwnPresenceRetry();
+  };
+  channel.subscribe(async(status,error)=>{
+    if(S.user?.id!==uid||S.preferences.shareOnlineStatus===false||S.ownPresenceChannel!==channel)return;
+    if(status==="SUBSCRIBED"){
+      try{
+        const result=await channel.track({user_id:uid,online_at:new Date().toISOString()});
+        if(result!=="ok")throw new Error("Presence track returned "+String(result));
+        S.ownPresenceRetryAttempt=0;
+        await recordLastSeen(uid);
+        if(S.lastSeenHeartbeatTimer)clearInterval(S.lastSeenHeartbeatTimer);
+        S.lastSeenHeartbeatTimer=setInterval(()=>recordLastSeen(uid),60000);
+      }catch(trackError){
+        handleOwnChannelFailure("TRACK_ERROR",trackError);
+      }
+    }else if(status==="CHANNEL_ERROR"||status==="TIMED_OUT"||status==="CLOSED"){
+      handleOwnChannelFailure(status,error);
+    }
   });
 }
 async function stopOnlinePresence(){
   if(S.lastSeenHeartbeatTimer){clearInterval(S.lastSeenHeartbeatTimer);S.lastSeenHeartbeatTimer=null;}
   if(S.presenceDisplayTimer){clearInterval(S.presenceDisplayTimer);S.presenceDisplayTimer=null;}
+  if(S.ownPresenceRetryTimer){clearTimeout(S.ownPresenceRetryTimer);S.ownPresenceRetryTimer=null;}
+  S.ownPresenceRetryAttempt=0;
   const own=S.ownPresenceChannel;S.ownPresenceChannel=null;
   if(own){
     try{await own.untrack();}catch(error){}
     await db.removeChannel(own);
   }
+  for(const timer of S.friendPresenceRetryTimers.values())clearTimeout(timer);
+  S.friendPresenceRetryTimers.clear();S.friendPresenceRetryAttempts.clear();
   for(const channel of S.friendPresenceChannels.values())await db.removeChannel(channel);
   S.friendPresenceChannels.clear();S.onlineStatuses={};
 }
@@ -5846,6 +5906,19 @@ document.querySelectorAll("[data-folder]").forEach(b=>b.addEventListener("click"
     }
   });
   $("messages").addEventListener("scroll",()=>{repositionFloatingMessageActionMenu();if($("messages").scrollTop<80&&S.initialChatScrollLockId!==S.active)loadOlderMessages();checkUnreadDividerVisibility();},{passive:true});
+  window.addEventListener("online",()=>{
+    if(S.user){
+      syncFriendPresenceChannels();
+      if(!S.ownPresenceChannel)void syncOwnPresence();
+    }
+  });
+  document.addEventListener("visibilitychange",()=>{
+    if(!document.hidden&&S.user){
+      syncFriendPresenceChannels();
+      if(!S.ownPresenceChannel)void syncOwnPresence();
+      void recordLastSeen();
+    }
+  });
   $("messages").addEventListener("wheel",()=>{if(S.initialChatScrollLockId===S.active)releaseInitialChatScrollLock();},{passive:true});
   $("messages").addEventListener("touchmove",()=>{if(S.initialChatScrollLockId===S.active)releaseInitialChatScrollLock();},{passive:true});
   $("messages").addEventListener("keydown",event=>{
