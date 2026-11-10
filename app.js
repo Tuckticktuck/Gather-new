@@ -603,8 +603,6 @@ async function markConversationNotificationsRead(chatId){
 async function markConversationRead(chatId){
   if(!S.user||!chatId)return false;
   const requestingUserId=S.user.id;
-  const wasActive=S.active===chatId;
-  if(wasActive)S.suppressReadDividerUpdates=true;
   try{
     const result=await db.rpc("mark_conversation_read",{p_conversation_id:chatId});
     if(result.error){
@@ -629,8 +627,10 @@ async function markConversationRead(chatId){
     if(S.active===chatId)renderMessages(true);
     renderChats();
     return true;
-  }finally{
-    if(wasActive&&S.active===chatId)S.suppressReadDividerUpdates=false;
+  }catch(error){
+    console.warn("Conversation read status could not be saved:",error?.message||error);
+    if(S.active===chatId)toast("Messages could not be marked as seen. Please try again.");
+    return false;
   }
 }
 async function markActiveConversationUnread(){
