@@ -2349,3 +2349,157 @@ button:not(:disabled){
     transition-behavior:allow-discrete;
   }
 }
+
+
+/* Broader motion system for content panels and in-app state changes. */
+.main{view-transition-name:gather-main}
+::view-transition-group(gather-main){
+  animation-duration:280ms;
+  animation-timing-function:var(--gather-motion-ease);
+}
+::view-transition-old(gather-main){
+  animation:gather-main-out 230ms ease both;
+}
+::view-transition-new(gather-main){
+  animation:gather-main-in 280ms var(--gather-motion-ease) both;
+}
+@keyframes gather-main-out{
+  from{opacity:1;transform:translateY(0) scale(1)}
+  to{opacity:0;transform:translateY(-5px) scale(.997)}
+}
+@keyframes gather-main-in{
+  from{opacity:0;transform:translateY(8px) scale(.997)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+@keyframes gather-fallback-screen-in{
+  from{opacity:0;transform:translateY(8px) scale(.997)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+.main.gather-screen-enter{animation:gather-fallback-screen-in 280ms var(--gather-motion-ease) both}
+
+/* Panels toggled with the hidden attribute get a real fade in both directions.
+   Discrete display transitions let them finish fading before leaving layout. */
+:where(#empty,#chat,#sidebar-home-content,#in-chat-sidebar,
+  #home-search-results,#home-browse-content,#home-search-messages-panel,
+  #home-search-profiles-panel,#private-folder-panel,#blocked-panel,#deleted-panel,
+  #pinned-chat-section,#admin-message-section,#conversation-selection-actions,
+  #chat-load-status,#chat-notice,#message-undo-bar,#reply-compose,
+  #message-image-preview,#home-announcement-card,#home-message-restriction,
+  #chat-message-restriction,#message-create-poll,#home-open,#leave-chat,
+  #chat-title,#chat-presence-status,#chat-typing-indicator,#quiet-hours-times,
+  #feedback-admin-settings-section,#quiet-hours-times,.folder-panel,
+  .workspace-folder,.workspace-group-section,.home-search-panel,.admin-section,
+  .feedback-detail,.feedback-new-form,.settings-section,.request-section,
+  .message-restriction-banner,.chat-typing-indicator,.conversation-selection-actions){
+  opacity:1;
+  transform:translateY(0);
+  transition:
+    opacity var(--gather-motion) var(--gather-motion-ease),
+    transform var(--gather-motion) var(--gather-motion-ease),
+    display var(--gather-motion) allow-discrete;
+  transition-behavior:allow-discrete;
+}
+:where(#empty,#chat,#sidebar-home-content,#in-chat-sidebar,
+  #home-search-results,#home-browse-content,#home-search-messages-panel,
+  #home-search-profiles-panel,#private-folder-panel,#blocked-panel,#deleted-panel,
+  #pinned-chat-section,#admin-message-section,#conversation-selection-actions,
+  #chat-load-status,#chat-notice,#message-undo-bar,#reply-compose,
+  #message-image-preview,#home-announcement-card,#home-message-restriction,
+  #chat-message-restriction,#message-create-poll,#home-open,#leave-chat,
+  #chat-title,#chat-presence-status,#chat-typing-indicator,#quiet-hours-times,
+  #feedback-admin-settings-section,.folder-panel,.workspace-folder,
+  .workspace-group-section,.home-search-panel,.admin-section,.feedback-detail,
+  .feedback-new-form,.settings-section,.request-section,.message-restriction-banner,
+  .chat-typing-indicator)[hidden]{
+  opacity:0;
+  transform:translateY(7px);
+  pointer-events:none;
+}
+@starting-style{
+  :where(#empty,#chat,#sidebar-home-content,#in-chat-sidebar,
+    #home-search-results,#home-browse-content,#home-search-messages-panel,
+    #home-search-profiles-panel,#private-folder-panel,#blocked-panel,#deleted-panel,
+    #pinned-chat-section,#admin-message-section,#conversation-selection-actions,
+    #chat-load-status,#chat-notice,#message-undo-bar,#reply-compose,
+    #message-image-preview,#home-announcement-card,#home-message-restriction,
+    #chat-message-restriction,#message-create-poll,#home-open,#leave-chat,
+    #chat-title,#chat-presence-status,#chat-typing-indicator,#quiet-hours-times,
+    #feedback-admin-settings-section,.folder-panel,.workspace-folder,
+    .workspace-group-section,.home-search-panel,.admin-section,.feedback-detail,
+    .feedback-new-form,.settings-section,.request-section,.message-restriction-banner,
+    .chat-typing-indicator):not([hidden]){
+    opacity:0;
+    transform:translateY(7px);
+  }
+}
+
+/* Sign-in and the authenticated workspace should not swap abruptly either. */
+#auth,#app{
+  opacity:1;
+  transition:
+    opacity 260ms var(--gather-motion-ease),
+    display 260ms allow-discrete;
+  transition-behavior:allow-discrete;
+}
+#auth[hidden],#app[hidden]{opacity:0;pointer-events:none}
+@starting-style{
+  #auth:not([hidden]),#app:not([hidden]){opacity:0}
+}
+
+/* Native expandable sections animate their height when the browser supports it. */
+@supports selector(details::details-content){
+  details{interpolate-size:allow-keywords}
+  details::details-content{
+    block-size:0;
+    overflow:clip;
+    opacity:0;
+    transition:
+      block-size var(--gather-motion) var(--gather-motion-ease),
+      opacity var(--gather-motion-fast) ease,
+      content-visibility var(--gather-motion) allow-discrete;
+  }
+  details[open]::details-content{block-size:auto;opacity:1}
+  @starting-style{
+    details[open]::details-content{block-size:0;opacity:0}
+  }
+}
+
+/* Gentle arrival effects for genuinely new items, not every rerender. */
+@keyframes gather-list-item-in{
+  from{opacity:0;transform:translateY(6px)}
+  to{opacity:1;transform:translateY(0)}
+}
+@keyframes gather-message-in{
+  from{opacity:0;transform:translateY(7px) scale(.99)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+.gather-list-enter{animation:gather-list-item-in 210ms var(--gather-motion-ease) both}
+.gather-message-enter{animation:gather-message-in 220ms var(--gather-motion-ease) both}
+#messages>.gather-message-enter:nth-child(-n+6){animation-delay:calc((var(--message-enter-index, 0)) * 18ms)}
+.gather-list-enter:nth-child(2){animation-delay:25ms}
+.gather-list-enter:nth-child(3){animation-delay:45ms}
+.gather-list-enter:nth-child(4){animation-delay:65ms}
+.gather-list-enter:nth-child(5){animation-delay:85ms}
+.gather-list-enter:nth-child(6){animation-delay:105ms}
+
+/* Keep tab, segmented-control and disclosure selection changes fluid. */
+.tab,.folder-tab,.notification-tab,[role="tab"],.segmented-control button,
+.chat-section summary,.settings-tab,.admin-nav-button{
+  transition:
+    color var(--gather-motion-fast) ease,
+    background-color var(--gather-motion-fast) ease,
+    border-color var(--gather-motion-fast) ease,
+    box-shadow var(--gather-motion-fast) ease,
+    transform var(--gather-motion-fast) var(--gather-motion-ease);
+}
+:where(.tab,.folder-tab,.notification-tab,[role="tab],.settings-tab,.admin-nav-button)[aria-selected="true"],
+:where(.tab,.folder-tab,.notification-tab,[role="tab],.settings-tab,.admin-nav-button).active{
+  transition-duration:200ms;
+}
+
+@media(prefers-reduced-motion:reduce){
+  ::view-transition-group(gather-main),
+  ::view-transition-old(gather-main),
+  ::view-transition-new(gather-main){animation:none!important}
+  .main.gather-screen-enter,.gather-list-enter,.gather-message-enter{animation:none!important}
+}
