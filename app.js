@@ -30,7 +30,7 @@ function normalizeChatSettings(raw){
   });
   return {pinned,muted,drafts,appearance};
 }
-const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], favoriteFriendIds:new Set(), blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingUndoSend:null, undoSendTimer:null, undoCountdownInterval:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, homeSearchQuery:"", homeSearchTab:"messages", homeSearchMessages:[], homeSearchProfiles:[], homeSearchLoading:false, homeSearchErrors:{messages:"",profiles:""}, homeSearchTimer:null, homeSearchRequestId:0, directStatus:null, messageRestriction:null, messageRestrictionLoaded:false, messageRestrictionError:"", messageRestrictionChannel:null, messageRestrictionTimer:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],intergroupRequests:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
+const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], favoriteFriendIds:new Set(), blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingUndoSend:null, undoSendTimer:null, undoCountdownInterval:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, homeSearchQuery:"", homeSearchTab:"messages", homeSearchMessages:[], homeSearchProfiles:[], homeSearchLoading:false, homeSearchErrors:{messages:"",profiles:""}, homeSearchTimer:null, homeSearchRequestId:0, directStatus:null, ageStatus:null, ageRequestChannel:null, messageRestriction:null, messageRestrictionLoaded:false, messageRestrictionError:"", messageRestrictionChannel:null, messageRestrictionTimer:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],intergroupRequests:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function appendFormattedMessageText(parent,value){
@@ -613,7 +613,9 @@ function showAuth() {
   if(S.channel){db.removeChannel(S.channel);S.channel=null;}
   if(S.requestChannel){db.removeChannel(S.requestChannel);S.requestChannel=null;}
   if(S.messageRestrictionChannel){db.removeChannel(S.messageRestrictionChannel);S.messageRestrictionChannel=null;}
+  if(S.ageRequestChannel){db.removeChannel(S.ageRequestChannel);S.ageRequestChannel=null;}
   if(S.messageRestrictionTimer){clearInterval(S.messageRestrictionTimer);S.messageRestrictionTimer=null;}
+  S.ageStatus=null;$("age-verification-modal").hidden=true;
   S.messageRestriction=null;S.messageRestrictionLoaded=false;S.messageRestrictionError="";
   renderMessageRestrictionNotice();
   if(S.undoSendTimer){clearTimeout(S.undoSendTimer);S.undoSendTimer=null;}
@@ -788,6 +790,57 @@ function subscribeMessageRestriction(userId=S.user?.id){
     });
   S.messageRestrictionChannel=channel;
 }
+function showAgeVerificationGate(ageStatus){
+  S.ageStatus=ageStatus||null;
+  const modal=$("age-verification-modal"),form=$("age-verification-form"),date=$("age-birth-date"),submit=$("age-verification-submit"),statusNode=$("age-verification-status"),note=$("age-verification-note");
+  modal.hidden=false;statusNode.textContent="";
+  if(ageStatus?.verified&&ageStatus?.eligible===false){
+    note.textContent="This account is outside Gather's supported age range of 12–18. Messaging is unavailable on this account.";
+    form.hidden=true;
+  }else{
+    note.textContent="Enter your date of birth to confirm you're between 12 and 18. Gather stores the birth date privately; other members and admins see only your age group.";
+    form.hidden=false;date.value="";submit.disabled=false;
+  }
+}
+async function loadMyAgeStatus(){
+  const result=await db.rpc("get_my_age_status");
+  if(result.error)throw result.error;
+  S.ageStatus=result.data||null;
+  return S.ageStatus;
+}
+async function submitAgeVerification(event){
+  event.preventDefault();
+  const birthDate=$("age-birth-date").value;
+  if(!birthDate){status("age-verification-status","Enter your date of birth.","error");return;}
+  const button=$("age-verification-submit");button.disabled=true;
+  status("age-verification-status","Confirming your age…");
+  const result=await db.rpc("confirm_my_age",{p_birth_date:birthDate});
+  button.disabled=false;
+  if(result.error){status("age-verification-status",result.error.message,"error");return;}
+  S.ageStatus=result.data||null;
+  if(!S.ageStatus?.eligible){showAgeVerificationGate(S.ageStatus);status("age-verification-status","This account is not eligible to use Gather.","error");return;}
+  $("age-verification-modal").hidden=true;
+  toast("Age confirmed. Your age group is "+S.ageStatus.age_group+".");
+  const user=S.user;if(user)await signedIn(user,true);
+}
+function subscribeIntergroupRequests(){
+  if(S.ageRequestChannel){db.removeChannel(S.ageRequestChannel);S.ageRequestChannel=null;}
+  if(!S.user)return;
+  const uid=S.user.id;
+  S.ageRequestChannel=db.channel("intergroup-requests-"+uid)
+    .on("postgres_changes",{event:"*",schema:"public",table:"intergroup_message_requests"},payload=>{
+      if(S.user?.id!==uid)return;
+      const row=payload.new||payload.old;
+      if(!row||(row.requester_id!==uid&&row.target_user_id!==uid))return;
+      if(payload.eventType==="INSERT"&&row.target_user_id===uid)toast("A member requested intergroup messaging. Gather Admin will review it.");
+      else if(payload.eventType==="UPDATE"&&row.status==="approved"){
+        toast(row.requester_id===uid
+          ?"Gather Admin approved your request. You can now send a regular chat request to this member."
+          :"Gather Admin approved intergroup messaging for a member. You may receive a chat request.");
+      }else if(payload.eventType==="UPDATE"&&row.status==="declined"&&row.requester_id===uid)toast("Your intergroup messaging request was declined.");
+      else if(payload.eventType==="UPDATE"&&row.status==="revoked")toast("An intergroup messaging permission was revoked.");
+    }).subscribe();
+}
 async function signedIn(user,retry=false){
   if(!user||S.loading===user.id)return;
   if(!retry&&S.user&&S.user.id===user.id&&S.profile)return;
@@ -795,6 +848,10 @@ async function signedIn(user,retry=false){
   try{
     S.profile=await ensureProfile(user);
     if(S.user?.id!==user.id)return;
+    const ageStatus=await loadMyAgeStatus();
+    if(!ageStatus?.verified||ageStatus?.eligible===false){showAgeVerificationGate(ageStatus);return;}
+    $("age-verification-modal").hidden=true;
+    subscribeIntergroupRequests();
     await loadMessageRestriction(user.id);
     if(S.user?.id!==user.id)return;
     subscribeMessageRestriction(user.id);
@@ -1747,10 +1804,12 @@ async function respondToFriendRequest(id,accept){
   if(r.error){toast("Friend request could not be updated: "+r.error.message);return;}
   if(r.data?.status==="blocked"){toast("This request cannot be accepted because one of you has blocked the other.");await loadFriends();return;}
   await loadFriends();
-  if(accept&&r.data?.conversation_id){
-    $("friends-modal").hidden=true;
-    toast("You are friends now. Private messaging is open.");
-    await loadChats();await openChat(r.data.conversation_id);
+  if(accept){
+    if(r.data?.conversation_id){
+      $("friends-modal").hidden=true;
+      toast("You are friends now. Private messaging is open.");
+      await loadChats();await openChat(r.data.conversation_id);
+    }else toast("Friend request accepted. Messaging across age groups still requires Gather Admin approval.");
   }else toast("Friend request declined.");
 }
 async function removeFriend(friendId){
@@ -3396,8 +3455,22 @@ async function searchPeople(){
 async function directChat(p){
   const existing=S.chats.find(c=>c.kind==="direct"&&c.members.length===2&&c.members.some(m=>m.user_id===p.id)&&c.members.some(m=>m.user_id===S.user.id));
   if(existing){$("people-modal").hidden=true;await openChat(existing.id);return;}
+  const access=await db.rpc("get_direct_chat_status",{p_other_user_id:p.id});
+  if(access.error){status("people-status","Messaging eligibility could not be checked: "+access.error.message,"error");return;}
+  if(access.data?.i_blocked||access.data?.they_blocked){status("people-status","This member is not available for messaging.","error");return;}
+  if(access.data?.is_intergroup&&!access.data?.intergroup_permission){
+    const request=await db.rpc("request_intergroup_message",{p_target_user_id:p.id});
+    if(request.error){status("people-status","Intergroup request could not be sent: "+request.error.message,"error");return;}
+    $("people-modal").hidden=true;
+    toast(request.data?.status==="pending"
+      ?"Intergroup messaging request sent to Gather Admin for review."
+      :"Intergroup messaging is already approved. You can now send a chat request.");
+    return;
+  }
   const r=await db.rpc("send_direct_chat_request",{p_recipient_id:p.id});
   if(r.error){status("people-status","Request could not be sent: "+r.error.message,"error");return;}
+  if(r.data?.status==="age_verification_required"){status("people-status","Both members must complete age confirmation before messaging.","error");return;}
+  if(r.data?.status==="intergroup_approval_required"){status("people-status","Admin approval is required before a cross-group chat request can be sent.","error");return;}
   if(r.data?.status==="existing"&&r.data.conversation_id){$("people-modal").hidden=true;await loadChats();await openChat(r.data.conversation_id);return;}
   if(r.data?.status==="blocked"){status("people-status","This member is not available for a new private chat request.","error");return;}
   $("people-modal").hidden=true;await loadRequests();
@@ -4724,6 +4797,12 @@ function wire(){
   document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>authMode(b.dataset.mode)));
   $("forgot-password").addEventListener("click",requestPasswordReset);
   $("recovery-password-form").addEventListener("submit",completePasswordRecovery);
+  $("age-verification-form").addEventListener("submit",submitAgeVerification);
+  $("age-verification-signout").addEventListener("click",async()=>{
+    const result=await db.auth.signOut();
+    if(result.error)status("age-verification-status",result.error.message,"error");
+    else showAuth();
+  });
   $("recovery-cancel").addEventListener("click",async()=>{const result=await db.auth.signOut();if(result.error)status("recovery-password-status",result.error.message,"error");else $("password-recovery-modal").hidden=true;});
   $("auth-form").addEventListener("submit",async e=>{
     e.preventDefault();
@@ -4869,6 +4948,10 @@ document.querySelectorAll("[data-folder]").forEach(b=>b.addEventListener("click"
     if(S.user){
       void loadApprovedUserIds().then(ok=>{if(ok)refreshApprovedBadgeUI();});
       void loadMessageRestriction();
+      void loadMyAgeStatus().then(ageStatus=>{
+        if(!ageStatus?.eligible&&!ageStatus?.is_admin)showAgeVerificationGate(ageStatus);
+        else S.ageStatus=ageStatus;
+      }).catch(error=>console.warn("Age status refresh failed:",error));
     }
   });
   $("messages").addEventListener("scroll",()=>{repositionFloatingMessageActionMenu();if($("messages").scrollTop<80)loadOlderMessages();checkUnreadDividerVisibility();},{passive:true});
