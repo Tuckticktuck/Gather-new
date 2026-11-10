@@ -14,7 +14,7 @@ const ACCENTS = {
 };
 const FONT_SCALES = {small:"0.9",normal:"1",large:"1.15"};
 const MESSAGE_REACTION_EMOJIS = ["👍","❤️","😂","🔥","😢","🎉"];
-const DEFAULT_PREFERENCES = {accent:"lavender",fontSize:"normal",theme:"dark",messageNotificationMode:"temporary",groupUnreadMessages:false,shareOnlineStatus:true,quietHoursEnabled:false,quietHoursStart:"22:00",quietHoursEnd:"07:00"};
+const DEFAULT_PREFERENCES = {accent:"lavender",fontSize:"normal",theme:"dark",messageNotificationMode:"temporary",notificationSound:"off",directMessageRequests:"everyone",groupUnreadMessages:false,shareOnlineStatus:true,quietHoursEnabled:false,quietHoursStart:"22:00",quietHoursEnd:"07:00"};
 const DEFAULT_CHAT_SETTINGS = {pinned:[],muted:{},drafts:{},appearance:{}};
 const CHAT_BACKGROUNDS = {default:null,slate:"#202a37",forest:"#1d302b",plum:"#302438",sand:"#40382d"};
 function normalizeChatSettings(raw){
@@ -30,7 +30,7 @@ function normalizeChatSettings(raw){
   });
   return {pinned,muted,drafts,appearance};
 }
-const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], favoriteFriendIds:new Set(), blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingUndoSend:null, undoSendTimer:null, undoCountdownInterval:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, homeSearchQuery:"", homeSearchTab:"messages", homeSearchMessages:[], homeSearchProfiles:[], homeSearchLoading:false, homeSearchErrors:{messages:"",profiles:""}, homeSearchTimer:null, homeSearchRequestId:0, directStatus:null, directStatusCache:new Map(), directStatusChecks:new Map(), groupMessageStatus:null, ageStatus:null, ageChangeStatus:null, ageRequestChannel:null, messageRestriction:null, messageRestrictionLoaded:false, messageRestrictionError:"", messageRestrictionChannel:null, messageRestrictionTimer:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],intergroupRequests:[],ageChangeRequests:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
+const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], favoriteFriendIds:new Set(), archivedConversationIds:new Set(), blockedUsers:[], deletedMessages[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingUndoSend:null, undoSendTimer:null, undoCountdownInterval:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, homeSearchQuery:"", homeSearchTab:"messages", homeSearchMessages:[], homeSearchProfiles:[], homeSearchLoading:false, homeSearchErrors:{messages:"",profiles:""}, homeSearchTimer:null, homeSearchRequestId:0, directStatus:null, directStatusCache:new Map(), directStatusChecks:new Map(), groupMessageStatus:null, ageStatus:null, ageChangeStatus:null, ageRequestChannel:null, messageRestriction:null, messageRestrictionLoaded:false, messageRestrictionError:"", messageRestrictionChannel:null, messageRestrictionTimer:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],intergroupRequests:[],ageChangeRequests:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function appendFormattedMessageText(parent,value){
@@ -65,6 +65,8 @@ function loadUIPreferences(saved){
     fontSize:FONT_SCALES[saved?.fontSize]?saved.fontSize:DEFAULT_PREFERENCES.fontSize,
     theme:saved?.theme==="light"?"light":"dark",
     messageNotificationMode:saved?.messageNotificationMode==="persistent"?"persistent":"temporary",
+    notificationSound:["off","soft","chime"].includes(saved?.notificationSound)?saved.notificationSound:"off",
+    directMessageRequests:saved?.directMessageRequests==="friends_only"?"friends_only":"everyone",
     groupUnreadMessages:saved?.groupUnreadMessages===true,
     shareOnlineStatus:saved?.shareOnlineStatus!==false,
     quietHoursEnabled:saved?.quietHoursEnabled===true,
@@ -168,6 +170,8 @@ function applyUIPreferences(){
   if(shareStatusControl)shareStatusControl.checked=S.preferences.shareOnlineStatus!==false;
   const quietHoursControl=$("quiet-hours-enabled");
   if(quietHoursControl)quietHoursControl.checked=S.preferences.quietHoursEnabled===true;
+  const soundSelect=$("notification-sound-mode");if(soundSelect)soundSelect.value=S.preferences.notificationSound;
+  const requestModeSelect=$("direct-message-requests-mode");if(requestModeSelect)requestModeSelect.value=S.preferences.directMessageRequests;
   const quietHoursStart=$("quiet-hours-start"),quietHoursEnd=$("quiet-hours-end");
   if(quietHoursStart)quietHoursStart.value=S.preferences.quietHoursStart;
   if(quietHoursEnd)quietHoursEnd.value=S.preferences.quietHoursEnd;
@@ -265,6 +269,7 @@ function renderChatOptions(){
   const settings=chatSettingsFor();
   $("toggle-chat-pin").textContent=settings.pinned?"Unpin conversation":"Pin conversation";
   $("toggle-chat-mute").textContent=settings.muted?"Unmute notifications":"Mute notifications";
+  $("archive-conversation").textContent=S.archivedConversationIds?.has(S.active)?"Unarchive conversation":"Archive conversation";
   $("chat-appearance-accent").value=settings.appearance.accent;
   $("chat-appearance-background").value=settings.appearance.background;
 }
@@ -679,7 +684,7 @@ function showAuth() {
   clearTimeout(S.chatSettingsSaveTimer);S.chatSettingsSaveTimer=null;S.chatSettings=normalizeChatSettings(DEFAULT_CHAT_SETTINGS);
   S.selectingConversations=false;S.selectedConversationIds.clear();renderConversationSelectionControls();
   S.unreadTargetMessageId=null;S.unreadTargetLoaded=false;S.suppressReadDividerUpdates=false;
-  if(S.homeSearchTimer){clearTimeout(S.homeSearchTimer);S.homeSearchTimer=null;}S.user=null;S.profile=null;S.homeSearchQuery="";S.homeSearchMessages=[];S.homeSearchProfiles=[];S.homeSearchRequestId++;S.homeSearchLoading=false;S.modalBackTargets={};syncAdminModeButton();S.admin={users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[]};S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.savedMessageIds=new Set();S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.openMessageMenuId=null;S.notifications=[];S.feedbackAdminView=false;$("feedback-admin-open").hidden=true;$("feedback-admin-settings-section").hidden=true;S.profiles={};S.chats=[];S.messages=[];S.messageReads={};S.replyTo=null;S.hasOlderMessages=false;S.requests=[];S.friendRequests=[];S.friends=[];S.blockedUsers=[];S.deletedMessages=[];S.deletedMessageIds=new Set();S.lastReadAt={};S.folder="friends";S.directStatus=null;S.directStatusCache.clear();S.active=null;S.messages=[];S.loadError=null;S.avatarChanged=false;S.pendingAvatarData=null;loadUIPreferences(DEFAULT_PREFERENCES);
+  if(S.homeSearchTimer){clearTimeout(S.homeSearchTimer);S.homeSearchTimer=null;}S.user=null;S.profile=null;S.homeSearchQuery="";S.homeSearchMessages=[];S.homeSearchProfiles=[];S.homeSearchRequestId++;S.homeSearchLoading=false;S.modalBackTargets={};syncAdminModeButton();S.admin={users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[]};S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.savedMessageIds=new Set();S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.openMessageMenuId=null;S.notifications=[];S.feedbackAdminView=false;$("feedback-admin-open").hidden=true;$("feedback-admin-settings-section").hidden=true;S.profiles={};S.chats=[];S.messages=[];S.messageReads={};S.replyTo=null;S.hasOlderMessages=false;S.requests=[];S.friendRequests=[];S.friends=[];S.blockedUsers=[];S.deletedMessages=[];S.deletedMessageIds=new Set();S.lastReadAt={};S.folder="friends";S.archivedConversationIds=new Set();S.directStatus=null;S.directStatusCache.clear();S.active=null;S.messages=[];S.loadError=null;S.avatarChanged=false;S.pendingAvatarData=null;loadUIPreferences(DEFAULT_PREFERENCES);
   setChatLoadStatus("");$("auth").hidden=false;$("app").hidden=true;
 }
 function runScreenTransition(update){
@@ -1080,7 +1085,10 @@ async function loadChats(){
   const hidden=await db.from("user_deleted_messages").select("message_id").eq("user_id",S.user.id);
   if(hidden.error){S.loadError="Deleted-message settings could not be loaded: "+hidden.error.message;toast(S.loadError);return false;}
   S.deletedMessageIds=new Set((hidden.data||[]).map(x=>x.message_id));
-  const m=await db.from("conversation_members").select("conversation_id,role,conversations!inner(id,kind,title,description,updated_at,created_by,admin_initiated)").eq("user_id",S.user.id);
+  const archived=await db.from("user_archived_conversations").select("conversation_id").eq("user_id",S.user.id);
+  if(archived.error){console.warn("Archived conversations could not be loaded:",archived.error.message);S.archivedConversationIds=new Set();}
+  else S.archivedConversationIds=new Set((archived.data||[]).map(x=>x.conversation_id));
+  const m=await db.from("conversation_members").select("conversation_id,role,conversations!inner(id,kind,title,description,updated_at,created_by,admin_initiated,slow_mode_seconds,guidelines)").eq("user_id",S.user.id);
   if(m.error){S.loadError="Chats could not be loaded: "+m.error.message;toast(S.loadError);return false;}
   const rows=m.data||[],ids=[...new Set(rows.map(x=>x.conversation_id))];
   if(!ids.length){S.chats=[];S.profiles={};await loadUnreadCounts();renderChats();renderActive();return await loadRequests();}
@@ -2400,17 +2408,20 @@ function renderChats(){
   const searching=!!rawTerm;
   $("home-search-results").hidden=!searching;$("home-browse-content").hidden=searching;
   if(searching){renderHomeSearchResults();return;}
-  const standard=$("private-folder-panel"),blocked=$("blocked-panel"),deleted=$("deleted-panel");
+  const standard=$("private-folder-panel"),blocked=$("blocked-panel"),deleted=$("deleted-panel"),archivedPanel=$("archived-panel");
   const isStandard=S.folder==="friends"||S.folder==="nonfriends";
+  const isArchived=S.folder==="archived";
   const pinnedIds=new Set(S.chatSettings.pinned);
-  const pinnedChats=S.chatSettings.pinned.map(id=>S.chats.find(chat=>chat.id===id)).filter(Boolean);
+  const isArchivedChat=chat=>S.archivedConversationIds instanceof Set&&S.archivedConversationIds.has(chat.id);
+  const pinnedChats=S.chatSettings.pinned.map(id=>S.chats.find(chat=>chat.id===id)).filter(chat=>chat&&!isArchivedChat(chat));
   $("pinned-chat-section").hidden=!pinnedChats.length;
   renderChatSection("direct","pinned-chat-list","pinned-chat-count",term,pinnedChats);
-  const adminChats=S.chats.filter(chat=>chat.kind==="direct"&&chat.admin_initiated&&!pinnedIds.has(chat.id));
+  const adminChats=S.chats.filter(chat=>chat.kind==="direct"&&chat.admin_initiated&&!pinnedIds.has(chat.id)&&!isArchivedChat(chat));
   $("admin-message-section").hidden=!adminChats.length;
   $("admin-message-heading").textContent=isFeedbackAdmin(S.user)?"Admin conversations":"Gather Admin";
   renderChatSection("direct","admin-message-list","admin-message-count",term,adminChats);
   standard.hidden=!isStandard;blocked.hidden=S.folder!=="blocked";deleted.hidden=S.folder!=="deleted";
+  archivedPanel.hidden=!isArchived;$("all-groups-section").hidden=isArchived;
   document.querySelectorAll("[data-folder]").forEach(b=>{
     const active=b.dataset.folder===S.folder;
     b.classList.toggle("active",active);b.setAttribute("aria-selected",String(active));
@@ -2419,17 +2430,21 @@ function renderChats(){
     $("private-chat-heading").textContent=S.folder==="friends"?"Friends":"Non-friends";
     const friends=new Set(S.friends.map(x=>x.friend_id)),blockedIds=new Set(S.blockedUsers.map(x=>x.blocked_id));
     const chats=S.chats.filter(c=>{
-      if(c.kind!=="direct"||c.admin_initiated||pinnedIds.has(c.id))return false;
+      if(c.kind!=="direct"||c.admin_initiated||pinnedIds.has(c.id)||isArchivedChat(c))return false;
       const peer=peerForChat(c);if(!peer||blockedIds.has(peer))return false;
       return S.folder==="friends"?friends.has(peer):!friends.has(peer);
     });
     if(S.folder==="friends")chats.sort((a,b)=>Number(S.favoriteFriendIds.has(peerForChat(b)))-Number(S.favoriteFriendIds.has(peerForChat(a))));
     renderChatSection("direct","private-chat-list","private-chat-count",term,chats);
   }else if(S.folder==="blocked")renderBlockedUsers(term);
-  else renderDeletedMessages(term);
-  renderChatSection("group","group-chat-list","group-chat-count",term,S.chats.filter(chat=>chat.kind==="group"&&!pinnedIds.has(chat.id)));
-  renderConversationSelectionControls();
-  renderInChatSidebar();
+  else if(S.folder==="deleted")renderDeletedMessages(term);
+  else if(isArchived){
+    const archived=S.chats.filter(chat=>isArchivedChat(chat)&&!chat.admin_initiated);
+    renderChatSection("direct","archived-direct-list","archived-direct-count",term,archived.filter(chat=>chat.kind==="direct"));
+    renderChatSection("group","archived-group-list","archived-group-count",term,archived.filter(chat=>chat.kind==="group"));
+  }
+  renderChatSection("group","group-chat-list","group-chat-count",term,S.chats.filter(chat=>chat.kind==="group"&&!pinnedIds.has(chat.id)&&!isArchivedChat(chat)));
+  renderConversationSelectionControls();renderInChatSidebar();
 }
 function renderInChatSidebar(){
   const pinnedSection=$("in-chat-pinned-section");
@@ -2493,8 +2508,21 @@ async function loadDeletedMessages(){
   });
   renderChats();return true;
 }
+async function toggleArchiveConversation(){
+  const chat=S.chats.find(item=>item.id===S.active),id=chat?.id;
+  if(!id||!S.user)return;
+  const isArchived=S.archivedConversationIds.has(id);
+  const result=isArchived
+    ?await db.from("user_archived_conversations").delete().eq("user_id",S.user.id).eq("conversation_id",id)
+    :await db.from("user_archived_conversations").insert({user_id:S.user.id,conversation_id:id});
+  if(result.error){toast("Conversation could not be "+(isArchived?"restored":"archived")+": "+result.error.message);return;}
+  if(isArchived)S.archivedConversationIds.delete(id);else S.archivedConversationIds.add(id);
+  $("chat-actions-modal").hidden=true;
+  if(!isArchived)goHome();else renderChats();
+  toast(isArchived?"Conversation restored to your inbox.":"Conversation archived.");
+}
 async function selectFolder(folder){
-  if(!["friends","nonfriends","blocked","deleted"].includes(folder))return;
+  if(!["friends","nonfriends","blocked","deleted","archived"].includes(folder))return;
   S.folder=folder;renderChats();
   if(folder==="blocked")await loadBlocked();
   if(folder==="deleted")await loadDeletedMessages();
@@ -4656,6 +4684,8 @@ async function signOutOtherSessions(){
   const result=await db.auth.signOut({scope:"others"});
   button.disabled=false;
   if(result.error){$("session-security-status").textContent="Other sessions could not be signed out: "+result.error.message;return;}
+  const audit=await db.rpc("record_other_sessions_signed_out");
+  if(audit.error)console.warn("Session-security activity could not be recorded:",audit.error.message);
   $("session-security-status").textContent="Other sessions have been revoked. Their existing access tokens may remain valid until they expire; this device stays signed in.";
 }
 async function requestAccountDeletion(){
@@ -4694,6 +4724,9 @@ function openGroupSettings(){
   const owner=myRole==="owner",canManage=owner||myRole==="moderator";
   $("group-settings-title").value=chat.title||"";
   $("group-settings-description").value=chat.description||"";
+  $("group-settings-guidelines").value=chat.guidelines||"";
+  $("group-settings-slow-mode").value=String(chat.slow_mode_seconds||0);
+  $("group-settings-guidelines").disabled=!canManage;$("group-settings-slow-mode").disabled=!canManage;
   $("group-settings-title").disabled=!canManage;
   $("group-settings-description").disabled=!canManage;
   $("group-settings-save").hidden=!canManage;
@@ -4748,13 +4781,17 @@ async function saveGroupSettings(){
   const chat=S.chats.find(x=>x.id===S.active);
   if(!chat||chat.kind!=="group")return;
   const title=$("group-settings-title").value.trim(),description=$("group-settings-description").value.trim();
+  const guidelines=$("group-settings-guidelines").value.trim(),slowMode=Number($("group-settings-slow-mode").value);
   if(!title||title.length>60){status("group-settings-status","Group names must be between 1 and 60 characters.","error");return;}
   if(description.length>280){status("group-settings-status","Descriptions must be 280 characters or fewer.","error");return;}
+  if(guidelines.length>1200){status("group-settings-status","Guidelines must be 1,200 characters or fewer.","error");return;}
   const button=$("group-settings-save");button.disabled=true;
   const result=await db.rpc("update_group_settings",{p_conversation_id:chat.id,p_title:title,p_description:description||null});
+  if(result.error){button.disabled=false;status("group-settings-status","Settings could not be saved: "+result.error.message,"error");return;}
+  const moderation=await db.rpc("update_group_moderation_settings",{p_conversation_id:chat.id,p_slow_mode_seconds:slowMode,p_guidelines:guidelines||null});
   button.disabled=false;
-  if(result.error){status("group-settings-status","Settings could not be saved: "+result.error.message,"error");return;}
-  chat.title=title;chat.description=description||null;
+  if(moderation.error){status("group-settings-status","Group details were saved, but moderation settings were not: "+moderation.error.message,"error");return;}
+  chat.title=title;chat.description=description||null;chat.guidelines=guidelines||null;chat.slow_mode_seconds=slowMode;
   $("group-settings-modal").hidden=true;renderActive();renderChats();toast("Group settings updated.");
 }
 async function removeGroupMember(userId){
@@ -5375,6 +5412,8 @@ document.querySelectorAll("[data-folder]").forEach(b=>b.addEventListener("click"
     S.preferences.quietHoursEnabled=!!event.target.checked;
     saveUIPreferences();
   });
+  $("notification-sound-mode").addEventListener("change",event=>{S.preferences.notificationSound=event.target.value;saveUIPreferences();});
+  $("direct-message-requests-mode").addEventListener("change",event=>{S.preferences.directMessageRequests=event.target.value==="friends_only"?"friends_only":"everyone";saveUIPreferences();});
   ["quiet-hours-start","quiet-hours-end"].forEach(id=>$(id).addEventListener("change",event=>{
     S.preferences[id==="quiet-hours-start"?"quietHoursStart":"quietHoursEnd"]=event.target.value||DEFAULT_PREFERENCES[id==="quiet-hours-start"?"quietHoursStart":"quietHoursEnd"];
     saveUIPreferences();
