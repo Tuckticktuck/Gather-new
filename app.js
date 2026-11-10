@@ -30,7 +30,7 @@ function normalizeChatSettings(raw){
   });
   return {pinned,muted,drafts,appearance};
 }
-const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], favoriteFriendIds:new Set(), blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingUndoSend:null, undoSendTimer:null, undoCountdownInterval:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, homeSearchQuery:"", homeSearchTab:"messages", homeSearchMessages:[], homeSearchProfiles:[], homeSearchLoading:false, homeSearchErrors:{messages:"",profiles:""}, homeSearchTimer:null, homeSearchRequestId:0, directStatus:null, messageRestriction:null, messageRestrictionLoaded:false, messageRestrictionError:"", messageRestrictionChannel:null, messageRestrictionTimer:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
+const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], favoriteFriendIds:new Set(), blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingUndoSend:null, undoSendTimer:null, undoCountdownInterval:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, homeSearchQuery:"", homeSearchTab:"messages", homeSearchMessages:[], homeSearchProfiles:[], homeSearchLoading:false, homeSearchErrors:{messages:"",profiles:""}, homeSearchTimer:null, homeSearchRequestId:0, directStatus:null, messageRestriction:null, messageRestrictionLoaded:false, messageRestrictionError:"", messageRestrictionChannel:null, messageRestrictionTimer:null, active:null, messages:[], channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), ownPresenceChannel:null, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],intergroupRequests:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function appendFormattedMessageText(parent,value){
@@ -3586,7 +3586,7 @@ function clearAdminChildNavigation(){
   updateAdminModalStack();
 }
 function setAdminModeSection(section){
-  if(!["overview","accounts","messages","reports","feedback","announcements","approvals","activity"].includes(section))return;
+  if(!["overview","accounts","messages","age-access","reports","feedback","announcements","approvals","activity"].includes(section))return;
   S.admin.section=section;
   document.querySelectorAll("[data-admin-section]").forEach(button=>{
     if(button.classList.contains("admin-mode-tab"))button.classList.toggle("active",button.dataset.adminSection===section);
@@ -3603,6 +3603,7 @@ function setAdminModeSection(section){
   }
   if(section==="activity")loadAdminActivity();
   if(section==="approvals")loadAdminApprovals();
+  if(section==="age-access")loadAdminIntergroupRequests();
 }
 async function openAdminMode(){
   if(!isFeedbackAdmin(S.user)){toast("Admin Mode is only available to the designated Gather administrator.");return;}
@@ -3619,8 +3620,66 @@ function adminActionLabel(action){
     message_reported_user:"Contacted a reported member",
     admin_direct_message_sent:"Sent a direct message as Gather Admin",
     messaging_restricted:"Temporarily restricted a member's messaging",
-    messaging_restriction_removed:"Removed a member's messaging restriction"
+    messaging_restriction_removed:"Removed a member's messaging restriction",
+    intergroup_request_approved:"Approved intergroup messaging",
+    intergroup_request_declined:"Declined an intergroup messaging request",
+    intergroup_permission_revoked:"Revoked intergroup messaging permission"
   })[action]||String(action||"Admin action").replaceAll("_"," ");
+}
+async function loadAdminIntergroupRequests(){
+  if(!isFeedbackAdmin(S.user))return;
+  const list=$("admin-intergroup-request-list");
+  if(!list)return;
+  list.replaceChildren(el("p","muted tiny","Loading intergroup requests…"));
+  try{
+    const result=await adminApi("list_intergroup_requests");
+    S.admin.intergroupRequests=result.requests||[];
+    renderAdminIntergroupRequests();
+  }catch(error){
+    list.replaceChildren(el("p","status error",error.message));
+  }
+}
+function renderAdminIntergroupRequests(){
+  const list=$("admin-intergroup-request-list");if(!list)return;
+  list.replaceChildren();
+  const items=S.admin.intergroupRequests||[];
+  if(!items.length){list.append(el("p","muted tiny","No intergroup messaging requests have been submitted."));return;}
+  items.forEach(item=>{
+    const row=el("article","admin-intergroup-request");
+    const requester=item.requester?.display_name||"Member";
+    const target=item.target?.display_name||"Member";
+    const statusText=item.status==="approved"?"Approved":item.status==="declined"?"Declined":item.status==="revoked"?"Revoked":"Awaiting review";
+    row.append(
+      el("strong","",requester+" ("+item.requester_age_group+") → "+target+" ("+item.target_age_group+")"),
+      el("small","",dateLabel(item.requested_at)+" · "+statusText)
+    );
+    if(item.status==="pending"){
+      const actions=el("div","admin-intergroup-actions");
+      const approve=el("button","primary","Approve");approve.type="button";
+      const decline=el("button","outline","Decline");decline.type="button";
+      approve.addEventListener("click",()=>reviewIntergroupRequest(item.id,"approved"));
+      decline.addEventListener("click",()=>reviewIntergroupRequest(item.id,"declined"));
+      actions.append(approve,decline);row.append(actions);
+    }else if(item.status==="approved"){
+      const revoke=el("button","outline admin-intergroup-revoke","Revoke permission");revoke.type="button";
+      revoke.addEventListener("click",()=>reviewIntergroupRequest(item.id,"revoked"));
+      row.append(revoke);
+    }
+    list.append(row);
+  });
+}
+async function reviewIntergroupRequest(requestId,decision){
+  if(!isFeedbackAdmin(S.user))return;
+  const title=decision==="approved"?"Approve intergroup messaging?":decision==="revoked"?"Revoke this intergroup permission?":"Decline this intergroup request?";
+  if(!confirm(title))return;
+  try{
+    await adminApi(decision==="revoked"?"revoke_intergroup_permission":"review_intergroup_request",{
+      request_id:requestId,
+      ...(decision==="revoked"?{}:{decision})
+    });
+    await loadAdminIntergroupRequests();
+    toast(decision==="approved"?"Intergroup messaging approved.":decision==="revoked"?"Intergroup messaging permission revoked.":"Intergroup messaging request declined.");
+  }catch(error){toast("The request could not be updated: "+error.message);}
 }
 function renderAdminActivity(listId,items){
   const list=$(listId);if(!list)return;
@@ -4739,6 +4798,7 @@ function wire(){
   $("admin-accounts-more").addEventListener("click",()=>loadAdminAccounts(false));
   $("admin-activity-refresh").addEventListener("click",loadAdminActivity);
   $("admin-overview-activity-refresh").addEventListener("click",loadAdminOverview);
+  $("admin-intergroup-refresh").addEventListener("click",loadAdminIntergroupRequests);
 
   $("announcement-send-open").addEventListener("click",()=>{$("settings-modal").hidden=true;openAnnouncementComposer();});
   $("announcement-compose-form").addEventListener("submit",publishAnnouncement);
