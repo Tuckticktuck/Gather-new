@@ -2338,3 +2338,14 @@ button:not(:disabled){
 .chat-item:hover,.person:hover,.request-item:hover,.pinned-message-banner:hover{
   transform:translateY(-1px);
 }
+
+/* Keep drawer transition declarations active in both open and closed states. */
+@media(max-width:720px){
+  .layout.show-chat .sidebar{
+    transition:
+      opacity var(--gather-motion) var(--gather-motion-ease),
+      transform var(--gather-motion) var(--gather-motion-ease),
+      display var(--gather-motion) allow-discrete;
+    transition-behavior:allow-discrete;
+  }
+}
