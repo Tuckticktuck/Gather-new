@@ -223,6 +223,66 @@ Deno.serve(async (request: Request) => {
       return response(200, { success: true, removed: !!data });
     }
 
+    if (action === "list_intergroup_requests") {
+      const { data, error } = await adminClient.from("intergroup_message_requests")
+        .select("id,requester_id,target_user_id,requester_age_group,target_age_group,status,requested_at,reviewed_at,reviewed_by")
+        .order("requested_at", { ascending: false })
+        .limit(150);
+      if (error) return adminError(500, "Intergroup messaging requests could not be loaded.");
+      const ids = [...new Set((data ?? []).flatMap((item) => [item.requester_id, item.target_user_id]))];
+      const { data: profiles, error: profileError } = ids.length
+        ? await adminClient.from("profiles").select("id,username,display_name").in("id", ids)
+        : { data: [], error: null };
+      if (profileError) return adminError(500, "Member names for intergroup requests could not be loaded.");
+      const profileById = new Map((profiles ?? []).map((profile) => [profile.id, profile]));
+      return response(200, {
+        requests: (data ?? []).map((item) => ({
+          ...item,
+          requester: profileById.get(item.requester_id) ?? null,
+          target: profileById.get(item.target_user_id) ?? null,
+        })),
+      });
+    }
+
+    if (action === "review_intergroup_request" || action === "revoke_intergroup_permission") {
+      const requestId = cleanString(payload.request_id, 80);
+      if (!requestId) return adminError(400, "Choose an intergroup request first.");
+      const decision = action === "revoke_intergroup_permission"
+        ? "revoked"
+        : cleanString(payload.decision, 20);
+      if (!["approved", "declined", "revoked"].includes(decision)) {
+        return adminError(400, "Choose approve or decline.");
+      }
+      const { data: existing, error: existingError } = await adminClient.from("intergroup_message_requests")
+        .select("id,requester_id,target_user_id,status")
+        .eq("id", requestId)
+        .maybeSingle();
+      if (existingError || !existing) return adminError(404, "That intergroup request could not be found.");
+      if (action === "review_intergroup_request" && existing.status !== "pending") {
+        return adminError(409, "That request has already been reviewed.");
+      }
+      if (action === "revoke_intergroup_permission" && existing.status !== "approved") {
+        return adminError(409, "That intergroup permission is no longer active.");
+      }
+      const { data: updated, error: updateError } = await adminClient.from("intergroup_message_requests")
+        .update({ status: decision, reviewed_at: new Date().toISOString(), reviewed_by: actorId })
+        .eq("id", requestId)
+        .eq("status", existing.status)
+        .select("id,status,requester_id,target_user_id")
+        .maybeSingle();
+      if (updateError || !updated) return adminError(409, "The intergroup request changed before it could be updated. Refresh and try again.");
+      const actionName = decision === "approved"
+        ? "intergroup_request_approved"
+        : decision === "declined"
+          ? "intergroup_request_declined"
+          : "intergroup_permission_revoked";
+      await writeAdminLog(adminClient, actorId, updated.requester_id, actionName, {
+        request_id: updated.id,
+        other_user_id: updated.target_user_id,
+      });
+      return response(200, { request: updated });
+    }
+
     if (action === "update_profile") {
       if (!targetId) return adminError(400, "Choose a member account first.");
       const input = payload.profile && typeof payload.profile === "object" && !Array.isArray(payload.profile)
