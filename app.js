@@ -5403,28 +5403,50 @@ async function loadScheduledMessages(){
     card.append(el("strong","",state+" · "+new Date(row.scheduled_for).toLocaleString()),el("p","",row.body));
     if(row.last_error)card.append(el("small","muted tiny",row.last_error));
     if(!row.sent_at&&!row.cancelled_at&&!row.failed_at){
-      const actions=el("div","feature-list-actions"),cancel=el("button","outline","Cancel");
+      const actions=el("div","feature-list-actions"),edit=el("button","outline","Edit"),cancel=el("button","outline","Cancel");
+      edit.type="button";edit.addEventListener("click",()=>editScheduledMessage(row));
       cancel.type="button";cancel.addEventListener("click",async()=>{
         const update=await db.from("scheduled_messages").update({cancelled_at:new Date().toISOString()}).eq("id",row.id).eq("sender_id",S.user.id).is("sent_at",null).is("cancelled_at",null).is("failed_at",null);
         if(update.error){toast("Scheduled message could not be cancelled: "+update.error.message);return;}
         await loadScheduledMessages();
       });
-      actions.append(cancel);card.append(actions);
+      actions.append(edit,cancel);card.append(actions);
     }
     list.append(card);
   });
   if(!result.data?.length)list.append(el("p","muted tiny","No scheduled messages for this conversation."));
+}
+function dateTimeLocalValue(date){
+  const pad=n=>String(n).padStart(2,"0");
+  return date.getFullYear()+"-"+pad(date.getMonth()+1)+"-"+pad(date.getDate())+"T"+pad(date.getHours())+":"+pad(date.getMinutes());
 }
 function openScheduleMessage(){
   if(!S.active)return;
   const chat=S.chats.find(item=>item.id===S.active);
   const allowed=chat?.kind==="direct"?!!S.directStatus?.can_message:!!S.groupMessageStatus?.can_message;
   if(!S.messageRestrictionLoaded||activeMessageRestriction()||!allowed){toast("You can schedule a message only when messaging is currently permitted.");return;}
-  const value=new Date(Date.now()+15*60*1000),pad=n=>String(n).padStart(2,"0");
-  $("scheduled-message-time").value=value.getFullYear()+"-"+pad(value.getMonth()+1)+"-"+pad(value.getDate())+"T"+pad(value.getHours())+":"+pad(value.getMinutes());
+  $("scheduled-message-time").value=dateTimeLocalValue(new Date(Date.now()+15*60*1000));
   status("scheduled-message-status","");
   $("scheduled-message-modal").hidden=false;
   closeComposerMoreMenu();
+}
+async function editScheduledMessage(row){
+  if(!row||row.sender_id&&row.sender_id!==S.user.id)return;
+  const body=prompt("Edit scheduled message text:",row.body);
+  if(body===null)return;
+  const nextBody=body.trim();
+  if(!nextBody||nextBody.length>4000){toast("Messages must contain 1–4,000 characters.");return;}
+  const currentTime=new Date(row.scheduled_for);
+  const nextTime=prompt("Enter the new local send time (YYYY-MM-DDTHH:MM):",dateTimeLocalValue(currentTime));
+  if(nextTime===null)return;
+  const scheduledFor=new Date(nextTime),now=Date.now();
+  if(!Number.isFinite(scheduledFor.getTime())||scheduledFor.getTime()<now+60000||scheduledFor.getTime()>now+30*86400000){
+    toast("Choose a time at least one minute from now and within the next 30 days.");return;
+  }
+  const result=await db.from("scheduled_messages").update({body:nextBody,scheduled_for:scheduledFor.toISOString()})
+    .eq("id",row.id).eq("sender_id",S.user.id).is("sent_at",null).is("cancelled_at",null).is("failed_at",null);
+  if(result.error){toast("Scheduled message could not be edited: "+result.error.message);return;}
+  await loadScheduledMessages();toast("Scheduled message updated.");
 }
 async function submitScheduledMessage(event){
   event.preventDefault();
