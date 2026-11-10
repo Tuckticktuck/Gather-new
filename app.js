@@ -5127,9 +5127,17 @@ document.querySelectorAll("[data-folder]").forEach(b=>b.addEventListener("click"
     if(S.user){
       void loadApprovedUserIds().then(ok=>{if(ok)refreshApprovedBadgeUI();});
       void loadMessageRestriction();
+      const previousAgeGroup=S.ageStatus?.age_group;
       void loadMyAgeStatus().then(ageStatus=>{
         if(!ageStatus?.eligible&&!ageStatus?.is_admin)showAgeVerificationGate(ageStatus);
-        else S.ageStatus=ageStatus;
+        else{
+          S.ageStatus=ageStatus;
+          if(previousAgeGroup&&ageStatus?.age_group&&previousAgeGroup!==ageStatus.age_group){
+            toast("Your updated age group is "+ageStatus.age_group+".");
+          }
+          if(S.active)void refreshDirectStatus(S.active);
+          if(!$("profile-modal").hidden)void loadMyAgeChangeStatus().then(renderProfileAgeSection);
+        }
       }).catch(error=>console.warn("Age status refresh failed:",error));
     }
   });
