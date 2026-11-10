@@ -5636,7 +5636,7 @@ function wire(){
   $("scheduled-message-form").addEventListener("submit",submitScheduledMessage);
   $("scheduled-message-cancel").addEventListener("click",()=>$("scheduled-message-modal").hidden=true);
   $("group-event-form").addEventListener("submit",submitGroupEvent);
-  $("scheduled-message-open").addEventListener("click",openScheduleMessage);
+  $("schedule-message-open").addEventListener("click",openScheduleMessage);
   $("scheduled-messages-open").addEventListener("click",()=>{$("scheduled-messages-modal").hidden=false;void loadScheduledMessages();closeComposerMoreMenu();});
   $("request-account-deletion").addEventListener("click",requestAccountDeletion);
   $("feedback-open").addEventListener("click",()=>openFeedback(false));
