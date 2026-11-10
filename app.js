@@ -2557,7 +2557,7 @@ function renderDirectControls(){
   $("message").disabled=blocked||sendingDisabled;$("send").disabled=blocked||sendingDisabled;
   $("message-image-file").disabled=blocked||sendingDisabled;
   $("composer-more-trigger").disabled=blocked||sendingDisabled;
-  $("message").placeholder=restrictionPending?"Checking messaging permissions…":messageRestricted?"Messaging temporarily restricted":blocked?"Private messaging unavailable":"Write a message…";
+  $("message").placeholder=restrictionPending?"Checking messaging permissions…":messageRestricted?"Messaging temporarily restricted":!d?"Checking private chat permissions…":blocked?"Private messaging unavailable":"Write a message…";
   const notice=$("chat-notice");
   notice.hidden=!blocked;
   notice.classList.toggle("checking",!d);
@@ -2895,16 +2895,12 @@ async function openChat(id){
     S.messages=[];S.messageReads={};S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.openMessageMenuId=null;S.replyTo=null;S.hasOlderMessages=false;S.loadingOlder=false;renderReplyComposer();
     renderMessageSkeletons();
     $("layout").classList.remove("show-home");$("layout").classList.add("show-chat");renderActive();
+    // Start permission verification only after the transition has activated this chat.
+    // A cache hit is displayed immediately and refreshed in the background when stale.
+    if(!permissionCheckIsFresh)void refreshDirectStatus(id);
   });
   subscribeTyping(id);
-  const permissionCheck=permissionCheckIsFresh?Promise.resolve(true):refreshDirectStatus(id);
-  const messageLoad=Promise.all([loadMessages(id),loadOldestUnreadTarget(id)]);
-  if(cachedStatus){
-    if(!permissionCheckIsFresh)void permissionCheck;
-    await messageLoad;
-  }else{
-    await Promise.all([permissionCheck,messageLoad]);
-  }
+  await Promise.all([loadMessages(id),loadOldestUnreadTarget(id)]);
   if(S.active!==id)return;
   subscribeMessageReads(id);subscribePollVotes(id);await loadUnreadCounts();renderChats();
 }
