@@ -3089,3 +3089,23 @@ html[data-theme="light"]{
 .session-row strong,.session-row small{display:block;overflow-wrap:anywhere}
 .session-row small{margin-top:4px;color:var(--muted);font-size:calc(10px * var(--font-scale,1))}
 .session-current{padding:4px 7px;border-radius:20px;color:var(--accent-text);background:var(--accent-surface);font-size:calc(9px * var(--font-scale,1));font-weight:750}
+
+/* Make the Shared media back control an explicit, thumb-friendly tap target. */
+#shared-media-back{
+  z-index:2;
+  display:grid;
+  place-items:center;
+  width:36px;
+  height:36px;
+  min-width:36px;
+  padding:0;
+  font-size:24px;
+  line-height:1;
+  pointer-events:auto;
+  touch-action:manipulation;
+  cursor:pointer;
+}
+#shared-media-back:focus-visible{
+  outline:2px solid var(--accent);
+  outline-offset:3px;
+}
