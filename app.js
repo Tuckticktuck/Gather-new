@@ -831,7 +831,15 @@ function subscribeIntergroupRequests(){
     .on("postgres_changes",{event:"*",schema:"public",table:"intergroup_message_requests"},payload=>{
       if(S.user?.id!==uid)return;
       const row=payload.new||payload.old;
-      if(!row||(row.requester_id!==uid&&row.target_user_id!==uid))return;
+      const admin=isFeedbackAdmin(S.user);
+      if(!row||(!admin&&row.requester_id!==uid&&row.target_user_id!==uid))return;
+      if(admin){
+        if(payload.eventType==="INSERT"){
+          toast("A new intergroup messaging request is awaiting Admin review.");
+          if(S.admin.section==="age-access")void loadAdminIntergroupRequests();
+        }else if(S.admin.section==="age-access")void loadAdminIntergroupRequests();
+        return;
+      }
       if(payload.eventType==="INSERT"&&row.target_user_id===uid)toast("A member requested intergroup messaging. Gather Admin will review it.");
       else if(payload.eventType==="UPDATE"&&row.status==="approved"){
         toast(row.requester_id===uid
@@ -3417,7 +3425,7 @@ async function openPeople(mode){
   $("group-wrap").hidden=mode!=="group";$("group-title").value="";
   $("people-create").hidden=mode==="direct"||mode==="friend";$("people-create").textContent=mode==="group"?"Create group":"Add selected people";
   $("people-title").textContent=mode==="group"?"Create a group":mode==="add"?"Add people":mode==="friend"?"Find friends":"Start a conversation";
-  $("people-desc").textContent=mode==="group"?"Name your group and choose who to invite.":mode==="friend"?"Send a friend request. They must accept before you become friends, and then private messaging opens automatically.":"Find someone by their Gather username.";
+  $("people-desc").textContent=mode==="group"?"Name your group and choose who to invite.":mode==="friend"?"Send a friend request. They must accept before you become friends, and then private messaging opens automatically.":"Find someone by their Gather username. Cross-group messaging first requires Gather Admin approval, then the recipient must accept a chat request.";
   status("people-status","");await loadRequests();if(mode==="friend")await loadFriends();$("people-search").focus();
 }
 async function searchPeople(){
