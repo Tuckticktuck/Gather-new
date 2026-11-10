@@ -633,7 +633,32 @@ function showAuth() {
   if(S.homeSearchTimer){clearTimeout(S.homeSearchTimer);S.homeSearchTimer=null;}S.user=null;S.profile=null;S.homeSearchQuery="";S.homeSearchMessages=[];S.homeSearchProfiles=[];S.homeSearchRequestId++;S.homeSearchLoading=false;S.modalBackTargets={};syncAdminModeButton();S.admin={users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[]};S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.savedMessageIds=new Set();S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.openMessageMenuId=null;S.notifications=[];S.feedbackAdminView=false;$("feedback-admin-open").hidden=true;$("feedback-admin-settings-section").hidden=true;S.profiles={};S.chats=[];S.messages=[];S.messageReads={};S.replyTo=null;S.hasOlderMessages=false;S.requests=[];S.friendRequests=[];S.friends=[];S.blockedUsers=[];S.deletedMessages=[];S.deletedMessageIds=new Set();S.lastReadAt={};S.folder="friends";S.directStatus=null;S.active=null;S.messages=[];S.loadError=null;S.avatarChanged=false;S.pendingAvatarData=null;loadUIPreferences(DEFAULT_PREFERENCES);
   setChatLoadStatus("");$("auth").hidden=false;$("app").hidden=true;
 }
-function showApp(){ $("auth").hidden=true;$("app").hidden=false; }
+function runScreenTransition(update){
+  if(typeof update!=="function")return;
+  const main=document.querySelector(".main");
+  const reduceMotion=!!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  if(!reduceMotion&&typeof document.startViewTransition==="function"){
+    try{
+      document.startViewTransition(()=>update());
+      return;
+    }catch(error){
+      // The normal render path below remains available when view transitions fail.
+    }
+  }
+  update();
+  if(reduceMotion||!main)return;
+  main.classList.remove("gather-screen-enter");
+  void main.offsetWidth;
+  main.classList.add("gather-screen-enter");
+  clearTimeout(main._gatherScreenTimer);
+  main._gatherScreenTimer=setTimeout(()=>main.classList.remove("gather-screen-enter"),320);
+}
+function showApp(){
+  runScreenTransition(()=>{
+    $("auth").hidden=true;
+    $("app").hidden=false;
+  });
+}
 function authMode(mode){
   S.mode=mode; const signUp=mode==="signup";
   document.querySelectorAll("[data-mode]").forEach(b=>b.classList.toggle("active",b.dataset.mode===mode));
@@ -2699,10 +2724,12 @@ async function openChat(id){
   if(S.readChannel){db.removeChannel(S.readChannel);S.readChannel=null;}
   if(S.pollChannel){db.removeChannel(S.pollChannel);S.pollChannel=null;}
   clearPendingMessageImage();
-  S.active=id;S.unreadTargetMessageId=null;S.unreadTargetLoaded=false;restoreChatDraft(id);S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;S.groupMessageStatus=null;
-  S.messages=[];S.messageReads={};S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.openMessageMenuId=null;S.replyTo=null;S.hasOlderMessages=false;S.loadingOlder=false;renderReplyComposer();
-  renderMessageSkeletons();
-  $("layout").classList.remove("show-home");$("layout").classList.add("show-chat");renderActive();
+  runScreenTransition(()=>{
+    S.active=id;S.unreadTargetMessageId=null;S.unreadTargetLoaded=false;restoreChatDraft(id);S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;S.groupMessageStatus=null;
+    S.messages=[];S.messageReads={};S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.openMessageMenuId=null;S.replyTo=null;S.hasOlderMessages=false;S.loadingOlder=false;renderReplyComposer();
+    renderMessageSkeletons();
+    $("layout").classList.remove("show-home");$("layout").classList.add("show-chat");renderActive();
+  });
   subscribeTyping(id);
   await Promise.all([refreshDirectStatus(id),loadMessages(id),loadOldestUnreadTarget(id)]);
   if(S.active!==id)return;
@@ -3066,7 +3093,9 @@ function repositionFloatingMessageActionMenu(){
 }
 function renderMessages(preserveScroll=false){
   document.querySelectorAll(".message-action-menu[data-floating-menu='true']").forEach(menu=>menu.remove());
-  const list=$("messages"),previousHeight=list.scrollHeight,previousTop=list.scrollTop;list.replaceChildren();list.setAttribute("aria-busy","false");
+  const list=$("messages"),previousHeight=list.scrollHeight,previousTop=list.scrollTop;
+  const existingMessageIds=new Set([...list.querySelectorAll(".message[data-message-id]")].map(row=>row.dataset.messageId));
+  list.replaceChildren();list.setAttribute("aria-busy","false");
   const activeChat=S.chats.find(chat=>chat.id===S.active);
   const showSenderNames=activeChat?.kind==="group";
   const latestOwnMessageId=[...S.messages].reverse().find(message=>message.sender_id===S.user.id)?.id||null;
@@ -3083,6 +3112,7 @@ function renderMessages(preserveScroll=false){
     if(S.unreadDividerMessageId===m.id)list.append(el("div","new-messages-divider","New messages"));
     const row=el("div","message"+(mine?" mine":"")+grouping+(samePrevious?" group-continued":""));
     row.dataset.messageId=m.id;
+    if(!existingMessageIds.has(String(m.id)))row.classList.add("gather-message-enter");
     const bubble=el("div","bubble"),meta=el("div","meta");
     if(showSenderNames){
       if(!samePrevious){
@@ -4962,8 +4992,10 @@ function goHome(){
   closeConversationDrawer();
   saveActiveChatDraft();clearUnreadDividerState();
   closeTypingChannel();
-  clearPendingMessageImage();closeModals(true);S.active=null;S.messages=[];S.messageReads={};S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.replyTo=null;S.hasOlderMessages=false;S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;renderReplyComposer();
-  $("layout").classList.remove("show-chat");$("layout").classList.add("show-home");renderChats();renderActive();
+  runScreenTransition(()=>{
+    clearPendingMessageImage();closeModals(true);S.active=null;S.messages=[];S.messageReads={};S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.replyTo=null;S.hasOlderMessages=false;S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;renderReplyComposer();
+    $("layout").classList.remove("show-chat");$("layout").classList.add("show-home");renderChats();renderActive();
+  });
 }
 function setConversationDrawer(open){
   const layout=$("layout"),backdrop=$("conversation-drawer-backdrop"),toggle=$("conversation-drawer-toggle");
