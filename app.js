@@ -1347,12 +1347,16 @@ function dismissMessageNotification(messageId){
     const finishRemoval=()=>{
       if(removed)return;
       removed=true;
-      card.removeEventListener("transitionend",finishRemoval);
+      card.removeEventListener("transitionend",finishOnFade);
       card.remove();
       if(container)container.hidden=container.childElementCount===0;
     };
-    card.addEventListener("transitionend",finishRemoval);
-    setTimeout(finishRemoval,260);
+    const finishOnFade=event=>{
+      if(event.target!==card||event.propertyName!=="opacity")return;
+      finishRemoval();
+    };
+    card.addEventListener("transitionend",finishOnFade);
+    setTimeout(finishRemoval,540);
     return;
   }
   if(container)container.hidden=container.childElementCount===0;
