@@ -2515,3 +2515,98 @@ button:not(:disabled){
   transform:translateY(6px) scale(.98);
   pointer-events:none;
 }
+
+
+/* Deleted messages are organized into conversation groups with individual recovery. */
+#deleted-list{
+  display:grid;
+  gap:11px;
+  min-width:0;
+  max-height:none;
+  overflow:visible;
+}
+.deleted-conversation-group{
+  min-width:0;
+  border:1px solid var(--accent-outline-soft);
+  border-radius:13px;
+  background:var(--accent-panel-raised);
+  overflow:hidden;
+  box-shadow:0 3px 12px #0000000a;
+}
+.deleted-conversation-heading{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  min-width:0;
+  padding:12px 13px;
+  color:var(--text);
+  background:var(--accent-panel);
+  cursor:pointer;
+  list-style:none;
+  transition:background-color var(--gather-motion-fast) ease,color var(--gather-motion-fast) ease;
+}
+.deleted-conversation-heading::-webkit-details-marker{display:none}
+.deleted-conversation-heading::marker{content:""}
+.deleted-conversation-heading::after{
+  content:"⌄";
+  flex:none;
+  margin-left:3px;
+  color:var(--muted);
+  font-size:15px;
+  transition:transform var(--gather-motion-fast) var(--gather-motion-ease);
+}
+.deleted-conversation-group:not([open])>.deleted-conversation-heading::after{transform:rotate(-90deg)}
+.deleted-conversation-heading:hover{background:var(--accent-surface)}
+.deleted-conversation-title{
+  flex:1;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:calc(11px * var(--font-scale,1));
+  font-weight:750;
+}
+.deleted-conversation-messages{
+  display:grid;
+  gap:8px;
+  min-width:0;
+  padding:10px;
+  border-top:1px solid var(--line);
+}
+.deleted-conversation-messages .deleted-item{
+  min-width:0;
+  align-items:flex-start;
+  padding:10px;
+  border-color:var(--line);
+  border-radius:10px;
+  background:var(--accent-panel);
+}
+.deleted-conversation-messages .deleted-copy{flex:1 1 auto;min-width:0}
+.deleted-conversation-messages .deleted-copy small{
+  overflow:visible;
+  white-space:normal;
+  line-height:1.45;
+}
+.deleted-conversation-messages .deleted-preview{
+  display:block;
+  max-height:9em;
+  overflow:auto;
+  -webkit-line-clamp:unset;
+  -webkit-box-orient:initial;
+  overscroll-behavior:contain;
+  padding-right:2px;
+}
+.deleted-conversation-messages .deleted-item>.request-accept{
+  min-height:33px;
+  padding:7px 11px;
+  transition:transform var(--gather-motion-fast) var(--gather-motion-ease),filter var(--gather-motion-fast) ease;
+}
+.deleted-conversation-messages .deleted-item>.request-accept:hover{filter:brightness(1.08)}
+.deleted-conversation-messages .deleted-item>.request-accept:active{transform:scale(.97)}
+@media(max-width:520px){
+  .deleted-conversation-heading{padding:11px}
+  .deleted-conversation-messages{gap:7px;padding:8px}
+  .deleted-conversation-messages .deleted-item{gap:8px;padding:9px}
+  .deleted-conversation-messages .deleted-item>.avatar{width:30px;height:30px}
+  .deleted-conversation-messages .deleted-item>.request-accept{min-height:34px;padding:7px 9px}
+}
