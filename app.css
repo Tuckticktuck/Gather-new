@@ -2128,3 +2128,14 @@ button:not(:disabled):active{transform:translateY(1px) scale(.985)}
   .admin-restriction-actions{display:grid;grid-template-columns:1fr 1fr}
   .admin-restriction-actions button{width:100%;min-width:0}
 }
+
+
+.age-verification-overlay{z-index:20}
+.age-verification-modal{width:min(100%,460px);max-height:calc(100dvh - 28px);overflow:auto}
+.age-verification-modal h2{margin:0 0 8px}
+.age-verification-note{margin:12px 0;padding:10px 12px;border:1px solid var(--accent-outline-soft);border-radius:10px;background:var(--accent-panel);font-size:calc(10px * var(--font-scale,1));line-height:1.5}
+.age-verification-modal form{display:grid;gap:12px;margin-top:14px}
+.age-verification-modal label{display:grid;gap:7px;font-size:calc(11px * var(--font-scale,1));font-weight:700}
+.age-verification-modal input{width:100%;min-height:42px;padding:9px 10px;border:1px solid var(--line);border-radius:9px;color:var(--text);background:var(--input-bg,var(--panel));font:inherit}
+.age-verification-modal>button{margin-top:10px}
+@media(max-width:520px){.age-verification-modal{width:100%;max-height:calc(100dvh - 14px);padding:18px 14px}}
