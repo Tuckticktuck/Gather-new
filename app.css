@@ -3465,3 +3465,137 @@ body{min-height:100svh;min-height:100dvh}
   .layout.show-chat .main{animation:none!important}
   .main{view-transition-name:none}
 }
+
+
+/* Light mode gradient system: mirror dark mode's layered accent treatment
+   while keeping surfaces bright and text contrast comfortable. */
+html[data-theme="light"]{
+  --accent-deep:color-mix(in srgb,var(--accent) 5%,#f0f2f8);
+  --accent-panel:color-mix(in srgb,var(--accent) 3%,#ffffff);
+  --accent-panel-raised:color-mix(in srgb,var(--accent) 6%,#ffffff);
+  --accent-input:color-mix(in srgb,var(--accent) 3%,#ffffff);
+  --accent-chat:color-mix(in srgb,var(--accent) 7%,#f4f5fa);
+  --accent-chat-border:color-mix(in srgb,var(--accent) 19%,#dfe2eb);
+  --accent-muted:#74798d;
+  --accent-contrast:color-mix(in srgb,var(--accent-strong) 76%,#25283a);
+}
+html[data-theme="light"] body{
+  background:
+    radial-gradient(ellipse at 8% 0%,color-mix(in srgb,var(--accent) 13%,transparent),transparent 42%),
+    linear-gradient(145deg,#f8f9fd 0%,var(--accent-deep) 58%,#f4f5fa 100%);
+}
+html[data-theme="light"] .auth-shell{
+  background:
+    radial-gradient(ellipse at 12% 8%,color-mix(in srgb,var(--accent) 20%,transparent),transparent 48%),
+    radial-gradient(ellipse at 92% 88%,color-mix(in srgb,var(--accent-strong) 12%,transparent),transparent 42%),
+    linear-gradient(145deg,#fbfcff,#eff1f8 78%);
+}
+html[data-theme="light"] .auth-card,
+html[data-theme="light"] .modal{
+  background:
+    linear-gradient(145deg,color-mix(in srgb,var(--accent) 5%,#fff),#fff 58%,color-mix(in srgb,var(--accent-strong) 4%,#f8f9fd));
+  border-color:var(--accent-outline-soft);
+  box-shadow:0 16px 48px color-mix(in srgb,var(--accent-strong) 9%,transparent);
+}
+html[data-theme="light"] .topbar{
+  background:
+    radial-gradient(ellipse at 0% 0%,color-mix(in srgb,var(--accent) 17%,transparent),transparent 52%),
+    linear-gradient(105deg,color-mix(in srgb,var(--accent) 11%,#fff) 0%,#fff 54%,color-mix(in srgb,var(--accent-strong) 7%,#fff) 100%);
+  border-bottom-color:var(--accent-outline-soft);
+}
+html[data-theme="light"] .sidebar{
+  background:
+    radial-gradient(ellipse at 0% 0%,color-mix(in srgb,var(--accent) 19%,transparent),transparent 56%),
+    radial-gradient(ellipse at 100% 100%,color-mix(in srgb,var(--accent-strong) 8%,transparent),transparent 48%),
+    linear-gradient(165deg,color-mix(in srgb,var(--accent) 8%,#fff),#f4f5fa 70%,color-mix(in srgb,var(--accent-strong) 5%,#fff));
+  border-right-color:var(--accent-outline-soft);
+}
+html[data-theme="light"] .main,
+html[data-theme="light"] .home-workspace,
+html[data-theme="light"] .messages{
+  background:
+    radial-gradient(ellipse at 90% 0%,color-mix(in srgb,var(--accent) 8%,transparent),transparent 46%),
+    linear-gradient(145deg,#fafbfe 0%,color-mix(in srgb,var(--accent) 4%,#f4f5fa) 58%,#f7f8fc 100%);
+}
+html[data-theme="light"] .chat-head{
+  background:linear-gradient(105deg,color-mix(in srgb,var(--accent) 9%,#fff),#fff 72%,color-mix(in srgb,var(--accent-strong) 5%,#fff));
+  border-bottom-color:var(--accent-outline-soft);
+}
+html[data-theme="light"] .composer{
+  background:linear-gradient(120deg,color-mix(in srgb,var(--accent) 7%,#fff),#fff 72%);
+  border-color:var(--accent-outline-soft);
+  box-shadow:0 7px 24px color-mix(in srgb,var(--accent-strong) 7%,transparent);
+}
+html[data-theme="light"] .composer textarea,
+html[data-theme="light"] input,
+html[data-theme="light"] textarea,
+html[data-theme="light"] select{
+  background:linear-gradient(135deg,#fff,color-mix(in srgb,var(--accent) 3%,#fff));
+  border-color:var(--accent-chat-border);
+}
+html[data-theme="light"] .chat-item.active{
+  background:linear-gradient(105deg,color-mix(in srgb,var(--accent) 20%,#fff),color-mix(in srgb,var(--accent-strong) 9%,#fff));
+  box-shadow:inset 3px 0 0 var(--accent),0 3px 12px color-mix(in srgb,var(--accent-strong) 7%,transparent);
+}
+html[data-theme="light"] .chat-item:hover,
+html[data-theme="light"] .in-chat-sidebar-scroll .chat-item:hover{
+  background:linear-gradient(100deg,color-mix(in srgb,var(--accent) 12%,#fff),#fff);
+}
+html[data-theme="light"] .folder-tabs{
+  background:linear-gradient(120deg,color-mix(in srgb,var(--accent) 8%,#fff),#f7f8fc);
+  border-color:var(--accent-outline-soft);
+}
+html[data-theme="light"] .folder-tab.active,
+html[data-theme="light"] .tab.active{
+  background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 21%,#fff),color-mix(in srgb,var(--accent-strong) 11%,#fff));
+  border-color:var(--accent-outline);
+  box-shadow:inset 0 0 0 1px var(--accent-outline-soft);
+}
+html[data-theme="light"] .bubble{
+  background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 9%,#fff),color-mix(in srgb,var(--accent-strong) 4%,#f5f6fb));
+  border-color:var(--accent-chat-border);
+}
+html[data-theme="light"] .mine .bubble{
+  background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 19%,#fff),color-mix(in srgb,var(--accent-strong) 12%,#f5f4fc));
+  border-color:var(--accent-outline-soft);
+}
+html[data-theme="light"] .workspace-folder,
+html[data-theme="light"] .workspace-group-section,
+html[data-theme="light"] .feedback-sidebar,
+html[data-theme="light"] .feedback-content,
+html[data-theme="light"] .feedback-message,
+html[data-theme="light"] .admin-report-card,
+html[data-theme="light"] .notification-center-item,
+html[data-theme="light"] .feedback-thread-card,
+html[data-theme="light"] .request-item,
+html[data-theme="light"] .person,
+html[data-theme="light"] .deleted-conversation-card,
+html[data-theme="light"] .feature-list-item{
+  background:linear-gradient(140deg,color-mix(in srgb,var(--accent) 5%,#fff),#fff 72%);
+  border-color:var(--accent-outline-soft);
+}
+html[data-theme="light"] .privacy,
+html[data-theme="light"] .profile-pill,
+html[data-theme="light"] .outline,
+html[data-theme="light"] .back,
+html[data-theme="light"] .secondary-action,
+html[data-theme="light"] .group-action,
+html[data-theme="light"] .close{
+  background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 8%,#fff),#f5f6fa);
+  border-color:var(--accent-outline-soft);
+}
+html[data-theme="light"] .primary,
+html[data-theme="light"] .direct-action,
+html[data-theme="light"] .request-accept{
+  background:linear-gradient(125deg,var(--accent),var(--accent-strong));
+}
+html[data-theme="light"] .empty-mark,
+html[data-theme="light"] .brand-icon{
+  background:linear-gradient(145deg,var(--accent-gradient-light),var(--accent),var(--accent-strong));
+}
+html[data-theme="light"] .side-title h2,
+html[data-theme="light"] .meta strong,
+html[data-theme="light"] .deleted-message-meta strong{
+  color:var(--accent-contrast);
+}
+html[data-theme="light"] .privacy{color:color-mix(in srgb,var(--accent-strong) 55%,#55596b)}
