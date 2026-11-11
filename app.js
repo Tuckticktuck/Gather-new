@@ -4201,7 +4201,7 @@ async function adminApi(action,data={}){
   if(!result.ok)throw new Error(payload.error||"Admin Mode could not complete that action.");
   return payload;
 }
-const ADMIN_CHILD_MODAL_IDS=["announcement-compose-modal","announcements-page-modal","announcement-view-modal","reports-admin-modal","feedback-modal","admin-direct-message-modal"];
+const ADMIN_CHILD_MODAL_IDS=["announcement-compose-modal","announcements-page-modal","announcement-view-modal","reports-admin-modal","feedback-modal"];
 function updateAdminModalStack(){
   const stack=S.admin.modalStack||[];
   ADMIN_CHILD_MODAL_IDS.forEach(id=>{
@@ -4508,7 +4508,6 @@ async function loadAdminAccounts(reset=false){
     S.admin.hasMore=!!result.has_more;
     renderAdminAccounts();
     renderAdminAccountDetail();
-    renderAdminMessageRecipients();
   }catch(error){
     $("admin-account-list").replaceChildren(el("p","status error",error.message));
   }finally{
