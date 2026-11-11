@@ -286,11 +286,10 @@
     const chosen = eligible.find(chat => chat.id === defaultConversationId) || eligible[0];
     select.value = chosen.id;
     $("games-invite-members")?.replaceChildren();
-    updateOpponentOptions();
     $("games-type").value = "chess";
     if ($("games-join-mode")) $("games-join-mode").value = "invite";
+    updateOpponentOptions();
     $("games-create-status").textContent = "";
-    $("games-create-submit").disabled = false;
     $("games-create-overlay").hidden = false;
   }
 
