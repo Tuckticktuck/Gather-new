@@ -2739,7 +2739,7 @@ function renderActive(){
   $("message-create-poll").hidden=c?.kind!=="group";
   renderUndoSend();
   $("layout").classList.toggle("direct-chat",c?.kind==="direct");
-  $("empty").hidden=!!c||gamesOpen;$("games-workspace")?.toggleAttribute("hidden",!!c);$("chat").hidden=!c;
+  $("empty").hidden=!!c||gamesOpen;if(c&&$("games-workspace"))$("games-workspace").hidden=true;$("chat").hidden=!c;
   $("layout").classList.toggle("in-chat-mode",!!c);
   $("sidebar-home-content").hidden=!!c;
   $("in-chat-sidebar").hidden=!c;
