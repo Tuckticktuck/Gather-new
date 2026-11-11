@@ -693,7 +693,8 @@
 
   function createTagObstacles() {
     const obstacles=[];
-    const safeSpawns=[[50,50],[31,46],[50,77],[69,38],[88,69],[31,31],[50,15],[69,62],[12,84],[88,15]];
+    const safeSpawns=[[50,50]];
+    for(let i=1;i<=10;i++)safeSpawns.push([12+((i*19)%76),15+((i*31)%70)]);
     let seed=Date.now()>>>0;
     const random=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
     let attempts=0;
@@ -865,7 +866,7 @@
       const response=await ctx.db.rpc("gather_multiplayer_move",{p_game_id:game.id,p_x:sent.x,p_y:sent.y});
       if(response.error){
         const message=String(response.error.message||"");
-        if(!message.includes("Movement update is too large")&&!message.includes("Movement update was received too quickly"))toast(message||"Movement could not be saved.");
+        if(!message.includes("Movement update is too large")&&!message.includes("Movement update was received too quickly")&&!message.includes("An obstacle is blocking"))toast(message||"Movement could not be saved.");
       }
     }finally{
       tagMovePending=false;
