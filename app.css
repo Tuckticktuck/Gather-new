@@ -3599,3 +3599,12 @@ html[data-theme="light"] .deleted-message-meta strong{
   color:var(--accent-contrast);
 }
 html[data-theme="light"] .privacy{color:color-mix(in srgb,var(--accent-strong) 55%,#55596b)}
+
+
+/* Keep the Friends shortcut text inset from the button's left edge. */
+#friends-open.requests-button{
+  box-sizing:border-box;
+  padding-inline-start:18px!important;
+  padding-inline-end:12px!important;
+  text-indent:0;
+}
