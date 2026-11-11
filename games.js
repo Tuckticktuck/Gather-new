@@ -825,7 +825,7 @@
 
   function queueTagPlayersRefresh(gameId) {
     if(tagPlayersRefreshTimer)clearTimeout(tagPlayersRefreshTimer);
-    tagPlayersRefreshTimer=window.setTimeout(()=>{tagPlayersRefreshTimer=null;void refreshMultiplayerPlayers(gameId);},110);
+    tagPlayersRefreshTimer=window.setTimeout(()=>{tagPlayersRefreshTimer=null;void refreshMultiplayerPlayers(gameId);},180);
   }
 
   async function syncTagPosition() {
