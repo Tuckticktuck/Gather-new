@@ -279,3 +279,8 @@
   border-color:#d76b6b;
   background:color-mix(in srgb,#d76b6b 10%,transparent);
 }
+
+
+/* Leave clear space for the persistent Messages / Games section switcher. */
+.games-workspace{padding-top:82px}
+@media(max-width:720px){.games-workspace{padding-top:73px}}
