@@ -92,16 +92,18 @@
       $("games-refresh").addEventListener("click", () => refreshGames(true));
     }
 
-    const chatHead = document.querySelector(".chat-head");
-    if (chatHead && !$("chat-games-open")) {
-      const launch = button("Play", "outline chat-games-trigger", () => {
+    const composerMenu = $("composer-more-menu");
+    if (composerMenu && !$("chat-games-open")) {
+      const launch = button("Play a game", "composer-menu-item", () => {
+        composerMenu.hidden = true;
+        $("composer-more-trigger")?.setAttribute("aria-expanded", "false");
         if (activeChat?.id) openCreateModal(activeChat.id);
         else showHub();
       });
       launch.id = "chat-games-open";
-      const options = $("chat-actions-open");
-      if (options?.parentNode) options.parentNode.insertBefore(launch, options);
-      else chatHead.append(launch);
+      launch.type = "button";
+      launch.setAttribute("role", "menuitem");
+      composerMenu.append(launch);
     }
 
     const chat = $("chat");
