@@ -5152,9 +5152,11 @@ function renderFeedbackMessages(){
   const thread=S.feedbackThreads.find(item=>item.id===S.activeFeedbackThreadId);
   S.feedbackMessages.forEach(message=>{
     const mine=message.sender_id===S.user?.id;
+    const isAdminReply=!!thread&&message.sender_id!==thread.user_id;
     const bubble=el("article","feedback-message"+(mine?" mine":""));
     const profile=S.feedbackProfiles[message.sender_id];
-    const sender=mine?"You":(profile?.display_name||profile?.username||(message.sender_id===thread?.user_id?"Gather member":"Gather administrator"));
+    // Keep administrator identity private in member-facing feedback; member senders retain their real names.
+    const sender=isAdminReply?(mine?"You":"Gather Admin"):(profile?.display_name||profile?.username||"Gather member");
     bubble.append(el("div","feedback-message-meta",sender+" · "+dateLabel(message.created_at)),el("p","feedback-message-body",message.body));
     list.append(bubble);
   });
