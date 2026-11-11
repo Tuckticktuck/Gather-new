@@ -215,3 +215,30 @@
   margin-top:6px;
 }
 .games-rematch-actions button{min-width:150px}
+
+
+/* Battleship */
+.games-battleship-setup{display:grid;gap:12px;width:100%;max-width:560px}
+.games-battleship-setup-top,.games-battleship-tools{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.games-battleship-fleet-picker{display:flex;flex-wrap:wrap;gap:7px}
+.games-battleship-ship-choice{width:auto;padding:8px 10px;border:1px solid var(--line);border-radius:9px;color:var(--text);background:var(--panel);font-size:11px;font-weight:700}
+.games-battleship-ship-choice.is-selected{border-color:var(--accent);color:var(--accent-text);background:var(--accent-soft);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 17%,transparent)}
+.games-battleship-ship-choice.is-placed{border-color:#65b99588}
+.games-battleship-tools button{width:auto;padding:8px 12px}
+.games-battleship-layout{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;width:100%;align-items:start}
+.games-battleship-panel{display:grid;gap:8px;min-width:0;padding:12px;border:1px solid var(--line);border-radius:15px;background:var(--panel)}
+.games-battleship-panel h3{margin:0;font-size:13px}
+.games-battleship-grid{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:3px;width:min(100%,440px);aspect-ratio:1;margin:0 auto}
+.games-battleship-cell{display:grid;place-items:center;min-width:0;min-height:0;aspect-ratio:1;padding:0;border:1px solid var(--line);border-radius:4px;color:var(--accent-text);background:var(--bg);font-size:clamp(9px,1.8vw,17px);font-weight:850;line-height:1}
+.games-battleship-cell:not(:disabled):hover{border-color:var(--accent);background:var(--accent-surface)}
+.games-battleship-cell.is-ship{border-color:var(--accent-border);background:var(--accent-soft)}
+.games-battleship-cell.is-hit{border-color:#d76b6b;color:#fff;background:#c64c59}
+.games-battleship-cell.is-miss{border-color:#75a7c455;color:#83b9d8;background:#75a7c422}
+.games-battleship-cell:disabled{opacity:1;cursor:default}
+.games-battleship-note{width:100%;margin:2px 0;color:var(--muted);font-size:11px;line-height:1.5;text-align:center}
+@media(max-width:620px){
+  .games-battleship-layout{grid-template-columns:minmax(0,1fr)}
+  .games-battleship-panel{padding:10px}
+  .games-battleship-grid{width:min(100%,390px);gap:2px}
+  .games-battleship-cell{border-radius:3px;font-size:clamp(10px,3vw,16px)}
+}

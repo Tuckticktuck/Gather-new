@@ -5,7 +5,8 @@
     chess: { name: "Chess", description: "Classic chess with legal moves, castling, en passant and promotion.", mark: "♞" },
     checkers: { name: "Checkers", description: "Jump, capture and crown your pieces.", mark: "◈" },
     tic_tac_toe: { name: "Tic-Tac-Toe", description: "A quick three-in-a-row match.", mark: "×○" },
-    connect_four: { name: "Connect Four", description: "Drop four discs in a row to win.", mark: "●" }
+    connect_four: { name: "Connect Four", description: "Drop four discs in a row to win.", mark: "●" },
+    battleship: { name: "Battleship", description: "Place your fleet, then find and hit every ship square.", mark: "⚓" }
   };
   const PIECES = {
     K: "♔", Q: "♕", R: "♖", B: "♗", N: "♘", P: "♙",
@@ -23,6 +24,10 @@
   let busy = false;
   let refreshTimer = null;
   let keyListenerBound = false;
+  let battleshipPrivateGameId = null;
+  let battleshipPrivateState = null;
+  let battleshipPrivateLoading = false;
+  let battleshipDraft = { gameId: null, ships: [], selected: "carrier", orientation: "horizontal", message: "" };
 
   const $ = id => document.getElementById(id);
   const node = (tag, cls, value) => {
@@ -122,7 +127,7 @@
       const overlay = node("div", "overlay games-overlay");
       overlay.id = "games-create-overlay";
       overlay.hidden = true;
-      overlay.innerHTML = '<section class="modal games-create-modal" role="dialog" aria-modal="true" aria-labelledby="games-create-title"><button id="games-create-close" class="close" type="button" aria-label="Close">×</button><p class="eyebrow">NEW MATCH</p><h2 id="games-create-title">Invite someone to play</h2><p class="muted tiny">Choose a conversation, a game and one opponent. In a group chat, everyone else can watch the match.</p><form id="games-create-form"><label>Conversation<select id="games-conversation" required></select></label><label>Game<select id="games-type" required><option value="chess">Chess</option><option value="checkers">Checkers</option><option value="tic_tac_toe">Tic-Tac-Toe</option><option value="connect_four">Connect Four</option></select></label><label>Invite player<select id="games-opponent" required></select></label><p id="games-spectator-note" class="games-spectator-note"></p><p id="games-create-status" class="status" role="status"></p><div class="games-form-actions"><button id="games-create-cancel" class="secondary-action" type="button">Cancel</button><button id="games-create-submit" class="primary" type="submit">Send invitation</button></div></form></section>';
+      overlay.innerHTML = '<section class="modal games-create-modal" role="dialog" aria-modal="true" aria-labelledby="games-create-title"><button id="games-create-close" class="close" type="button" aria-label="Close">×</button><p class="eyebrow">NEW MATCH</p><h2 id="games-create-title">Invite someone to play</h2><p class="muted tiny">Choose a conversation, a game and one opponent. In a group chat, everyone else can watch the match.</p><form id="games-create-form"><label>Conversation<select id="games-conversation" required></select></label><label>Game<select id="games-type" required><option value="chess">Chess</option><option value="checkers">Checkers</option><option value="tic_tac_toe">Tic-Tac-Toe</option><option value="connect_four">Connect Four</option><option value="battleship">Battleship</option></select></label><label>Invite player<select id="games-opponent" required></select></label><p id="games-spectator-note" class="games-spectator-note"></p><p id="games-create-status" class="status" role="status"></p><div class="games-form-actions"><button id="games-create-cancel" class="secondary-action" type="button">Cancel</button><button id="games-create-submit" class="primary" type="submit">Send invitation</button></div></form></section>';
       document.body.append(overlay);
       $("games-create-close").addEventListener("click", closeCreateModal);
       $("games-create-cancel").addEventListener("click", closeCreateModal);
@@ -403,6 +408,12 @@
   }
 
   function openGame(game) {
+    if (activeGameId !== game.id) {
+      battleshipPrivateGameId = game.id;
+      battleshipPrivateState = null;
+      battleshipPrivateLoading = false;
+      battleshipDraft = { gameId: game.id, ships: [], selected: "carrier", orientation: "horizontal", message: "" };
+    }
     activeGameId = game.id;
     activeGame = game;
     selectedSquare = null;
@@ -418,6 +429,10 @@
     activeGame = null;
     selectedSquare = null;
     promotionChoice = null;
+    battleshipPrivateGameId = null;
+    battleshipPrivateState = null;
+    battleshipPrivateLoading = false;
+    battleshipDraft = { gameId: null, ships: [], selected: "carrier", orientation: "horizontal", message: "" };
   }
 
   function renderBoardModal() {
@@ -460,17 +475,39 @@
       hint.textContent = "";
       return;
     }
+    const battleshipPlacement = game.game_type === "battleship" && game.status === "active" && game.state?.phase === "placement";
     if (game.status === "completed") {
       status.textContent = game.result === "draw" ? "Match complete · Draw." : "Match complete · " + memberName(game.winner_id) + " wins.";
+    } else if (battleshipPlacement) {
+      const readyCount = [game.state?.placed?.p1, game.state?.placed?.p2].filter(Boolean).length;
+      status.textContent = "Fleet setup · " + readyCount + " of 2 fleets ready.";
     } else {
       status.textContent = (isSpectator ? "Spectating · " : "") + (game.turn_user_id ? memberName(game.turn_user_id) + " to move." : "Match in progress.");
       if (isSpectator) status.textContent += " You can watch, but only the players can move.";
     }
-    hint.textContent = game.status === "completed" ? "This board is saved. Start another match from a conversation." :
-      isSpectator ? "Spectator view · The board updates live as the players take turns." :
-      isTurn ? "Your turn. Select a piece or column to make a move." : "Waiting for your opponent's move.";
+    hint.textContent = battleshipPlacement
+      ? (isSpectator ? "The players are positioning their ships. Fleet layouts stay private." : "Place your five ships on your own board, then lock in your fleet.")
+      : game.game_type === "battleship" && game.status === "active"
+        ? (isSpectator ? "Spectator view. You can follow hits and misses, but ship locations remain private." : isTurn ? "Your turn. Choose a square on the opponent's board." : "Waiting for your opponent to fire.")
+        : game.status === "completed" ? "This board is saved. You can request a rematch." :
+        isSpectator ? "Spectator view · The board updates live as the players take turns." :
+        isTurn ? "Your turn. Select a piece or column to make a move." : "Waiting for your opponent's move.";
     const canMove = game.status === "active" && player && isTurn && !busy;
-    if (game.game_type === "tic_tac_toe") renderTicTacToe(game, boardArea, canMove);
+    if (game.game_type === "battleship") {
+      ensureBattleshipPrivateState(game);
+      if (battleshipPrivateLoading || battleshipPrivateState === null) {
+        boardArea.append(node("p", "games-board-waiting", "Loading your private Battleship board…"));
+      } else if (battleshipPrivateState.error) {
+        boardArea.append(node("p", "status error", battleshipPrivateState.error));
+        boardArea.append(button("Try again", "outline", () => {
+          battleshipPrivateState = null;
+          ensureBattleshipPrivateState(game);
+          renderBoardModal();
+        }));
+      } else {
+        renderBattleship(game, boardArea, battleshipPrivateState, isSpectator, canMove);
+      }
+    } else if (game.game_type === "tic_tac_toe") renderTicTacToe(game, boardArea, canMove);
     else if (game.game_type === "connect_four") renderConnectFour(game, boardArea, canMove);
     else if (game.game_type === "checkers") renderCheckers(game, boardArea, canMove);
     else renderChess(game, boardArea, canMove);
@@ -568,6 +605,260 @@
 
   function resultForWinner(game, winnerId) {
     return winnerId === game.player_one_id ? "player_one_won" : "player_two_won";
+  }
+
+
+  const BATTLESHIP_FLEET = [
+    { id: "carrier", name: "Carrier", length: 5 },
+    { id: "battleship", name: "Battleship", length: 4 },
+    { id: "cruiser", name: "Cruiser", length: 3 },
+    { id: "submarine", name: "Submarine", length: 3 },
+    { id: "destroyer", name: "Destroyer", length: 2 }
+  ];
+
+  function ensureBattleshipPrivateState(game) {
+    if (battleshipPrivateGameId !== game.id) {
+      battleshipPrivateGameId = game.id;
+      battleshipPrivateState = null;
+      battleshipPrivateLoading = false;
+      battleshipDraft = { gameId: game.id, ships: [], selected: "carrier", orientation: "horizontal", message: "" };
+    }
+    if (battleshipPrivateLoading || battleshipPrivateState !== null) return;
+    battleshipPrivateLoading = true;
+    ctx.db.rpc("gather_game_battleship_private_state", { p_game_id: game.id })
+      .then(response => {
+        if (activeGameId !== game.id) return;
+        battleshipPrivateLoading = false;
+        if (response.error) battleshipPrivateState = { error: response.error.message || "Your private fleet could not be loaded." };
+        else battleshipPrivateState = response.data || { is_player: false, placed: false, ships: [] };
+        renderBoardModal();
+      })
+      .catch(error => {
+        if (activeGameId !== game.id) return;
+        battleshipPrivateLoading = false;
+        battleshipPrivateState = { error: error?.message || "Your private fleet could not be loaded." };
+        renderBoardModal();
+      });
+  }
+
+  function battleshipShipCells(start, length, orientation) {
+    const row = Math.floor(start / 10);
+    const col = start % 10;
+    if (orientation === "horizontal" && col + length > 10) return null;
+    if (orientation === "vertical" && row + length > 10) return null;
+    return Array.from({ length }, (_, i) => orientation === "horizontal" ? start + i : start + i * 10);
+  }
+
+  function battleshipDraftFor(game) {
+    if (battleshipDraft.gameId !== game.id) {
+      battleshipDraft = { gameId: game.id, ships: [], selected: "carrier", orientation: "horizontal", message: "" };
+    }
+    return battleshipDraft;
+  }
+
+  function placeBattleshipDraftShip(game, start) {
+    const draft = battleshipDraftFor(game);
+    const ship = BATTLESHIP_FLEET.find(item => item.id === draft.selected);
+    if (!ship) return;
+    const cells = battleshipShipCells(start, ship.length, draft.orientation);
+    if (!cells) {
+      draft.message = "That ship would extend beyond the edge of the board.";
+      renderBoardModal();
+      return;
+    }
+    const occupied = new Set(draft.ships.filter(item => item.id !== ship.id).flatMap(item => item.cells));
+    if (cells.some(cell => occupied.has(cell))) {
+      draft.message = "Ships cannot overlap. Choose another starting square.";
+      renderBoardModal();
+      return;
+    }
+    draft.ships = draft.ships.filter(item => item.id !== ship.id);
+    draft.ships.push({ id: ship.id, name: ship.name, length: ship.length, cells });
+    const next = BATTLESHIP_FLEET.find(item => !draft.ships.some(placed => placed.id === item.id));
+    if (next) draft.selected = next.id;
+    draft.message = ship.name + " placed. Continue with the remaining ships.";
+    renderBoardModal();
+  }
+
+  async function submitBattleshipFleet(game) {
+    const draft = battleshipDraftFor(game);
+    if (draft.ships.length !== BATTLESHIP_FLEET.length || busy) return;
+    await sendBattleshipAction(game, "place_fleet", {
+      ships: BATTLESHIP_FLEET.map(ship => {
+        const placed = draft.ships.find(item => item.id === ship.id);
+        return { cells: placed.cells };
+      })
+    });
+  }
+
+  async function fireBattleshipSquare(game, cell) {
+    if (busy || game.status !== "active" || game.turn_user_id !== userId()) return;
+    await sendBattleshipAction(game, "fire", { cell });
+  }
+
+  async function sendBattleshipAction(game, action, payload) {
+    if (busy || !ctx?.db) return;
+    busy = true;
+    const status = $("games-board-status");
+    if (status) status.textContent = action === "place_fleet" ? "Locking in your fleet…" : "Checking that square…";
+    try {
+      const response = await ctx.db.rpc("gather_game_battleship_action", {
+        p_game_id: game.id,
+        p_action: action,
+        p_payload: payload
+      });
+      if (response.error) {
+        toast(response.error.message || "That Battleship action could not be completed.");
+        battleshipDraft.message = response.error.message || "That action could not be completed.";
+        return;
+      }
+      const updated = Array.isArray(response.data) ? response.data[0] : response.data;
+      if (!updated) {
+        toast("The Battleship board did not return an update. Refresh and try again.");
+        return;
+      }
+      games = [updated, ...games.filter(item => item.id !== updated.id)];
+      activeGame = updated;
+      if (action === "place_fleet") {
+        battleshipPrivateState = null;
+        battleshipPrivateLoading = false;
+        battleshipDraft.message = "";
+      }
+      renderAll();
+    } catch (error) {
+      toast(error?.message || "That Battleship action could not be completed.");
+    } finally {
+      busy = false;
+      if (activeGameId === game.id) renderBoardModal();
+    }
+  }
+
+  function battleshipShipLabels(rawShips) {
+    const counts = { 3: 0 };
+    return (Array.isArray(rawShips) ? rawShips : []).map((ship, index) => {
+      const cells = Array.isArray(ship.cells) ? ship.cells.map(Number) : [];
+      let name = "Ship";
+      if (cells.length === 5) name = "Carrier";
+      else if (cells.length === 4) name = "Battleship";
+      else if (cells.length === 3) name = counts[3]++ === 0 ? "Cruiser" : "Submarine";
+      else if (cells.length === 2) name = "Destroyer";
+      return { id: "fleet-" + index, name, length: cells.length, cells };
+    });
+  }
+
+  function makeBattleshipGrid(title, ships, shots, options = {}) {
+    const panel = node("section", "games-battleship-panel");
+    panel.append(node("h3", "", title));
+    const grid = node("div", "games-battleship-grid");
+    grid.setAttribute("role", "group");
+    grid.setAttribute("aria-label", title);
+    const shipAt = new Map();
+    (ships || []).forEach(ship => ship.cells.forEach(cell => shipAt.set(Number(cell), ship)));
+    const shotAt = new Map((shots || []).map(shot => [Number(shot.cell), shot]));
+    for (let index = 0; index < 100; index++) {
+      const shot = shotAt.get(index);
+      const ship = shipAt.get(index);
+      const coord = String.fromCharCode(65 + index % 10) + (Math.floor(index / 10) + 1);
+      const classes = ["games-battleship-cell"];
+      if (ship) classes.push("is-ship");
+      if (shot) classes.push(shot.hit ? "is-hit" : "is-miss");
+      const mark = shot ? (shot.hit ? "×" : "•") : ship && options.showShips ? "■" : "";
+      const cell = button(mark, classes.join(" "), () => {
+        if (typeof options.onCell === "function") options.onCell(index);
+      });
+      cell.disabled = !options.onCell || !!shot;
+      cell.setAttribute("aria-label", coord + (shot ? shot.hit ? ", hit" : ", miss" : ship && options.showShips ? ", ship" : ", empty"));
+      cell.title = coord;
+      grid.append(cell);
+    }
+    panel.append(grid);
+    return panel;
+  }
+
+  function renderBattleship(game, container, privateState, isSpectator, canMove) {
+    const state = game.state || {};
+    const placed = state.placed || {};
+    const shots = state.shots || { p1: [], p2: [] };
+    const readyCount = [placed.p1, placed.p2].filter(Boolean).length;
+    const playerKey = game.player_one_id === userId() ? "p1" : game.player_two_id === userId() ? "p2" : null;
+    const opponentKey = playerKey === "p1" ? "p2" : "p1";
+    const fleet = battleshipShipLabels(privateState?.ships);
+
+    if (game.status === "active" && state.phase === "placement") {
+      if (isSpectator) {
+        container.append(node("p", "games-battleship-note", readyCount + " of 2 players have locked in their fleets. Ship layouts are hidden from spectators."));
+        return;
+      }
+      if (privateState?.placed && fleet.length === 5) {
+        const waiting = node("p", "games-battleship-note", "Your fleet is locked in. Waiting for " + (readyCount === 1 ? "the other player" : "the match to begin") + ".");
+        container.append(waiting, makeBattleshipGrid("Your fleet · ready", fleet, [], { showShips: true }));
+        return;
+      }
+
+      const draft = battleshipDraftFor(game);
+      const controls = node("div", "games-battleship-setup");
+      const setupTop = node("div", "games-battleship-setup-top");
+      setupTop.append(node("strong", "", "Place your fleet"));
+      setupTop.append(node("span", "muted tiny", draft.ships.length + " / 5 ships placed"));
+      controls.append(setupTop);
+
+      const picker = node("div", "games-battleship-fleet-picker");
+      BATTLESHIP_FLEET.forEach(ship => {
+        const isPlaced = draft.ships.some(item => item.id === ship.id);
+        const choice = button(ship.name + " · " + ship.length + (isPlaced ? " ✓" : ""), "games-battleship-ship-choice" + (draft.selected === ship.id ? " is-selected" : "") + (isPlaced ? " is-placed" : ""), () => {
+          draft.selected = ship.id;
+          draft.message = "Select a square on the board to place the " + ship.name + ".";
+          renderBoardModal();
+        });
+        choice.setAttribute("aria-pressed", draft.selected === ship.id ? "true" : "false");
+        picker.append(choice);
+      });
+      controls.append(picker);
+
+      const tools = node("div", "games-battleship-tools");
+      tools.append(node("span", "muted tiny", "Orientation"));
+      tools.append(button(draft.orientation === "horizontal" ? "Horizontal ↔" : "Vertical ↕", "outline", () => {
+        draft.orientation = draft.orientation === "horizontal" ? "vertical" : "horizontal";
+        draft.message = "Orientation changed to " + draft.orientation + ".";
+        renderBoardModal();
+      }));
+      controls.append(tools);
+
+      const board = makeBattleshipGrid("Your waters · tap a starting square", draft.ships, [], {
+        showShips: true,
+        onCell: index => placeBattleshipDraftShip(game, index)
+      });
+      container.append(controls, board);
+      container.append(node("p", "games-battleship-note", draft.message || "Choose a ship, choose its direction, then tap where it should begin."));
+      const lock = button("Lock in fleet", "primary", () => submitBattleshipFleet(game));
+      lock.disabled = draft.ships.length !== BATTLESHIP_FLEET.length || busy;
+      container.append(lock);
+      return;
+    }
+
+    if (isSpectator) {
+      const boards = node("div", "games-battleship-layout");
+      boards.append(
+        makeBattleshipGrid(memberName(game.player_one_id) + " · shots", [], shots.p1 || [], { showShips: false }),
+        makeBattleshipGrid(memberName(game.player_two_id) + " · shots", [], shots.p2 || [], { showShips: false })
+      );
+      container.append(node("p", "games-battleship-note", "Spectator view. You can follow hits and misses, but ship locations remain private."), boards);
+      return;
+    }
+
+    const incoming = shots[opponentKey] || [];
+    const outgoing = shots[playerKey] || [];
+    const boards = node("div", "games-battleship-layout");
+    boards.append(
+      makeBattleshipGrid("Your fleet", fleet, incoming, { showShips: true }),
+      makeBattleshipGrid("Opponent's waters · your shots", [], outgoing, {
+        showShips: false,
+        onCell: canMove ? index => fireBattleshipSquare(game, index) : null
+      })
+    );
+    container.append(boards);
+    const hits = outgoing.filter(shot => shot.hit).length;
+    container.append(node("p", "games-battleship-note", hits + " of 17 ship squares hit · " + outgoing.length + " shots fired"));
   }
 
   function tttWinningLine(board) {
