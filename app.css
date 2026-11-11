@@ -3661,3 +3661,5 @@ html[data-theme="light"] .offline-status{color:#59421d;background:#fff4d8;border
   #install-app-button .home-glyph{font-size:19px}
   .offline-status{top:66px}
 }
+
+@media(max-width:720px){.layout.show-games .sidebar{display:none}.layout.show-games .main{display:block}}
