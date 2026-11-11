@@ -152,7 +152,7 @@
       const overlay = node("div", "overlay games-overlay");
       overlay.id = "games-create-overlay";
       overlay.hidden = true;
-      overlay.innerHTML = '<section class="modal games-create-modal" role="dialog" aria-modal="true" aria-labelledby="games-create-title"><button id="games-create-close" class="close" type="button" aria-label="Close">×</button><p class="eyebrow">NEW MATCH</p><h2 id="games-create-title">Invite someone to play</h2><p class="muted tiny">Choose a conversation and game. Multiplayer games can invite selected members or let everyone in the conversation join.</p><form id="games-create-form"><label>Conversation<select id="games-conversation" required></select></label><label>Game<select id="games-type" required><option value="chess">Chess</option><option value="checkers">Checkers</option><option value="tic_tac_toe">Tic-Tac-Toe</option><option value="connect_four">Connect Four</option><option value="battleship">Battleship</option><option value="tag">Tag · Multiplayer</option></select></label><label id="games-opponent-label">Invite player<select id="games-opponent" required></select></label><div id="games-multiplayer-options" class="games-multiplayer-options" hidden><label>Who can join?<select id="games-join-mode"><option value="invite">Only the people I invite</option><option value="open">Everyone in this conversation</option></select></label><p class="muted tiny">Each player picks a different color when joining.</p></div><p id="games-spectator-note" class="games-spectator-note"></p><p id="games-create-status" class="status" role="status"></p><div class="games-form-actions"><button id="games-create-cancel" class="secondary-action" type="button">Cancel</button><button id="games-create-submit" class="primary" type="submit">Send invitation</button></div></form></section>';
+      overlay.innerHTML = '<section class="modal games-create-modal" role="dialog" aria-modal="true" aria-labelledby="games-create-title"><button id="games-create-close" class="close" type="button" aria-label="Close">×</button><p class="eyebrow">NEW MATCH</p><h2 id="games-create-title">Invite someone to play</h2><p class="muted tiny">Choose a conversation and game. Multiplayer games can invite selected members or let everyone in the conversation join.</p><form id="games-create-form"><label>Conversation<select id="games-conversation" required></select></label><label>Game<select id="games-type" required><option value="chess">Chess</option><option value="checkers">Checkers</option><option value="tic_tac_toe">Tic-Tac-Toe</option><option value="connect_four">Connect Four</option><option value="battleship">Battleship</option><option value="tag">Tag · Multiplayer</option></select></label><label id="games-opponent-label">Invite player<select id="games-opponent" required></select></label><div id="games-multiplayer-options" class="games-multiplayer-options" hidden><label>Who can join?<select id="games-join-mode"><option value="invite">Only the people I invite</option><option value="open">Everyone in this conversation</option></select></label><div id="games-invite-members" class="games-invite-members"></div><p class="muted tiny">Each player picks a different color when joining.</p></div><p id="games-spectator-note" class="games-spectator-note"></p><p id="games-create-status" class="status" role="status"></p><div class="games-form-actions"><button id="games-create-cancel" class="secondary-action" type="button">Cancel</button><button id="games-create-submit" class="primary" type="submit">Send invitation</button></div></form></section>';
       document.body.append(overlay);
       $("games-create-close").addEventListener("click", closeCreateModal);
       $("games-create-cancel").addEventListener("click", closeCreateModal);
@@ -305,17 +305,28 @@
     if (!select) return;
     const multiplayer = $("games-type")?.value === "tag";
     $("games-multiplayer-options").hidden = !multiplayer;
-    $("games-opponent-label").hidden = multiplayer && $("games-join-mode")?.value === "open";
-    select.multiple = multiplayer;
-    select.size = multiplayer ? Math.min(5, Math.max(2, (chat?.members || []).length - 1)) : 1;
-    select.required = !multiplayer || $("games-join-mode")?.value === "invite";
+    $("games-opponent-label").hidden = multiplayer;
+    select.multiple = false;
+    select.size = 1;
+    select.required = !multiplayer;
     select.replaceChildren();
-    (chat?.members || []).filter(member => member.user_id !== userId()).forEach(member => {
+    const otherMembers=(chat?.members || []).filter(member => member.user_id !== userId());
+    otherMembers.forEach(member => {
       const option = node("option", "", memberName(member.user_id));
       option.value = member.user_id;
       select.append(option);
     });
-    const selected = select.selectedOptions.length;
+    const inviteList=$("games-invite-members");
+    inviteList.replaceChildren();
+    otherMembers.forEach(member=>{
+      const label=node("label","games-invite-member");
+      const check=node("input");check.type="checkbox";check.value=member.user_id;
+      check.addEventListener("change",updateOpponentOptions);
+      label.append(check,node("span","",memberName(member.user_id)));
+      inviteList.append(label);
+    });
+    const selected = inviteList.querySelectorAll("input:checked").length;
+    inviteList.hidden = !multiplayer || $("games-join-mode")?.value === "open";
     if (multiplayer) {
       $("games-create-submit").textContent = "Create Tag match";
       $("games-spectator-note").textContent = $("games-join-mode")?.value === "open"
@@ -337,7 +348,7 @@
     if (busy) return;
     const conversationId = $("games-conversation").value;
     const gameType = $("games-type").value;
-    const opponentIds = [...$("games-opponent").selectedOptions].map(option => option.value);
+    const opponentIds = [...$("games-invite-members").querySelectorAll("input:checked")].map(input => input.value);
     const opponentId = $("games-opponent").value;
     if (!conversationId || !TYPES[gameType] || (gameType !== "tag" && !opponentId) ||
         (gameType === "tag" && $("games-join-mode").value === "invite" && !opponentIds.length)) {
@@ -543,13 +554,13 @@
   }
 
   function getPendingInvitations() {
-    return games.filter(game => game.status === "pending" && game.player_two_id === userId())
+    return games.filter(game => !game.is_multiplayer && game.status === "pending" && game.player_two_id === userId())
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   }
 
   async function respondToInvitation(gameId, accept) {
     const game = games.find(item => item.id === gameId);
-    if (!game || game.status !== "pending" || game.player_two_id !== userId()) return;
+    if (!game || game.is_multiplayer || game.status !== "pending" || game.player_two_id !== userId()) return;
     await gameAction(accept ? "gather_game_accept" : "gather_game_decline", game);
   }
 
