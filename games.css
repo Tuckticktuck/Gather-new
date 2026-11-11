@@ -387,3 +387,35 @@
   .games-conversation-item,.games-search-wrap input,.games-conversation-detail .games-card{transition:none}
   .games-conversation-detail .games-card:hover{transform:none}
 }
+
+
+/* Dedicated Active, Invites and Completed sections in each game conversation */
+.games-status-section{
+  min-width:0;margin:16px 0 0;padding:14px;
+  border:1px solid var(--line);border-radius:15px;
+  background:color-mix(in srgb,var(--bg) 30%,var(--panel));
+}
+.games-status-section:first-child{margin-top:4px}
+.games-status-section-head{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding-bottom:11px;border-bottom:1px solid var(--line)
+}
+.games-status-section-title{min-width:0}
+.games-status-section-title h3{margin:0;font-size:14px;font-weight:800}
+.games-status-section-title p{margin:4px 0 0;font-size:10px}
+.games-status-section-count{
+  display:grid;place-items:center;flex:none;min-width:27px;height:27px;padding:0 7px;
+  border-radius:9px;color:var(--muted);background:var(--bg);font-size:11px;font-weight:800
+}
+.games-status-section-active .games-status-section-count{color:#70c5a3;background:#70c5a31a}
+.games-status-section-invitations .games-status-section-count{color:var(--accent-text);background:var(--accent-soft)}
+.games-status-section-cards{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,245px),1fr));
+  align-items:start;gap:11px;padding-top:12px
+}
+.games-status-section-cards .games-card{margin:0;min-width:0}
+.games-status-section-empty{margin:0;padding:15px 4px 3px;font-size:11px}
+@media(max-width:760px){
+  .games-status-section{margin-top:12px;padding:11px;border-radius:13px}
+  .games-status-section-cards{grid-template-columns:minmax(0,1fr);gap:9px}
+}
