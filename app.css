@@ -3439,3 +3439,21 @@ body{min-height:100svh;min-height:100dvh}
 .deleted-message-hint{color:var(--accent-text);font-size:calc(9px * var(--font-scale,1));font-weight:750}
 .deleted-message-bubble:focus-visible,.deleted-conversation-card:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 @media(max-width:520px){.deleted-conversation-card{padding:12px;gap:8px}.deleted-chat-toolbar{align-items:flex-start;flex-direction:column;gap:8px}.deleted-chat-message-list{gap:9px}.deleted-message-bubble{max-width:96%;min-width:min(210px,100%);padding:10px;gap:8px}.deleted-message-bubble>.avatar{width:30px;height:30px}}
+
+
+/* Give the selected inbox folder a clear inset from the outer tab rail. */
+.folder-tabs{
+  box-sizing:border-box;
+  padding:8px 10px;
+  gap:8px;
+  overflow:hidden;
+}
+.folder-tabs>.folder-tab{
+  min-width:0;
+  min-height:38px;
+  border-radius:10px;
+}
+@media(max-width:720px){
+  .folder-tabs{padding:7px 9px;gap:6px}
+  .folder-tabs>.folder-tab{min-height:38px;padding:6px 4px}
+}
