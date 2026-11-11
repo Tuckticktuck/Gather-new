@@ -73,25 +73,27 @@
   })[game.status] || game.status;
 
   function mount() {
-    const sidebar = $("sidebar-home-content");
-    if (sidebar && !$("games-open")) {
-      const launch = button("Games", "requests-button games-sidebar-button", showHub);
-      launch.id = "games-open";
-      const after = $("requests-open");
-      if (after?.parentNode) after.parentNode.insertBefore(launch, after.nextSibling);
-      else sidebar.append(launch);
+    const main = document.querySelector(".main");
+    if (main && !$("workspace-switcher")) {
+      const switcher = node("nav", "workspace-switcher");
+      switcher.id = "workspace-switcher";
+      switcher.setAttribute("aria-label", "Gather sections");
+      switcher.innerHTML = '<button id="workspace-messages-tab" class="workspace-switch-tab active" type="button" aria-pressed="true"><span aria-hidden="true">◉</span> Messages</button><button id="workspace-games-tab" class="workspace-switch-tab" type="button" aria-pressed="false"><span aria-hidden="true">♟</span> Games</button>';
+      const home = $("empty");
+      main.insertBefore(switcher, home || main.firstChild);
+      $("workspace-messages-tab").addEventListener("click", showHomeFromHub);
+      $("workspace-games-tab").addEventListener("click", showHub);
     }
 
-    const main = document.querySelector(".main");
-    if (main && !$("games-workspace")) {
+    const mainWorkspace = document.querySelector(".main");
+    if (mainWorkspace && !$("games-workspace")) {
       const hub = node("section", "games-workspace");
       hub.id = "games-workspace";
       hub.hidden = true;
-      hub.innerHTML = '<header class="games-hub-header"><div><button id="games-back-home" class="outline games-back-home" type="button">← Back to conversations</button><p class="eyebrow">PLAY TOGETHER</p><h1>Gather Games</h1><p class="muted games-hub-subtitle">Play a match with someone from one of your conversations. Other group members can spectate live.</p></div><button id="games-new" class="primary games-new-button" type="button">＋ New game</button></header><section class="games-hub-section"><div class="games-section-heading"><div><h2>Your games</h2><p class="muted tiny">Invitations, active matches and recent results.</p></div><button id="games-refresh" class="outline" type="button">Refresh</button></div><nav class="games-filter-tabs" aria-label="Filter games"><button type="button" class="games-filter-tab active" data-games-filter="all" aria-pressed="true">All games</button><button type="button" class="games-filter-tab" data-games-filter="invitations" aria-pressed="false">Invitations</button><button type="button" class="games-filter-tab" data-games-filter="active" aria-pressed="false">Active</button><button type="button" class="games-filter-tab" data-games-filter="completed" aria-pressed="false">Completed</button></nav><p id="games-hub-status" class="status" role="status"></p><div id="games-list" class="games-list"></div></section>';
+      hub.innerHTML = '<header class="games-hub-header"><div><p class="eyebrow">PLAY TOGETHER</p><h1>Gather Games</h1><p class="muted games-hub-subtitle">Play a match with someone from one of your conversations. Other group members can spectate live.</p></div><button id="games-new" class="primary games-new-button" type="button">＋ New game</button></header><section class="games-hub-section"><div class="games-section-heading"><div><h2>Your games</h2><p class="muted tiny">Invitations, active matches and recent results.</p></div><button id="games-refresh" class="outline" type="button">Refresh</button></div><nav class="games-filter-tabs" aria-label="Filter games"><button type="button" class="games-filter-tab active" data-games-filter="all" aria-pressed="true">All games</button><button type="button" class="games-filter-tab" data-games-filter="invitations" aria-pressed="false">Invitations</button><button type="button" class="games-filter-tab" data-games-filter="active" aria-pressed="false">Active</button><button type="button" class="games-filter-tab" data-games-filter="completed" aria-pressed="false">Completed</button></nav><p id="games-hub-status" class="status" role="status"></p><div id="games-list" class="games-list"></div></section>';
       const chat = $("chat");
       main.insertBefore(hub, chat || null);
       $("games-new").addEventListener("click", () => openCreateModal());
-      $("games-back-home").addEventListener("click", showHomeFromHub);
       $("games-refresh").addEventListener("click", () => refreshGames(true));
     }
 
@@ -212,6 +214,10 @@
     layout?.classList.remove("show-chat", "show-home");
     layout?.classList.add("show-games");
     $("home-open").hidden = true;
+    $("workspace-messages-tab")?.classList.remove("active");
+    $("workspace-messages-tab")?.setAttribute("aria-pressed", "false");
+    $("workspace-games-tab")?.classList.add("active");
+    $("workspace-games-tab")?.setAttribute("aria-pressed", "true");
     void refreshGames(false);
     closeCreateModal();
   }
@@ -221,8 +227,14 @@
     const home = $("empty");
     if (hub) hub.hidden = true;
     if (home) home.hidden = false;
-    $("layout")?.classList.remove("show-games");
+    const chat = $("chat");
+    if (chat) chat.hidden = true;
+    $("layout")?.classList.remove("show-games", "show-chat");
     $("layout")?.classList.add("show-home");
+    $("workspace-games-tab")?.classList.remove("active");
+    $("workspace-games-tab")?.setAttribute("aria-pressed", "false");
+    $("workspace-messages-tab")?.classList.add("active");
+    $("workspace-messages-tab")?.setAttribute("aria-pressed", "true");
   }
 
   function openCreateModal(defaultConversationId) {
