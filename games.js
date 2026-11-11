@@ -31,6 +31,7 @@
   let battleshipPrivateLoading = false;
   let battleshipDraft = { gameId: null, ships: [], selected: "carrier", orientation: "horizontal", message: "" };
   let hubFilter = "all";
+  let selectedGameConversationId = null;
 
   const $ = id => document.getElementById(id);
   const node = (tag, cls, value) => {
@@ -78,7 +79,7 @@
       const switcher = node("nav", "workspace-switcher");
       switcher.id = "workspace-switcher";
       switcher.setAttribute("aria-label", "Gather sections");
-      switcher.innerHTML = '<button id="workspace-messages-tab" class="workspace-switch-tab active" type="button" aria-pressed="true"><span aria-hidden="true">◉</span> Messages</button><button id="workspace-games-tab" class="workspace-switch-tab" type="button" aria-pressed="false"><span aria-hidden="true">♟</span> Games</button>';
+      switcher.innerHTML = '<button id="workspace-messages-tab" class="workspace-switch-tab active" type="button" aria-pressed="true"><span class="workspace-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H5l-1-4.2A7.5 7.5 0 1 1 20 11.5Z"></path></svg></span> Messages</button><button id="workspace-games-tab" class="workspace-switch-tab" type="button" aria-pressed="false"><span aria-hidden="true">♟</span> Games</button>';
       const home = $("empty");
       main.insertBefore(switcher, home || main.firstChild);
       $("workspace-messages-tab").addEventListener("click", showHomeFromHub);
@@ -90,7 +91,7 @@
       const hub = node("section", "games-workspace");
       hub.id = "games-workspace";
       hub.hidden = true;
-      hub.innerHTML = '<header class="games-hub-header"><div><p class="eyebrow">PLAY TOGETHER</p><h1>Gather Games</h1><p class="muted games-hub-subtitle">Play a match with someone from one of your conversations. Other group members can spectate live.</p></div><button id="games-new" class="primary games-new-button" type="button">＋ New game</button></header><section class="games-hub-section"><div class="games-section-heading"><div><h2>Your games</h2><p class="muted tiny">Invitations, active matches and recent results.</p></div><button id="games-refresh" class="outline" type="button">Refresh</button></div><nav class="games-filter-tabs" aria-label="Filter games"><button type="button" class="games-filter-tab active" data-games-filter="all" aria-pressed="true">All games</button><button type="button" class="games-filter-tab" data-games-filter="invitations" aria-pressed="false">Invitations</button><button type="button" class="games-filter-tab" data-games-filter="active" aria-pressed="false">Active</button><button type="button" class="games-filter-tab" data-games-filter="completed" aria-pressed="false">Completed</button></nav><p id="games-hub-status" class="status" role="status"></p><div id="games-list" class="games-list"></div></section>';
+      hub.innerHTML = '<header class="games-hub-header"><div><p class="eyebrow">PLAY TOGETHER</p><h1>Gather Games</h1><p class="muted games-hub-subtitle">Your game conversations, invitations and matches — all in one place.</p></div><button id="games-new" class="primary games-new-button" type="button">＋ New game</button></header><section class="games-inbox-layout"><aside class="games-inbox-sidebar"><div class="games-inbox-sidebar-head"><h2>Game conversations</h2><p class="muted tiny">People and groups you have played with.</p></div><div id="games-list" class="games-conversation-list"></div></aside><section class="games-conversation-detail"><header class="games-detail-header"><div><p class="eyebrow">GAME HISTORY</p><h2 id="games-conversation-title">Choose a conversation</h2><p id="games-conversation-subtitle" class="muted tiny">Open a game conversation to see its history.</p></div><button id="games-refresh" class="outline" type="button">Refresh</button></header><nav class="games-filter-tabs" aria-label="Filter games"><button type="button" class="games-filter-tab active" data-games-filter="all" aria-pressed="true">All</button><button type="button" class="games-filter-tab" data-games-filter="invitations" aria-pressed="false">Invitations</button><button type="button" class="games-filter-tab" data-games-filter="active" aria-pressed="false">Live</button><button type="button" class="games-filter-tab" data-games-filter="completed" aria-pressed="false">Completed</button></nav><p id="games-hub-status" class="status" role="status"></p><div id="games-conversation-games" class="games-list"></div></section></section>';
       const chat = $("chat");
       main.insertBefore(hub, chat || null);
       $("games-new").addEventListener("click", () => openCreateModal());
@@ -311,6 +312,7 @@
     closeCreateModal();
     const game = Array.isArray(result.data) ? result.data[0] : result.data;
     if (game?.id) {
+      selectedGameConversationId = game.conversation_id;
       games = [game, ...games.filter(item => item.id !== game.id)];
       renderAll();
     }
@@ -355,12 +357,65 @@
   }
 
   function renderHub() {
-    const list = $("games-list");
-    if (!list) return;
-    list.replaceChildren();
-    const all = [...games].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
-    const ordered = all.filter(game => {
-      if (hubFilter === "invitations") return game.status === "pending" && game.player_two_id === userId();
+    const conversationList = $("games-list");
+    const gameList = $("games-conversation-games");
+    if (!conversationList || !gameList) return;
+    conversationList.replaceChildren();
+    gameList.replaceChildren();
+
+    const sorted = [...games].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+    const groups = new Map();
+    sorted.forEach(game => {
+      if (!groups.has(game.conversation_id)) groups.set(game.conversation_id, []);
+      groups.get(game.conversation_id).push(game);
+    });
+    const conversations = [...groups.entries()];
+    if (!conversations.some(([id]) => id === selectedGameConversationId)) {
+      selectedGameConversationId = conversations[0]?.[0] || null;
+    }
+
+    conversations.forEach(([conversationId, items]) => {
+      const latest = items[0];
+      const liveCount = items.filter(game => game.status === "active").length;
+      const inviteCount = items.filter(game => game.status === "pending").length;
+      const item = button("", "games-conversation-item" + (conversationId === selectedGameConversationId ? " active" : ""), () => {
+        selectedGameConversationId = conversationId;
+        renderHub();
+      });
+      item.setAttribute("aria-pressed", String(conversationId === selectedGameConversationId));
+      const mark = node("span", "games-conversation-avatar", "♟");
+      const copy = node("span", "games-conversation-copy");
+      copy.append(node("strong", "", conversationName(conversationId)));
+      copy.append(node("small", "muted", gameName(latest.game_type) + " · " + new Date(latest.updated_at || latest.created_at).toLocaleDateString()));
+      const meta = node("span", "games-conversation-meta");
+      meta.append(node("span", "games-conversation-count", items.length + " game" + (items.length === 1 ? "" : "s")));
+      if (liveCount) meta.append(node("span", "games-conversation-live", liveCount + " live"));
+      if (inviteCount) meta.append(node("span", "games-conversation-invites", inviteCount + " invite" + (inviteCount === 1 ? "" : "s")));
+      item.append(mark, copy, meta);
+      conversationList.append(item);
+    });
+
+    if (!conversations.length) {
+      conversationList.append(node("p", "games-empty muted", "Your game conversations will appear here."));
+      $("games-conversation-title").textContent = "No game conversations yet";
+      $("games-conversation-subtitle").textContent = "Start a match to create your first game conversation.";
+      $("games-hub-status").textContent = "";
+      gameList.append(node("p", "games-empty muted", "No games yet. Start a match from a conversation or create one here."));
+      return;
+    }
+
+    const selectedChat = chatList().find(chat => chat.id === selectedGameConversationId);
+    const selectedGames = groups.get(selectedGameConversationId) || [];
+    $("games-conversation-title").textContent = conversationName(selectedGameConversationId);
+    const liveCount = selectedGames.filter(game => game.status === "active").length;
+    const pendingCount = selectedGames.filter(game => game.status === "pending").length;
+    $("games-conversation-subtitle").textContent =
+      selectedGames.length + " game" + (selectedGames.length === 1 ? "" : "s") +
+      " · " + liveCount + " live · " + pendingCount + " invitation" + (pendingCount === 1 ? "" : "s") +
+      (selectedChat?.kind === "group" ? " · Group conversation" : "");
+
+    const ordered = selectedGames.filter(game => {
+      if (hubFilter === "invitations") return game.status === "pending";
       if (hubFilter === "active") return game.status === "active";
       if (hubFilter === "completed") return game.status === "completed";
       return true;
@@ -371,13 +426,16 @@
       tab.setAttribute("aria-pressed", String(active));
     });
     if (!ordered.length) {
-      const empty = hubFilter === "invitations" ? "No incoming game invitations right now." : hubFilter === "active" ? "You have no active games." : hubFilter === "completed" ? "Completed games will appear here." : "No games yet. Start a match from a conversation or create one here.";
-      list.append(node("p", "games-empty muted", empty));
-      if ($("games-hub-status")) $("games-hub-status").textContent = all.length ? all.length + " game" + (all.length === 1 ? "" : "s") + " in your history." : "";
+      const empty = hubFilter === "invitations" ? "No sent or received invitations in this conversation." :
+        hubFilter === "active" ? "There are no live games in this conversation." :
+        hubFilter === "completed" ? "Completed matches will appear here." :
+        "No games found in this conversation.";
+      $("games-hub-status").textContent = selectedGames.length + " game" + (selectedGames.length === 1 ? "" : "s") + " in this conversation.";
+      gameList.append(node("p", "games-empty muted", empty));
       return;
     }
-    if ($("games-hub-status")) $("games-hub-status").textContent = ordered.length + " " + (hubFilter === "all" ? "game" : hubFilter === "invitations" ? "invitation" : "match") + (ordered.length === 1 ? "" : "s") + (hubFilter === "all" ? " across your conversations." : ".");
-    ordered.forEach(game => list.append(makeGameCard(game, true)));
+    $("games-hub-status").textContent = ordered.length + " " + (hubFilter === "all" ? "game" : hubFilter === "invitations" ? "invitation" : "match") + (ordered.length === 1 ? "" : "s") + (hubFilter === "all" ? " in this conversation." : ".");
+    ordered.forEach(game => gameList.append(makeGameCard(game, false)));
   }
 
   function setHubFilter(filter) {
