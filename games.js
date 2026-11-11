@@ -37,8 +37,11 @@
   let multiplayerGames = [];
   let activeTagGameId = null;
   let tagMoveTimer = null;
+  let tagSyncTimer = null;
+  let tagPlayersRefreshTimer = null;
   let tagMoveDirection = { x: 0, y: 0 };
   let tagMovePending = false;
+  let tagQueuedPosition = null;
   let tagLocalPosition = null;
   const TAG_COLORS = ["#F87171","#F59E0B","#84CC16","#22C55E","#14B8A6","#06B6D4","#38BDF8","#818CF8","#A78BFA","#E879F9","#F472B6","#A3A3A3"];
 
@@ -207,8 +210,10 @@
         .on("postgres_changes", { event: "*", schema: "public", table: "gather_multiplayer_games" }, queueGameRefresh)
         .on("postgres_changes", { event: "*", schema: "public", table: "gather_multiplayer_players" }, payload => {
           const gameId = payload?.new?.game_id || payload?.old?.game_id;
-          if (gameId && gameId === activeTagGameId) void refreshMultiplayerPlayers(gameId);
-          else queueGameRefresh();
+          const changedUserId=payload?.new?.user_id||payload?.old?.user_id;
+          if (gameId && gameId === activeTagGameId) {
+            if(changedUserId!==userId())queueTagPlayersRefresh(gameId);
+          } else queueGameRefresh();
         }).subscribe();
 
       // Browsers can suspend realtime while a tab is in the background.
@@ -693,6 +698,7 @@
   async function renderTagGame(game) {
     const area=$("games-board-area"), status=$("games-board-status"), hint=$("games-board-hint");
     if (!area) return;
+    if(activeTagGameId!==game.id){stopTagMovement();tagLocalPosition=null;}
     activeTagGameId=game.id;
     $("games-board-title").textContent="Tag";
     const joined=(game.players||[]).filter(player=>player.status==="joined");
@@ -742,7 +748,8 @@
         const nx=dx*scale,ny=dy*scale;
         knob.style.transform="translate("+nx+"px,"+ny+"px)";
         const mag=Math.hypot(nx,ny)||1;tagMoveDirection={x:nx/mag,y:ny/mag};
-        if(!tagMoveTimer)tagMoveTimer=window.setInterval(()=>{if(tagMoveDirection.x||tagMoveDirection.y)void moveTagByVector(tagMoveDirection.x,tagMoveDirection.y);},220);
+        if(!tagMoveTimer)tagMoveTimer=window.setInterval(()=>{if(tagMoveDirection.x||tagMoveDirection.y)moveTagByVector(tagMoveDirection.x,tagMoveDirection.y);},50);
+        if(!tagSyncTimer)tagSyncTimer=window.setInterval(()=>{if(tagMoveDirection.x||tagMoveDirection.y)void syncTagPosition();},300);
       };
       joystick._move=update;update(event);
     };
@@ -774,16 +781,26 @@
   function renderTagArenaPlayers(game) {
     const layer=$("games-board-area")?.querySelector(".tag-arena-players");
     if(!layer)return;
-    layer.replaceChildren();
+    const activeIds=new Set();
     (game.players||[]).filter(player=>player.status==="joined").forEach(player=>{
-      const dot=node("span","tag-player-dot"+(player.is_it?" is-it":"")+(player.user_id===userId()?" is-me":""));
-      dot.style.left=(Number(player.x)||50)+"%";dot.style.top=(Number(player.y)||50)+"%";
+      activeIds.add(player.user_id);
+      let dot=[...layer.children].find(el=>el.dataset.userId===player.user_id);
+      if(!dot){
+        dot=node("span","tag-player-dot");
+        dot.dataset.userId=player.user_id;
+        const label=node("span","tag-player-label");
+        dot.append(label);layer.append(dot);
+      }
+      dot.classList.toggle("is-it",!!player.is_it);
+      dot.classList.toggle("is-me",player.user_id===userId());
+      const position=player.user_id===userId()&&tagLocalPosition?tagLocalPosition:{x:Number(player.x)||50,y:Number(player.y)||50};
+      dot.style.left=position.x+"%";dot.style.top=position.y+"%";
       dot.style.background=player.color||"#38BDF8";
-      dot.title=memberName(player.user_id)+(player.is_it?" · It":"");
-      dot.setAttribute("aria-label",dot.title);
-      const label=node("span","tag-player-label",memberName(player.user_id)+(player.is_it?" · It":""));
-      dot.append(label);layer.append(dot);
+      const labelText=memberName(player.user_id)+(player.is_it?" · It":"");
+      dot.title=labelText;dot.setAttribute("aria-label",labelText);
+      dot.firstElementChild.textContent=labelText;
     });
+    [...layer.children].forEach(dot=>{if(!activeIds.has(dot.dataset.userId))dot.remove();});
     const mine=tagCurrentPlayer(game);
     if(mine)$("games-board-status").textContent=mine.is_it?"You're It — catch another player!":"Run from the player who is It.";
   }
@@ -795,31 +812,58 @@
     if(response.error)return;
     const game=games.find(item=>item.id===gameId);
     if(!game)return;
+    const local=tagLocalPosition;
     game.players=response.data||[];
+    if(local){
+      const mine=game.players.find(player=>player.user_id===userId()&&player.status==="joined");
+      if(mine){mine.x=local.x;mine.y=local.y;}
+    }
     if(activeGameId===gameId){activeGame=game;renderTagArenaPlayers(game);}
+  }
+
+  function queueTagPlayersRefresh(gameId) {
+    if(tagPlayersRefreshTimer)clearTimeout(tagPlayersRefreshTimer);
+    tagPlayersRefreshTimer=window.setTimeout(()=>{tagPlayersRefreshTimer=null;void refreshMultiplayerPlayers(gameId);},110);
+  }
+
+  async function syncTagPosition() {
+    const game=games.find(item=>item.id===activeTagGameId)||activeGame;
+    const position=tagLocalPosition;
+    if(!game||!position||game.status!=="active")return;
+    if(tagMovePending){tagQueuedPosition={...position};return;}
+    tagMovePending=true;
+    const sent={...position};
+    try{
+      const response=await ctx.db.rpc("gather_multiplayer_move",{p_game_id:game.id,p_x:sent.x,p_y:sent.y});
+      if(response.error){
+        if(!String(response.error.message||"").includes("Movement update was received too quickly"))toast(response.error.message||"Movement could not be saved.");
+      }
+    }finally{
+      tagMovePending=false;
+      if(tagQueuedPosition){
+        const queued=tagQueuedPosition;tagQueuedPosition=null;
+        if(queued.x!==sent.x||queued.y!==sent.y){tagLocalPosition=queued;void syncTagPosition();}
+      }
+    }
   }
 
   function stopTagMovement() {
     if(tagMoveTimer)window.clearInterval(tagMoveTimer);
-    tagMoveTimer=null;tagMoveDirection={x:0,y:0};tagMovePending=false;
+    if(tagSyncTimer)window.clearInterval(tagSyncTimer);
+    tagMoveTimer=null;tagSyncTimer=null;tagMoveDirection={x:0,y:0};
+    if(tagLocalPosition)void syncTagPosition();
   }
 
-  async function moveTagByVector(dx,dy) {
+  function moveTagByVector(dx,dy) {
     const game=games.find(item=>item.id===activeTagGameId)||activeGame;
     const player=game&&tagCurrentPlayer(game);
-    if(!game||!player||tagMovePending||game.status!=="active")return;
+    if(!game||!player||game.status!=="active")return;
     const current=tagLocalPosition||{x:Number(player.x)||50,y:Number(player.y)||50};
-    const nx=Math.max(0,Math.min(100,current.x+dx*2.8));
-    const ny=Math.max(0,Math.min(100,current.y+dy*2.8));
+    const nx=Math.max(0,Math.min(100,current.x+dx*.58));
+    const ny=Math.max(0,Math.min(100,current.y+dy*.58));
     tagLocalPosition={x:nx,y:ny};
-    const localPlayer=(game.players||[]).find(item=>item.user_id===userId());
-    if(localPlayer){localPlayer.x=nx;localPlayer.y=ny;}
+    player.x=nx;player.y=ny;
     renderTagArenaPlayers(game);
-    tagMovePending=true;
-    try{
-      const response=await ctx.db.rpc("gather_multiplayer_move",{p_game_id:game.id,p_x:nx,p_y:ny});
-      if(response.error){tagLocalPosition=null;if(!String(response.error.message||"").includes("Movement update is too large"))toast(response.error.message||"Movement could not be saved.");}
-    }finally{tagMovePending=false;}
   }
 
   function renderBoardModal() {
