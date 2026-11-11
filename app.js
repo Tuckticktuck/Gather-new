@@ -1110,7 +1110,7 @@ async function signedIn(user,retry=false){
     subscribeRequests();
     const loaded=await loadChats();
     if(!loaded)throw new Error(S.loadError||"Please check your connection and try again.");
-    window.GatherGames?.init({db,user:()=>S.user,chats:()=>S.chats,activeChatId:()=>S.active,profiles:()=>S.profiles,toast});
+    window.GatherGames?.init({db,user:()=>S.user,chats:()=>S.chats,activeChatId:()=>S.active,profiles:()=>S.profiles,toast,onGamesUpdated:()=>{renderNotificationBadge();if(S.notificationView==="games"||S.notificationView==="all")renderNotifications();}});
     subscribeMessages();
     await loadNotifications();subscribeNotifications();
     await loadAnnouncements();subscribeAnnouncements();
@@ -1809,17 +1809,21 @@ function notificationItemsForView(view=S.notificationView){
       };
     });
   }
+  if(view==="games")return [];
   if(view==="messages")return items.filter(item=>item.kind==="message");
   if(view==="other")return items.filter(item=>item.kind!=="announcement"&&item.kind!=="message");
   return items;
 }
 function notificationUnreadCount(){
-  return notificationItemsForCenter().filter(item=>!item.read_at).length;
+  const notificationUnread=notificationItemsForCenter().filter(item=>!item.read_at).length;
+  const gameInvites=window.GatherGames?.getPendingInvitations?.().length||0;
+  return notificationUnread+gameInvites;
 }
 function renderNotificationBadge(){
   const badge=$("notification-badge");if(!badge)return;
   const count=notificationUnreadCount();badge.textContent=count>99?"99+":String(count);badge.hidden=count===0;
-  $("notifications-mark-all").disabled=count===0;
+  const regularUnread=notificationItemsForCenter().filter(item=>!item.read_at).length;
+  $("notifications-mark-all").disabled=regularUnread===0||S.notificationView==="games";
 }
 function notificationKindLabel(kind){
   return ({message:"New message",friend_request:"Friend request",chat_request:"Chat request",feedback_reply:"Feedback update",report:"Safety report",announcement:"Official admin announcement"})[kind]||"Gather update";
@@ -1844,21 +1848,44 @@ function notificationDisplayItems(items){
   return display;
 }
 function setNotificationView(view){
-  if(!["all","admin","messages","other"].includes(view))return;
+  if(!["all","admin","messages","games","other"].includes(view))return;
   S.notificationView=view;
   renderNotifications();
+}
+function renderGameNotificationCards(list){
+  const invitations=window.GatherGames?.getPendingInvitations?.()||[];
+  invitations.forEach(game=>{
+    const card=el("article","notification-center-item notification-game-item unread");
+    const icon=el("span","notification-center-icon","🎮");
+    const copy=el("span","notification-center-copy");
+    const gameNames={chess:"Chess",checkers:"Checkers",tic_tac_toe:"Tic-Tac-Toe",connect_four:"Connect Four",battleship:"Battleship"};
+    const opponent=S.profiles[game.player_one_id]?.display_name||S.profiles[game.player_one_id]?.username||"A Gather member";
+    copy.append(el("strong","",gameNames[game.game_type]||"Game invitation"),el("small","",opponent+" invited you to play."),el("time","",dateLabel(game.created_at)));
+    card.append(icon,copy);
+    const actions=el("span","notification-game-actions");
+    const view=el("button","outline","View");view.type="button";view.addEventListener("click",()=>{$("notifications-modal").hidden=true;window.GatherGames?.openInvitation?.(game.id);});
+    const accept=el("button","primary","Accept");accept.type="button";accept.addEventListener("click",async()=>{$("notifications-modal").hidden=true;await window.GatherGames?.respondToInvitation?.(game.id,true);renderNotifications();});
+    const decline=el("button","outline","Decline");decline.type="button";decline.addEventListener("click",async()=>{decline.disabled=true;await window.GatherGames?.respondToInvitation?.(game.id,false);renderNotifications();});
+    actions.append(view,accept,decline);card.append(actions);list.append(card);
+  });
+  return invitations.length;
 }
 function renderNotifications(){
   const list=$("notifications-list");
   if(!list)return;
   list.replaceChildren();
   const sectionItems=notificationItemsForView();
-  if(!sectionItems.length){
+  const gameView=S.notificationView==="games";
+  const gameCount=(gameView||S.notificationView==="all")?renderGameNotificationCards(list):0;
+  if(gameView&&!gameCount){
+    list.append(el("p","muted tiny","No incoming game invitations. New invitations will appear here automatically."));
+  }else if(!sectionItems.length&&!gameCount){
     const emptyText={
       all:"You're all caught up. New messages and requests will appear here.",
       admin:"There are no Gather Admin announcements in your notifications yet.",
       messages:"No recent message notifications. Messages in the conversation you're currently viewing stay out of this list.",
-      other:"There are no other updates right now."
+      other:"There are no other updates right now.",
+      games:"No incoming game invitations. New invitations will appear here automatically."
     };
     list.append(el("p","muted tiny",emptyText[S.notificationView]||emptyText.all));
   }else{
@@ -1890,7 +1917,7 @@ function renderNotifications(){
     });
   }
   const unread=sectionItems.filter(item=>!item.read_at).length;
-  $("notifications-summary").textContent=unread+" unread · "+sectionItems.length+" updates";
+  $("notifications-summary").textContent=gameView?gameCount+" awaiting response":(unread+gameCount)+" unread · "+(sectionItems.length+gameCount)+" updates";
   document.querySelectorAll("[data-notification-view]").forEach(button=>{
     const active=button.dataset.notificationView===S.notificationView;
     button.classList.toggle("active",active);
