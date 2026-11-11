@@ -718,6 +718,7 @@ function markChatRead(chatId,through=null){
   saveReadState();
 }
 function showAuth() {
+  window.GatherGames?.shutdown();
   saveActiveChatDraft();clearUnreadDividerState();
   closeTypingChannel();
   stopOnlinePresence();
@@ -1114,6 +1115,7 @@ async function signedIn(user,retry=false){
     subscribeRequests();
     const loaded=await loadChats();
     if(!loaded)throw new Error(S.loadError||"Please check your connection and try again.");
+    window.GatherGames?.init({db,user:()=>S.user,chats:()=>S.chats,activeChatId:()=>S.active,profiles:()=>S.profiles,toast});
     subscribeMessages();
     await loadNotifications();subscribeNotifications();
     await loadAnnouncements();subscribeAnnouncements();
@@ -2732,10 +2734,12 @@ async function unblockUser(userId){
 }
 function renderActive(){
   const c=S.chats.find(x=>x.id===S.active);
+  window.GatherGames?.setActiveChat(c||null);
+  const gamesOpen=!!$("games-workspace")&&!$("games-workspace").hidden&&!c;
   $("message-create-poll").hidden=c?.kind!=="group";
   renderUndoSend();
   $("layout").classList.toggle("direct-chat",c?.kind==="direct");
-  $("empty").hidden=!!c;$("chat").hidden=!c;
+  $("empty").hidden=!!c||gamesOpen;$("games-workspace")?.toggleAttribute("hidden",!!c);$("chat").hidden=!c;
   $("layout").classList.toggle("in-chat-mode",!!c);
   $("sidebar-home-content").hidden=!!c;
   $("in-chat-sidebar").hidden=!c;
@@ -2745,7 +2749,8 @@ function renderActive(){
   const avatarImage=c?.kind==="group"?c.avatar_data:peerProfile?.avatar_data;
   paintAvatar($("chat-avatar"),chatTitle(c||{kind:"direct",members:[]}),avatarImage);
   $("layout").classList.toggle("show-chat",!!c);
-  $("layout").classList.toggle("show-home",!c);
+  $("layout").classList.toggle("show-home",!c&&!gamesOpen);
+  $("layout").classList.toggle("show-games",gamesOpen);
   $("home-open").hidden=!c;
   $("leave-chat").hidden=!c||c.kind!=="group";
   if(!c){
