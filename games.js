@@ -159,6 +159,7 @@
       overlay.addEventListener("click", event => { if (event.target === overlay) closeCreateModal(); });
       $("games-conversation").addEventListener("change", updateOpponentOptions);
       $("games-type").addEventListener("change", updateOpponentOptions);
+      $("games-join-mode").addEventListener("change", updateOpponentOptions);
       $("games-create-form").addEventListener("submit", createGame);
     }
 
@@ -316,11 +317,13 @@
     });
     const selected = select.options.length;
     if (multiplayer) {
+      $("games-create-submit").textContent = "Create Tag match";
       $("games-spectator-note").textContent = $("games-join-mode")?.value === "open"
         ? "Everyone in this conversation can join the match and choose a unique color."
         : "Select one or more members to invite. You can invite the whole group.";
       $("games-create-submit").disabled = $("games-join-mode")?.value === "invite" && !selected;
     } else {
+      $("games-create-submit").textContent = "Send invitation";
       const watchers = Math.max(0, (chat?.members?.length || 2) - 2);
       $("games-spectator-note").textContent = chat?.kind === "group"
         ? watchers + " other group member" + (watchers === 1 ? " can" : "s can") + " spectate. Only the two selected players can move."
@@ -382,6 +385,7 @@
     const ids = [...new Set(chatList().map(chat => chat.id).filter(Boolean))];
     if (!ids.length) {
       games = [];
+      multiplayerGames = [];
       renderAll();
       return;
     }
