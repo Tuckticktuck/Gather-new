@@ -659,8 +659,8 @@
   }
 
   function openGame(game) {
-    activeTagGameId = game.is_multiplayer ? game.id : null;
     stopTagMovement();
+    activeTagGameId = game.is_multiplayer ? game.id : null;
     if (activeGameId !== game.id) {
       battleshipPrivateGameId = game.id;
       battleshipPrivateState = null;
@@ -765,12 +765,14 @@
     const actions=node("div","tag-game-actions");
     actions.append(button("Leave match","outline",async()=>{
       if(!window.confirm("Leave this Tag match?"))return;
+      stopTagMovement(false);
       const response=await ctx.db.rpc("gather_multiplayer_leave",{p_game_id:game.id});
       if(response.error){toast(response.error.message||"Could not leave the match.");return;}
       stopTagMovement();await refreshGames(false);const latest=games.find(item=>item.id===game.id);if(latest){activeGame=latest;renderBoardModal();}
     }));
     if(game.created_by===userId())actions.append(button("End match","outline",async()=>{
       if(!window.confirm("End this Tag match for everyone?"))return;
+      stopTagMovement(false);
       const response=await ctx.db.rpc("gather_multiplayer_end",{p_game_id:game.id});
       if(response.error){toast(response.error.message||"Could not end the match.");return;}
       await refreshGames(false);const latest=games.find(item=>item.id===game.id);if(latest){activeGame=latest;renderBoardModal();}
@@ -847,11 +849,12 @@
     }
   }
 
-  function stopTagMovement() {
+  function stopTagMovement(flush=true) {
     if(tagMoveTimer)window.clearInterval(tagMoveTimer);
     if(tagSyncTimer)window.clearInterval(tagSyncTimer);
     tagMoveTimer=null;tagSyncTimer=null;tagMoveDirection={x:0,y:0};
-    if(tagLocalPosition)void syncTagPosition();
+    if(flush&&tagLocalPosition)void syncTagPosition();
+    else tagQueuedPosition=null;
   }
 
   function moveTagByVector(dx,dy) {
