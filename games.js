@@ -1,0 +1,791 @@
+(() => {
+  "use strict";
+
+  const TYPES = {
+    chess: { name: "Chess", description: "Classic chess with legal moves, castling, en passant and promotion.", mark: "♞" },
+    checkers: { name: "Checkers", description: "Jump, capture and crown your pieces.", mark: "◈" },
+    tic_tac_toe: { name: "Tic-Tac-Toe", description: "A quick three-in-a-row match.", mark: "×○" },
+    connect_four: { name: "Connect Four", description: "Drop four discs in a row to win.", mark: "●" }
+  };
+  const PIECES = {
+    K: "♔", Q: "♕", R: "♖", B: "♗", N: "♘", P: "♙",
+    k: "♚", q: "♛", r: "♜", b: "♝", n: "♞", p: "♟"
+  };
+  let ctx = null;
+  let games = [];
+  let activeChat = null;
+  let activeGameId = null;
+  let activeGame = null;
+  let selectedSquare = null;
+  let promotionChoice = null;
+  let channel = null;
+  let initialized = false;
+  let busy = false;
+  let refreshTimer = null;
+
+  const $ = id => document.getElementById(id);
+  const node = (tag, cls, value) => {
+    const el = document.createElement(tag);
+    if (cls) el.className = cls;
+    if (value !== undefined && value !== null) el.textContent = String(value);
+    return el;
+  };
+  const button = (label, cls, action) => {
+    const el = node("button", cls, label);
+    el.type = "button";
+    el.addEventListener("click", action);
+    return el;
+  };
+  const userId = () => ctx && typeof ctx.user === "function" ? ctx.user()?.id : null;
+  const chatList = () => ctx && typeof ctx.chats === "function" ? (ctx.chats() || []) : [];
+  const profiles = () => ctx && typeof ctx.profiles === "function" ? (ctx.profiles() || {}) : {};
+  const toast = message => { if (ctx && typeof ctx.toast === "function") ctx.toast(message); };
+  const memberName = id => {
+    const profile = profiles()[id];
+    return profile?.display_name?.trim() || profile?.username?.trim() || "Gather member";
+  };
+  const gameName = type => TYPES[type]?.name || "Gather game";
+  const conversationName = id => {
+    const chat = chatList().find(item => item.id === id);
+    if (!chat) return "Conversation";
+    if (chat.kind === "group") return chat.title?.trim() || "Group chat";
+    const peer = chat.members?.find(member => member.user_id !== userId());
+    return peer ? memberName(peer.user_id) : "Private chat";
+  };
+  const playerNames = game => memberName(game.player_one_id) + " vs " + memberName(game.player_two_id);
+  const spectatorCount = game => Math.max(0, (chatList().find(chat => chat.id === game.conversation_id)?.members?.length || 2) - 2);
+  const isPlayer = game => !!userId() && (game.player_one_id === userId() || game.player_two_id === userId());
+  const statusLabel = game => ({
+    pending: game.player_two_id === userId() ? "Your invitation" : "Invitation pending",
+    active: "Live game",
+    completed: "Completed",
+    declined: "Declined",
+    cancelled: "Cancelled"
+  })[game.status] || game.status;
+
+  function mount() {
+    const sidebar = $("sidebar-home-content");
+    if (sidebar && !$("games-open")) {
+      const launch = button("Games", "requests-button games-sidebar-button", showHub);
+      launch.id = "games-open";
+      const after = $("requests-open");
+      if (after?.parentNode) after.parentNode.insertBefore(launch, after.nextSibling);
+      else sidebar.append(launch);
+    }
+
+    const main = document.querySelector(".main");
+    if (main && !$("games-workspace")) {
+      const hub = node("section", "games-workspace");
+      hub.id = "games-workspace";
+      hub.hidden = true;
+      hub.innerHTML = '<header class="games-hub-header"><div><p class="eyebrow">PLAY TOGETHER</p><h1>Gather Games</h1><p class="muted games-hub-subtitle">Play a match with someone from one of your conversations. Other group members can spectate live.</p></div><button id="games-new" class="primary games-new-button" type="button">＋ New game</button></header><section class="games-hub-section"><div class="games-section-heading"><div><h2>Your games</h2><p class="muted tiny">Invitations, active matches and recent results.</p></div><button id="games-refresh" class="outline" type="button">Refresh</button></div><p id="games-hub-status" class="status" role="status"></p><div id="games-list" class="games-list"></div></section>';
+      const chat = $("chat");
+      main.insertBefore(hub, chat || null);
+      $("games-new").addEventListener("click", () => openCreateModal());
+      $("games-refresh").addEventListener("click", () => refreshGames(true));
+    }
+
+    const chatHead = document.querySelector(".chat-head");
+    if (chatHead && !$("chat-games-open")) {
+      const launch = button("Play", "outline chat-games-trigger", () => {
+        if (activeChat?.id) openCreateModal(activeChat.id);
+        else showHub();
+      });
+      launch.id = "chat-games-open";
+      const options = $("chat-actions-open");
+      if (options?.parentNode) options.parentNode.insertBefore(launch, options);
+      else chatHead.append(launch);
+    }
+
+    const chat = $("chat");
+    if (chat && !$("games-chat-tray")) {
+      const tray = node("section", "games-chat-tray");
+      tray.id = "games-chat-tray";
+      tray.hidden = true;
+      tray.setAttribute("aria-label", "Games in this conversation");
+      const head = node("div", "games-chat-tray-head");
+      head.append(node("strong", "", "Games in this conversation"));
+      head.append(button("＋ Start", "games-tray-start", () => {
+        if (activeChat?.id) openCreateModal(activeChat.id);
+      }));
+      const list = node("div", "games-chat-tray-list");
+      list.id = "games-chat-tray-list";
+      tray.append(head, list);
+      const chatHeader = chat.querySelector(".chat-head");
+      if (chatHeader) chatHeader.insertAdjacentElement("afterend", tray);
+      else chat.prepend(tray);
+    }
+
+    if (!$("games-create-overlay")) {
+      const overlay = node("div", "overlay games-overlay");
+      overlay.id = "games-create-overlay";
+      overlay.hidden = true;
+      overlay.innerHTML = '<section class="modal games-create-modal" role="dialog" aria-modal="true" aria-labelledby="games-create-title"><button id="games-create-close" class="close" type="button" aria-label="Close">×</button><p class="eyebrow">NEW MATCH</p><h2 id="games-create-title">Invite someone to play</h2><p class="muted tiny">Choose a conversation, a game and one opponent. In a group chat, everyone else can watch the match.</p><form id="games-create-form"><label>Conversation<select id="games-conversation" required></select></label><label>Game<select id="games-type" required><option value="chess">Chess</option><option value="checkers">Checkers</option><option value="tic_tac_toe">Tic-Tac-Toe</option><option value="connect_four">Connect Four</option></select></label><label>Invite player<select id="games-opponent" required></select></label><p id="games-spectator-note" class="games-spectator-note"></p><p id="games-create-status" class="status" role="status"></p><div class="games-form-actions"><button id="games-create-cancel" class="secondary-action" type="button">Cancel</button><button id="games-create-submit" class="primary" type="submit">Send invitation</button></div></form></section>';
+      document.body.append(overlay);
+      $("games-create-close").addEventListener("click", closeCreateModal);
+      $("games-create-cancel").addEventListener("click", closeCreateModal);
+      overlay.addEventListener("click", event => { if (event.target === overlay) closeCreateModal(); });
+      $("games-conversation").addEventListener("change", updateOpponentOptions);
+      $("games-create-form").addEventListener("submit", createGame);
+    }
+
+    if (!$("games-board-overlay")) {
+      const overlay = node("div", "overlay games-overlay");
+      overlay.id = "games-board-overlay";
+      overlay.hidden = true;
+      overlay.innerHTML = '<section class="modal games-board-modal" role="dialog" aria-modal="true" aria-labelledby="games-board-title"><button id="games-board-close" class="close" type="button" aria-label="Close">×</button><p class="eyebrow">GATHER GAMES</p><h2 id="games-board-title">Game</h2><div id="games-board-meta" class="games-board-meta"></div><p id="games-board-status" class="games-board-status" role="status"></p><div id="games-board-area" class="games-board-area"></div><div id="games-promotion-choices" class="games-promotion-choices" hidden></div><p id="games-board-hint" class="games-board-hint"></p><div class="games-board-footer"><span id="games-board-spectators" class="muted tiny"></span><button id="games-board-done" class="outline" type="button">Close game</button></div></section>';
+      document.body.append(overlay);
+      $("games-board-close").addEventListener("click", closeBoardModal);
+      $("games-board-done").addEventListener("click", closeBoardModal);
+      overlay.addEventListener("click", event => { if (event.target === overlay) closeBoardModal(); });
+    }
+
+    $("games-open")?.addEventListener("keydown", event => {
+      if (event.key === "Enter" || event.key === " ") { event.preventDefault(); showHub(); }
+    });
+  }
+
+  function init(options) {
+    ctx = options;
+    mount();
+    if (!initialized) {
+      initialized = true;
+      channel = ctx.db.channel("gather-games-" + (userId() || "member"))
+        .on("postgres_changes", { event: "*", schema: "public", table: "gather_games" }, () => {
+          clearTimeout(refreshTimer);
+          refreshTimer = setTimeout(() => refreshGames(false), 140);
+        }).subscribe();
+    }
+    void refreshGames(false);
+    setActiveChat(chatList().find(chat => chat.id === (ctx.activeChatId?.() || null)) || null);
+  }
+
+  function setActiveChat(chat) {
+    activeChat = chat || null;
+    const launch = $("chat-games-open");
+    if (launch) launch.hidden = !activeChat;
+    renderChatTray();
+  }
+
+  function showHub() {
+    if (!ctx || !userId()) return;
+    const home = $("empty");
+    const chat = $("chat");
+    const hub = $("games-workspace");
+    if (!hub || !home || !chat) return;
+    home.hidden = true;
+    chat.hidden = true;
+    hub.hidden = false;
+    const layout = $("layout");
+    layout?.classList.remove("show-chat", "show-home");
+    layout?.classList.add("show-games");
+    $("home-open").hidden = true;
+    void refreshGames(false);
+    closeCreateModal();
+  }
+
+  function showHomeFromHub() {
+    const hub = $("games-workspace");
+    const home = $("empty");
+    if (hub) hub.hidden = true;
+    if (home) home.hidden = false;
+    $("layout")?.classList.remove("show-games");
+    $("layout")?.classList.add("show-home");
+  }
+
+  function openCreateModal(defaultConversationId) {
+    if (!ctx || !userId()) return;
+    const eligible = chatList().filter(chat => (chat.members || []).some(member => member.user_id === userId()) && (chat.members || []).some(member => member.user_id !== userId()));
+    if (!eligible.length) {
+      toast("Start or join a conversation before inviting someone to a game.");
+      return;
+    }
+    const select = $("games-conversation");
+    select.replaceChildren();
+    eligible.forEach(chat => {
+      const option = node("option", "", conversationName(chat.id));
+      option.value = chat.id;
+      select.append(option);
+    });
+    const chosen = eligible.find(chat => chat.id === defaultConversationId) || eligible[0];
+    select.value = chosen.id;
+    updateOpponentOptions();
+    $("games-type").value = "chess";
+    $("games-create-status").textContent = "";
+    $("games-create-submit").disabled = false;
+    $("games-create-overlay").hidden = false;
+  }
+
+  function closeCreateModal() {
+    const overlay = $("games-create-overlay");
+    if (overlay) overlay.hidden = true;
+  }
+
+  function updateOpponentOptions() {
+    const conversationId = $("games-conversation")?.value;
+    const chat = chatList().find(item => item.id === conversationId);
+    const select = $("games-opponent");
+    if (!select) return;
+    select.replaceChildren();
+    (chat?.members || []).filter(member => member.user_id !== userId()).forEach(member => {
+      const option = node("option", "", memberName(member.user_id));
+      option.value = member.user_id;
+      select.append(option);
+    });
+    const watchers = Math.max(0, (chat?.members?.length || 2) - 2);
+    $("games-spectator-note").textContent = chat?.kind === "group"
+      ? watchers + " other group member" + (watchers === 1 ? " can" : "s can") + " spectate. Only the two selected players can move."
+      : "Private games have only the two players.";
+    $("games-create-submit").disabled = !select.options.length;
+  }
+
+  async function createGame(event) {
+    event.preventDefault();
+    if (busy) return;
+    const conversationId = $("games-conversation").value;
+    const opponentId = $("games-opponent").value;
+    const gameType = $("games-type").value;
+    if (!conversationId || !opponentId || !TYPES[gameType]) {
+      $("games-create-status").textContent = "Choose a conversation and an opponent.";
+      return;
+    }
+    busy = true;
+    const submit = $("games-create-submit");
+    submit.disabled = true;
+    $("games-create-status").textContent = "Sending invitation…";
+    const result = await ctx.db.rpc("gather_game_create", {
+      p_conversation_id: conversationId,
+      p_game_type: gameType,
+      p_player_two_id: opponentId
+    });
+    busy = false;
+    submit.disabled = false;
+    if (result.error) {
+      $("games-create-status").textContent = result.error.message || "The game invitation could not be sent.";
+      return;
+    }
+    closeCreateModal();
+    const game = Array.isArray(result.data) ? result.data[0] : result.data;
+    if (game?.id) {
+      games = [game, ...games.filter(item => item.id !== game.id)];
+      renderAll();
+    }
+    await refreshGames(false);
+    toast(gameName(gameType) + " invitation sent to " + memberName(opponentId) + ".");
+    if (activeChat?.id === conversationId) renderChatTray();
+  }
+
+  async function refreshGames(showStatus) {
+    if (!ctx || !userId()) return;
+    const ids = [...new Set(chatList().map(chat => chat.id).filter(Boolean))];
+    if (!ids.length) {
+      games = [];
+      renderAll();
+      return;
+    }
+    if (showStatus && $("games-hub-status")) $("games-hub-status").textContent = "Refreshing games…";
+    const result = await ctx.db.from("gather_games")
+      .select("id,conversation_id,game_type,status,created_by,player_one_id,player_two_id,turn_user_id,state,winner_id,result,revision,created_at,updated_at")
+      .in("conversation_id", ids)
+      .order("updated_at", { ascending: false })
+      .limit(120);
+    if (result.error) {
+      if ($("games-hub-status")) $("games-hub-status").textContent = "Games could not be loaded: " + result.error.message;
+      return;
+    }
+    games = result.data || [];
+    renderAll();
+  }
+
+  function renderAll() {
+    renderHub();
+    renderChatTray();
+    if (activeGameId) {
+      const latest = games.find(game => game.id === activeGameId);
+      if (latest) {
+        activeGame = latest;
+        if (!$("games-board-overlay")?.hidden) renderBoardModal();
+      }
+    }
+  }
+
+  function renderHub() {
+    const list = $("games-list");
+    if (!list) return;
+    list.replaceChildren();
+    const ordered = [...games].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+    if (!ordered.length) {
+      list.append(node("p", "games-empty muted", "No games yet. Start a match from a conversation or create one here."));
+      if ($("games-hub-status")) $("games-hub-status").textContent = "";
+      return;
+    }
+    if ($("games-hub-status")) $("games-hub-status").textContent = ordered.length + " game" + (ordered.length === 1 ? "" : "s") + " across your conversations.";
+    ordered.forEach(game => list.append(makeGameCard(game, true)));
+  }
+
+  function renderChatTray() {
+    const tray = $("games-chat-tray");
+    const list = $("games-chat-tray-list");
+    if (!tray || !list) return;
+    const rows = activeChat ? games.filter(game => game.conversation_id === activeChat.id && ["pending", "active"].includes(game.status)) : [];
+    tray.hidden = !activeChat || !rows.length;
+    list.replaceChildren();
+    rows.slice(0, 5).forEach(game => list.append(makeGameCard(game, false)));
+  }
+
+  function makeGameCard(game, inHub) {
+    const card = node("article", "games-card");
+    const top = node("div", "games-card-top");
+    const identity = node("div", "games-card-identity");
+    identity.append(node("span", "games-card-mark", TYPES[game.game_type]?.mark || "◎"));
+    const copy = node("div", "games-card-copy");
+    copy.append(node("strong", "", gameName(game.game_type)));
+    copy.append(node("small", "muted", playerNames(game)));
+    identity.append(copy);
+    top.append(identity, node("span", "games-status-pill status-" + game.status, statusLabel(game)));
+    card.append(top);
+    if (inHub) card.append(node("p", "games-card-conversation muted tiny", conversationName(game.conversation_id)));
+    let detail = "";
+    if (game.status === "active") detail = game.turn_user_id ? memberName(game.turn_user_id) + "'s turn" : "Match in progress";
+    else if (game.status === "pending") detail = game.player_two_id === userId() ? "You have been invited to play." : "Waiting for " + memberName(game.player_two_id) + " to respond.";
+    else if (game.status === "completed") detail = game.result === "draw" ? "The match ended in a draw." : "Winner: " + memberName(game.winner_id);
+    else if (game.status === "declined") detail = "The invitation was declined.";
+    else detail = "The invitation was cancelled.";
+    if (game.status === "active") {
+      const watchers = spectatorCount(game);
+      detail += " · " + watchers + " spectator" + (watchers === 1 ? "" : "s");
+    }
+    card.append(node("p", "games-card-detail muted tiny", detail));
+    const actions = node("div", "games-card-actions");
+    if (game.status === "pending" && game.player_two_id === userId()) {
+      actions.append(button("Accept", "primary games-card-primary", () => gameAction("gather_game_accept", game)));
+      actions.append(button("Decline", "outline", () => gameAction("gather_game_decline", game)));
+    } else if (game.status === "pending" && game.created_by === userId()) {
+      actions.append(button("Cancel invite", "outline", () => gameAction("gather_game_cancel", game)));
+    } else if (game.status === "active" || game.status === "completed") {
+      actions.append(button(game.status === "active" && !isPlayer(game) ? "Watch live" : "Open game", "games-card-primary", () => openGame(game)));
+    } else if (game.status === "pending") {
+      actions.append(button("View invitation", "outline", () => openGame(game)));
+    } else {
+      actions.append(button("View result", "outline", () => openGame(game)));
+    }
+    card.append(actions);
+    return card;
+  }
+
+  async function gameAction(rpcName, game) {
+    if (busy) return;
+    busy = true;
+    const result = await ctx.db.rpc(rpcName, { p_game_id: game.id });
+    busy = false;
+    if (result.error) {
+      toast(result.error.message || "That game action could not be completed.");
+      await refreshGames(false);
+      return;
+    }
+    await refreshGames(false);
+    if (rpcName === "gather_game_accept") {
+      const latest = games.find(item => item.id === game.id) || game;
+      openGame(latest);
+    } else toast(rpcName === "gather_game_decline" ? "Invitation declined." : "Game invitation cancelled.");
+  }
+
+  function openGame(game) {
+    activeGameId = game.id;
+    activeGame = game;
+    selectedSquare = null;
+    promotionChoice = null;
+    $("games-board-overlay").hidden = false;
+    renderBoardModal();
+  }
+
+  function closeBoardModal() {
+    const overlay = $("games-board-overlay");
+    if (overlay) overlay.hidden = true;
+    activeGameId = null;
+    activeGame = null;
+    selectedSquare = null;
+    promotionChoice = null;
+  }
+
+  function renderBoardModal() {
+    const game = activeGame;
+    if (!game) return;
+    const boardArea = $("games-board-area");
+    const status = $("games-board-status");
+    const hint = $("games-board-hint");
+    const promotion = $("games-promotion-choices");
+    boardArea.replaceChildren();
+    promotion.replaceChildren();
+    promotion.hidden = true;
+    $("games-board-title").textContent = gameName(game.game_type);
+    $("games-board-meta").textContent = playerNames(game);
+    $("games-board-spectators").textContent = spectatorCount(game) + " spectator" + (spectatorCount(game) === 1 ? "" : "s") + " in this conversation";
+    const player = isPlayer(game);
+    const isTurn = game.turn_user_id === userId();
+    const isSpectator = !player;
+    if (game.status === "pending") {
+      if (game.player_two_id === userId()) {
+        status.textContent = "You have been invited to play. Accept to start the match.";
+        const actions = node("div", "games-invitation-actions");
+        actions.append(button("Accept invitation", "primary", () => gameAction("gather_game_accept", game)));
+        actions.append(button("Decline", "outline", () => gameAction("gather_game_decline", game)));
+        boardArea.append(actions);
+      } else if (isSpectator) {
+        status.textContent = "You are a spectator. The match will become available when the invited player accepts.";
+        boardArea.append(node("p", "games-board-waiting", "Waiting for players…"));
+      } else {
+        status.textContent = "Invitation sent. Waiting for " + memberName(game.player_two_id) + ".";
+        boardArea.append(node("p", "games-board-waiting", "Waiting for the invited player…"));
+        boardArea.append(button("Cancel invitation", "outline", () => gameAction("gather_game_cancel", game)));
+      }
+      hint.textContent = isSpectator ? "Spectators can watch the match but cannot make moves." : "";
+      return;
+    }
+    if (game.status === "declined" || game.status === "cancelled") {
+      status.textContent = game.status === "declined" ? "The invitation was declined." : "This invitation was cancelled.";
+      boardArea.append(node("p", "games-board-waiting", status.textContent));
+      hint.textContent = "";
+      return;
+    }
+    if (game.status === "completed") {
+      status.textContent = game.result === "draw" ? "Match complete · Draw." : "Match complete · " + memberName(game.winner_id) + " wins.";
+    } else {
+      status.textContent = (isSpectator ? "Spectating · " : "") + (game.turn_user_id ? memberName(game.turn_user_id) + " to move." : "Match in progress.");
+      if (isSpectator) status.textContent += " You can watch, but only the players can move.";
+    }
+    hint.textContent = game.status === "completed" ? "This board is saved. Start another match from a conversation." :
+      isSpectator ? "Spectator view · The board updates live as the players take turns." :
+      isTurn ? "Your turn. Select a piece or column to make a move." : "Waiting for your opponent's move.";
+    const canMove = game.status === "active" && player && isTurn && !busy;
+    if (game.game_type === "tic_tac_toe") renderTicTacToe(game, boardArea, canMove);
+    else if (game.game_type === "connect_four") renderConnectFour(game, boardArea, canMove);
+    else if (game.game_type === "checkers") renderCheckers(game, boardArea, canMove);
+    else renderChess(game, boardArea, canMove);
+  }
+
+  async function commitMove(game, nextState, nextTurnUserId, result) {
+    if (!game || game.status !== "active" || game.turn_user_id !== userId() || busy) return;
+    busy = true;
+    $("games-board-status").textContent = "Saving move…";
+    const response = await ctx.db.rpc("gather_game_move", {
+      p_game_id: game.id,
+      p_expected_revision: game.revision,
+      p_state: nextState,
+      p_next_turn_user_id: nextTurnUserId,
+      p_result: result || null
+    });
+    busy = false;
+    const updated = Array.isArray(response.data) ? response.data[0] : response.data;
+    if (response.error || !updated) {
+      toast(response.error?.message || "The move could not be saved. The latest board will be reloaded.");
+      await refreshGames(false);
+      const latest = games.find(item => item.id === game.id);
+      if (latest) { activeGame = latest; renderBoardModal(); }
+      return;
+    }
+    games = [updated, ...games.filter(item => item.id !== updated.id)];
+    activeGame = updated;
+    selectedSquare = null;
+    promotionChoice = null;
+    renderAll();
+  }
+
+  function resultForWinner(game, winnerId) {
+    return winnerId === game.player_one_id ? "player_one_won" : "player_two_won";
+  }
+
+  function tttWinner(board) {
+    const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+    for (const line of lines) {
+      const mark = board[line[0]];
+      if (mark && mark === board[line[1]] && mark === board[line[2]]) return mark;
+    }
+    return null;
+  }
+
+  function renderTicTacToe(game, container, canMove) {
+    const state = game.state || {};
+    const board = Array.isArray(state.board) ? state.board : Array(9).fill("");
+    const grid = node("div", "games-ttt-board");
+    board.forEach((mark, index) => {
+      const cell = button(mark ? mark.toUpperCase() : "", "games-ttt-cell mark-" + (mark || "empty"), () => {
+        if (!canMove || board[index]) return;
+        const next = board.slice();
+        next[index] = state.turn;
+        const winningMark = tttWinner(next);
+        const draw = !winningMark && next.every(Boolean);
+        const nextTurn = state.turn === "x" ? "o" : "x";
+        const nextId = winningMark || draw ? null : (nextTurn === "x" ? game.player_one_id : game.player_two_id);
+        const result = winningMark ? resultForWinner(game, winningMark === "x" ? game.player_one_id : game.player_two_id) : (draw ? "draw" : null);
+        void commitMove(game, { board: next, turn: nextTurn, moves: (state.moves || 0) + 1 }, nextId, result);
+      });
+      cell.disabled = !canMove || !!mark;
+      cell.setAttribute("aria-label", "Square " + (index + 1) + (mark ? ", " + mark : ", empty"));
+      grid.append(cell);
+    });
+    container.append(grid);
+  }
+
+  function connectWinner(board, row, col, token) {
+    const directions = [[0,1],[1,0],[1,1],[1,-1]];
+    for (const [dr, dc] of directions) {
+      let count = 1;
+      for (const sign of [-1,1]) {
+        let r = row + dr * sign, c = col + dc * sign;
+        while (r >= 0 && r < 6 && c >= 0 && c < 7 && board[r * 7 + c] === token) {
+          count++; r += dr * sign; c += dc * sign;
+        }
+      }
+      if (count >= 4) return true;
+    }
+    return false;
+  }
+
+  function renderConnectFour(game, container, canMove) {
+    const state = game.state || {};
+    const board = Array.isArray(state.board) && state.board.length === 42 ? state.board : Array(42).fill("");
+    const grid = node("div", "games-connect-board");
+    const columns = node("div", "games-connect-columns");
+    for (let col = 0; col < 7; col++) {
+      columns.append(button("↓", "games-connect-column", () => {
+        if (!canMove) return;
+        const next = board.slice();
+        let row = -1;
+        for (let r = 5; r >= 0; r--) if (!next[r * 7 + col]) { row = r; break; }
+        if (row < 0) return;
+        const token = state.turn === "red" ? "R" : "Y";
+        next[row * 7 + col] = token;
+        const won = connectWinner(next, row, col, token);
+        const draw = !won && next.every(Boolean);
+        const nextTurn = state.turn === "red" ? "yellow" : "red";
+        const nextId = won || draw ? null : (nextTurn === "red" ? game.player_one_id : game.player_two_id);
+        const result = won ? resultForWinner(game, token === "R" ? game.player_one_id : game.player_two_id) : (draw ? "draw" : null);
+        void commitMove(game, { board: next, turn: nextTurn, moves: (state.moves || 0) + 1 }, nextId, result);
+      }));
+    }
+    for (let i = 0; i < 42; i++) {
+      const token = board[i];
+      const cell = node("div", "games-connect-cell");
+      const disc = node("span", "games-connect-disc" + (token === "R" ? " red" : token === "Y" ? " yellow" : ""));
+      cell.append(disc);
+      grid.append(cell);
+    }
+    container.append(columns, grid);
+    columns.querySelectorAll("button").forEach(button => { button.disabled = !canMove; });
+  }
+
+  function checkerSide(piece) {
+    if (!piece || piece === ".") return null;
+    return piece.toLowerCase() === "w" ? "white" : "black";
+  }
+  function checkerDirections(piece) {
+    const side = checkerSide(piece);
+    const directions = [];
+    if (piece === "W" || piece === "B" || side === "white") directions.push([-1,-1],[-1,1]);
+    if (piece === "W" || piece === "B" || side === "black") directions.push([1,-1],[1,1]);
+    return directions;
+  }
+  function checkersLegalMoves(state) {
+    const board = String(state.board || "").split("");
+    if (board.length !== 64) return [];
+    const captures = [], normal = [];
+    for (let from = 0; from < 64; from++) {
+      const piece = board[from];
+      if (checkerSide(piece) !== state.turn) continue;
+      if (state.forcedIndex !== null && state.forcedIndex !== undefined && Number(state.forcedIndex) !== from) continue;
+      const row = Math.floor(from / 8), col = from % 8;
+      checkerDirections(piece).forEach(([dr,dc]) => {
+        const r1 = row + dr, c1 = col + dc, r2 = row + dr * 2, c2 = col + dc * 2;
+        if (r1 < 0 || r1 > 7 || c1 < 0 || c1 > 7) return;
+        const adjacent = r1 * 8 + c1;
+        if (checkerSide(board[adjacent]) && checkerSide(board[adjacent]) !== state.turn &&
+            r2 >= 0 && r2 <= 7 && c2 >= 0 && c2 <= 7 && board[r2 * 8 + c2] === ".") {
+          captures.push({ from, to: r2 * 8 + c2, captured: adjacent });
+        } else if (!board[adjacent] || board[adjacent] === ".") {
+          normal.push({ from, to: adjacent, captured: null });
+        }
+      });
+    }
+    return captures.length ? captures : (state.forcedIndex !== null && state.forcedIndex !== undefined ? [] : normal);
+  }
+  function checkerCount(board, side) {
+    return board.split("").filter(piece => checkerSide(piece) === side).length;
+  }
+
+  function renderCheckers(game, container, canMove) {
+    const state = game.state || {};
+    const board = String(state.board || "").length === 64 ? String(state.board) : ".".repeat(64);
+    const moves = checkersLegalMoves(state);
+    const selectedMoves = selectedSquare === null ? [] : moves.filter(move => move.from === selectedSquare);
+    const grid = node("div", "games-checkers-board");
+    for (let index = 0; index < 64; index++) {
+      const row = Math.floor(index / 8), col = index % 8;
+      const piece = board[index];
+      const cell = button("", "games-checkers-cell " + ((row + col) % 2 ? "dark" : "light"), () => {
+        if (!canMove) return;
+        const chosen = moves.find(move => move.from === selectedSquare && move.to === index);
+        if (chosen) { void playCheckerMove(game, state, chosen); return; }
+        if (checkerSide(piece) === state.turn && (state.forcedIndex === null || state.forcedIndex === undefined || Number(state.forcedIndex) === index)) {
+          selectedSquare = index;
+          renderBoardModal();
+        } else {
+          selectedSquare = null;
+          renderBoardModal();
+        }
+      });
+      cell.disabled = !canMove;
+      if (selectedSquare === index) cell.classList.add("selected");
+      if (selectedMoves.some(move => move.to === index)) cell.classList.add("legal-target");
+      if (piece !== ".") {
+        const checker = node("span", "games-checker-piece " + (checkerSide(piece) === "white" ? "white" : "black") + (piece === "W" || piece === "B" ? " king" : ""));
+        checker.textContent = piece === "W" || piece === "B" ? "♛" : "●";
+        cell.append(checker);
+      }
+      cell.setAttribute("aria-label", "Row " + (row + 1) + ", column " + (col + 1) + (piece === "." ? ", empty" : ", " + (checkerSide(piece) === "white" ? "white" : "black") + (piece === "W" || piece === "B" ? " king" : " piece")));
+      grid.append(cell);
+    }
+    container.append(grid);
+  }
+
+  async function playCheckerMove(game, state, move) {
+    const board = String(state.board).split("");
+    const piece = board[move.from];
+    board[move.from] = ".";
+    if (move.captured !== null) board[move.captured] = ".";
+    board[move.to] = piece;
+    const row = Math.floor(move.to / 8);
+    const promoted = (piece === "w" && row === 0) || (piece === "b" && row === 7);
+    if (promoted) board[move.to] = piece.toUpperCase();
+    let nextTurn = state.turn === "white" ? "black" : "white";
+    let forcedIndex = null;
+    if (move.captured !== null && !promoted) {
+      const continuation = checkersLegalMoves({ board: board.join(""), turn: state.turn, forcedIndex: move.to });
+      if (continuation.length) {
+        nextTurn = state.turn;
+        forcedIndex = move.to;
+      }
+    }
+    const nextState = { board: board.join(""), turn: nextTurn, forcedIndex, moves: (state.moves || 0) + 1 };
+    let result = null, nextUser = nextTurn === "white" ? game.player_one_id : game.player_two_id;
+    if (checkerCount(nextState.board, nextTurn) === 0 || checkersLegalMoves(nextState).length === 0) {
+      result = resultForWinner(game, state.turn === "white" ? game.player_one_id : game.player_two_id);
+      nextUser = null;
+      nextState.forcedIndex = null;
+    }
+    selectedSquare = null;
+    await commitMove(game, nextState, nextUser, result);
+  }
+
+  function renderChess(game, container, canMove) {
+    if (typeof window.Chess !== "function") {
+      container.append(node("p", "status error", "Chess rules could not load. Reload Gather and try again."));
+      return;
+    }
+    let chess;
+    try { chess = new window.Chess(game.state?.fen || "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"); }
+    catch (error) {
+      container.append(node("p", "status error", "This saved chess position could not be opened."));
+      return;
+    }
+    const board = chess.board();
+    const grid = node("div", "games-chess-board");
+    const selectedMoves = selectedSquare ? chess.moves({ square: selectedSquare, verbose: true }) : [];
+    const legalTargets = selectedMoves.map(move => move.to);
+    board.forEach((rank, row) => rank.forEach((piece, col) => {
+      const square = "abcdefgh"[col] + String(8 - row);
+      const cell = button("", "games-chess-cell " + ((row + col) % 2 ? "dark" : "light"), () => {
+        if (!canMove) return;
+        const selectedPiece = selectedSquare ? chess.get(selectedSquare) : null;
+        const legal = selectedSquare ? chess.moves({ square: selectedSquare, verbose: true }) : [];
+        const target = legal.filter(move => move.to === square);
+        if (target.length) {
+          if (target.some(move => move.promotion)) {
+            showPromotionChoices(game, chess, selectedSquare, square);
+          } else {
+            void playChessMove(game, chess, selectedSquare, square, null);
+          }
+          return;
+        }
+        if (piece && piece.color === chess.turn()) {
+          selectedSquare = square;
+          renderBoardModal();
+        } else if (selectedPiece) {
+          selectedSquare = null;
+          renderBoardModal();
+        }
+      });
+      cell.disabled = !canMove;
+      if (selectedSquare === square) cell.classList.add("selected");
+      if (legalTargets.includes(square)) cell.classList.add(piece ? "legal-capture" : "legal-target");
+      if (piece) {
+        const glyph = PIECES[piece.color === "w" ? piece.type.toUpperCase() : piece.type.toLowerCase()];
+        cell.append(node("span", "games-chess-piece " + (piece.color === "w" ? "white" : "black"), glyph));
+      }
+      cell.setAttribute("aria-label", square + (piece ? ", " + piece.color + " " + piece.type : ", empty"));
+      grid.append(cell);
+    }));
+    container.append(grid);
+    const moves = chess.history();
+    if (moves.length) {
+      const last = moves.slice(-8).join(" · ");
+      const history = node("p", "games-chess-history", "Recent moves: " + last);
+      container.append(history);
+    }
+    if (chess.in_check()) $("games-board-status").textContent += " · Check";
+  }
+
+  function showPromotionChoices(game, chess, from, to) {
+    const chooser = $("games-promotion-choices");
+    chooser.replaceChildren(node("span", "muted tiny", "Promote pawn to:"));
+    ["q","r","b","n"].forEach(piece => {
+      chooser.append(button(({q:"Queen",r:"Rook",b:"Bishop",n:"Knight"})[piece], "outline", () => {
+        chooser.hidden = true;
+        void playChessMove(game, chess, from, to, piece);
+      }));
+    });
+    chooser.hidden = false;
+  }
+
+  async function playChessMove(game, chess, from, to, promotion) {
+    const move = chess.move({ from, to, promotion: promotion || "q" });
+    if (!move) return;
+    const over = chess.game_over();
+    let result = null, nextUser = chess.turn() === "w" ? game.player_one_id : game.player_two_id;
+    if (over) {
+      if (chess.in_checkmate()) {
+        const winnerIsWhite = chess.turn() === "b";
+        result = resultForWinner(game, winnerIsWhite ? game.player_one_id : game.player_two_id);
+      } else {
+        result = "draw";
+      }
+      nextUser = null;
+    }
+    selectedSquare = null;
+    await commitMove(game, { fen: chess.fen(), moves: chess.history(), lastMove: move.san }, nextUser, result);
+  }
+
+  function shutdown() {
+    if (channel && ctx?.db) ctx.db.removeChannel(channel);
+    channel = null;
+    initialized = false;
+    games = [];
+    activeGameId = null;
+    activeGame = null;
+    activeChat = null;
+    $("games-create-overlay")?.setAttribute("hidden", "");
+    $("games-board-overlay")?.setAttribute("hidden", "");
+    $("games-workspace")?.setAttribute("hidden", "");
+    $("games-chat-tray")?.setAttribute("hidden", "");
+    ctx = null;
+  }
+
+  window.GatherGames = {
+    init,
+    setActiveChat,
+    showHub,
+    openCreateModal,
+    refresh: () => refreshGames(true),
+    shutdown
+  };
+})();
