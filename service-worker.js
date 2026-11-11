@@ -7,7 +7,7 @@ const SHELL_URLS = [
   "./index.html",
   "./app.css?v=20261111-workspace-tabs-1",
   "./app.js?v=20261111-games-tab-1",
-  "./games.css?v=20261111-games-tab-1",
+  "./games.css?v=20261111-workspace-tabs-1",
   "./games.js?v=20261111-workspace-tabs-1",
   "./favicon.svg?v=20261111-1",
   "./manifest.webmanifest?v=20261111-pwa",
