@@ -13,6 +13,10 @@
 .games-section-heading h2{margin:0 0 4px;font-size:18px}
 .games-section-heading p{margin:0}
 .games-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,285px),1fr));gap:13px}
+.games-filter-tabs{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 14px;padding:5px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.games-filter-tab{width:auto;min-height:34px;padding:7px 12px;border:1px solid transparent;border-radius:8px;color:var(--muted);background:transparent;font-size:11px;font-weight:750;cursor:pointer}
+.games-filter-tab:hover{color:var(--text);background:var(--accent-hover)}
+.games-filter-tab.active,.games-filter-tab[aria-pressed=\"true\"]{border-color:var(--accent-outline-soft);color:var(--accent-text);background:var(--accent-surface)}
 .games-empty{padding:24px;border:1px dashed var(--line);border-radius:14px;text-align:center;grid-column:1/-1}
 .games-card{min-width:0;padding:16px;border:1px solid var(--line);border-radius:15px;background:var(--panel);box-shadow:0 8px 24px #0000000c}
 .games-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
@@ -98,6 +102,8 @@
   .games-hub-header{align-items:stretch;flex-direction:column;gap:14px;margin-bottom:21px}
   .games-new-button{width:100%}
   .games-list{grid-template-columns:1fr}
+  .games-filter-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .games-filter-tab{width:100%}
   .games-card{padding:13px}
   .games-chat-tray{padding:9px 12px}
   .games-chat-tray-list{grid-template-columns:1fr}
