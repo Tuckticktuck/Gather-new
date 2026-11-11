@@ -1154,7 +1154,7 @@ async function loadChats(){
   else S.archivedConversationIds=new Set((archived.data||[]).map(x=>x.conversation_id));
   const m=await db.from("conversation_members").select("conversation_id,role,conversations!inner(id,kind,title,description,updated_at,created_by,admin_initiated,slow_mode_seconds,guidelines)").eq("user_id",S.user.id);
   if(m.error){S.loadError="Chats could not be loaded: "+m.error.message;toast(S.loadError);return false;}
-  const rows=(m.data||[]).filter(x=>!x.conversations?.admin_initiated),ids=[...new Set(rows.map(x=>x.conversation_id))];
+  const rows=m.data||[],ids=[...new Set(rows.map(x=>x.conversation_id))];
   if(!ids.length){S.chats=[];S.profiles={};await loadUnreadCounts();renderChats();renderActive();return await loadRequests();}
   const [members,msgs,groupPics]=await Promise.all([
     db.from("conversation_members").select("conversation_id,user_id,role").in("conversation_id",ids),
