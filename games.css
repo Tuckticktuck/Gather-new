@@ -439,7 +439,8 @@
 .tag-arena-players{position:absolute;inset:0}
 .tag-player-dot{
   position:absolute;width:18px;height:18px;border:2px solid #fff;border-radius:50%;
-  transform:translate(-50%,-50%);box-shadow:0 2px 8px #0005;z-index:2
+  transform:translate(-50%,-50%);box-shadow:0 2px 8px #0005;z-index:2;
+  transition:left 90ms linear,top 90ms linear;will-change:left,top
 }
 .tag-player-dot.is-it{width:23px;height:23px;outline:3px solid #f97316;outline-offset:3px;z-index:3}
 .tag-player-dot.is-me{box-shadow:0 0 0 3px var(--accent),0 2px 8px #0006}
