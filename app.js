@@ -149,6 +149,13 @@ function applyUIPreferences(){
   root.dataset.theme=isLight?"light":"dark";
   root.style.colorScheme=isLight?"light":"dark";
   document.querySelector('meta[name="theme-color"]')?.setAttribute("content",isLight?"#f3f5fa":"#000000");
+  // Match the browser-tab icon to the member's saved theme and accent.
+  const faviconBg=isLight?"#f3f5fa":"#090b11";
+  const faviconInk=isLight?"#263044":"#f6f3ff";
+  const faviconSvg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="18" fill="${faviconBg}"/><circle cx="32" cy="32" r="22" fill="${accent.accent}" opacity=".18"/><circle cx="32" cy="32" r="19" fill="none" stroke="${accent.accent}" stroke-width="4"/><circle cx="32" cy="32" r="12.5" fill="none" stroke="${faviconInk}" stroke-width="3"/><circle cx="32" cy="32" r="5.5" fill="${accent.strong}"/></svg>`;
+  let faviconLink=document.querySelector('link[rel="icon"]');
+  if(!faviconLink){faviconLink=document.createElement("link");faviconLink.rel="icon";faviconLink.type="image/svg+xml";document.head.append(faviconLink);}
+  faviconLink.href="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(faviconSvg);
   root.style.setProperty("--accent",accent.accent);
   root.style.setProperty("--accent-strong",accent.strong);
   root.style.setProperty("--accent-ink",accent.ink);
@@ -5126,6 +5133,17 @@ async function selectFeedbackThread(threadId){
   const result=await db.from("feedback_messages").select("id,thread_id,sender_id,body,created_at").eq("thread_id",threadId).order("created_at",{ascending:true});
   if(result.error){$("feedback-message-list").replaceChildren(el("p","status error","Messages couldn't be loaded: "+result.error.message));return;}
   S.feedbackMessages=result.data||[];
+  // Load the real profile names for every sender, including the administrator.
+  const senderIds=S.feedbackMessages.map(message=>message.sender_id);
+  const missingSenderIds=senderIds.filter(id=>id&&!S.feedbackProfiles[id]&&id!==S.user?.id);
+  if(missingSenderIds.length){
+    const senderProfiles=await fetchProfileRecords(missingSenderIds);
+    if(!senderProfiles.error)(senderProfiles.data||[]).forEach(profile=>S.feedbackProfiles[profile.id]=profile);
+  }
+  if(S.user?.id&&!S.feedbackProfiles[S.user.id]){
+    const ownProfile=await fetchProfileRecords([S.user.id]);
+    if(!ownProfile.error)(ownProfile.data||[]).forEach(profile=>S.feedbackProfiles[profile.id]=profile);
+  }
   renderFeedbackMessages();
 }
 function renderFeedbackMessages(){
@@ -5135,7 +5153,8 @@ function renderFeedbackMessages(){
   S.feedbackMessages.forEach(message=>{
     const mine=message.sender_id===S.user?.id;
     const bubble=el("article","feedback-message"+(mine?" mine":""));
-    const sender=mine?(S.feedbackAdminView?"Gather Admin":"You"):(S.feedbackAdminView?(S.feedbackProfiles[thread?.user_id]?.display_name||"Gather member"):"Gather Admin");
+    const profile=S.feedbackProfiles[message.sender_id];
+    const sender=mine?"You":(profile?.display_name||profile?.username||(message.sender_id===thread?.user_id?"Gather member":"Gather administrator"));
     bubble.append(el("div","feedback-message-meta",sender+" · "+dateLabel(message.created_at)),el("p","feedback-message-body",message.body));
     list.append(bubble);
   });
