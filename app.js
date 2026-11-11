@@ -5746,6 +5746,7 @@ function wire(){
   $("retry-load-chats").addEventListener("click",()=>{if(S.user&&!S.loading)signedIn(S.user,true);});
   $("empty-private").addEventListener("click",()=>openPeople("direct"));$("empty-group").addEventListener("click",()=>openPeople("group"));
   $("chat-actions-open").addEventListener("click",()=>{renderChatOptions();$("chat-actions-modal").hidden=false;});
+  $("search-messages-open").addEventListener("click",()=>{ $("chat-actions-modal").hidden=true; openMessageSearch("conversation"); });
   $("archive-conversation").addEventListener("click",toggleArchiveConversation);
   $("group-events-open").addEventListener("click",()=>{$("chat-actions-modal").hidden=true;void openGroupEvents();});
   $("scheduled-messages-chat-open").addEventListener("click",()=>{$("chat-actions-modal").hidden=true;$("scheduled-messages-modal").hidden=false;void loadScheduledMessages();});
@@ -5756,7 +5757,7 @@ function wire(){
   $("toggle-chat-mute").addEventListener("click",()=>toggleMutedConversation());
   $("chat-appearance-accent").addEventListener("change",updateChatAppearance);
   $("chat-appearance-background").addEventListener("change",updateChatAppearance);
-  ["add-people","edit-group-photo","group-settings-open","group-events-open","shared-media-open","scheduled-messages-chat-open","search-messages-open","saved-messages-open","leave-chat","block-user","select-messages","delete-selected","archive-conversation"].forEach(id=>$(id).addEventListener("click",()=>{$("chat-actions-modal").hidden=true;}));
+  ["add-people","edit-group-photo","group-settings-open","group-events-open","shared-media-open","scheduled-messages-chat-open","saved-messages-open","leave-chat","block-user","select-messages","delete-selected","archive-conversation"].forEach(id=>$(id).addEventListener("click",()=>{$("chat-actions-modal").hidden=true;}));
   $("add-people").addEventListener("click",()=>openPeople("add"));$("edit-group-photo").addEventListener("click",openGroupPhoto);$("group-settings-open").addEventListener("click",openGroupSettings);$("group-settings-save").addEventListener("click",saveGroupSettings);$("group-avatar-file").addEventListener("change",handleGroupAvatarFile);$("group-avatar-remove").addEventListener("click",removeGroupAvatar);$("group-avatar-save").addEventListener("click",saveGroupAvatar);$("leave-chat").addEventListener("click",()=>{if(S.active)leaveGroupChat(S.active);});$("requests-open").addEventListener("click",openRequests);$("friends-open").addEventListener("click",openFriends);$("friends-find").addEventListener("click",()=>{setModalBackTarget("people-modal","friends-modal");$("friends-modal").hidden=true;openPeople("friend");});$("block-user").addEventListener("click",toggleBlock);
   $("people-search").addEventListener("input",()=>{clearTimeout(S.timer);S.timer=setTimeout(searchPeople,220);});$("people-create").addEventListener("click",createGroupOrAdd);
   $("home-open").addEventListener("click",goHome);
@@ -5900,7 +5901,7 @@ document.querySelectorAll("[data-folder]").forEach(b=>b.addEventListener("click"
   window.visualViewport?.addEventListener("resize",repositionFloatingMessageActionMenu);
   window.visualViewport?.addEventListener("scroll",repositionFloatingMessageActionMenu);
   $("cancel-reply").addEventListener("click",cancelReply);
-  $("search-messages-open").addEventListener("click",openMessageSearch);
+  
   ["message-search-input","message-search-sender","message-search-from","message-search-to"].forEach(id=>$(id).addEventListener(id==="message-search-input"?"input":"change",()=>{clearTimeout(S.searchTimer);S.searchTimer=setTimeout(()=>searchConversationMessages(true),250);}));
   $("message-search-more").addEventListener("click",()=>searchConversationMessages(false));
   $("message").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing){e.preventDefault();$("send-form").requestSubmit();}});
