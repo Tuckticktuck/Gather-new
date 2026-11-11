@@ -112,3 +112,81 @@
 @media(min-width:651px){
   .games-sidebar-button{margin-top:7px}
 }
+
+
+/* Tic-Tac-Toe board refinement */
+.games-ttt-players{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;
+  width:min(100%,440px);margin:0 auto 14px
+}
+.games-ttt-player{
+  position:relative;display:flex;align-items:center;gap:10px;min-width:0;
+  padding:10px 12px;border:1px solid var(--line);border-radius:13px;
+  background:var(--bg);transition:border-color .18s ease,background .18s ease,transform .18s ease
+}
+.games-ttt-player.is-current{
+  border-color:var(--accent-border);
+  background:color-mix(in srgb,var(--accent-surface) 72%,var(--panel));
+  box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 12%,transparent)
+}
+.games-ttt-player.is-winner{border-color:#65b995;background:color-mix(in srgb,#65b995 13%,var(--panel))}
+.games-ttt-player-symbol{
+  display:grid;place-items:center;flex:none;width:36px;height:36px;border-radius:10px;
+  font-size:20px;font-weight:850
+}
+.games-ttt-player-symbol.mark-x{color:var(--accent-text);background:var(--accent-soft)}
+.games-ttt-player-symbol.mark-o{color:#65bda8;background:#65bda81c}
+.games-ttt-player-info{display:grid;gap:3px;min-width:0}
+.games-ttt-player-info strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+.games-ttt-player-info small{color:var(--muted);font-size:10px;font-weight:700;letter-spacing:.05em}
+.games-ttt-turn-dot{width:7px;height:7px;flex:none;margin-left:auto;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+.games-ttt-frame{
+  width:min(100%,440px);margin:0 auto;padding:clamp(10px,2.5vw,16px);
+  border:1px solid var(--line);border-radius:20px;
+  background:linear-gradient(145deg,color-mix(in srgb,var(--accent-surface) 44%,var(--panel)),var(--panel));
+  box-shadow:0 14px 38px #00000016,inset 0 1px #ffffff12
+}
+.games-ttt-board{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(7px,1.8vw,11px);
+  width:100%;aspect-ratio:1
+}
+.games-ttt-cell{
+  position:relative;display:grid;place-items:center;min-width:0;min-height:0;
+  padding:0;border:1px solid var(--line);border-radius:15px;
+  color:var(--text);background:var(--bg);
+  box-shadow:inset 0 1px #ffffff0a,0 3px 8px #0000000b;
+  transition:transform .16s ease,border-color .16s ease,background .16s ease,box-shadow .16s ease
+}
+.games-ttt-cell:disabled{cursor:default;opacity:1}
+.games-ttt-cell:not(:disabled):hover{
+  transform:translateY(-2px);border-color:var(--accent-border);
+  background:var(--accent-surface);box-shadow:0 6px 16px #00000018
+}
+.games-ttt-cell:focus-visible{outline:3px solid var(--accent);outline-offset:3px;z-index:2}
+.games-ttt-mark{
+  display:grid;place-items:center;width:100%;height:100%;
+  font-size:clamp(42px,10vw,76px);font-weight:850;line-height:1;
+  animation:games-ttt-pop .2s cubic-bezier(.2,.8,.2,1) both
+}
+.games-ttt-cell.mark-x .games-ttt-mark{color:var(--accent-text);text-shadow:0 5px 18px color-mix(in srgb,var(--accent) 24%,transparent)}
+.games-ttt-cell.mark-o .games-ttt-mark{color:#68c4ad;text-shadow:0 5px 18px #68c4ad38}
+.games-ttt-cell.is-winning{border-color:#65b995;background:color-mix(in srgb,#65b995 17%,var(--bg));box-shadow:inset 0 0 0 2px #65b99555,0 0 18px #65b99520}
+.games-ttt-cell.is-winning .games-ttt-mark{color:#65b995}
+.games-ttt-footer{
+  display:flex;justify-content:space-between;align-items:center;gap:12px;
+  width:min(100%,440px);margin:11px auto 0;padding:0 3px
+}
+.games-ttt-move-count{color:var(--muted);font-size:10px;font-weight:750;letter-spacing:.06em;text-transform:uppercase}
+.games-ttt-board-note{color:var(--accent-text);font-size:11px;font-weight:750}
+@keyframes games-ttt-pop{from{opacity:0;transform:scale(.55)}to{opacity:1;transform:scale(1)}}
+@media(max-width:480px){
+  .games-ttt-players{gap:7px;margin-bottom:10px}
+  .games-ttt-player{gap:7px;padding:8px}
+  .games-ttt-player-symbol{width:31px;height:31px;font-size:17px}
+  .games-ttt-player-info strong{font-size:10px}
+  .games-ttt-player-info small{font-size:9px}
+  .games-ttt-frame{border-radius:16px;padding:9px}
+  .games-ttt-cell{border-radius:11px}
+  .games-ttt-mark{font-size:clamp(38px,12vw,60px)}
+}
+@media(prefers-reduced-motion:reduce){.games-ttt-cell,.games-ttt-player,.games-ttt-mark{animation:none;transition:none}}
