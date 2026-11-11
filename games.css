@@ -436,6 +436,8 @@
   background-size:10% 10%;touch-action:pan-y
 }
 .tag-arena:before{content:"";position:absolute;inset:4%;border:1px dashed var(--accent-border);border-radius:15px;pointer-events:none}
+.tag-arena-obstacles{position:absolute;inset:0;z-index:1;pointer-events:none}
+.tag-obstacle{position:absolute;display:block;transform:translate(-50%,-50%);border:2px solid #64748b;border-radius:30%;background:radial-gradient(circle at 32% 28%,#a8b2bf 0 12%,#64748b 48%,#334155 100%);box-shadow:inset -3px -4px 7px #0f172a66,0 2px 5px #0005}
 .tag-arena-players{position:absolute;inset:0}
 .tag-player-dot{
   position:absolute;width:18px;height:18px;border:2px solid #fff;border-radius:50%;
