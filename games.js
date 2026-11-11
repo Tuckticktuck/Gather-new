@@ -22,6 +22,7 @@
   let initialized = false;
   let busy = false;
   let refreshTimer = null;
+  let keyListenerBound = false;
 
   const $ = id => document.getElementById(id);
   const node = (tag, cls, value) => {
@@ -141,9 +142,14 @@
       overlay.addEventListener("click", event => { if (event.target === overlay) closeBoardModal(); });
     }
 
-    $("games-open")?.addEventListener("keydown", event => {
-      if (event.key === "Enter" || event.key === " ") { event.preventDefault(); showHub(); }
-    });
+    if (!keyListenerBound) {
+      keyListenerBound = true;
+      document.addEventListener("keydown", event => {
+        if (event.key !== "Escape") return;
+        if (!$("games-board-overlay")?.hidden) closeBoardModal();
+        else if (!$("games-create-overlay")?.hidden) closeCreateModal();
+      });
+    }
   }
 
   function init(options) {
