@@ -78,10 +78,11 @@
       const hub = node("section", "games-workspace");
       hub.id = "games-workspace";
       hub.hidden = true;
-      hub.innerHTML = '<header class="games-hub-header"><div><p class="eyebrow">PLAY TOGETHER</p><h1>Gather Games</h1><p class="muted games-hub-subtitle">Play a match with someone from one of your conversations. Other group members can spectate live.</p></div><button id="games-new" class="primary games-new-button" type="button">＋ New game</button></header><section class="games-hub-section"><div class="games-section-heading"><div><h2>Your games</h2><p class="muted tiny">Invitations, active matches and recent results.</p></div><button id="games-refresh" class="outline" type="button">Refresh</button></div><p id="games-hub-status" class="status" role="status"></p><div id="games-list" class="games-list"></div></section>';
+      hub.innerHTML = '<header class="games-hub-header"><div><button id="games-back-home" class="outline games-back-home" type="button">← Back to conversations</button><p class="eyebrow">PLAY TOGETHER</p><h1>Gather Games</h1><p class="muted games-hub-subtitle">Play a match with someone from one of your conversations. Other group members can spectate live.</p></div><button id="games-new" class="primary games-new-button" type="button">＋ New game</button></header><section class="games-hub-section"><div class="games-section-heading"><div><h2>Your games</h2><p class="muted tiny">Invitations, active matches and recent results.</p></div><button id="games-refresh" class="outline" type="button">Refresh</button></div><p id="games-hub-status" class="status" role="status"></p><div id="games-list" class="games-list"></div></section>';
       const chat = $("chat");
       main.insertBefore(hub, chat || null);
       $("games-new").addEventListener("click", () => openCreateModal());
+      $("games-back-home").addEventListener("click", showHomeFromHub);
       $("games-refresh").addEventListener("click", () => refreshGames(true));
     }
 
