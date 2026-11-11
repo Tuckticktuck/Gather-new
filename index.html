@@ -179,10 +179,6 @@ if (!window.supabase?.createClient) {
           <div class="folder-panel-heading"><strong>Pinned conversations</strong><span id="pinned-chat-count" class="section-count">0</span></div>
           <div id="pinned-chat-list" class="workspace-chat-list"></div>
         </section>
-        <section id="admin-message-section" class="workspace-group-section admin-message-section" hidden>
-          <div class="folder-panel-heading"><strong id="admin-message-heading">Gather Admin</strong><span id="admin-message-count" class="section-count">0</span></div>
-          <div id="admin-message-list" class="workspace-chat-list"></div>
-        </section>
         <section id="private-folder-panel" class="folder-panel workspace-folder">
           <div class="folder-panel-heading"><strong id="private-chat-heading">Friends</strong><span id="private-chat-count" class="section-count">0</span></div>
           <div id="private-chat-list" class="workspace-chat-list"><p class="muted tiny">Your conversations will appear here.</p></div>
@@ -304,7 +300,6 @@ if (!window.supabase?.createClient) {
   <nav class="admin-mode-nav" aria-label="Admin sections">
     <button class="admin-mode-tab active" type="button" data-admin-section="overview">Overview</button>
     <button class="admin-mode-tab" type="button" data-admin-section="accounts">Accounts</button>
-    <button class="admin-mode-tab" type="button" data-admin-section="messages">Messages</button>
     <button class="admin-mode-tab" type="button" data-admin-section="age-access">Age access</button>
     <button class="admin-mode-tab" type="button" data-admin-section="reports">Reports</button>
     <button class="admin-mode-tab" type="button" data-admin-section="feedback">Feedback</button>
@@ -344,12 +339,6 @@ if (!window.supabase?.createClient) {
         <section id="admin-account-detail" class="admin-account-detail"><div class="admin-empty-state"><strong>Select a member</strong><p class="muted tiny">Account details and moderation controls will appear here.</p></div></section>
       </div>
     </section>
-    <section class="admin-mode-panel" data-admin-panel="messages" hidden>
-      <div class="admin-section-heading"><div><h3>Gather Admin Messages</h3><p class="tiny muted">Choose any member account and send an official message without a chat request.</p></div></div>
-      <label class="admin-account-search">Find a recipient<input id="admin-message-search" type="search" placeholder="Search name, username, or email"></label>
-      <div id="admin-message-recipient-list" class="admin-account-list"><p class="muted tiny">Loading member accounts…</p></div>
-      <button id="admin-message-more" class="secondary-action admin-load-more" type="button" hidden>Load more members</button>
-    </section>
     <section class="admin-mode-panel" data-admin-panel="age-access" hidden>
       <div class="admin-section-heading">
         <div><h3>Intergroup messaging approvals</h3><p class="tiny muted">Review requests from members who want to message someone in the other age group. Approval applies only to the specific pair shown.</p></div>
@@ -381,23 +370,6 @@ if (!window.supabase?.createClient) {
     </section>
   </main>
 </section></div>
-<div id="admin-direct-message-modal" class="overlay" hidden>
-  <section class="modal admin-direct-message-modal" role="dialog" aria-modal="true" aria-labelledby="admin-direct-message-title">
-    <button class="close" data-close aria-label="Close">×</button>
-    <p class="eyebrow">GATHER ADMIN</p>
-    <h2 id="admin-direct-message-title">Send a direct message</h2>
-    <p id="admin-direct-message-recipient" class="tiny muted"></p>
-    <p class="admin-direct-message-note">The recipient will see this message as coming from Gather Admin. No chat request is needed, and they can reply in the same conversation.</p>
-    <form id="admin-direct-message-form">
-      <label class="admin-direct-message-field"><span>Message</span><textarea id="admin-direct-message-body" rows="5" maxlength="4000" required placeholder="Write an official message…"></textarea></label>
-      <p id="admin-direct-message-status" class="status" role="status"></p>
-      <div class="admin-direct-message-actions">
-        <button class="outline" type="button" data-close>Cancel</button>
-        <button id="admin-direct-message-submit" class="primary" type="submit">Send as Gather Admin</button>
-      </div>
-    </form>
-  </section>
-</div>
 <div id="notifications-modal" class="overlay" hidden><section class="modal notifications-modal" role="dialog" aria-modal="true" aria-labelledby="notifications-title">
   <button class="close" data-close aria-label="Close">×</button><p class="eyebrow">YOUR UPDATES</p><h2 id="notifications-title">Notifications</h2>
   <div class="notifications-shortcuts"><button id="notifications-admin-open" class="secondary-action notification-shortcut-button" type="button">View Gather Admin <span aria-hidden="true">↗</span></button><button id="notifications-recent-open" class="secondary-action notification-shortcut-button" type="button">View recent messages <span aria-hidden="true">→</span></button></div>
