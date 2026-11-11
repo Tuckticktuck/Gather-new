@@ -2641,13 +2641,13 @@ button:not(:disabled){
 }
 
 
-/* Gather's shared brand mark: the original amber tile with a clearer target symbol. */
+/* Gather's shared brand mark follows the member's selected accent theme. */
 .brand-icon{
   overflow:hidden;
   padding:0;
-  border:1px solid #fff0d688;
-  background:#ffd48c;
-  box-shadow:0 2px 10px #ffd48c30, inset 0 0 0 1px #ffffff30;
+  border:1px solid var(--brand-mark-border,var(--accent));
+  background:var(--accent);
+  box-shadow:0 2px 10px var(--brand-mark-shadow,var(--accent-outline-soft)), inset 0 0 0 1px #ffffff30;
 }
 .brand-icon img{
   display:block;
@@ -2666,10 +2666,10 @@ button:not(:disabled){
   place-items:center;
   overflow:hidden;
   padding:0;
-  border:1px solid #fff0d688;
+  border:1px solid var(--brand-mark-border,var(--accent));
   border-radius:15px;
-  background:#ffd48c;
-  box-shadow:0 3px 14px #ffd48c30, inset 0 0 0 1px #ffffff30;
+  background:var(--accent);
+  box-shadow:0 3px 14px var(--brand-mark-shadow,var(--accent-outline-soft)), inset 0 0 0 1px #ffffff30;
 }
 .announcement-admin-mark.brand-mark img,
 .home-announcement-mark.brand-mark img{
