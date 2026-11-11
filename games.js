@@ -828,9 +828,9 @@
     tagPlayersRefreshTimer=window.setTimeout(()=>{tagPlayersRefreshTimer=null;void refreshMultiplayerPlayers(gameId);},180);
   }
 
-  async function syncTagPosition() {
+  async function syncTagPosition(target=null) {
     const game=games.find(item=>item.id===activeTagGameId)||activeGame;
-    const position=tagLocalPosition;
+    const position=target||tagLocalPosition;
     if(!game||!position||game.status!=="active")return;
     if(tagMovePending){tagQueuedPosition={...position};return;}
     tagMovePending=true;
@@ -838,13 +838,18 @@
     try{
       const response=await ctx.db.rpc("gather_multiplayer_move",{p_game_id:game.id,p_x:sent.x,p_y:sent.y});
       if(response.error){
-        if(!String(response.error.message||"").includes("Movement update was received too quickly"))toast(response.error.message||"Movement could not be saved.");
+        const message=String(response.error.message||"");
+        if(!message.includes("Movement update is too large")&&!message.includes("Movement update was received too quickly"))toast(message||"Movement could not be saved.");
       }
     }finally{
       tagMovePending=false;
       if(tagQueuedPosition){
         const queued=tagQueuedPosition;tagQueuedPosition=null;
-        if(queued.x!==sent.x||queued.y!==sent.y){tagLocalPosition=queued;void syncTagPosition();}
+        const dx=queued.x-sent.x,dy=queued.y-sent.y,distance=Math.hypot(dx,dy);
+        if(distance>.1){
+          const scale=distance>5.5?5.5/distance:1;
+          void syncTagPosition({x:sent.x+dx*scale,y:sent.y+dy*scale});
+        }
       }
     }
   }
