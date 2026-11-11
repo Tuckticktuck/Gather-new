@@ -6,8 +6,7 @@
     checkers: { name: "Checkers", description: "Jump, capture and crown your pieces.", mark: "◈" },
     tic_tac_toe: { name: "Tic-Tac-Toe", description: "A quick three-in-a-row match.", mark: "×○" },
     connect_four: { name: "Connect Four", description: "Drop four discs in a row to win.", mark: "●" },
-    battleship: { name: "Battleship", description: "Place your fleet, then find and hit every ship square.", mark: "⚓" },
-    tag: { name: "Tag", description: "A live multiplayer arena. Run, chase and pass the It role by tagging another player.", mark: "●" }
+    battleship: { name: "Battleship", description: "Place your fleet, then find and hit every ship square.", mark: "⚓" }
   };
   const PIECES = {
     K: "♔", Q: "♕", R: "♖", B: "♗", N: "♘", P: "♙",
@@ -34,16 +33,6 @@
   let hubFilter = "all";
   let selectedGameConversationId = null;
   let hubSearchQuery = "";
-  let multiplayerGames = [];
-  let activeTagGameId = null;
-  let tagMoveTimer = null;
-  let tagSyncTimer = null;
-  let tagPlayersRefreshTimer = null;
-  let tagMoveDirection = { x: 0, y: 0 };
-  let tagMovePending = false;
-  let tagQueuedPosition = null;
-  let tagLocalPosition = null;
-  const TAG_COLORS = ["#F87171","#F59E0B","#84CC16","#22C55E","#14B8A6","#06B6D4","#38BDF8","#818CF8","#A78BFA","#E879F9","#F472B6","#A3A3A3"];
 
   const $ = id => document.getElementById(id);
   const node = (tag, cls, value) => {
@@ -74,23 +63,16 @@
     const peer = chat.members?.find(member => member.user_id !== userId());
     return peer ? memberName(peer.user_id) : "Private chat";
   };
-  const playerNames = game => game.is_multiplayer
-    ? (game.players || []).filter(player => player.status === "joined").map(player => memberName(player.user_id)).join(", ") || "No players yet"
-    : memberName(game.player_one_id) + " vs " + memberName(game.player_two_id);
-  const spectatorCount = game => game.is_multiplayer ? 0 : Math.max(0, (chatList().find(chat => chat.id === game.conversation_id)?.members?.length || 2) - 2);
-  const isPlayer = game => !!userId() && (game.is_multiplayer
-    ? (game.players || []).some(player => player.user_id === userId() && player.status === "joined")
-    : (game.player_one_id === userId() || game.player_two_id === userId()));
-  const statusLabel = game => {
-    if (game.is_multiplayer && (game.players || []).some(player => player.user_id === userId() && player.status === "invited")) return "Your invitation";
-    return ({
+  const playerNames = game => memberName(game.player_one_id) + " vs " + memberName(game.player_two_id);
+  const spectatorCount = game => Math.max(0, (chatList().find(chat => chat.id === game.conversation_id)?.members?.length || 2) - 2);
+  const isPlayer = game => !!userId() && (game.player_one_id === userId() || game.player_two_id === userId());
+  const statusLabel = game => ({
     pending: game.player_two_id === userId() ? "Your invitation" : "Invitation pending",
     active: "Live game",
     completed: game.result?.startsWith("ended_by_player_") ? "Ended" : "Completed",
     declined: "Declined",
     cancelled: "Cancelled"
   })[game.status] || game.status;
-  };
 
   function mount() {
     const main = document.querySelector(".main");
@@ -155,14 +137,12 @@
       const overlay = node("div", "overlay games-overlay");
       overlay.id = "games-create-overlay";
       overlay.hidden = true;
-      overlay.innerHTML = '<section class="modal games-create-modal" role="dialog" aria-modal="true" aria-labelledby="games-create-title"><button id="games-create-close" class="close" type="button" aria-label="Close">×</button><p class="eyebrow">NEW MATCH</p><h2 id="games-create-title">Invite someone to play</h2><p class="muted tiny">Choose a conversation and game. Multiplayer games can invite selected members or let everyone in the conversation join.</p><form id="games-create-form"><label>Conversation<select id="games-conversation" required></select></label><label>Game<select id="games-type" required><option value="chess">Chess</option><option value="checkers">Checkers</option><option value="tic_tac_toe">Tic-Tac-Toe</option><option value="connect_four">Connect Four</option><option value="battleship">Battleship</option><option value="tag">Tag · Multiplayer</option></select></label><label id="games-opponent-label">Invite player<select id="games-opponent" required></select></label><div id="games-multiplayer-options" class="games-multiplayer-options" hidden><label>Who can join?<select id="games-join-mode"><option value="invite">Only the people I invite</option><option value="open">Everyone in this conversation</option></select></label><label class="games-host-color-row">Your player color<input id="games-host-color" type="color" value="#38BDF8"></label><div id="games-invite-members" class="games-invite-members"></div><p class="muted tiny">Each player picks a different color when joining. Colors already in use cannot be selected.</p></div><p id="games-spectator-note" class="games-spectator-note"></p><p id="games-create-status" class="status" role="status"></p><div class="games-form-actions"><button id="games-create-cancel" class="secondary-action" type="button">Cancel</button><button id="games-create-submit" class="primary" type="submit">Send invitation</button></div></form></section>';
+      overlay.innerHTML = '<section class="modal games-create-modal" role="dialog" aria-modal="true" aria-labelledby="games-create-title"><button id="games-create-close" class="close" type="button" aria-label="Close">×</button><p class="eyebrow">NEW MATCH</p><h2 id="games-create-title">Invite someone to play</h2><p class="muted tiny">Choose a conversation, a game and one opponent. In a group chat, everyone else can watch the match.</p><form id="games-create-form"><label>Conversation<select id="games-conversation" required></select></label><label>Game<select id="games-type" required><option value="chess">Chess</option><option value="checkers">Checkers</option><option value="tic_tac_toe">Tic-Tac-Toe</option><option value="connect_four">Connect Four</option><option value="battleship">Battleship</option></select></label><label>Invite player<select id="games-opponent" required></select></label><p id="games-spectator-note" class="games-spectator-note"></p><p id="games-create-status" class="status" role="status"></p><div class="games-form-actions"><button id="games-create-cancel" class="secondary-action" type="button">Cancel</button><button id="games-create-submit" class="primary" type="submit">Send invitation</button></div></form></section>';
       document.body.append(overlay);
       $("games-create-close").addEventListener("click", closeCreateModal);
       $("games-create-cancel").addEventListener("click", closeCreateModal);
       overlay.addEventListener("click", event => { if (event.target === overlay) closeCreateModal(); });
       $("games-conversation").addEventListener("change", updateOpponentOptions);
-      $("games-type").addEventListener("change", updateOpponentOptions);
-      $("games-join-mode").addEventListener("change", updateOpponentOptions);
       $("games-create-form").addEventListener("submit", createGame);
     }
 
@@ -180,11 +160,6 @@
     if (!keyListenerBound) {
       keyListenerBound = true;
       document.addEventListener("keydown", event => {
-        if (activeTagGameId && !$("games-board-overlay")?.hidden) {
-          const directions = { ArrowUp:[0,-1], w:[0,-1], ArrowDown:[0,1], s:[0,1], ArrowLeft:[-1,0], a:[-1,0], ArrowRight:[1,0], d:[1,0] };
-          const direction = directions[event.key];
-          if (direction) { event.preventDefault(); void moveTagByVector(direction[0],direction[1]); return; }
-        }
         if (event.key !== "Escape") return;
         if (!$("games-board-overlay")?.hidden) closeBoardModal();
         else if (!$("games-create-overlay")?.hidden) closeCreateModal();
@@ -201,19 +176,10 @@
     mount();
     if (!initialized) {
       initialized = true;
-      const queueGameRefresh = () => {
-        clearTimeout(refreshTimer);
-        refreshTimer = setTimeout(() => refreshGames(false), 180);
-      };
       channel = ctx.db.channel("gather-games-" + (userId() || "member"))
-        .on("postgres_changes", { event: "*", schema: "public", table: "gather_games" }, queueGameRefresh)
-        .on("postgres_changes", { event: "*", schema: "public", table: "gather_multiplayer_games" }, queueGameRefresh)
-        .on("postgres_changes", { event: "*", schema: "public", table: "gather_multiplayer_players" }, payload => {
-          const gameId = payload?.new?.game_id || payload?.old?.game_id;
-          const changedUserId=payload?.new?.user_id||payload?.old?.user_id;
-          if (gameId && gameId === activeTagGameId) {
-            if(changedUserId!==userId())queueTagPlayersRefresh(gameId);
-          } else queueGameRefresh();
+        .on("postgres_changes", { event: "*", schema: "public", table: "gather_games" }, () => {
+          clearTimeout(refreshTimer);
+          refreshTimer = setTimeout(() => refreshGames(false), 140);
         }).subscribe();
 
       // Browsers can suspend realtime while a tab is in the background.
@@ -290,12 +256,10 @@
     });
     const chosen = eligible.find(chat => chat.id === defaultConversationId) || eligible[0];
     select.value = chosen.id;
-    $("games-invite-members")?.replaceChildren();
-    $("games-type").value = "chess";
-    if ($("games-join-mode")) $("games-join-mode").value = "invite";
-    if ($("games-host-color")) $("games-host-color").value = "#38BDF8";
     updateOpponentOptions();
+    $("games-type").value = "chess";
     $("games-create-status").textContent = "";
+    $("games-create-submit").disabled = false;
     $("games-create-overlay").hidden = false;
   }
 
@@ -309,78 +273,38 @@
     const chat = chatList().find(item => item.id === conversationId);
     const select = $("games-opponent");
     if (!select) return;
-    const multiplayer = $("games-type")?.value === "tag";
-    $("games-multiplayer-options").hidden = !multiplayer;
-    $("games-opponent-label").hidden = multiplayer;
-    select.multiple = false;
-    select.size = 1;
-    select.required = !multiplayer;
     select.replaceChildren();
-    const otherMembers=(chat?.members || []).filter(member => member.user_id !== userId());
-    otherMembers.forEach(member => {
+    (chat?.members || []).filter(member => member.user_id !== userId()).forEach(member => {
       const option = node("option", "", memberName(member.user_id));
       option.value = member.user_id;
       select.append(option);
     });
-    const inviteList=$("games-invite-members");
-    const previouslySelected=new Set([...inviteList.querySelectorAll("input:checked")].map(input=>input.value));
-    inviteList.replaceChildren();
-    otherMembers.forEach(member=>{
-      const label=node("label","games-invite-member");
-      const check=node("input");check.type="checkbox";check.value=member.user_id;check.checked=previouslySelected.has(member.user_id);
-      check.addEventListener("change",updateOpponentOptions);
-      label.append(check,node("span","",memberName(member.user_id)));
-      inviteList.append(label);
-    });
-    const selected = inviteList.querySelectorAll("input:checked").length;
-    inviteList.hidden = !multiplayer || $("games-join-mode")?.value === "open";
-    if (multiplayer) {
-      $("games-create-submit").textContent = "Create Tag match";
-      $("games-spectator-note").textContent = $("games-join-mode")?.value === "open"
-        ? "Everyone in this conversation can join the match and choose a unique color."
-        : "Select one or more members to invite. You can invite the whole group.";
-      $("games-create-submit").disabled = $("games-join-mode")?.value === "invite" && !selected;
-    } else {
-      $("games-create-submit").textContent = "Send invitation";
-      const watchers = Math.max(0, (chat?.members?.length || 2) - 2);
-      $("games-spectator-note").textContent = chat?.kind === "group"
-        ? watchers + " other group member" + (watchers === 1 ? " can" : "s can") + " spectate. Only the two selected players can move."
-        : "Private games have only the two players.";
-      $("games-create-submit").disabled = !selected;
-    }
+    const watchers = Math.max(0, (chat?.members?.length || 2) - 2);
+    $("games-spectator-note").textContent = chat?.kind === "group"
+      ? watchers + " other group member" + (watchers === 1 ? " can" : "s can") + " spectate. Only the two selected players can move."
+      : "Private games have only the two players.";
+    $("games-create-submit").disabled = !select.options.length;
   }
 
   async function createGame(event) {
     event.preventDefault();
     if (busy) return;
     const conversationId = $("games-conversation").value;
-    const gameType = $("games-type").value;
-    const opponentIds = [...$("games-invite-members").querySelectorAll("input:checked")].map(input => input.value);
     const opponentId = $("games-opponent").value;
-    if (!conversationId || !TYPES[gameType] || (gameType !== "tag" && !opponentId) ||
-        (gameType === "tag" && $("games-join-mode").value === "invite" && !opponentIds.length)) {
-      $("games-create-status").textContent = "Choose a conversation and the required players.";
+    const gameType = $("games-type").value;
+    if (!conversationId || !opponentId || !TYPES[gameType]) {
+      $("games-create-status").textContent = "Choose a conversation and an opponent.";
       return;
     }
     busy = true;
     const submit = $("games-create-submit");
     submit.disabled = true;
-    $("games-create-status").textContent = gameType === "tag" ? "Creating multiplayer match…" : "Sending invitation…";
-    const result = gameType === "tag"
-      ? await ctx.db.rpc("gather_multiplayer_create", {
-          p_conversation_id: conversationId,
-          p_game_type: "tag",
-          p_join_mode: $("games-join-mode").value,
-          p_invited_user_ids: $("games-join-mode").value === "open" ? [] : opponentIds,
-          p_settings: { arena_width: 100, arena_height: 100, movement: "free", obstacles: createTagObstacles() },
-          p_initial_state: { arena: "square", tag_radius: 4.2, movement_limit: 7.5 },
-          p_creator_color: $("games-host-color").value
-        })
-      : await ctx.db.rpc("gather_game_create", {
-          p_conversation_id: conversationId,
-          p_game_type: gameType,
-          p_player_two_id: opponentId
-        });
+    $("games-create-status").textContent = "Sending invitation…";
+    const result = await ctx.db.rpc("gather_game_create", {
+      p_conversation_id: conversationId,
+      p_game_type: gameType,
+      p_player_two_id: opponentId
+    });
     busy = false;
     submit.disabled = false;
     if (result.error) {
@@ -395,7 +319,7 @@
       renderAll();
     }
     await refreshGames(false);
-    toast(gameType === "tag" ? "Tag multiplayer match created." : gameName(gameType) + " invitation sent to " + memberName(opponentId) + ".");
+    toast(gameName(gameType) + " invitation sent to " + memberName(opponentId) + ".");
     if (activeChat?.id === conversationId) renderChatTray();
   }
 
@@ -404,50 +328,20 @@
     const ids = [...new Set(chatList().map(chat => chat.id).filter(Boolean))];
     if (!ids.length) {
       games = [];
-      multiplayerGames = [];
       renderAll();
       return;
     }
     if (showStatus && $("games-hub-status")) $("games-hub-status").textContent = "Refreshing games…";
-    const [result, multiplayerResult] = await Promise.all([
-      ctx.db.from("gather_games")
-        .select("id,conversation_id,game_type,status,created_by,player_one_id,player_two_id,turn_user_id,state,winner_id,result,revision,created_at,updated_at")
-        .in("conversation_id", ids).order("updated_at", { ascending: false }).limit(120),
-      ctx.db.from("gather_multiplayer_games")
-        .select("id,conversation_id,game_type,status,created_by,join_mode,settings,state,revision,created_at,updated_at")
-        .in("conversation_id", ids).order("updated_at", { ascending: false }).limit(120)
-    ]);
+    const result = await ctx.db.from("gather_games")
+      .select("id,conversation_id,game_type,status,created_by,player_one_id,player_two_id,turn_user_id,state,winner_id,result,revision,created_at,updated_at")
+      .in("conversation_id", ids)
+      .order("updated_at", { ascending: false })
+      .limit(120);
     if (result.error) {
       if ($("games-hub-status")) $("games-hub-status").textContent = "Games could not be loaded: " + result.error.message;
       return;
     }
-    if (multiplayerResult.error) {
-      if ($("games-hub-status")) $("games-hub-status").textContent = "Multiplayer games could not be loaded: " + multiplayerResult.error.message;
-      return;
-    }
-    multiplayerGames = multiplayerResult.data || [];
-    const multiIds = multiplayerGames.map(game => game.id);
-    let players = [];
-    if (multiIds.length) {
-      const playerResult = await ctx.db.from("gather_multiplayer_players")
-        .select("game_id,user_id,status,color,x,y,is_it,joined_at,updated_at")
-        .in("game_id", multiIds);
-      if (playerResult.error) {
-        if ($("games-hub-status")) $("games-hub-status").textContent = "Multiplayer players could not be loaded: " + playerResult.error.message;
-        return;
-      }
-      players = playerResult.data || [];
-    }
-    games = [...(result.data || []), ...multiplayerGames.map(game => {
-      const gamePlayers = players.filter(player => player.game_id === game.id);
-      const mine = gamePlayers.find(player => player.user_id === userId());
-      return {
-        ...game, is_multiplayer: true, players: gamePlayers,
-        player_one_id: game.created_by, player_two_id: mine?.status === "invited" ? userId() : null,
-        turn_user_id: null, winner_id: null, result: game.status === "completed" ? "multiplayer_completed" : null,
-        status: mine?.status === "invited" && game.status === "active" ? "pending" : game.status
-      };
-    })].sort((a,b) => new Date(b.updated_at)-new Date(a.updated_at));
+    games = result.data || [];
     renderAll();
     if (typeof ctx.onGamesUpdated === "function") ctx.onGamesUpdated();
   }
@@ -499,7 +393,7 @@
       const copy = node("span", "games-conversation-copy");
       copy.append(node("strong", "", conversationName(conversationId)));
       copy.append(node("small", "muted", gameName(latest.game_type) + " · " + new Date(latest.updated_at || latest.created_at).toLocaleDateString()));
-      const preview = latest.is_multiplayer ? ((latest.players||[]).filter(player=>player.status==="joined").length+" playing · "+(latest.status==="pending"?"You're invited":latest.join_mode==="open"?"Open match":"Invite only")) : latest.status === "active" ? (latest.turn_user_id === userId() ? "Your turn" : "Waiting for move") : latest.status === "pending" ? (latest.player_two_id === userId() ? "Your invitation" : "Invitation sent") : latest.status === "completed" ? "Match completed" : statusLabel(latest);
+      const preview = latest.status === "active" ? (latest.turn_user_id === userId() ? "Your turn" : "Waiting for move") : latest.status === "pending" ? (latest.player_two_id === userId() ? "Your invitation" : "Invitation sent") : latest.status === "completed" ? "Match completed" : statusLabel(latest);
       copy.append(node("span", "games-conversation-preview" + (latest.status === "active" && latest.turn_user_id === userId() ? " is-your-turn" : ""), preview));
       const meta = node("span", "games-conversation-meta");
       meta.append(node("span", "games-conversation-count", items.length + " game" + (items.length === 1 ? "" : "s")));
@@ -562,13 +456,13 @@
   }
 
   function getPendingInvitations() {
-    return games.filter(game => !game.is_multiplayer && game.status === "pending" && game.player_two_id === userId())
+    return games.filter(game => game.status === "pending" && game.player_two_id === userId())
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   }
 
   async function respondToInvitation(gameId, accept) {
     const game = games.find(item => item.id === gameId);
-    if (!game || game.is_multiplayer || game.status !== "pending" || game.player_two_id !== userId()) return;
+    if (!game || game.status !== "pending" || game.player_two_id !== userId()) return;
     await gameAction(accept ? "gather_game_accept" : "gather_game_decline", game);
   }
 
@@ -600,8 +494,7 @@
     card.append(top);
     if (inHub) card.append(node("p", "games-card-conversation muted tiny", conversationName(game.conversation_id)));
     let detail = "";
-    if (game.is_multiplayer) detail = (game.players||[]).filter(player=>player.status==="joined").length+" playing · "+(game.join_mode==="open"?"Open to everyone":"Invite only");
-    else if (game.status === "active") detail = game.turn_user_id ? memberName(game.turn_user_id) + "'s turn" : "Match in progress";
+    if (game.status === "active") detail = game.turn_user_id ? memberName(game.turn_user_id) + "'s turn" : "Match in progress";
     else if (game.status === "pending") detail = game.player_two_id === userId() ? "You have been invited to play." : "Waiting for " + memberName(game.player_two_id) + " to respond.";
     else if (game.status === "completed") {
       if (game.result === "draw") detail = "The match ended in a draw.";
@@ -612,15 +505,13 @@
     }
     else if (game.status === "declined") detail = "The invitation was declined.";
     else detail = "The invitation was cancelled.";
-    if (game.status === "active" && !game.is_multiplayer) {
+    if (game.status === "active") {
       const watchers = spectatorCount(game);
       detail += " · " + watchers + " spectator" + (watchers === 1 ? "" : "s");
     }
     card.append(node("p", "games-card-detail muted tiny", detail));
     const actions = node("div", "games-card-actions");
-    if (game.is_multiplayer && game.status === "pending") {
-      actions.append(button("Choose color & join", "primary games-card-primary", () => openGame(game)));
-    } else if (game.status === "pending" && game.player_two_id === userId()) {
+    if (game.status === "pending" && game.player_two_id === userId()) {
       actions.append(button("Accept", "primary games-card-primary", () => gameAction("gather_game_accept", game)));
       actions.append(button("Decline", "outline", () => gameAction("gather_game_decline", game)));
     } else if (game.status === "pending" && game.created_by === userId()) {
@@ -659,8 +550,6 @@
   }
 
   function openGame(game) {
-    stopTagMovement();
-    activeTagGameId = game.is_multiplayer ? game.id : null;
     if (activeGameId !== game.id) {
       battleshipPrivateGameId = game.id;
       battleshipPrivateState = null;
@@ -669,7 +558,6 @@
     }
     activeGameId = game.id;
     activeGame = game;
-    tagLocalPosition = game.is_multiplayer ? null : tagLocalPosition;
     selectedSquare = null;
     promotionChoice = null;
     $("games-board-overlay").hidden = false;
@@ -677,8 +565,6 @@
   }
 
   function closeBoardModal() {
-    stopTagMovement();
-    activeTagGameId = null;
     const overlay = $("games-board-overlay");
     if (overlay) overlay.hidden = true;
     activeGameId = null;
@@ -691,228 +577,9 @@
     battleshipDraft = { gameId: null, ships: [], selected: "carrier", orientation: "horizontal", message: "" };
   }
 
-  function createTagObstacles() {
-    const obstacles=[];
-    const safeSpawns=[[50,50]];
-    for(let i=1;i<=10;i++)safeSpawns.push([12+((i*19)%76),15+((i*31)%70)]);
-    let seed=Date.now()>>>0;
-    const random=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
-    let attempts=0;
-    while(obstacles.length<8&&attempts++<500){
-      const x=12+random()*76,y=12+random()*76,r=4.2+random()*2.2;
-      if(safeSpawns.some(([sx,sy])=>Math.hypot(x-sx,y-sy)<r+9))continue;
-      if(obstacles.some(o=>Math.hypot(x-o.x,y-o.y)<r+o.r+3))continue;
-      obstacles.push({x:Number(x.toFixed(2)),y:Number(y.toFixed(2)),r:Number(r.toFixed(2))});
-    }
-    return obstacles;
-  }
-
-  function tagPositionBlocked(x,y,obstacles) {
-    return (obstacles||[]).some(o=>Math.hypot(x-Number(o.x),y-Number(o.y))<Number(o.r)+2.3);
-  }
-
-  function tagCurrentPlayer(game) {
-    return (game.players || []).find(player => player.user_id === userId() && player.status === "joined") || null;
-  }
-
-  async function renderTagGame(game) {
-    const area=$("games-board-area"), status=$("games-board-status"), hint=$("games-board-hint");
-    if (!area) return;
-    if(activeTagGameId!==game.id){stopTagMovement();tagLocalPosition=null;}
-    activeTagGameId=game.id;
-    $("games-board-title").textContent="Tag";
-    const joined=(game.players||[]).filter(player=>player.status==="joined");
-    const invited=(game.players||[]).filter(player=>player.status==="invited");
-    $("games-board-meta").textContent=joined.length+" playing · "+(game.join_mode==="open"?"Open to everyone":"Invite only");
-    $("games-board-spectators").textContent=invited.length+" invitation"+(invited.length===1?"":"s")+" waiting";
-    area.replaceChildren();
-    const mine=tagCurrentPlayer(game);
-    if (game.status==="completed") {
-      status.textContent="This Tag match has ended.";
-      hint.textContent="The match is saved in this conversation's Completed section.";
-      return;
-    }
-    if (!mine) {
-      const invitedMe=invited.some(player=>player.user_id===userId());
-      status.textContent=invitedMe?"You have been invited to Tag. Choose a color to join.":game.join_mode==="open"?"This match is open to everyone in the conversation. Choose a color to join.":"This match is invite-only.";
-      if (!invitedMe && game.join_mode!=="open") { area.append(node("p","games-board-waiting","Ask the host to invite you to this match.")); return; }
-      const taken=joined.map(player=>player.color?.toLowerCase());
-      const wrap=node("div","tag-join-panel");
-      wrap.append(node("p","muted tiny","Choose a color that nobody else is using."));
-      const color=node("input","tag-color-picker"); color.type="color";
-      color.value=TAG_COLORS.find(c=>!taken.includes(c.toLowerCase()))||"#F87171";
-      const join=button("Join match","primary",async()=>{
-        join.disabled=true;
-        const response=await ctx.db.rpc("gather_multiplayer_join",{p_game_id:game.id,p_color:color.value});
-        if(response.error){toast(response.error.message||"Could not join this match.");join.disabled=false;return;}
-        await refreshGames(false);
-        const latest=games.find(item=>item.id===game.id);if(latest)openGame(latest);
-      });
-      wrap.append(color,join);area.append(wrap);hint.textContent="Every player must have a different color.";return;
-    }
-    status.textContent=mine.is_it?"You're It — catch another player!":"Run from the player who is It.";
-    hint.textContent="Move around the arena. When the player who is It reaches you, the role changes.";
-    const arena=node("div","tag-arena");arena.setAttribute("aria-label","Tag arena");
-    const obstaclesLayer=node("div","tag-arena-obstacles");
-    (game.settings?.obstacles||[]).forEach((obstacle,index)=>{
-      const rock=node("span","tag-obstacle");
-      rock.style.left=Number(obstacle.x)+"%";rock.style.top=Number(obstacle.y)+"%";
-      rock.style.width=(Number(obstacle.r)*2)+"%";rock.style.height=(Number(obstacle.r)*2)+"%";
-      rock.setAttribute("aria-label","Arena obstacle "+(index+1));obstaclesLayer.append(rock);
-    });
-    const playersLayer=node("div","tag-arena-players");playersLayer.setAttribute("aria-live","polite");
-    arena.append(obstaclesLayer,playersLayer);area.append(arena);
-    renderTagArenaPlayers(game);
-    const controls=node("div","tag-controls");
-    const joystick=node("div","tag-joystick");joystick.setAttribute("role","application");joystick.setAttribute("aria-label","Movement joystick");
-    const knob=node("span","tag-joystick-knob");joystick.append(knob);
-    const moveStart=event=>{
-      event.preventDefault();joystick.setPointerCapture?.(event.pointerId);
-      const rect=joystick.getBoundingClientRect();
-      const update=e=>{
-        const dx=e.clientX-(rect.left+rect.width/2),dy=e.clientY-(rect.top+rect.height/2);
-        const max=rect.width*.34,dist=Math.hypot(dx,dy),scale=dist>max?max/dist:1;
-        const nx=dx*scale,ny=dy*scale;
-        knob.style.transform="translate("+nx+"px,"+ny+"px)";
-        const mag=Math.hypot(nx,ny)||1;tagMoveDirection={x:nx/mag,y:ny/mag};
-        if(!tagMoveTimer)tagMoveTimer=window.setInterval(()=>{if(tagMoveDirection.x||tagMoveDirection.y)moveTagByVector(tagMoveDirection.x,tagMoveDirection.y);},50);
-        if(!tagSyncTimer)tagSyncTimer=window.setInterval(()=>{if(tagMoveDirection.x||tagMoveDirection.y)void syncTagPosition();},300);
-      };
-      joystick._move=update;update(event);
-    };
-    const moveDrag=event=>{if(joystick._move)joystick._move(event);};
-    const moveEnd=()=>{joystick._move=null;stopTagMovement();knob.style.transform="translate(0,0)";};
-    joystick.addEventListener("pointerdown",moveStart);
-    joystick.addEventListener("pointermove",moveDrag);
-    joystick.addEventListener("pointerup",moveEnd);
-    joystick.addEventListener("pointercancel",moveEnd);
-    const instructions=node("p","muted tiny","Drag the joystick to move · WASD or arrow keys on desktop");
-    controls.append(joystick,instructions);
-    area.append(controls);
-    const actions=node("div","tag-game-actions");
-    actions.append(button("Leave match","outline",async()=>{
-      if(!window.confirm("Leave this Tag match?"))return;
-      stopTagMovement(false);
-      const response=await ctx.db.rpc("gather_multiplayer_leave",{p_game_id:game.id});
-      if(response.error){toast(response.error.message||"Could not leave the match.");return;}
-      stopTagMovement();await refreshGames(false);const latest=games.find(item=>item.id===game.id);if(latest){activeGame=latest;renderBoardModal();}
-    }));
-    if(game.created_by===userId())actions.append(button("End match","outline",async()=>{
-      if(!window.confirm("End this Tag match for everyone?"))return;
-      stopTagMovement(false);
-      const response=await ctx.db.rpc("gather_multiplayer_end",{p_game_id:game.id});
-      if(response.error){toast(response.error.message||"Could not end the match.");return;}
-      await refreshGames(false);const latest=games.find(item=>item.id===game.id);if(latest){activeGame=latest;renderBoardModal();}
-    }));
-    area.append(actions);
-  }
-
-  function renderTagArenaPlayers(game) {
-    const layer=$("games-board-area")?.querySelector(".tag-arena-players");
-    if(!layer)return;
-    const activeIds=new Set();
-    (game.players||[]).filter(player=>player.status==="joined").forEach(player=>{
-      activeIds.add(player.user_id);
-      let dot=[...layer.children].find(el=>el.dataset.userId===player.user_id);
-      if(!dot){
-        dot=node("span","tag-player-dot");
-        dot.dataset.userId=player.user_id;
-        const label=node("span","tag-player-label");
-        dot.append(label);layer.append(dot);
-      }
-      dot.classList.toggle("is-it",!!player.is_it);
-      dot.classList.toggle("is-me",player.user_id===userId());
-      const position=player.user_id===userId()&&tagLocalPosition?tagLocalPosition:{x:Number(player.x)||50,y:Number(player.y)||50};
-      dot.style.left=position.x+"%";dot.style.top=position.y+"%";
-      dot.style.background=player.color||"#38BDF8";
-      const labelText=memberName(player.user_id)+(player.is_it?" · It":"");
-      dot.title=labelText;dot.setAttribute("aria-label",labelText);
-      dot.firstElementChild.textContent=labelText;
-    });
-    [...layer.children].forEach(dot=>{if(!activeIds.has(dot.dataset.userId))dot.remove();});
-    const mine=tagCurrentPlayer(game);
-    if(mine)$("games-board-status").textContent=mine.is_it?"You're It — catch another player!":"Run from the player who is It.";
-  }
-
-  async function refreshMultiplayerPlayers(gameId) {
-    if(!ctx||!gameId)return;
-    const response=await ctx.db.from("gather_multiplayer_players")
-      .select("game_id,user_id,status,color,x,y,is_it,joined_at,updated_at").eq("game_id",gameId);
-    if(response.error)return;
-    const game=games.find(item=>item.id===gameId);
-    if(!game)return;
-    const local=tagLocalPosition;
-    game.players=response.data||[];
-    if(local){
-      const mine=game.players.find(player=>player.user_id===userId()&&player.status==="joined");
-      if(mine){mine.x=local.x;mine.y=local.y;}
-    }
-    if(activeGameId===gameId){activeGame=game;renderTagArenaPlayers(game);}
-  }
-
-  function queueTagPlayersRefresh(gameId) {
-    if(tagPlayersRefreshTimer)clearTimeout(tagPlayersRefreshTimer);
-    tagPlayersRefreshTimer=window.setTimeout(()=>{tagPlayersRefreshTimer=null;void refreshMultiplayerPlayers(gameId);},180);
-  }
-
-  async function syncTagPosition(target=null) {
-    const game=games.find(item=>item.id===activeTagGameId)||activeGame;
-    const position=target||tagLocalPosition;
-    if(!game||!position||game.status!=="active")return;
-    if(tagMovePending){tagQueuedPosition={...position};return;}
-    tagMovePending=true;
-    const sent={...position};
-    try{
-      const response=await ctx.db.rpc("gather_multiplayer_move",{p_game_id:game.id,p_x:sent.x,p_y:sent.y});
-      if(response.error){
-        const message=String(response.error.message||"");
-        if(!message.includes("Movement update is too large")&&!message.includes("Movement update was received too quickly")&&!message.includes("An obstacle is blocking"))toast(message||"Movement could not be saved.");
-      }
-    }finally{
-      tagMovePending=false;
-      if(tagQueuedPosition){
-        const queued=tagQueuedPosition;tagQueuedPosition=null;
-        const dx=queued.x-sent.x,dy=queued.y-sent.y,distance=Math.hypot(dx,dy);
-        if(distance>.1){
-          const scale=distance>5.5?5.5/distance:1;
-          void syncTagPosition({x:sent.x+dx*scale,y:sent.y+dy*scale});
-        }
-      }
-    }
-  }
-
-  function stopTagMovement(flush=true) {
-    if(tagMoveTimer)window.clearInterval(tagMoveTimer);
-    if(tagSyncTimer)window.clearInterval(tagSyncTimer);
-    tagMoveTimer=null;tagSyncTimer=null;tagMoveDirection={x:0,y:0};
-    if(flush&&tagLocalPosition)void syncTagPosition();
-    else tagQueuedPosition=null;
-  }
-
-  function moveTagByVector(dx,dy) {
-    const game=games.find(item=>item.id===activeTagGameId)||activeGame;
-    const player=game&&tagCurrentPlayer(game);
-    if(!game||!player||game.status!=="active")return;
-    const current=tagLocalPosition||{x:Number(player.x)||50,y:Number(player.y)||50};
-    // Increase overall movement speed while giving the player who is It a small edge.
-    const step=player.is_it?0.79:0.72;
-    let nx=Math.max(0,Math.min(100,current.x+dx*step));
-    let ny=Math.max(0,Math.min(100,current.y+dy*step));
-    const obstacles=game.settings?.obstacles||[];
-    if(tagPositionBlocked(nx,ny,obstacles)){
-      const xOnly=!tagPositionBlocked(nx,current.y,obstacles);
-      const yOnly=!tagPositionBlocked(current.x,ny,obstacles);
-      if(xOnly)ny=current.y;else if(yOnly)nx=current.x;else return;
-    }
-    tagLocalPosition={x:nx,y:ny};
-    player.x=nx;player.y=ny;
-    renderTagArenaPlayers(game);
-  }
-
   function renderBoardModal() {
     const game = activeGame;
     if (!game) return;
-    if (game.is_multiplayer) { renderTagGame(game); return; }
     const boardArea = $("games-board-area");
     const status = $("games-board-status");
     const hint = $("games-board-hint");
@@ -1686,8 +1353,6 @@
   }
 
   function shutdown() {
-    stopTagMovement();
-    activeTagGameId = null;
     if (syncRefreshTimer) clearInterval(syncRefreshTimer);
     syncRefreshTimer = null;
     clearTimeout(refreshTimer);
