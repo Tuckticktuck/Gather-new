@@ -3343,3 +3343,64 @@ html[data-theme="light"] .folder-tab.active{
   background:color-mix(in srgb,var(--accent) 19%,#fff);
 }
 html[data-theme="light"] .privacy{background:color-mix(in srgb,var(--accent) 8%,#fff)}
+
+
+/* iPhone Safari viewport and safe-area corrections. Dynamic viewport units keep
+   the app fitted between Safari's changing browser chrome and the home indicator. */
+html,body{width:100%;max-width:100%;overflow-x:clip}
+body{min-height:100svh;min-height:100dvh}
+#app{width:100%;min-width:0;max-width:100%;overflow-x:clip}
+.topbar{
+  background:linear-gradient(105deg,var(--accent-topbar,var(--accent-panel)) 0%,var(--accent-panel) 78%);
+  border-bottom-color:var(--accent-outline-soft);
+}
+@media(max-width:720px){
+  .topbar{
+    height:calc(60px + env(safe-area-inset-top,0px));
+    min-height:calc(60px + env(safe-area-inset-top,0px));
+    padding-top:env(safe-area-inset-top,0px);
+  }
+  .layout{
+    height:calc(100dvh - 60px - env(safe-area-inset-top,0px));
+    min-height:0;
+    width:100%;
+    overflow:hidden;
+  }
+  .layout.show-chat,.layout.show-home{min-height:0}
+  .sidebar,.main{min-width:0;min-height:0}
+  .home-workspace{
+    min-width:0;
+    max-width:100%;
+    padding-bottom:calc(22px + env(safe-area-inset-bottom,0px));
+  }
+  .chat{min-height:0;height:100%}
+  .messages{min-width:0;overscroll-behavior:contain}
+  .composer{
+    margin-bottom:calc(9px + env(safe-area-inset-bottom,0px));
+    max-width:calc(100% - 18px);
+  }
+  .topbar-actions{flex:none}
+}
+@media(max-width:430px){
+  .topbar{padding-left:7px;padding-right:7px;column-gap:4px}
+  .topbar-left{gap:5px}
+  .topbar-actions{gap:3px}
+  #notifications-open,#admin-mode-open{
+    width:34px;height:34px;min-width:34px;
+    justify-content:center;gap:0;padding:0;
+  }
+  #notifications-open .home-glyph,#admin-mode-open .home-glyph{font-size:18px}
+  #notifications-open span:not(.home-glyph):not(#notification-badge),
+  #admin-mode-open span:not(.home-glyph){display:none}
+  .profile-pill{max-width:42px;gap:0;padding:4px}
+  .profile-pill #user-name,.profile-pill>span:last-child{display:none}
+  .profile-pill .avatar{width:27px;height:27px}
+}
+@media(max-width:360px){
+  .topbar .brand{font-size:14px}
+  .topbar .brand-icon{width:26px;height:26px}
+  .topbar-left{gap:4px}
+  #home-open,#settings-open,#notifications-open,#admin-mode-open{
+    width:32px;height:32px;min-width:32px;
+  }
+}
