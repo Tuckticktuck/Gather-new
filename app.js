@@ -5721,7 +5721,7 @@ function wire(){
         return;
       }
       const result=isNew
-        ?await db.auth.signUp({email,password,options:{data:{display_name:$("name").value.trim()},emailRedirectTo:location.origin}})
+        ?await db.auth.signUp({email,password,options:{data:{display_name:$("name").value.trim()},emailRedirectTo:location.origin+location.pathname}})
         :await db.auth.signInWithPassword({email,password});
       if(result.error){
         status("auth-status",result.error.message,"error");
