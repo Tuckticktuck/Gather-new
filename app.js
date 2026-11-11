@@ -966,12 +966,7 @@ function renderProfileAgeSection(){
   const date=$("profile-age-birth-date"),button=$("profile-age-submit");
   if(!section||!summary||!form||!date||!button)return;
   section.hidden=false;
-  if(isFeedbackAdmin(S.user)){
-    summary.textContent="Gather Admin accounts bypass member age-group restrictions. Age-group corrections are not required for administrator access.";
-    form.hidden=true;
-    status("profile-age-status","Administrator access is managed separately from member age verification.","");
-    return;
-  }
+  // Admins complete the same private date-of-birth check and age-group assignment as members.
   const age=S.ageStatus||{},request=S.ageChangeStatus||{};
   const verified=age.verified===true&&age.eligible===true;
   const pending=request.status==="pending";
