@@ -64,7 +64,7 @@
   const statusLabel = game => ({
     pending: game.player_two_id === userId() ? "Your invitation" : "Invitation pending",
     active: "Live game",
-    completed: "Completed",
+    completed: game.result?.startsWith("ended_by_player_") ? "Ended" : "Completed",
     declined: "Declined",
     cancelled: "Cancelled"
   })[game.status] || game.status;
@@ -360,7 +360,13 @@
     let detail = "";
     if (game.status === "active") detail = game.turn_user_id ? memberName(game.turn_user_id) + "'s turn" : "Match in progress";
     else if (game.status === "pending") detail = game.player_two_id === userId() ? "You have been invited to play." : "Waiting for " + memberName(game.player_two_id) + " to respond.";
-    else if (game.status === "completed") detail = game.result === "draw" ? "The match ended in a draw." : "Winner: " + memberName(game.winner_id);
+    else if (game.status === "completed") {
+      if (game.result === "draw") detail = "The match ended in a draw.";
+      else if (game.result?.startsWith("ended_by_player_")) {
+        const endingPlayer = game.result === "ended_by_player_one" ? game.player_one_id : game.player_two_id;
+        detail = "Ended by " + memberName(endingPlayer) + ".";
+      } else detail = "Winner: " + memberName(game.winner_id);
+    }
     else if (game.status === "declined") detail = "The invitation was declined.";
     else detail = "The invitation was cancelled.";
     if (game.status === "active") {
@@ -477,7 +483,11 @@
     }
     const battleshipPlacement = game.game_type === "battleship" && game.status === "active" && game.state?.phase === "placement";
     if (game.status === "completed") {
-      status.textContent = game.result === "draw" ? "Match complete · Draw." : "Match complete · " + memberName(game.winner_id) + " wins.";
+      if (game.result === "draw") status.textContent = "Match complete · Draw.";
+      else if (game.result?.startsWith("ended_by_player_")) {
+        const endingPlayer = game.result === "ended_by_player_one" ? game.player_one_id : game.player_two_id;
+        status.textContent = "Match ended by " + memberName(endingPlayer) + ".";
+      } else status.textContent = "Match complete · " + memberName(game.winner_id) + " wins.";
     } else if (battleshipPlacement) {
       const readyCount = [game.state?.placed?.p1, game.state?.placed?.p2].filter(Boolean).length;
       status.textContent = "Fleet setup · " + readyCount + " of 2 fleets ready.";
@@ -512,10 +522,45 @@
     else if (game.game_type === "checkers") renderCheckers(game, boardArea, canMove);
     else renderChess(game, boardArea, canMove);
 
+    if (game.status === "active" && player) {
+      const endActions = node("div", "games-end-actions");
+      endActions.append(button("End game", "outline games-end-button", () => endGame(game)));
+      boardArea.append(endActions);
+    }
+
     if (game.status === "completed" && player) {
       const rematchActions = node("div", "games-rematch-actions");
       rematchActions.append(button("Request rematch", "primary", () => requestRematch(game)));
       boardArea.append(rematchActions);
+    }
+  }
+
+  async function endGame(game) {
+    if (busy || !game || game.status !== "active" || !isPlayer(game)) return;
+    const confirmed = window.confirm("End this game for both players? The current match will be saved as ended, and neither player will be able to continue it.");
+    if (!confirmed) return;
+
+    busy = true;
+    $("games-board-status").textContent = "Ending game…";
+    try {
+      const response = await ctx.db.rpc("gather_game_end", { p_game_id: game.id });
+      const updated = Array.isArray(response.data) ? response.data[0] : response.data;
+      if (response.error || !updated) {
+        toast(response.error?.message || "The game could not be ended. Please refresh and try again.");
+        await refreshGames(false);
+        return;
+      }
+      games = [updated, ...games.filter(item => item.id !== updated.id)];
+      activeGame = updated;
+      selectedSquare = null;
+      promotionChoice = null;
+      toast("Game ended.");
+    } catch (error) {
+      toast(error?.message || "The game could not be ended. Please try again.");
+      await refreshGames(false);
+    } finally {
+      busy = false;
+      if (activeGameId === game.id) renderAll();
     }
   }
 
