@@ -372,7 +372,7 @@
           p_game_type: "tag",
           p_join_mode: $("games-join-mode").value,
           p_invited_user_ids: $("games-join-mode").value === "open" ? [] : opponentIds,
-          p_settings: { arena_width: 100, arena_height: 100, movement: "free" },
+          p_settings: { arena_width: 100, arena_height: 100, movement: "free", obstacles: createTagObstacles() },
           p_initial_state: { arena: "square", tag_radius: 4.2, movement_limit: 7.5 },
           p_creator_color: $("games-host-color").value
         })
@@ -691,6 +691,25 @@
     battleshipDraft = { gameId: null, ships: [], selected: "carrier", orientation: "horizontal", message: "" };
   }
 
+  function createTagObstacles() {
+    const obstacles=[];
+    const safeSpawns=[[50,50],[31,46],[50,77],[69,38],[88,69],[31,31],[50,15],[69,62],[12,84],[88,15]];
+    let seed=Date.now()>>>0;
+    const random=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
+    let attempts=0;
+    while(obstacles.length<8&&attempts++<500){
+      const x=12+random()*76,y=12+random()*76,r=4.2+random()*2.2;
+      if(safeSpawns.some(([sx,sy])=>Math.hypot(x-sx,y-sy)<r+9))continue;
+      if(obstacles.some(o=>Math.hypot(x-o.x,y-o.y)<r+o.r+3))continue;
+      obstacles.push({x:Number(x.toFixed(2)),y:Number(y.toFixed(2)),r:Number(r.toFixed(2))});
+    }
+    return obstacles;
+  }
+
+  function tagPositionBlocked(x,y,obstacles) {
+    return (obstacles||[]).some(o=>Math.hypot(x-Number(o.x),y-Number(o.y))<Number(o.r)+2.3);
+  }
+
   function tagCurrentPlayer(game) {
     return (game.players || []).find(player => player.user_id === userId() && player.status === "joined") || null;
   }
@@ -733,8 +752,15 @@
     status.textContent=mine.is_it?"You're It — catch another player!":"Run from the player who is It.";
     hint.textContent="Move around the arena. When the player who is It reaches you, the role changes.";
     const arena=node("div","tag-arena");arena.setAttribute("aria-label","Tag arena");
+    const obstaclesLayer=node("div","tag-arena-obstacles");
+    (game.settings?.obstacles||[]).forEach((obstacle,index)=>{
+      const rock=node("span","tag-obstacle");
+      rock.style.left=Number(obstacle.x)+"%";rock.style.top=Number(obstacle.y)+"%";
+      rock.style.width=(Number(obstacle.r)*2)+"%";rock.style.height=(Number(obstacle.r)*2)+"%";
+      rock.setAttribute("aria-label","Arena obstacle "+(index+1));obstaclesLayer.append(rock);
+    });
     const playersLayer=node("div","tag-arena-players");playersLayer.setAttribute("aria-live","polite");
-    arena.append(playersLayer);area.append(arena);
+    arena.append(obstaclesLayer,playersLayer);area.append(arena);
     renderTagArenaPlayers(game);
     const controls=node("div","tag-controls");
     const joystick=node("div","tag-joystick");joystick.setAttribute("role","application");joystick.setAttribute("aria-label","Movement joystick");
@@ -869,8 +895,14 @@
     const current=tagLocalPosition||{x:Number(player.x)||50,y:Number(player.y)||50};
     // Increase overall movement speed while giving the player who is It a small edge.
     const step=player.is_it?0.79:0.72;
-    const nx=Math.max(0,Math.min(100,current.x+dx*step));
-    const ny=Math.max(0,Math.min(100,current.y+dy*step));
+    let nx=Math.max(0,Math.min(100,current.x+dx*step));
+    let ny=Math.max(0,Math.min(100,current.y+dy*step));
+    const obstacles=game.settings?.obstacles||[];
+    if(tagPositionBlocked(nx,ny,obstacles)){
+      const xOnly=!tagPositionBlocked(nx,current.y,obstacles);
+      const yOnly=!tagPositionBlocked(current.x,ny,obstacles);
+      if(xOnly)ny=current.y;else if(yOnly)nx=current.x;else return;
+    }
     tagLocalPosition={x:nx,y:ny};
     player.x=nx;player.y=ny;
     renderTagArenaPlayers(game);
