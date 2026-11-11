@@ -3119,7 +3119,7 @@ function subscribeTyping(conversationId){
 
 function renderMessageSkeletons(){
   const list=$("messages");if(!list)return;
-  list.replaceChildren();list.setAttribute("aria-busy","true");
+  list.replaceChildren();list.classList.add("is-opening-conversation");list.setAttribute("aria-busy","true");
   const widths=["58%","72%","46%","66%","52%"];
   widths.forEach((width,index)=>{
     const row=el("div","message-skeleton-row"+(index%2?" is-mine":""));
@@ -3537,6 +3537,8 @@ function renderMessages(preserveScroll=false){
     setTimeout(removeMenu,190);
   });
   const list=$("messages"),previousHeight=list.scrollHeight,previousTop=list.scrollTop;
+  const suppressEntryAnimation=list.classList.contains("is-opening-conversation");
+  list.classList.remove("is-opening-conversation");
   const existingMessageIds=new Set([...list.querySelectorAll(".message[data-message-id]")].map(row=>row.dataset.messageId));
   list.replaceChildren();list.setAttribute("aria-busy","false");
   const activeChat=S.chats.find(chat=>chat.id===S.active);
@@ -3555,7 +3557,7 @@ function renderMessages(preserveScroll=false){
     if(S.unreadDividerMessageId===m.id)list.append(el("div","new-messages-divider","New messages"));
     const row=el("div","message"+(mine?" mine":"")+grouping+(samePrevious?" group-continued":""));
     row.dataset.messageId=m.id;
-    if(!existingMessageIds.has(String(m.id)))row.classList.add("gather-message-enter");
+    if(!suppressEntryAnimation&&!existingMessageIds.has(String(m.id)))row.classList.add("gather-message-enter");
     const bubble=el("div","bubble"),meta=el("div","meta");
     if(showSenderNames){
       if(!samePrevious){
