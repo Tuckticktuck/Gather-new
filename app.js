@@ -4108,7 +4108,7 @@ async function directChat(p){
   }
   const r=await db.rpc("send_direct_chat_request",{p_recipient_id:p.id});
   if(r.error){status("people-status","Request could not be sent: "+r.error.message,"error");return;}
-  if(r.data?.status==="age_verification_required"){status("people-status","Age confirmation is required for any member account that has not completed it. Gather Admin accounts are exempt.","error");return;}
+  if(r.data?.status==="age_verification_required"){status("people-status","Both members must complete age confirmation before messaging.","error");return;}
   if(r.data?.status==="intergroup_approval_required"){status("people-status","Admin approval is required before a cross-group chat request can be sent.","error");return;}
   if(r.data?.status==="existing"&&r.data.conversation_id){$("people-modal").hidden=true;await loadChats();await openChat(r.data.conversation_id);return;}
   if(r.data?.status==="blocked"){status("people-status","This member is not available for a new private chat request.","error");return;}
