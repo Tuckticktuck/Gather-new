@@ -867,8 +867,10 @@
     const player=game&&tagCurrentPlayer(game);
     if(!game||!player||game.status!=="active")return;
     const current=tagLocalPosition||{x:Number(player.x)||50,y:Number(player.y)||50};
-    const nx=Math.max(0,Math.min(100,current.x+dx*.58));
-    const ny=Math.max(0,Math.min(100,current.y+dy*.58));
+    // Increase overall movement speed while giving the player who is It a small edge.
+    const step=player.is_it?0.79:0.72;
+    const nx=Math.max(0,Math.min(100,current.x+dx*step));
+    const ny=Math.max(0,Math.min(100,current.y+dy*step));
     tagLocalPosition={x:nx,y:ny};
     player.x=nx;player.y=ny;
     renderTagArenaPlayers(game);
