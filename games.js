@@ -285,6 +285,7 @@
     });
     const chosen = eligible.find(chat => chat.id === defaultConversationId) || eligible[0];
     select.value = chosen.id;
+    $("games-invite-members")?.replaceChildren();
     updateOpponentOptions();
     $("games-type").value = "chess";
     if ($("games-join-mode")) $("games-join-mode").value = "invite";
@@ -317,10 +318,11 @@
       select.append(option);
     });
     const inviteList=$("games-invite-members");
+    const previouslySelected=new Set([...inviteList.querySelectorAll("input:checked")].map(input=>input.value));
     inviteList.replaceChildren();
     otherMembers.forEach(member=>{
       const label=node("label","games-invite-member");
-      const check=node("input");check.type="checkbox";check.value=member.user_id;
+      const check=node("input");check.type="checkbox";check.value=member.user_id;check.checked=previouslySelected.has(member.user_id);
       check.addEventListener("change",updateOpponentOptions);
       label.append(check,node("span","",memberName(member.user_id)));
       inviteList.append(label);
