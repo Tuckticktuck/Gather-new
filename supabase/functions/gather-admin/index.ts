@@ -408,51 +408,6 @@ Deno.serve(async (request: Request) => {
       return response(200, { success: true });
     }
 
-    if (action === "admin_direct_message") {
-      if (!targetId) return adminError(400, "Choose a member account first.");
-      const body = cleanString(payload.body, 4000);
-      if (!body) return adminError(400, "Write a message before sending.");
-      const { data, error } = await userClient.rpc("admin_send_direct_message", {
-        p_user_id: targetId,
-        p_body: body,
-      });
-      if (error || !data?.conversation_id) {
-        console.error("Admin direct message failed:", error?.message ?? "No conversation returned.");
-        return adminError(400, error?.message ?? "The Admin message could not be sent.");
-      }
-      return response(200, {
-        conversation_id: data.conversation_id,
-        message_id: data.message_id,
-      });
-    }
-
-    if (action === "message_reported_user") {
-      const reportId = cleanString(payload.report_id, 80);
-      const body = cleanString(payload.body, 4000);
-      if (!reportId) return adminError(400, "Choose a report first.");
-      if (!body) return adminError(400, "Write a message before sending.");
-      const { data: report, error: reportError } = await adminClient.from("reports")
-        .select("id,target_user_id")
-        .eq("id", reportId)
-        .maybeSingle();
-      if (reportError || !report) return adminError(404, "That report could not be found.");
-      const targetId = report.target_user_id;
-      if (!targetId || targetId === actorId) return adminError(400, "That reported account cannot be contacted.");
-      const { data, error } = await userClient.rpc("admin_send_direct_message", {
-        p_user_id: targetId,
-        p_body: body,
-      });
-      if (error || !data?.conversation_id) {
-        console.error("Admin report follow-up message failed:", error?.message ?? "No conversation returned.");
-        return adminError(400, error?.message ?? "The private message could not be sent.");
-      }
-      await writeAdminLog(adminClient, actorId, targetId, "message_reported_user", {
-        report_id: reportId,
-        message_id: data.message_id,
-      });
-      return response(200, { conversation_id: data.conversation_id });
-    }
-
     if (action === "update_report_status") {
       const reportId = cleanString(payload.report_id, 80);
       const status = cleanString(payload.status, 20);
