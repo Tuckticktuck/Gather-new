@@ -1115,7 +1115,6 @@ async function signedIn(user,retry=false){
 function chatTitle(c){
   if(c.kind==="group")return c.title?.trim()||"Group chat";
   const other=c.members.find(m=>m.user_id!==S.user.id);
-  if(c.admin_initiated&&other?.user_id===c.created_by)return "Gather Admin";
   const profile=other&&S.profiles[other.user_id];
   const displayName=profile?.display_name?.trim();
   const username=profile?.username?.trim();
@@ -1143,7 +1142,7 @@ async function loadChats(){
   else S.archivedConversationIds=new Set((archived.data||[]).map(x=>x.conversation_id));
   const m=await db.from("conversation_members").select("conversation_id,role,conversations!inner(id,kind,title,description,updated_at,created_by,admin_initiated,slow_mode_seconds,guidelines)").eq("user_id",S.user.id);
   if(m.error){S.loadError="Chats could not be loaded: "+m.error.message;toast(S.loadError);return false;}
-  const rows=m.data||[],ids=[...new Set(rows.map(x=>x.conversation_id))];
+  const rows=(m.data||[]).filter(x=>!x.conversations?.admin_initiated),ids=[...new Set(rows.map(x=>x.conversation_id))];
   if(!ids.length){S.chats=[];S.profiles={};await loadUnreadCounts();renderChats();renderActive();return await loadRequests();}
   const [members,msgs,groupPics]=await Promise.all([
     db.from("conversation_members").select("conversation_id,user_id,role").in("conversation_id",ids),
@@ -2576,10 +2575,6 @@ function renderChats(){
   const pinnedChats=S.chatSettings.pinned.map(id=>S.chats.find(chat=>chat.id===id)).filter(chat=>chat&&!isArchivedChat(chat)&&!isRegularChatDuplicatedByAdmin(chat,adminPeerIds));
   $("pinned-chat-section").hidden=!pinnedChats.length||isArchived;
   renderChatSection("direct","pinned-chat-list","pinned-chat-count",term,pinnedChats);
-  const adminChats=S.chats.filter(chat=>chat.kind==="direct"&&chat.admin_initiated&&!pinnedIds.has(chat.id)&&!isArchivedChat(chat));
-  $("admin-message-section").hidden=!adminChats.length||isArchived;
-  $("admin-message-heading").textContent=isFeedbackAdmin(S.user)?"Admin conversations":"Gather Admin";
-  renderChatSection("direct","admin-message-list","admin-message-count",term,adminChats);
   standard.hidden=!isStandard;blocked.hidden=S.folder!=="blocked";deleted.hidden=S.folder!=="deleted";
   archivedPanel.hidden=!isArchived;$("all-groups-section").hidden=isArchived;
   document.querySelectorAll("[data-folder]").forEach(b=>{
@@ -2590,7 +2585,7 @@ function renderChats(){
     $("private-chat-heading").textContent=S.folder==="friends"?"Friends":"Non-friends";
     const friends=new Set(S.friends.map(x=>x.friend_id)),blockedIds=new Set(S.blockedUsers.map(x=>x.blocked_id));
     const chats=S.chats.filter(c=>{
-      if(c.kind!=="direct"||c.admin_initiated||pinnedIds.has(c.id)||isArchivedChat(c)||isRegularChatDuplicatedByAdmin(c,adminPeerIds))return false;
+      if(c.kind!=="direct"||pinnedIds.has(c.id)||isArchivedChat(c))return false;
       const peer=peerForChat(c);if(!peer||blockedIds.has(peer))return false;
       return S.folder==="friends"?friends.has(peer):!friends.has(peer);
     });
@@ -4268,11 +4263,7 @@ function setAdminModeSection(section){
   });
   if(section==="overview")loadAdminOverview();
   if(section==="accounts"&&!S.admin.users.length)loadAdminAccounts(true);
-  if(section==="messages"){
-    if(!S.admin.users.length)loadAdminAccounts(true);
-    else renderAdminMessageRecipients();
-  }
-  if(section==="activity")loadAdminActivity();
+    if(section==="activity")loadAdminActivity();
   if(section==="approvals")loadAdminApprovals();
   if(section==="age-access"){loadAdminIntergroupRequests();loadAdminAgeChangeRequests();}
 }
@@ -4288,8 +4279,6 @@ function adminActionLabel(action){
     user_banned:"Banned a member account",
     user_unbanned:"Unbanned a member account",
     user_deleted:"Deleted a member account",
-    message_reported_user:"Contacted a reported member",
-    admin_direct_message_sent:"Sent a direct message as Gather Admin",
     messaging_restricted:"Temporarily restricted a member's messaging",
     messaging_restriction_removed:"Removed a member's messaging restriction",
     intergroup_request_approved:"Approved intergroup messaging",
@@ -4648,77 +4637,6 @@ function renderAdminAccountDetail(){
   resetAge.addEventListener("click",()=>resetAdminAgeConfirmation(user.id));
   remove.addEventListener("click",()=>deleteAdminAccount(user.id));
 }
-function renderAdminMessageRecipients(){
-  const list=$("admin-message-recipient-list");
-  const more=$("admin-message-more");
-  if(!list||!more)return;
-  list.replaceChildren();
-  const term=($("admin-message-search")?.value||"").trim().toLowerCase();
-  const users=S.admin.users.filter(user=>user.id!==S.user?.id&&
-    [user.display_name,user.username,user.email,user.id].join(" ").toLowerCase().includes(term));
-  if(!users.length){
-    list.append(el("p","muted tiny",term?"No loaded accounts match that search.":"No other member accounts were found."));
-  }else{
-    users.forEach(user=>{
-      const button=el("button","admin-account-item");
-      button.type="button";
-      button.append(
-        el("strong","",user.display_name||user.username||"Unnamed account"),
-        el("small","",user.username?"@"+user.username:"No username set"),
-        el("small","",user.email||"Gather member account"),
-        el("small","admin-account-item-status","Send official message")
-      );
-      button.addEventListener("click",()=>openAdminDirectMessage(user.id));
-      list.append(button);
-    });
-  }
-  more.hidden=!S.admin.hasMore;
-  more.disabled=S.admin.loading;
-  more.textContent=S.admin.loading?"Loading members…":"Load more members";
-}
-function openAdminDirectMessage(userId){
-  if(!isFeedbackAdmin(S.user)){toast("Only Gather Admin can send official direct messages.");return;}
-  const user=S.admin.users.find(item=>item.id===userId);
-  if(!user||user.id===S.user.id){toast("Choose another member account.");return;}
-  S.admin.directMessageTargetId=user.id;
-  const name=user.display_name||user.username||"member";
-  $("admin-direct-message-title").textContent="Message "+name;
-  $("admin-direct-message-recipient").textContent=(user.username?"@"+user.username+" · ":"")+(user.email||"Gather member account");
-  $("admin-direct-message-body").value="";
-  $("admin-direct-message-status").textContent="";
-  $("admin-direct-message-submit").disabled=false;
-  $("admin-direct-message-submit").textContent="Send as Gather Admin";
-  showAdminChildModal("admin-direct-message-modal");
-}
-async function sendAdminDirectMessage(event){
-  event.preventDefault();
-  if(!isFeedbackAdmin(S.user)){toast("Only Gather Admin can send official direct messages.");return;}
-  const user=S.admin.users.find(item=>item.id===S.admin.directMessageTargetId);
-  const body=$("admin-direct-message-body").value.trim();
-  const statusNode=$("admin-direct-message-status"),submit=$("admin-direct-message-submit");
-  if(!user||user.id===S.user.id){statusNode.textContent="Choose another member account.";return;}
-  if(!body){statusNode.textContent="Write a message before sending.";return;}
-  submit.disabled=true;
-  submit.textContent="Sending…";
-  statusNode.textContent="Sending as Gather Admin…";
-  try{
-    const result=await adminApi("admin_direct_message",{user_id:user.id,body});
-    if(!result.conversation_id)throw new Error("The Admin conversation could not be created.");
-    dismissAdminChildModal("admin-direct-message-modal");
-    clearAdminChildNavigation();
-    $("admin-mode-modal").hidden=true;
-    await loadChats();
-    await openChat(result.conversation_id);
-    toast("Your message was sent as Gather Admin.");
-  }catch(error){
-    statusNode.textContent=error.message||"The message could not be sent.";
-  }finally{
-    if(!$("admin-direct-message-modal").hidden){
-      submit.disabled=false;
-      submit.textContent="Send as Gather Admin";
-    }
-  }
-}
 async function setAdminMessagingRestriction(userId){
   const user=S.admin.users.find(item=>item.id===userId);if(!user||!isFeedbackAdmin(S.user))return;
   const duration=Number($("admin-message-restriction-duration").value);
@@ -4827,20 +4745,6 @@ async function loadAdminActivity(){
     renderAdminActivity("admin-activity-list",S.admin.activity);
   }catch(error){$("admin-activity-list").replaceChildren(el("p","status error",error.message));}
 }
-async function messageReportedMember(report){
-  if(!isFeedbackAdmin(S.user)||!report?.id)return;
-  const target=S.profiles[report.target_user_id];
-  const message=prompt("Write a private Gather Admin message to "+(target?.display_name||"the reported member")+".");
-  if(!message?.trim())return;
-  try{
-    const result=await adminApi("message_reported_user",{report_id:report.id,body:message.trim()});
-    clearAdminChildNavigation();
-    $("admin-mode-modal").hidden=true;
-    await loadChats();
-    await openChat(result.conversation_id);
-    toast("Your private message was sent.");
-  }catch(error){toast("The member could not be contacted: "+error.message);}
-}
 async function openReportsAdmin(){
   if(!isFeedbackAdmin(S.user)){toast("Only the administrator can review reports.");return;}
   showAdminChildModal("reports-admin-modal");
@@ -4872,10 +4776,7 @@ async function openReportsAdmin(){
         toast("Report status could not be updated: "+error.message);
       }finally{select.disabled=false;}
     });
-    const contact=el("button","outline admin-report-message","Message reported member");
-    contact.type="button";
-    contact.addEventListener("click",()=>messageReportedMember(report));
-    card.append(heading,text,meta,select,contact);list.append(card);
+    card.append(heading,text,meta,select);list.append(card);
   }
 }
 async function signOutOtherSessions(){
@@ -5823,12 +5724,6 @@ function wire(){
   $("admin-accounts-refresh").addEventListener("click",()=>loadAdminAccounts(true));
   $("admin-account-search").addEventListener("input",renderAdminAccounts);
   document.querySelectorAll(".message-restriction-retry").forEach(button=>button.addEventListener("click",()=>loadMessageRestriction()));
-  $("admin-direct-message-form").addEventListener("submit",sendAdminDirectMessage);
-  $("admin-message-search").addEventListener("input",renderAdminMessageRecipients);
-  $("admin-message-more").addEventListener("click",async()=>{
-    await loadAdminAccounts(false);
-    renderAdminMessageRecipients();
-  });
   $("admin-accounts-more").addEventListener("click",()=>loadAdminAccounts(false));
   $("admin-activity-refresh").addEventListener("click",loadAdminActivity);
   $("admin-overview-activity-refresh").addEventListener("click",loadAdminOverview);
