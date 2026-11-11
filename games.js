@@ -30,6 +30,7 @@
   let battleshipPrivateState = null;
   let battleshipPrivateLoading = false;
   let battleshipDraft = { gameId: null, ships: [], selected: "carrier", orientation: "horizontal", message: "" };
+  let hubFilter = "all";
 
   const $ = id => document.getElementById(id);
   const node = (tag, cls, value) => {
@@ -86,7 +87,7 @@
       const hub = node("section", "games-workspace");
       hub.id = "games-workspace";
       hub.hidden = true;
-      hub.innerHTML = '<header class="games-hub-header"><div><button id="games-back-home" class="outline games-back-home" type="button">← Back to conversations</button><p class="eyebrow">PLAY TOGETHER</p><h1>Gather Games</h1><p class="muted games-hub-subtitle">Play a match with someone from one of your conversations. Other group members can spectate live.</p></div><button id="games-new" class="primary games-new-button" type="button">＋ New game</button></header><section class="games-hub-section"><div class="games-section-heading"><div><h2>Your games</h2><p class="muted tiny">Invitations, active matches and recent results.</p></div><button id="games-refresh" class="outline" type="button">Refresh</button></div><p id="games-hub-status" class="status" role="status"></p><div id="games-list" class="games-list"></div></section>';
+      hub.innerHTML = '<header class="games-hub-header"><div><button id="games-back-home" class="outline games-back-home" type="button">← Back to conversations</button><p class="eyebrow">PLAY TOGETHER</p><h1>Gather Games</h1><p class="muted games-hub-subtitle">Play a match with someone from one of your conversations. Other group members can spectate live.</p></div><button id="games-new" class="primary games-new-button" type="button">＋ New game</button></header><section class="games-hub-section"><div class="games-section-heading"><div><h2>Your games</h2><p class="muted tiny">Invitations, active matches and recent results.</p></div><button id="games-refresh" class="outline" type="button">Refresh</button></div><nav class="games-filter-tabs" aria-label="Filter games"><button type="button" class="games-filter-tab active" data-games-filter="all" aria-pressed="true">All games</button><button type="button" class="games-filter-tab" data-games-filter="invitations" aria-pressed="false">Invitations</button><button type="button" class="games-filter-tab" data-games-filter="active" aria-pressed="false">Active</button><button type="button" class="games-filter-tab" data-games-filter="completed" aria-pressed="false">Completed</button></nav><p id="games-hub-status" class="status" role="status"></p><div id="games-list" class="games-list"></div></section>';
       const chat = $("chat");
       main.insertBefore(hub, chat || null);
       $("games-new").addEventListener("click", () => openCreateModal());
@@ -326,6 +327,7 @@
     }
     games = result.data || [];
     renderAll();
+    if (typeof ctx.onGamesUpdated === "function") ctx.onGamesUpdated();
   }
 
   function renderAll() {
@@ -344,14 +346,48 @@
     const list = $("games-list");
     if (!list) return;
     list.replaceChildren();
-    const ordered = [...games].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+    const all = [...games].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+    const ordered = all.filter(game => {
+      if (hubFilter === "invitations") return game.status === "pending" && game.player_two_id === userId();
+      if (hubFilter === "active") return game.status === "active";
+      if (hubFilter === "completed") return game.status === "completed";
+      return true;
+    });
+    document.querySelectorAll("[data-games-filter]").forEach(tab => {
+      const active = tab.dataset.gamesFilter === hubFilter;
+      tab.classList.toggle("active", active);
+      tab.setAttribute("aria-pressed", String(active));
+    });
     if (!ordered.length) {
-      list.append(node("p", "games-empty muted", "No games yet. Start a match from a conversation or create one here."));
-      if ($("games-hub-status")) $("games-hub-status").textContent = "";
+      const empty = hubFilter === "invitations" ? "No incoming game invitations right now." : hubFilter === "active" ? "You have no active games." : hubFilter === "completed" ? "Completed games will appear here." : "No games yet. Start a match from a conversation or create one here.";
+      list.append(node("p", "games-empty muted", empty));
+      if ($("games-hub-status")) $("games-hub-status").textContent = all.length ? all.length + " game" + (all.length === 1 ? "" : "s") + " in your history." : "";
       return;
     }
-    if ($("games-hub-status")) $("games-hub-status").textContent = ordered.length + " game" + (ordered.length === 1 ? "" : "s") + " across your conversations.";
+    if ($("games-hub-status")) $("games-hub-status").textContent = ordered.length + " " + (hubFilter === "all" ? "game" : hubFilter === "invitations" ? "invitation" : "match") + (ordered.length === 1 ? "" : "s") + (hubFilter === "all" ? " across your conversations." : ".");
     ordered.forEach(game => list.append(makeGameCard(game, true)));
+  }
+
+  function setHubFilter(filter) {
+    if (!["all", "invitations", "active", "completed"].includes(filter)) return;
+    hubFilter = filter;
+    renderHub();
+  }
+
+  function getPendingInvitations() {
+    return games.filter(game => game.status === "pending" && game.player_two_id === userId())
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  }
+
+  async function respondToInvitation(gameId, accept) {
+    const game = games.find(item => item.id === gameId);
+    if (!game || game.status !== "pending" || game.player_two_id !== userId()) return;
+    await gameAction(accept ? "gather_game_accept" : "gather_game_decline", game);
+  }
+
+  function openInvitation(gameId) {
+    const game = games.find(item => item.id === gameId);
+    if (game) openGame(game);
   }
 
   function renderChatTray() {
@@ -1259,6 +1295,9 @@
     setActiveChat,
     showHub,
     openCreateModal,
+    openInvitation,
+    getPendingInvitations,
+    respondToInvitation,
     refresh: () => refreshGames(true),
     shutdown
   };
