@@ -172,6 +172,8 @@ function applyUIPreferences(){
   root.style.setProperty("--accent-avatar-text",`color-mix(in srgb,${accent.accent} 76%,white)`);
   root.style.setProperty("--accent-gradient-light",`color-mix(in srgb,${accent.accent} 76%,white)`);
   root.style.setProperty("--accent-deep",`color-mix(in srgb,${accent.accent} 19%,#11131a)`);
+  // A deeper shade of the selected accent gives the top bar a distinct, coordinated highlight.
+  root.style.setProperty("--accent-topbar",`color-mix(in srgb,${accent.accent} 46%,#090b11)`);
   root.style.setProperty("--accent-panel",`color-mix(in srgb,${accent.accent} 13%,#191b25)`);
   root.style.setProperty("--accent-panel-raised",`color-mix(in srgb,${accent.accent} 17%,#1d202b)`);
   root.style.setProperty("--accent-input",`color-mix(in srgb,${accent.accent} 10%,#11131a)`);
