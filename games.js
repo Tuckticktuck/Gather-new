@@ -369,8 +369,13 @@
       actions.append(button("Decline", "outline", () => gameAction("gather_game_decline", game)));
     } else if (game.status === "pending" && game.created_by === userId()) {
       actions.append(button("Cancel invite", "outline", () => gameAction("gather_game_cancel", game)));
-    } else if (game.status === "active" || game.status === "completed") {
-      actions.append(button(game.status === "active" && !isPlayer(game) ? "Watch live" : "Open game", "games-card-primary", () => openGame(game)));
+    } else if (game.status === "active") {
+      actions.append(button(!isPlayer(game) ? "Watch live" : "Open game", "games-card-primary", () => openGame(game)));
+    } else if (game.status === "completed") {
+      actions.append(button("View result", "outline", () => openGame(game)));
+      if (isPlayer(game)) {
+        actions.append(button("Rematch", "games-card-primary", () => requestRematch(game)));
+      }
     } else if (game.status === "pending") {
       actions.append(button("View invitation", "outline", () => openGame(game)));
     } else {
@@ -469,6 +474,69 @@
     else if (game.game_type === "connect_four") renderConnectFour(game, boardArea, canMove);
     else if (game.game_type === "checkers") renderCheckers(game, boardArea, canMove);
     else renderChess(game, boardArea, canMove);
+
+    if (game.status === "completed" && player) {
+      const rematchActions = node("div", "games-rematch-actions");
+      rematchActions.append(button("Request rematch", "primary", () => requestRematch(game)));
+      boardArea.append(rematchActions);
+    }
+  }
+
+  async function requestRematch(game) {
+    if (busy || !game || game.status !== "completed" || !isPlayer(game)) return;
+    const opponentId = game.player_one_id === userId() ? game.player_two_id : game.player_one_id;
+    if (!opponentId || !game.conversation_id) {
+      toast("The original opponent could not be found.");
+      return;
+    }
+
+    const existing = games.find(item =>
+      item.id !== game.id &&
+      item.conversation_id === game.conversation_id &&
+      item.game_type === game.game_type &&
+      item.status === "pending" &&
+      ((item.player_one_id === userId() && item.player_two_id === opponentId) ||
+       (item.player_one_id === opponentId && item.player_two_id === userId()))
+    );
+    if (existing) {
+      toast("A rematch invitation is already waiting for a response.");
+      openGame(existing);
+      return;
+    }
+
+    busy = true;
+    const response = await ctx.db.rpc("gather_game_create", {
+      p_conversation_id: game.conversation_id,
+      p_game_type: game.game_type,
+      p_player_two_id: opponentId
+    });
+    busy = false;
+
+    if (response.error) {
+      toast(response.error.message || "The rematch invitation could not be sent.");
+      return;
+    }
+
+    const rematch = Array.isArray(response.data) ? response.data[0] : response.data;
+    if (!rematch?.id) {
+      await refreshGames(false);
+      const latest = games.find(item =>
+        item.conversation_id === game.conversation_id &&
+        item.game_type === game.game_type &&
+        item.status === "pending" &&
+        item.player_one_id === userId() &&
+        item.player_two_id === opponentId
+      );
+      if (latest) openGame(latest);
+      else toast("The rematch invitation was created, but could not be opened.");
+      return;
+    }
+
+    games = [rematch, ...games.filter(item => item.id !== rematch.id)];
+    renderAll();
+    await refreshGames(false);
+    openGame(games.find(item => item.id === rematch.id) || rematch);
+    toast("Rematch invitation sent to " + memberName(opponentId) + ".");
   }
 
   async function commitMove(game, nextState, nextTurnUserId, result) {
