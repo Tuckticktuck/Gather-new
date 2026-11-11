@@ -5729,7 +5729,11 @@ function wire(){
         ?await db.auth.signUp({email,password,options:{data:{display_name:$("name").value.trim()},emailRedirectTo:location.origin+location.pathname}})
         :await db.auth.signInWithPassword({email,password});
       if(result.error){
-        status("auth-status",result.error.message,"error");
+        const invalidCredentials = result.error.code === "invalid_credentials" ||
+          /invalid login credentials/i.test(result.error.message || "");
+        status("auth-status",invalidCredentials
+          ? "We couldn't find an account with that email and password. If this is your first time using Gather, choose Create account above and register first. If you already registered, double-check your email and password or use Forgot password?"
+          : result.error.message,"error");
       }else if(isNew&&!result.data.session){
         status("auth-status","Account created and automatically submitted for administrator review. Check your email for the confirmation link, then sign in here. You'll confirm your age before you can access Gather.","success");
       }else if(result.data.session?.user){
