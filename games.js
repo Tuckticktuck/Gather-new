@@ -502,36 +502,76 @@
     return winnerId === game.player_one_id ? "player_one_won" : "player_two_won";
   }
 
-  function tttWinner(board) {
+  function tttWinningLine(board) {
     const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
     for (const line of lines) {
       const mark = board[line[0]];
-      if (mark && mark === board[line[1]] && mark === board[line[2]]) return mark;
+      if (mark && mark === board[line[1]] && mark === board[line[2]]) return line;
     }
     return null;
   }
 
+  function tttWinner(board) {
+    const line = tttWinningLine(board);
+    return line ? board[line[0]] : null;
+  }
+
   function renderTicTacToe(game, container, canMove) {
     const state = game.state || {};
-    const board = Array.isArray(state.board) ? state.board : Array(9).fill("");
+    const board = Array.isArray(state.board) && state.board.length === 9 ? state.board : Array(9).fill("");
+    const winningLine = tttWinningLine(board);
+    const winner = winningLine ? board[winningLine[0]] : null;
+    const currentMark = state.turn === "o" ? "o" : "x";
+    const playerOneTurn = game.turn_user_id === game.player_one_id;
+    const players = node("div", "games-ttt-players");
+    const makePlayer = (id, mark, isActive) => {
+      const card = node("div", "games-ttt-player" + (isActive && game.status === "active" ? " is-current" : "") + (winner === mark ? " is-winner" : ""));
+      const symbol = node("span", "games-ttt-player-symbol mark-" + mark, mark.toUpperCase());
+      const info = node("span", "games-ttt-player-info");
+      info.append(node("strong", "", memberName(id)), node("small", "", mark.toUpperCase() + (winner === mark ? " · Winner" : "")));
+      card.append(symbol, info);
+      if (isActive && game.status === "active") card.append(node("span", "games-ttt-turn-dot"));
+      return card;
+    };
+    players.append(
+      makePlayer(game.player_one_id, "x", playerOneTurn),
+      makePlayer(game.player_two_id, "o", !playerOneTurn)
+    );
+
+    const boardFrame = node("div", "games-ttt-frame");
     const grid = node("div", "games-ttt-board");
+    grid.setAttribute("role", "group");
+    grid.setAttribute("aria-label", "Tic-Tac-Toe board");
     board.forEach((mark, index) => {
-      const cell = button(mark ? mark.toUpperCase() : "", "games-ttt-cell mark-" + (mark || "empty"), () => {
+      const isWinningCell = !!winningLine?.includes(index);
+      const cell = button("", "games-ttt-cell" + (mark ? " mark-" + mark : " mark-empty") + (isWinningCell ? " is-winning" : ""), () => {
         if (!canMove || board[index]) return;
         const next = board.slice();
-        next[index] = state.turn;
-        const winningMark = tttWinner(next);
+        next[index] = currentMark;
+        const nextWinningLine = tttWinningLine(next);
+        const winningMark = nextWinningLine ? next[nextWinningLine[0]] : null;
         const draw = !winningMark && next.every(Boolean);
-        const nextTurn = state.turn === "x" ? "o" : "x";
+        const nextTurn = currentMark === "x" ? "o" : "x";
         const nextId = winningMark || draw ? null : (nextTurn === "x" ? game.player_one_id : game.player_two_id);
         const result = winningMark ? resultForWinner(game, winningMark === "x" ? game.player_one_id : game.player_two_id) : (draw ? "draw" : null);
         void commitMove(game, { board: next, turn: nextTurn, moves: (state.moves || 0) + 1 }, nextId, result);
       });
-      cell.disabled = !canMove || !!mark;
-      cell.setAttribute("aria-label", "Square " + (index + 1) + (mark ? ", " + mark : ", empty"));
+      cell.append(node("span", "games-ttt-mark", mark ? mark.toUpperCase() : ""));
+      cell.disabled = !canMove || !!mark || game.status !== "active";
+      cell.setAttribute("aria-label", "Square " + (index + 1) + (mark ? ", " + mark.toUpperCase() : ", empty"));
+      cell.setAttribute("aria-pressed", mark ? "true" : "false");
+      if (!mark && canMove && game.status === "active") cell.title = "Place " + currentMark.toUpperCase();
       grid.append(cell);
     });
-    container.append(grid);
+    boardFrame.append(grid);
+
+    const footer = node("div", "games-ttt-footer");
+    const moveCount = Number.isFinite(state.moves) ? state.moves : board.filter(Boolean).length;
+    footer.append(
+      node("span", "games-ttt-move-count", moveCount + " / 9 moves"),
+      node("span", "games-ttt-board-note", game.status === "completed" ? "Final board" : canMove ? "Your move" : "Waiting for the next move")
+    );
+    container.append(players, boardFrame, footer);
   }
 
   function connectWinner(board, row, col, token) {
