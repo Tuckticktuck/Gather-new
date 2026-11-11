@@ -284,3 +284,59 @@
 /* Leave clear space for the persistent Messages / Games section switcher. */
 .games-workspace{padding-top:82px}
 @media(max-width:720px){.games-workspace{padding-top:73px}}
+
+
+/* Game conversations inbox */
+.games-inbox-layout{
+  display:grid;grid-template-columns:minmax(235px,300px) minmax(0,1fr);
+  min-height:430px;max-width:1200px;margin:0 auto;
+  border:1px solid var(--line);border-radius:17px;overflow:hidden;
+  background:var(--panel);
+}
+.games-inbox-sidebar{
+  min-width:0;padding:17px 12px;border-right:1px solid var(--line);
+  background:color-mix(in srgb,var(--panel) 88%,var(--bg));
+}
+.games-inbox-sidebar-head{padding:0 7px 13px;border-bottom:1px solid var(--line)}
+.games-inbox-sidebar-head h2{margin:0 0 5px;font-size:14px}
+.games-inbox-sidebar-head p{margin:0}
+.games-conversation-list{display:grid;align-content:start;gap:5px;margin-top:10px}
+.games-conversation-item{
+  display:grid;grid-template-columns:38px minmax(0,1fr);gap:9px;align-items:center;
+  width:100%;padding:10px;border:1px solid transparent;border-radius:12px;
+  color:var(--text);background:transparent;text-align:left;cursor:pointer;
+  transition:background .16s,border-color .16s
+}
+.games-conversation-item:hover{background:var(--accent-hover)}
+.games-conversation-item.active{border-color:var(--accent-border);background:var(--accent-surface)}
+.games-conversation-avatar{
+  display:grid;place-items:center;width:38px;height:38px;border:1px solid var(--accent-border);
+  border-radius:12px;color:var(--accent-text);background:var(--accent-soft);font-size:19px
+}
+.games-conversation-copy{display:grid;gap:4px;min-width:0}
+.games-conversation-copy strong,.games-conversation-copy small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.games-conversation-copy strong{font-size:11px}
+.games-conversation-copy small{font-size:9px}
+.games-conversation-meta{grid-column:2;display:flex;flex-wrap:wrap;gap:5px;margin-top:-4px}
+.games-conversation-count,.games-conversation-live,.games-conversation-invites{
+  padding:3px 6px;border-radius:20px;background:var(--bg);color:var(--muted);font-size:9px;font-weight:750
+}
+.games-conversation-live{color:#70c5a3;background:#70c5a31a}
+.games-conversation-invites{color:var(--accent-text);background:var(--accent-soft)}
+.games-conversation-detail{min-width:0;padding:19px}
+.games-detail-header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}
+.games-detail-header h2{margin:0 0 5px;font-size:19px;overflow-wrap:anywhere}
+.games-detail-header p{margin:0}
+.games-detail-header .eyebrow{margin-bottom:5px}
+.games-detail-header .outline{flex:none}
+.games-conversation-detail .games-list{grid-template-columns:repeat(auto-fill,minmax(min(100%,245px),1fr))}
+.workspace-tab-icon{display:inline-grid;place-items:center;width:16px;height:16px;flex:none}
+.workspace-tab-icon svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+@media(max-width:760px){
+  .games-inbox-layout{grid-template-columns:minmax(0,1fr);min-height:0}
+  .games-inbox-sidebar{padding:12px;border-right:0;border-bottom:1px solid var(--line)}
+  .games-conversation-list{grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));max-height:210px;overflow:auto}
+  .games-conversation-detail{padding:14px}
+  .games-detail-header{align-items:flex-start}
+  .games-conversation-detail .games-list{grid-template-columns:minmax(0,1fr)}
+}
