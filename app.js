@@ -153,10 +153,16 @@ function applyUIPreferences(){
   const faviconBg=isLight?"#f3f5fa":"#090b11";
   const faviconInk=isLight?"#263044":"#f6f3ff";
   const faviconSvg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="18" fill="${faviconBg}"/><circle cx="32" cy="32" r="22" fill="${accent.accent}" opacity=".18"/><circle cx="32" cy="32" r="19" fill="none" stroke="${accent.accent}" stroke-width="4"/><circle cx="32" cy="32" r="12.5" fill="none" stroke="${faviconInk}" stroke-width="3"/><circle cx="32" cy="32" r="5.5" fill="${accent.strong}"/></svg>`;
+  // Recolor every in-page Gather brand mark, not just the browser favicon.
+  const brandMarkSvg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="18" fill="${accent.accent}"/><circle cx="32" cy="32" r="22" fill="${accent.strong}" opacity=".2"/><circle cx="32" cy="32" r="19" fill="none" stroke="${faviconInk}" stroke-width="3.4"/><circle cx="32" cy="32" r="12.5" fill="none" stroke="${faviconInk}" stroke-width="2.8"/><circle cx="32" cy="32" r="5.5" fill="none" stroke="${faviconInk}" stroke-width="2.4"/></svg>`;
+  const brandMarkUrl="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(brandMarkSvg);
+  document.querySelectorAll(".brand-icon img,.announcement-admin-mark.brand-mark img,.home-announcement-mark.brand-mark img").forEach(img=>{img.src=brandMarkUrl;});
   let faviconLink=document.querySelector('link[rel="icon"]');
   if(!faviconLink){faviconLink=document.createElement("link");faviconLink.rel="icon";faviconLink.type="image/svg+xml";document.head.append(faviconLink);}
   faviconLink.href="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(faviconSvg);
   root.style.setProperty("--accent",accent.accent);
+  root.style.setProperty("--brand-mark-border",`color-mix(in srgb,${accent.accent} 72%,white)`);
+  root.style.setProperty("--brand-mark-shadow",`color-mix(in srgb,${accent.accent} 25%,transparent)`);
   root.style.setProperty("--accent-strong",accent.strong);
   root.style.setProperty("--accent-ink",accent.ink);
   root.style.setProperty("--accent-soft",accent.soft);
