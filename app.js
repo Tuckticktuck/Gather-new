@@ -30,7 +30,7 @@ function normalizeChatSettings(raw){
   });
   return {pinned,muted,drafts,appearance};
 }
-const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], favoriteFriendIds:new Set(), archivedConversationIds:new Set(), blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingUndoSend:null, undoSendTimer:null, undoCountdownInterval:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, homeSearchQuery:"", homeSearchTab:"messages", homeSearchMessages:[], homeSearchProfiles:[], homeSearchLoading:false, homeSearchErrors:{messages:"",profiles:""}, homeSearchTimer:null, homeSearchRequestId:0, directStatus:null, directStatusCache:new Map(), directStatusChecks:new Map(), groupMessageStatus:null, ageStatus:null, ageChangeStatus:null, ageRequestChannel:null, messageRestriction:null, messageRestrictionLoaded:false, messageRestrictionError:"", messageRestrictionChannel:null, messageRestrictionTimer:null, active:null, messages:[], initialChatScrollLockId:null, channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), friendPresenceRetryTimers:new Map(), friendPresenceRetryAttempts:new Map(), ownPresenceChannel:null, ownPresenceRetryTimer:null, ownPresenceRetryAttempt:0, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],intergroupRequests:[],ageChangeRequests:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
+const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], favoriteFriendIds:new Set(), archivedConversationIds:new Set(), blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), deletedConversationId:null, selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingUndoSend:null, undoSendTimer:null, undoCountdownInterval:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, homeSearchQuery:"", homeSearchTab:"messages", homeSearchMessages:[], homeSearchProfiles:[], homeSearchLoading:false, homeSearchErrors:{messages:"",profiles:""}, homeSearchTimer:null, homeSearchRequestId:0, directStatus:null, directStatusCache:new Map(), directStatusChecks:new Map(), groupMessageStatus:null, ageStatus:null, ageChangeStatus:null, ageRequestChannel:null, messageRestriction:null, messageRestrictionLoaded:false, messageRestrictionError:"", messageRestrictionChannel:null, messageRestrictionTimer:null, active:null, messages:[], initialChatScrollLockId:null, channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), friendPresenceRetryTimers:new Map(), friendPresenceRetryAttempts:new Map(), ownPresenceChannel:null, ownPresenceRetryTimer:null, ownPresenceRetryAttempt:0, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],intergroupRequests:[],ageChangeRequests:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function appendSafeText(parent,value){
@@ -2320,59 +2320,82 @@ function renderBlockedUsers(term){
     actions.append(unblock);row.append(actions);list.append(row);
   });
 }
+function openDeletedConversation(conversationId){
+  if(!conversationId)return;
+  S.deletedConversationId=String(conversationId);
+  renderChats();
+}
+function backToDeletedConversations(){
+  S.deletedConversationId=null;
+  renderChats();
+}
 function renderDeletedMessages(term){
-  const list=$("deleted-list");list.replaceChildren();
+  const list=$("deleted-list");if(!list)return;
+  list.replaceChildren();
+  const query=String(term||"").trim().toLowerCase();
   const items=S.deletedMessages
-    .filter(x=>((x.body||(x.attachment_path?"Image attachment":""))+" "+x.sender_name+" "+x.conversation_title).toLowerCase().includes(term))
+    .filter(x=>((x.body||(x.attachment_path?"Image attachment":""))+" "+x.sender_name+" "+x.conversation_title).toLowerCase().includes(query))
     .sort((a,b)=>new Date(b.deleted_at||b.created_at).getTime()-new Date(a.deleted_at||a.created_at).getTime());
-  $("deleted-count").textContent=items.length;
+  $("deleted-count").textContent=String(items.length);
   if(!items.length){
-    list.append(el("p","muted tiny section-empty",term?"No matching deleted messages.":"No deleted messages. Messages you hide will appear here."));
+    S.deletedConversationId=null;
+    list.append(el("p","muted tiny section-empty",query?"No matching deleted messages.":"No deleted messages. Messages you hide will appear here."));
     return;
   }
-
   const conversations=new Map();
   items.forEach(item=>{
     const key=String(item.conversation_id||item.conversation_title||"conversation");
-    if(!conversations.has(key)){
-      conversations.set(key,{title:item.conversation_title||"Conversation",items:[]});
-    }
+    if(!conversations.has(key))conversations.set(key,{id:key,title:item.conversation_title||"Conversation",items:[]});
     conversations.get(key).items.push(item);
   });
-
+  if(S.deletedConversationId){
+    const group=conversations.get(String(S.deletedConversationId));
+    if(group){
+      const screen=el("section","deleted-chat-screen");
+      const toolbar=el("header","deleted-chat-toolbar");
+      const back=el("button","outline deleted-chat-back","← Back to deleted messages");
+      back.type="button";back.addEventListener("click",backToDeletedConversations);
+      const heading=el("div","deleted-chat-heading");
+      heading.append(el("strong","",group.title),el("small","muted",group.items.length+" deleted "+(group.items.length===1?"message":"messages")));
+      toolbar.append(back,heading);screen.append(toolbar);
+      const messages=el("div","deleted-chat-message-list");
+      group.items.forEach(item=>{
+        const mine=item.sender_name==="You";
+        const row=el("button","deleted-message-bubble"+(mine?" mine":""));
+        row.type="button";row.setAttribute("aria-label","Restore deleted message from "+item.sender_name);
+        row.append(avatar(item.sender_name,S.profiles[item.sender_id]?.avatar_data));
+        const copy=el("span","deleted-message-copy");
+        const meta=el("span","deleted-message-meta");
+        meta.append(el("strong","",item.sender_name),el("small","",dateLabel(item.created_at)));
+        const body=el("span","deleted-message-body",item.body||(item.attachment_path?"Image attachment":"Deleted message"));
+        const deletedAt=item.deleted_at?dateLabel(item.deleted_at):"";
+        const hint=el("span","deleted-message-hint",deletedAt?"Deleted "+deletedAt+" · Tap to restore":"Tap to restore");
+        copy.append(meta,body,hint);row.append(copy);
+        row.addEventListener("click",async()=>{
+          if(row.disabled)return;
+          row.disabled=true;hint.textContent="Restoring…";
+          const restored=await restoreMessage(item.message_id);
+          if(!restored){row.disabled=false;hint.textContent=deletedAt?"Deleted "+deletedAt+" · Tap to restore":"Tap to restore";}
+        });
+        messages.append(row);
+      });
+      screen.append(messages);list.append(screen);
+      return;
+    }
+    S.deletedConversationId=null;
+  }
+  const picker=el("div","deleted-conversation-picker");
   conversations.forEach(group=>{
-    const section=document.createElement("details");
-    section.className="deleted-conversation-group";
-    section.open=true;
-
-    const heading=document.createElement("summary");
-    heading.className="deleted-conversation-heading";
-    heading.append(el("strong","deleted-conversation-title",group.title));
-    heading.append(el("span","section-count",String(group.items.length)));
-    section.append(heading);
-
-    const messages=el("div","deleted-conversation-messages");
-    group.items.forEach(item=>{
-      const row=el("article","deleted-item");
-      row.append(avatar(item.sender_name,S.profiles[item.sender_id]?.avatar_data));
-
-      const copy=el("div","deleted-copy");
-      copy.append(el("strong","",item.sender_name));
-      const sentAt=dateLabel(item.created_at);
-      const deletedAt=item.deleted_at?dateLabel(item.deleted_at):"";
-      copy.append(el("small","",deletedAt?"Sent "+sentAt+" · Deleted "+deletedAt:"Sent "+sentAt));
-      copy.append(el("p","deleted-preview",item.body||(item.attachment_path?"Image attachment":"")));
-
-      const restore=el("button","request-accept","Restore");
-      restore.type="button";
-      restore.setAttribute("aria-label","Restore message from "+item.sender_name+" in "+group.title);
-      restore.addEventListener("click",()=>restoreMessage(item.message_id));
-      row.append(copy,restore);
-      messages.append(row);
-    });
-    section.append(messages);
-    list.append(section);
+    const latest=group.items[0];
+    const card=el("button","deleted-conversation-card");card.type="button";
+    const copy=el("span","deleted-conversation-card-copy");
+    copy.append(el("strong","",group.title));
+    copy.append(el("small","",latest?.body||(latest?.attachment_path?"Image attachment":"Deleted message")));
+    card.append(copy,el("span","deleted-conversation-card-count",String(group.items.length)),el("span","deleted-conversation-card-arrow","›"));
+    card.addEventListener("click",()=>openDeletedConversation(group.id));
+    picker.append(card);
   });
+  list.append(picker);
 }
 function toggleConversationSelectionMode(){
   S.selectingConversations=!S.selectingConversations;
@@ -2695,6 +2718,7 @@ async function toggleArchiveConversation(){
 }
 async function selectFolder(folder){
   if(!["friends","nonfriends","blocked","deleted","archived"].includes(folder))return;
+  if(folder!=="deleted")S.deletedConversationId=null;
   S.folder=folder;renderChats();
   if(folder==="blocked")await loadBlocked();
   if(folder==="deleted")await loadDeletedMessages();
@@ -3748,11 +3772,12 @@ async function deleteMessage(id){
 }
 async function restoreMessage(messageId){
   const r=await db.from("user_deleted_messages").delete().eq("user_id",S.user.id).eq("message_id",messageId);
-  if(r.error){toast("Message could not be restored: "+r.error.message);return;}
+  if(r.error){toast("Message could not be restored: "+r.error.message);return false;}
   S.deletedMessageIds.delete(messageId);
   await loadChats();await loadDeletedMessages();
   if(S.active){const active=S.chats.find(x=>x.id===S.active);if(active)await loadMessages(S.active);}
   toast("Message restored to your conversation.");
+  return true;
 }
 function openAboutBlank(){
   const target=window.open("about:blank","_blank");
