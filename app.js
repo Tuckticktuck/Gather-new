@@ -2274,6 +2274,15 @@ function renderChatSection(kind,listId,countId,term,sourceChats=null){
   });
 }
 function peerForChat(c){return c?.members.find(m=>m.user_id!==S.user.id)?.user_id||null;}
+function getAdminConversationPeerIds(chats=S.chats){
+  return new Set(chats
+    .filter(chat=>chat.kind==="direct"&&chat.admin_initiated)
+    .map(peerForChat)
+    .filter(Boolean));
+}
+function isRegularChatDuplicatedByAdmin(chat,adminPeers=getAdminConversationPeerIds()){
+  return !!chat&&chat.kind==="direct"&&!chat.admin_initiated&&adminPeers.has(peerForChat(chat));
+}
 function renderBlockedUsers(term){
   const list=$("blocked-list");list.replaceChildren();
   const blocked=S.blockedUsers.filter(x=>{
@@ -2563,7 +2572,8 @@ function renderChats(){
   const isArchived=S.folder==="archived";
   const pinnedIds=new Set(S.chatSettings.pinned);
   const isArchivedChat=chat=>S.archivedConversationIds instanceof Set&&S.archivedConversationIds.has(chat.id);
-  const pinnedChats=S.chatSettings.pinned.map(id=>S.chats.find(chat=>chat.id===id)).filter(chat=>chat&&!isArchivedChat(chat));
+  const adminPeerIds=getAdminConversationPeerIds();
+  const pinnedChats=S.chatSettings.pinned.map(id=>S.chats.find(chat=>chat.id===id)).filter(chat=>chat&&!isArchivedChat(chat)&&!isRegularChatDuplicatedByAdmin(chat,adminPeerIds));
   $("pinned-chat-section").hidden=!pinnedChats.length||isArchived;
   renderChatSection("direct","pinned-chat-list","pinned-chat-count",term,pinnedChats);
   const adminChats=S.chats.filter(chat=>chat.kind==="direct"&&chat.admin_initiated&&!pinnedIds.has(chat.id)&&!isArchivedChat(chat));
@@ -2580,7 +2590,7 @@ function renderChats(){
     $("private-chat-heading").textContent=S.folder==="friends"?"Friends":"Non-friends";
     const friends=new Set(S.friends.map(x=>x.friend_id)),blockedIds=new Set(S.blockedUsers.map(x=>x.blocked_id));
     const chats=S.chats.filter(c=>{
-      if(c.kind!=="direct"||c.admin_initiated||pinnedIds.has(c.id)||isArchivedChat(c))return false;
+      if(c.kind!=="direct"||c.admin_initiated||pinnedIds.has(c.id)||isArchivedChat(c)||isRegularChatDuplicatedByAdmin(c,adminPeerIds))return false;
       const peer=peerForChat(c);if(!peer||blockedIds.has(peer))return false;
       return S.folder==="friends"?friends.has(peer):!friends.has(peer);
     });
@@ -2604,7 +2614,9 @@ function renderInChatSidebar(){
   const allCount=$("in-chat-conversation-count");
   if(!pinnedSection||!pinnedList||!allList||!pinnedCount||!allCount)return;
   const term=($("in-chat-filter")?.value||"").trim().toLowerCase();
+  const adminPeerIds=getAdminConversationPeerIds();
   const matches=S.chats.filter(chat=>{
+    if(chat.id!==S.active&&isRegularChatDuplicatedByAdmin(chat,adminPeerIds))return false;
     const searchable=[chatTitle(chat),chatSub(chat),chat.last?.body||""].join(" ").toLowerCase();
     return (!chat.hasMessages||!!chat.last)&&searchable.includes(term);
   });
