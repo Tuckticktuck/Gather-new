@@ -3681,7 +3681,7 @@ html[data-theme="light"] .offline-status{color:#59421d;background:#fff4d8;border
   border-radius:9px;color:var(--muted);background:transparent;
   font-size:calc(11px * var(--font-scale,1));font-weight:750;
 }
-.workspace-switch-tab>span{color:var(--accent);font-size:15px;line-height:1}
+.workspace-switch-tab>span{color:var(--accent);font-size:15px;line-height:1}.workspace-switch-tab .workspace-tab-icon{color:var(--accent)}
 .workspace-switch-tab:hover{color:var(--text);background:var(--accent-hover)}
 .workspace-switch-tab.active,.workspace-switch-tab[aria-pressed="true"]{
   border-color:var(--accent-outline-soft);color:var(--accent-text);
