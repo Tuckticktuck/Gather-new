@@ -152,7 +152,7 @@
       const overlay = node("div", "overlay games-overlay");
       overlay.id = "games-create-overlay";
       overlay.hidden = true;
-      overlay.innerHTML = '<section class="modal games-create-modal" role="dialog" aria-modal="true" aria-labelledby="games-create-title"><button id="games-create-close" class="close" type="button" aria-label="Close">×</button><p class="eyebrow">NEW MATCH</p><h2 id="games-create-title">Invite someone to play</h2><p class="muted tiny">Choose a conversation and game. Multiplayer games can invite selected members or let everyone in the conversation join.</p><form id="games-create-form"><label>Conversation<select id="games-conversation" required></select></label><label>Game<select id="games-type" required><option value="chess">Chess</option><option value="checkers">Checkers</option><option value="tic_tac_toe">Tic-Tac-Toe</option><option value="connect_four">Connect Four</option><option value="battleship">Battleship</option><option value="tag">Tag · Multiplayer</option></select></label><label id="games-opponent-label">Invite player<select id="games-opponent" required></select></label><div id="games-multiplayer-options" class="games-multiplayer-options" hidden><label>Who can join?<select id="games-join-mode"><option value="invite">Only the people I invite</option><option value="open">Everyone in this conversation</option></select></label><div id="games-invite-members" class="games-invite-members"></div><p class="muted tiny">Each player picks a different color when joining.</p></div><p id="games-spectator-note" class="games-spectator-note"></p><p id="games-create-status" class="status" role="status"></p><div class="games-form-actions"><button id="games-create-cancel" class="secondary-action" type="button">Cancel</button><button id="games-create-submit" class="primary" type="submit">Send invitation</button></div></form></section>';
+      overlay.innerHTML = '<section class="modal games-create-modal" role="dialog" aria-modal="true" aria-labelledby="games-create-title"><button id="games-create-close" class="close" type="button" aria-label="Close">×</button><p class="eyebrow">NEW MATCH</p><h2 id="games-create-title">Invite someone to play</h2><p class="muted tiny">Choose a conversation and game. Multiplayer games can invite selected members or let everyone in the conversation join.</p><form id="games-create-form"><label>Conversation<select id="games-conversation" required></select></label><label>Game<select id="games-type" required><option value="chess">Chess</option><option value="checkers">Checkers</option><option value="tic_tac_toe">Tic-Tac-Toe</option><option value="connect_four">Connect Four</option><option value="battleship">Battleship</option><option value="tag">Tag · Multiplayer</option></select></label><label id="games-opponent-label">Invite player<select id="games-opponent" required></select></label><div id="games-multiplayer-options" class="games-multiplayer-options" hidden><label>Who can join?<select id="games-join-mode"><option value="invite">Only the people I invite</option><option value="open">Everyone in this conversation</option></select></label><label class="games-host-color-row">Your player color<input id="games-host-color" type="color" value="#38BDF8"></label><div id="games-invite-members" class="games-invite-members"></div><p class="muted tiny">Each player picks a different color when joining. Colors already in use cannot be selected.</p></div><p id="games-spectator-note" class="games-spectator-note"></p><p id="games-create-status" class="status" role="status"></p><div class="games-form-actions"><button id="games-create-cancel" class="secondary-action" type="button">Cancel</button><button id="games-create-submit" class="primary" type="submit">Send invitation</button></div></form></section>';
       document.body.append(overlay);
       $("games-create-close").addEventListener("click", closeCreateModal);
       $("games-create-cancel").addEventListener("click", closeCreateModal);
@@ -288,6 +288,7 @@
     $("games-invite-members")?.replaceChildren();
     $("games-type").value = "chess";
     if ($("games-join-mode")) $("games-join-mode").value = "invite";
+    if ($("games-host-color")) $("games-host-color").value = "#38BDF8";
     updateOpponentOptions();
     $("games-create-status").textContent = "";
     $("games-create-overlay").hidden = false;
@@ -367,7 +368,8 @@
           p_join_mode: $("games-join-mode").value,
           p_invited_user_ids: $("games-join-mode").value === "open" ? [] : opponentIds,
           p_settings: { arena_width: 100, arena_height: 100, movement: "free" },
-          p_initial_state: { arena: "square", tag_radius: 4.2, movement_limit: 7.5 }
+          p_initial_state: { arena: "square", tag_radius: 4.2, movement_limit: 7.5 },
+          p_creator_color: $("games-host-color").value
         })
       : await ctx.db.rpc("gather_game_create", {
           p_conversation_id: conversationId,
