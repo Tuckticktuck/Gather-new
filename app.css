@@ -2506,11 +2506,12 @@ button:not(:disabled){
 }
 .gather-list-enter{animation:gather-list-item-in 210ms var(--gather-motion-ease) both}
 .gather-message-enter{animation:gather-message-in 220ms var(--gather-motion-ease) both}
-#messages>.gather-message-enter:nth-child(2){animation-delay:18ms}
-#messages>.gather-message-enter:nth-child(3){animation-delay:36ms}
-#messages>.gather-message-enter:nth-child(4){animation-delay:54ms}
-#messages>.gather-message-enter:nth-child(5){animation-delay:72ms}
-#messages>.gather-message-enter:nth-child(6){animation-delay:90ms}
+/* Do not stagger a whole conversation's history as it first appears. */
+#messages>.gather-message-enter:nth-child(2),
+#messages>.gather-message-enter:nth-child(3),
+#messages>.gather-message-enter:nth-child(4),
+#messages>.gather-message-enter:nth-child(5),
+#messages>.gather-message-enter:nth-child(6){animation-delay:0ms}
 .gather-list-enter:nth-child(2){animation-delay:25ms}
 .gather-list-enter:nth-child(3){animation-delay:45ms}
 .gather-list-enter:nth-child(4){animation-delay:65ms}
