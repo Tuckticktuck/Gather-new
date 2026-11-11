@@ -3457,3 +3457,10 @@ body{min-height:100svh;min-height:100dvh}
   .folder-tabs{padding:7px 9px;gap:6px}
   .folder-tabs>.folder-tab{min-height:38px;padding:6px 4px}
 }
+
+
+/* Conversation entry: one stable paint instead of stacked view and layout animations. */
+@media (prefers-reduced-motion: no-preference){
+  .layout.show-chat .main{animation:none!important}
+  .main{view-transition-name:none}
+}
