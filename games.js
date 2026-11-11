@@ -404,11 +404,11 @@
     });
 
     if (!conversations.length) {
-      conversationList.append(node("p", "games-empty muted", "Your game conversations will appear here."));
+      conversationList.append(node("p", "games-empty muted", hubSearchQuery ? "No game conversations match that search." : "Your game conversations will appear here."));
       $("games-conversation-title").textContent = "No game conversations yet";
       $("games-conversation-subtitle").textContent = "Start a match to create your first game conversation.";
       $("games-hub-status").textContent = "";
-      gameList.append(node("p", "games-empty muted", "No games yet. Start a match from a conversation or create one here."));
+      gameList.append(node("p", "games-empty muted", hubSearchQuery ? "Try another name or clear your search." : "No games yet. Start a match from a conversation or create one here."));
       return;
     }
 
