@@ -23,6 +23,8 @@
   let initialized = false;
   let busy = false;
   let refreshTimer = null;
+  let syncRefreshTimer = null;
+  let refreshListenersBound = false;
   let keyListenerBound = false;
   let battleshipPrivateGameId = null;
   let battleshipPrivateState = null;
@@ -159,6 +161,10 @@
     }
   }
 
+  function refreshGamesOnReturn() {
+    if (!document.hidden && navigator.onLine && ctx && userId()) void refreshGames(false);
+  }
+
   function init(options) {
     ctx = options;
     mount();
@@ -169,11 +175,22 @@
           clearTimeout(refreshTimer);
           refreshTimer = setTimeout(() => refreshGames(false), 140);
         }).subscribe();
+
+      // Browsers can suspend realtime while a tab is in the background.
+      // Catch up immediately on return and poll while visible in case realtime dropped.
+      if (!refreshListenersBound) {
+        document.addEventListener("visibilitychange", refreshGamesOnReturn);
+        window.addEventListener("focus", refreshGamesOnReturn);
+        window.addEventListener("pageshow", refreshGamesOnReturn);
+        window.addEventListener("online", refreshGamesOnReturn);
+        refreshListenersBound = true;
+      }
+      if (syncRefreshTimer) clearInterval(syncRefreshTimer);
+      syncRefreshTimer = window.setInterval(refreshGamesOnReturn, 15000);
     }
     void refreshGames(false);
     setActiveChat(chatList().find(chat => chat.id === (ctx.activeChatId?.() || null)) || null);
   }
-
   function setActiveChat(chat) {
     activeChat = chat || null;
     const launch = $("chat-games-open");
@@ -1219,6 +1236,10 @@
   }
 
   function shutdown() {
+    if (syncRefreshTimer) clearInterval(syncRefreshTimer);
+    syncRefreshTimer = null;
+    clearTimeout(refreshTimer);
+    refreshTimer = null;
     if (channel && ctx?.db) ctx.db.removeChannel(channel);
     channel = null;
     initialized = false;
