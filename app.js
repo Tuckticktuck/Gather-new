@@ -3140,15 +3140,14 @@ async function openChat(id){
   if(S.readChannel){db.removeChannel(S.readChannel);S.readChannel=null;}
   if(S.pollChannel){db.removeChannel(S.pollChannel);S.pollChannel=null;}
   clearPendingMessageImage();
-  runScreenTransition(()=>{
-    S.active=id;S.initialChatScrollLockId=id;S.unreadTargetMessageId=null;S.unreadTargetLoaded=true;restoreChatDraft(id);S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=cachedStatus;S.groupMessageStatus=null;
-    S.messages=[];S.messageReads={};S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.openMessageMenuId=null;S.replyTo=null;S.hasOlderMessages=false;S.loadingOlder=false;renderReplyComposer();
-    renderMessageSkeletons();
-    $("layout").classList.remove("show-home");$("layout").classList.add("show-chat");renderActive();
-    // Start permission verification only after the transition has activated this chat.
-    // A cache hit is displayed immediately and refreshed in the background when stale.
-    if(!permissionCheckIsFresh)void refreshDirectStatus(id);
-  });
+  // Conversation entry is an immediate state change, not a full-screen transition.
+  // Avoids expensive Safari view-transition snapshots and stacked entrance animations.
+  S.active=id;S.initialChatScrollLockId=id;S.unreadTargetMessageId=null;S.unreadTargetLoaded=true;restoreChatDraft(id);S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=cachedStatus;S.groupMessageStatus=null;
+  S.messages=[];S.messageReads={};S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.openMessageMenuId=null;S.replyTo=null;S.hasOlderMessages=false;S.loadingOlder=false;renderReplyComposer();
+  renderMessageSkeletons();
+  $("layout").classList.remove("show-home");$("layout").classList.add("show-chat");renderActive();
+  // Permission checks run in the background and never hold up the conversation view.
+  if(!permissionCheckIsFresh)void refreshDirectStatus(id);
   subscribeTyping(id);
   await loadMessages(id);
   if(S.active!==id)return;
