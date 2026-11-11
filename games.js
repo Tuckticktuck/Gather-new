@@ -315,7 +315,7 @@
       option.value = member.user_id;
       select.append(option);
     });
-    const selected = select.options.length;
+    const selected = select.selectedOptions.length;
     if (multiplayer) {
       $("games-create-submit").textContent = "Create Tag match";
       $("games-spectator-note").textContent = $("games-join-mode")?.value === "open"
@@ -593,7 +593,7 @@
     }
     else if (game.status === "declined") detail = "The invitation was declined.";
     else detail = "The invitation was cancelled.";
-    if (game.status === "active") {
+    if (game.status === "active" && !game.is_multiplayer) {
       const watchers = spectatorCount(game);
       detail += " · " + watchers + " spectator" + (watchers === 1 ? "" : "s");
     }
