@@ -5386,7 +5386,7 @@ function closeModals(forceAll=false){
   if(!forceAll&&S.admin.modalStack?.length&&$("admin-mode-modal")&&!$("admin-mode-modal").hidden){closeAdminChildNavigation();return;}
   clearAdminChildNavigation();
   S.modalBackTargets={};
-  $("admin-mode-modal").hidden=true;$("announcement-compose-modal").hidden=true;$("announcement-view-modal").hidden=true;$("announcements-page-modal").hidden=true;$("notifications-modal").hidden=true;$("member-profile-modal").hidden=true;$("report-modal").hidden=true;$("reports-admin-modal").hidden=true;$("people-modal").hidden=true;$("profile-modal").hidden=true;$("requests-modal").hidden=true;$("friends-modal").hidden=true;$("settings-modal").hidden=true;$("group-photo-modal").hidden=true;$("group-settings-modal").hidden=true;$("message-search-modal").hidden=true;$("poll-create-modal").hidden=true;$("forward-message-modal").hidden=true;$("saved-messages-modal").hidden=true;$("chat-actions-modal").hidden=true;$("shared-media-modal").hidden=true;$("image-viewer-modal").hidden=true;$("active-sessions-modal").hidden=true;$("security-activity-modal").hidden=true;$("group-events-modal").hidden=true;$("scheduled-message-modal").hidden=true;$("scheduled-messages-modal").hidden=true;$("message-edit-history-modal").hidden=true;$("feedback-modal").hidden=true; }
+  $("admin-mode-modal").hidden=true;$("announcement-compose-modal").hidden=true;$("announcement-view-modal").hidden=true;$("announcements-page-modal").hidden=true;$("notifications-modal").hidden=true;$("member-profile-modal").hidden=true;$("report-modal").hidden=true;$("reports-admin-modal").hidden=true;$("people-modal").hidden=true;$("profile-modal").hidden=true;$("requests-modal").hidden=true;$("friends-modal").hidden=true;$("settings-modal").hidden=true;$("group-photo-modal").hidden=true;$("group-settings-modal").hidden=true;$("message-search-modal").hidden=true;$("poll-create-modal").hidden=true;$("forward-message-modal").hidden=true;$("saved-messages-modal").hidden=true;$("chat-actions-modal").hidden=true;$("shared-media-modal").hidden=true;$("image-viewer-modal").hidden=true;$("active-sessions-modal").hidden=true;$("security-activity-modal").hidden=true;$("group-events-modal").hidden=true;$("scheduled-message-modal").hidden=true;$("scheduled-messages-modal").hidden=true;$("message-edit-history-modal").hidden=true;$("feedback-modal").hidden=true;$("install-app-modal").hidden=true; }
 function goHome(){
   closeConversationDrawer();
   saveActiveChatDraft();clearUnreadDividerState();
@@ -5917,11 +5917,111 @@ document.querySelectorAll("[data-folder]").forEach(b=>b.addEventListener("click"
   $("signout").addEventListener("click",async()=>{const r=await db.auth.signOut();if(r.error)toast(r.error.message);else closeModals();});
   document.querySelectorAll("[data-admin-back]").forEach(b=>b.addEventListener("click",()=>handleModalBack(b.closest(".overlay")?.id)));
   document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",()=>closeModals()));
-  ["admin-mode-modal","announcement-compose-modal","announcement-view-modal","announcements-page-modal","notifications-modal","member-profile-modal","report-modal","reports-admin-modal","people-modal","profile-modal","requests-modal","friends-modal","settings-modal","group-photo-modal","group-settings-modal","message-search-modal","poll-create-modal","forward-message-modal","saved-messages-modal","chat-actions-modal","feedback-modal"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target===$(id))closeModals();}));
-  document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeComposerMoreMenu();if(!$("image-viewer-modal").hidden){closeImageViewer();return;}closeModals();}});
+  ["admin-mode-modal","announcement-compose-modal","announcement-view-modal","announcements-page-modal","notifications-modal","member-profile-modal","report-modal","reports-admin-modal","people-modal","profile-modal","requests-modal","friends-modal","settings-modal","group-photo-modal","group-settings-modal","message-search-modal","poll-create-modal","forward-message-modal","saved-messages-modal","chat-actions-modal","feedback-modal","install-app-modal"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target===$(id))closeModals();}));
+  document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeComposerMoreMenu();if(!$("install-app-modal").hidden){$("install-app-modal").hidden=true;return;}if(!$("image-viewer-modal").hidden){closeImageViewer();return;}closeModals();}});
 }
+
+let deferredGatherInstall=null;
+function isGatherInstalled(){
+  return !!(window.matchMedia?.("(display-mode: standalone)").matches||navigator.standalone===true);
+}
+function refreshGatherInstallButtons(){
+  const installed=isGatherInstalled();
+  ["install-app-button","install-app-auth"].forEach(id=>{
+    const button=$(id);
+    if(button)button.hidden=installed;
+  });
+}
+function openGatherInstallHelp(){
+  const modal=$("install-app-modal"),list=$("install-app-instructions"),heading=$("install-app-help-title");
+  if(!modal||!list||!heading)return;
+  const ua=navigator.userAgent||"";
+  const isApple=/iPhone|iPad|iPod/i.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+  const isAndroid=/Android/i.test(ua);
+  let steps;
+  if(isApple){
+    heading.textContent="Add Gather to your iPhone or iPad";
+    steps=[
+      "Open this page in Safari. If you opened it inside another app, open it in Safari first.",
+      "Tap the Share button (or the Page Menu button, then Share).",
+      "Scroll down and choose Add to Home Screen.",
+      "Turn on Open as Web App if that option appears, then tap Add."
+    ];
+  }else if(isAndroid){
+    heading.textContent="Install Gather on Android";
+    steps=[
+      "Open Gather in Chrome.",
+      "Open the browser menu and choose Install app or Add to Home screen.",
+      "Confirm the installation."
+    ];
+  }else{
+    heading.textContent="Install Gather on this computer";
+    steps=[
+      "Open Gather in Chrome or Edge.",
+      "Look for the Install icon in the address bar, or open the browser menu and choose the install option.",
+      "Confirm the installation. Gather will appear in your app launcher."
+    ];
+  }
+  list.replaceChildren(...steps.map((step,index)=>{
+    const item=el("div","install-step");
+    item.append(el("span","install-step-number",String(index+1)),el("p","",step));
+    return item;
+  }));
+  modal.hidden=false;
+}
+async function requestGatherInstall(){
+  if(isGatherInstalled()){toast("Gather is already installed on this device.");return;}
+  if(deferredGatherInstall){
+    const promptEvent=deferredGatherInstall;
+    deferredGatherInstall=null;
+    try{
+      await promptEvent.prompt();
+      const choice=await promptEvent.userChoice;
+      if(choice?.outcome==="accepted")toast("Gather is being installed.");
+    }catch(error){
+      console.warn("Gather install prompt could not be opened:",error);
+      openGatherInstallHelp();
+    }
+    refreshGatherInstallButtons();
+    return;
+  }
+  openGatherInstallHelp();
+}
+function setupGatherPWA(){
+  refreshGatherInstallButtons();
+  $("install-app-button").addEventListener("click",requestGatherInstall);
+  $("install-app-auth").addEventListener("click",requestGatherInstall);
+  $("install-app-close").addEventListener("click",()=>$("install-app-modal").hidden=true);
+  $("install-app-modal").addEventListener("click",event=>{
+    if(event.target===$("install-app-modal"))$("install-app-modal").hidden=true;
+  });
+  window.addEventListener("beforeinstallprompt",event=>{
+    event.preventDefault();
+    deferredGatherInstall=event;
+  });
+  window.addEventListener("appinstalled",()=>{
+    deferredGatherInstall=null;
+    refreshGatherInstallButtons();
+    toast("Gather was installed successfully.");
+  });
+  window.matchMedia?.("(display-mode: standalone)")?.addEventListener?.("change",refreshGatherInstallButtons);
+  const updateOfflineStatus=()=>{
+    const banner=$("offline-status");
+    if(banner)banner.hidden=!!navigator.onLine;
+  };
+  window.addEventListener("online",updateOfflineStatus);
+  window.addEventListener("offline",updateOfflineStatus);
+  updateOfflineStatus();
+  if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostname==="localhost")){
+    navigator.serviceWorker.register("./service-worker.js",{scope:"./"})
+      .then(registration=>registration.update().catch(()=>{}))
+      .catch(error=>console.warn("Gather offline shell could not be prepared:",error));
+  }
+}
+
 async function boot(){
   try{
+    setupGatherPWA();
     wire();
     loadUIPreferences(DEFAULT_PREFERENCES);
     if(!window.supabase?.createClient||!db){
