@@ -1404,9 +1404,11 @@ html[data-theme="light"] .settings-scroll-content::-webkit-scrollbar-thumb{
 .in-chat-search{display:grid;gap:6px;margin:0 2px 14px;color:var(--muted);font-size:calc(10px * var(--font-scale,1));font-weight:700}
 .in-chat-search .search{width:100%;margin:0}
 .in-chat-sidebar-scroll{display:flex;flex:1;flex-direction:column;gap:16px;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:0 1px 10px}
-.in-chat-list-section{display:flex;flex-direction:column;gap:7px;min-height:0}
-.in-chat-list-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 6px 2px;color:var(--muted);font-size:calc(9px * var(--font-scale,1));font-weight:800;letter-spacing:.09em;text-transform:uppercase}
-.in-chat-conversation-list{display:grid;align-content:start;gap:5px;min-width:0}
+.in-chat-list-section{display:flex;flex:0 0 auto;flex-direction:column;gap:7px;min-height:0}
+.in-chat-list-heading{display:flex;flex:none;align-items:center;justify-content:space-between;gap:8px;padding:0 6px 2px;color:var(--muted);font-size:calc(9px * var(--font-scale,1));font-weight:800;letter-spacing:.09em;text-transform:uppercase}
+.in-chat-conversation-list{display:grid;flex:none;align-content:start;gap:7px;min-width:0;overflow:visible}
+.in-chat-conversation-list>.chat-row{flex:none;min-height:62px;margin:0}
+.in-chat-sidebar-scroll{align-items:stretch}
 .in-chat-conversation-list .chat-row{display:flex;width:100%;min-width:0;gap:0;padding:2px;border:1px solid transparent;border-radius:11px;background:transparent;box-shadow:none}
 .in-chat-conversation-list .chat-row:hover{border-color:var(--line);background:var(--accent-panel)}
 .in-chat-conversation-list .chat-row .chat-item{display:flex;flex:1;min-width:0;width:100%;gap:9px;padding:8px;border:1px solid transparent;border-radius:9px;background:transparent}
