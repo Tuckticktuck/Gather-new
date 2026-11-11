@@ -5420,7 +5420,11 @@ function goHome(){
   closeTypingChannel();
   runScreenTransition(()=>{
     clearPendingMessageImage();closeModals(true);S.active=null;S.messages=[];S.messageReads={};S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.replyTo=null;S.hasOlderMessages=false;S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;renderReplyComposer();
-    $("layout").classList.remove("show-chat");$("layout").classList.add("show-home");renderChats();renderActive();
+    $("games-workspace")?.setAttribute("hidden", "");
+    $("layout").classList.remove("show-chat", "show-games");$("layout").classList.add("show-home");
+    $("workspace-games-tab")?.classList.remove("active");$("workspace-games-tab")?.setAttribute("aria-pressed","false");
+    $("workspace-messages-tab")?.classList.add("active");$("workspace-messages-tab")?.setAttribute("aria-pressed","true");
+    renderChats();renderActive();
   });
 }
 function setConversationDrawer(open){
