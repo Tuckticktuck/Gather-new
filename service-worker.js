@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "gather-shell-v20";
+const CACHE_NAME = "gather-shell-v21";
 const APP_BASE = new URL("./", self.registration.scope);
 const SHELL_URLS = [
   "./",
@@ -10,7 +10,7 @@ const SHELL_URLS = [
   "./games.css?v=20261111-game-sections-1",
   "./games.js?v=20261111-game-sections-1",
   "./tag.css?v=20261112-tag-lobby-2",
-  "./tag.js?v=20261112-tag-lobby-2",
+  "./tag.js?v=20261112-tag-lobby-3",
   "./favicon.svg?v=20261111-1",
   "./manifest.webmanifest?v=20261111-pwa",
   "./icons/gather-180.png",
