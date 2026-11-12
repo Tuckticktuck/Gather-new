@@ -37,3 +37,15 @@
 .uno-color-choice{min-height:46px;border:2px solid #ffffffaa;border-radius:13px;color:#fff;font-weight:800;text-transform:capitalize;box-shadow:0 3px 8px #0002;transition:transform .15s ease,box-shadow .15s ease}
 .uno-color-choice:hover{transform:translateY(-2px);box-shadow:0 7px 14px #0003}
 .uno-color-choice.red{background:#d63b42}.uno-color-choice.blue{background:#2772c8}.uno-color-choice.green{background:#27975a}.uno-color-choice.yellow{background:#e2b72b;color:#202020}
+
+/* Distinguish the selected conversation from the people invited from it. */
+.uno-picker-note{display:block;margin:2px 0 0;color:var(--muted);font-size:10px;font-weight:500;line-height:1.5}
+.uno-chat-field select optgroup{font-weight:800;color:var(--accent-text)}
+.uno-people-picker{display:grid;gap:10px;padding:13px;border:1px solid var(--accent-outline-soft);border-radius:14px;background:var(--accent-surface)}
+.uno-people-heading{display:grid;gap:4px}
+.uno-people-heading strong{font-size:12px}
+.uno-people-heading small{font-size:10px;font-weight:500}
+.uno-invites{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.uno-invite-option{min-width:0}
+.uno-invite-option span{overflow-wrap:anywhere}
+.uno-invite-option input{accent-color:var(--accent)}
