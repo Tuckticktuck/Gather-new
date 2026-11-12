@@ -5,7 +5,7 @@ const APP_BASE = new URL("./", self.registration.scope);
 const SHELL_URLS = [
   "./",
   "./index.html",
-  "./app.css?v=20261112-mobile-switcher-fixed-2",
+  "./app.css?v=20261112-switcher-portal-1",
   "./app.js?v=20261112-tag-lobby-1",
   "./games.css?v=20261112-home-switcher-curved-2",
   "./games.js?v=20261112-switcher-portal-1",
