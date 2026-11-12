@@ -1822,7 +1822,7 @@ function notificationItemsForView(view=S.notificationView){
 function notificationUnreadCount(){
   const notificationUnread=notificationItemsForCenter().filter(item=>!item.read_at).length;
   const gameInvites=window.GatherGames?.getPendingInvitations?.().length||0;
-  const unoRematches=new Set(S.notifications.filter(item=>item.kind==="uno_rematch").map(item=>item.body)).size;
+  const unoRematches=new Set(S.notifications.filter(item=>item.kind==="uno_rematch"&&!item.read_at).map(item=>item.body)).size;
   return notificationUnread+gameInvites+unoRematches;
 }
 function renderNotificationBadge(){
@@ -1875,7 +1875,7 @@ function renderGameNotificationCards(list){
     actions.append(view,accept,decline);card.append(actions);list.append(card);
   });
   const rematchOffers=new Map();
-  S.notifications.filter(item=>item.kind==="uno_rematch").forEach(item=>{if(item.body)rematchOffers.set(item.body,item);});
+  S.notifications.filter(item=>item.kind==="uno_rematch"&&!item.read_at).forEach(item=>{if(item.body)rematchOffers.set(item.body,item);});
   rematchOffers.forEach((item,offerId)=>{
     const card=el("article","notification-center-item notification-game-item unread");
     const icon=el("span","notification-center-icon","🃏");
