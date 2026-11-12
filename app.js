@@ -1785,6 +1785,7 @@ async function openAnnouncement(id){
 
 function notificationItemsForCenter(){
   return S.notifications.filter(item=>
+    item.kind!=="uno_rematch"&&
     !(item.kind==="message"&&item.conversation_id&&item.conversation_id===S.active)&&
     !(item.kind==="message"&&item.conversation_id&&S.chatSettings.muted[item.conversation_id])
   );
@@ -1821,7 +1822,8 @@ function notificationItemsForView(view=S.notificationView){
 function notificationUnreadCount(){
   const notificationUnread=notificationItemsForCenter().filter(item=>!item.read_at).length;
   const gameInvites=window.GatherGames?.getPendingInvitations?.().length||0;
-  return notificationUnread+gameInvites;
+  const unoRematches=new Set(S.notifications.filter(item=>item.kind==="uno_rematch").map(item=>item.body)).size;
+  return notificationUnread+gameInvites+unoRematches;
 }
 function renderNotificationBadge(){
   const badge=$("notification-badge");if(!badge)return;
@@ -1830,7 +1832,7 @@ function renderNotificationBadge(){
   $("notifications-mark-all").disabled=regularUnread===0||S.notificationView==="games";
 }
 function notificationKindLabel(kind){
-  return ({message:"New message",friend_request:"Friend request",chat_request:"Chat request",feedback_reply:"Feedback update",report:"Safety report",announcement:"Official admin announcement"})[kind]||"Gather update";
+  return ({message:"New message",friend_request:"Friend request",chat_request:"Chat request",feedback_reply:"Feedback update",report:"Safety report",announcement:"Official admin announcement",uno_rematch:"UNO rematch request",uno_rematch_result:"UNO rematch update"})[kind]||"Gather update";
 }
 function notificationDisplayItems(items){
   if(!S.preferences.groupUnreadMessages)return items.map(item=>({notification:item,items:[item]}));
@@ -1872,7 +1874,23 @@ function renderGameNotificationCards(list){
     const decline=el("button","outline","Decline");decline.type="button";decline.addEventListener("click",async()=>{decline.disabled=true;await window.GatherGames?.respondToInvitation?.(game.id,false);renderNotifications();});
     actions.append(view,accept,decline);card.append(actions);list.append(card);
   });
-  return invitations.length;
+  const rematchOffers=new Map();
+  S.notifications.filter(item=>item.kind==="uno_rematch").forEach(item=>{if(item.body)rematchOffers.set(item.body,item);});
+  rematchOffers.forEach((item,offerId)=>{
+    const card=el("article","notification-center-item notification-game-item unread");
+    const icon=el("span","notification-center-icon","🃏");
+    const copy=el("span","notification-center-copy");
+    const sender=S.profiles[item.actor_id]?.display_name||S.profiles[item.actor_id]?.username||"A Gather player";
+    copy.append(el("strong","","UNO rematch request"),el("small","",sender+" wants another round. Would you like to play again?"),el("time","",dateLabel(item.created_at)));
+    card.append(icon,copy);
+    const actions=el("span","notification-game-actions");
+    const accept=el("button","primary","Accept");accept.type="button";
+    const decline=el("button","outline","Decline");decline.type="button";
+    accept.addEventListener("click",async()=>{accept.disabled=true;decline.disabled=true;await window.GatherUno?.respondToRematch?.(offerId,true);await loadNotifications();});
+    decline.addEventListener("click",async()=>{decline.disabled=true;accept.disabled=true;await window.GatherUno?.respondToRematch?.(offerId,false);await loadNotifications();});
+    actions.append(accept,decline);card.append(actions);list.append(card);
+  });
+  return invitations.length+rematchOffers.size;
 }
 function renderNotifications(){
   const list=$("notifications-list");
