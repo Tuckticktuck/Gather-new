@@ -719,6 +719,7 @@ function markChatRead(chatId,through=null){
 }
 function showAuth() {
   window.GatherGames?.shutdown();
+  window.GatherTag?.shutdown();
   saveActiveChatDraft();clearUnreadDividerState();
   closeTypingChannel();
   stopOnlinePresence();
@@ -1111,6 +1112,7 @@ async function signedIn(user,retry=false){
     const loaded=await loadChats();
     if(!loaded)throw new Error(S.loadError||"Please check your connection and try again.");
     window.GatherGames?.init({db,user:()=>S.user,chats:()=>S.chats,activeChatId:()=>S.active,profiles:()=>S.profiles,toast,onGamesUpdated:()=>{renderNotificationBadge();if(S.notificationView==="games"||S.notificationView==="all")renderNotifications();}});
+    window.GatherTag?.init({db,user:()=>S.user,chats:()=>S.chats,profiles:()=>S.profiles,toast});
     subscribeMessages();
     await loadNotifications();subscribeNotifications();
     await loadAnnouncements();subscribeAnnouncements();
