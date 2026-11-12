@@ -83,3 +83,22 @@
  .tag-actions>button:first-child{flex-basis:31%}
 }
 @media(prefers-reduced-motion:reduce){.tag-modal *{transition:none!important}}
+
+/* Canvas-backed Tag gameplay */
+.tag-arena{
+  display:block;
+  width:100%;
+  height:auto;
+  aspect-ratio:16/9;
+  min-height:190px;
+  max-height:390px;
+  margin:16px 0;
+  overflow:hidden;
+  border:1px solid color-mix(in srgb,var(--accent) 55%,#ffffff24);
+  border-radius:18px;
+  background:#101722;
+  box-shadow:0 12px 28px #0003;
+}
+@media(max-width:600px){
+  .tag-arena{min-height:190px;max-height:330px;border-radius:15px}
+}
