@@ -40,6 +40,10 @@
     private height = 0;
     private pixelRatio = 1;
     private localPosition: Point | null = null;
+    private accent = "#40826d";
+    private panel = "#17212e";
+    private background = "#101722";
+    private lastThemeRead = 0;
 
     constructor(canvas: HTMLCanvasElement, options: EngineOptions) {
       const context = canvas.getContext("2d", { alpha: false });
@@ -47,6 +51,7 @@
       this.canvas = canvas;
       this.context = context;
       this.options = options;
+      this.refreshTheme();
 
       if (typeof ResizeObserver !== "undefined") {
         this.observer = new ResizeObserver(this.resizeHandler);
@@ -137,6 +142,10 @@
       if (!this.running) return;
       const delta = this.lastFrame ? Math.min(50, time - this.lastFrame) : 16.67;
       this.lastFrame = time;
+      if (!this.lastThemeRead || time - this.lastThemeRead > 1000) {
+        this.refreshTheme();
+        this.lastThemeRead = time;
+      }
       this.update(Math.max(0, delta));
       this.draw(time);
       this.frameId = requestAnimationFrame(this.tick);
@@ -193,11 +202,9 @@
       const height = this.height;
       if (!width || !height) return;
 
-      const rootStyle = getComputedStyle(document.documentElement);
-      const accent = rootStyle.getPropertyValue("--accent").trim() || "#40826d";
-      const panel = rootStyle.getPropertyValue("--panel").trim() || "#17212e";
-      const background = rootStyle.getPropertyValue("--bg").trim() || "#101722";
-
+      const accent = this.accent;
+      const panel = this.panel;
+      const background = this.background;
       const gradient = ctx.createLinearGradient(0, 0, width, height);
       gradient.addColorStop(0, panel);
       gradient.addColorStop(1, background);
@@ -238,17 +245,18 @@
       ctx.stroke();
       ctx.restore();
 
+      const localId = this.options.localUserId();
       for (const state of this.states.values()) {
-        this.drawPlayer(state, time, accent);
+        this.drawPlayer(state, time, accent, localId);
       }
     }
 
-    private drawPlayer(state: PlayerState, time: number, accent: string): void {
+    private drawPlayer(state: PlayerState, time: number, accent: string, localId: string | null): void {
       const ctx = this.context;
       const x = (state.current.x / 100) * this.width;
       const y = (state.current.y / 100) * this.height;
       const radius = Math.max(8, Math.min(12, Math.min(this.width, this.height) * 0.023));
-      const isLocal = state.id === this.options.localUserId();
+      const isLocal = state.id === localId;
       const pulse = (Math.sin(time / 260) + 1) / 2;
 
       ctx.save();
@@ -304,6 +312,13 @@
         ctx.fillText("IT", labelX + labelWidth - 17, labelY + labelHeight / 2 + 0.5);
       }
       ctx.restore();
+    }
+
+    private refreshTheme(): void {
+      const rootStyle = getComputedStyle(document.documentElement);
+      this.accent = rootStyle.getPropertyValue("--accent").trim() || "#40826d";
+      this.panel = rootStyle.getPropertyValue("--panel").trim() || "#17212e";
+      this.background = rootStyle.getPropertyValue("--bg").trim() || "#101722";
     }
 
     private roundRect(x: number, y: number, width: number, height: number, radius: number): void {
