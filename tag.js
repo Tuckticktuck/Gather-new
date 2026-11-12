@@ -276,10 +276,10 @@
       root.append(el("p","status tag-status",error?.message||"Canvas rendering could not start."));
       return;
     }
-    if(!syncTimer)syncTimer=setInterval(sendMove,240);
+    if(!syncTimer)syncTimer=setInterval(sendMove,300);
   }
   async function sendMove(){
-    if(!activeLobbyId||movePending)return;
+    if(!activeLobbyId||movePending||document.hidden||activeLobby?.status!=="active")return;
     const me=players.find(p=>p.user_id===uid()&&p.status==="joined");if(!me)return;
     const target=predictedPosition||{x:Number(me.x),y:Number(me.y)};
     const confirmed=lastSyncedPosition||{x:Number(me.x),y:Number(me.y)};
