@@ -40,7 +40,11 @@
     const r=await ctx.db.from("gather_tag_lobbies").select("id,conversation_id,created_by,status,mode,join_mode,max_players,created_at,updated_at").in("conversation_id",ids).in("status",["lobby","active"]).order("updated_at",{ascending:false}).limit(40);
     if(r.error){if(panelOpen)status("Could not load Tag lobbies: "+r.error.message);return;}
     lobbies=r.data||[];
-    if(activeLobbyId){const found=lobbies.find(x=>x.id===activeLobbyId);if(found)activeLobby=found;await loadPlayers(activeLobbyId);}
+    if(activeLobbyId){
+      const current=await ctx.db.from("gather_tag_lobbies").select("id,conversation_id,created_by,status,mode,join_mode,max_players,created_at,updated_at").eq("id",activeLobbyId).maybeSingle();
+      if(!current.error&&current.data)activeLobby=current.data;
+      await loadPlayers(activeLobbyId);
+    }
     renderPanel();
   }
   async function loadPlayers(id){
@@ -65,7 +69,7 @@
       const card=el("article","tag-lobby-card");
       const info=el("div","tag-lobby-info");info.append(el("strong","",modeName(l.mode)),el("span","muted tiny",conversationTitle(l.conversation_id)+" · "+(l.join_mode==="open"?"Open lobby":"Invite only")));
       card.append(info,el("span","tag-player-count",l.max_players+" max"));
-      const join=btn("Join","outline",()=>joinLobby(l));join.disabled=l.join_mode==="invite"&&!players.some(p=>p.lobby_id===l.id&&p.user_id===uid()&&p.status==="invited");
+      const join=btn("Join","outline",()=>joinLobby(l));
       card.append(join);list.append(card);
     });
     root.append(el("h3","tag-section-title","Available lobbies"),list);
@@ -90,12 +94,14 @@
     if(!select.options.length){message.textContent="Join a conversation before creating a Tag lobby.";submit.disabled=true;}
   }
   async function joinLobby(lobby){
-    const color=promptColor();if(!color)return;
+    const palette=["#38BDF8","#F97316","#A78BFA","#34D399","#F472B6","#FACC15","#60A5FA","#FB7185","#2DD4BF","#C084FC","#A3E635","#F59E0B"];
+    const existing=await ctx.db.from("gather_tag_players").select("color").eq("lobby_id",lobby.id).eq("status","joined");
+    const used=new Set((existing.data||[]).map(p=>String(p.color).toLowerCase()));
+    const color=palette.find(c=>!used.has(c.toLowerCase()))||palette[Math.floor(Math.random()*palette.length)];
     const r=await ctx.db.rpc("gather_tag_join",{p_lobby_id:lobby.id,p_color:color});
     if(r.error){toast(r.error.message);return;}
     activeLobbyId=lobby.id;activeLobby=lobby;await loadPlayers(lobby.id);renderPanel();
   }
-  function promptColor(){return $("tag-join-color")?.value||"#38BDF8";}
   function renderLobby(root){
     root.append(el("p","eyebrow",activeLobby.status==="active"?"MATCH IN PROGRESS":"WAITING ROOM"));
     root.append(el("h2","tag-title",modeName(activeLobby.mode)));
@@ -126,7 +132,7 @@
   }
   function renderArena(root){
     const arena=el("div","tag-arena");arena.id="tag-arena";
-    players.filter(p=>p.status==="joined").forEach(p=>{const dot=el("span","tag-dot");dot.style.left=p.x+"%";dot.style.top=p.y+"%";dot.style.background=p.color;dot.title=name(p.user_id)+(p.is_it?" · It":"");if(p.user_id===uid())dot.classList.add("mine");if(p.is_it)dot.classList.add("is-it");arena.append(dot);});
+    players.filter(p=>p.status==="joined").forEach(p=>{const dot=el("span","tag-dot");dot.dataset.userId=p.user_id;dot.style.left=p.x+"%";dot.style.top=p.y+"%";dot.style.background=p.color;dot.title=name(p.user_id)+(p.is_it?" · It":"");if(p.user_id===uid())dot.classList.add("mine");if(p.is_it)dot.classList.add("is-it");arena.append(dot);});
     root.append(arena);
     if(activeLobby.mode==="last_standing")root.append(el("p","muted tiny","Tagged players are eliminated. The last player remaining wins."));
     else if(activeLobby.mode==="infection")root.append(el("p","muted tiny","Tagged players join the infected team. The infection spreads."));
@@ -152,7 +158,18 @@
     const r=await ctx.db.rpc("gather_tag_move",{p_lobby_id:activeLobbyId,p_x:x,p_y:y});
     movePending=false;
     if(r.error){if(!/Movement update is too large/.test(r.error.message))status(r.error.message);return;}
-    await loadPlayers(activeLobbyId);renderPanel();
+    await loadPlayers(activeLobbyId);renderArenaPositions();
+  }
+  function renderArenaPositions(){
+    const arena=$("tag-arena");if(!arena)return;
+    players.filter(p=>p.status==="joined").forEach(p=>{
+      let dot=[...arena.querySelectorAll(".tag-dot")].find(n=>n.dataset.userId===p.user_id);
+      if(!dot){dot=el("span","tag-dot");dot.dataset.userId=p.user_id;arena.append(dot);}
+      dot.style.left=p.x+"%";dot.style.top=p.y+"%";dot.style.background=p.color;
+      dot.title=name(p.user_id)+(p.is_it?" · It":"");
+      dot.classList.toggle("mine",p.user_id===uid());dot.classList.toggle("is-it",!!p.is_it);
+    });
+    [...arena.querySelectorAll(".tag-dot")].forEach(dot=>{if(!players.some(p=>p.user_id===dot.dataset.userId&&p.status==="joined"))dot.remove();});
   }
   function shutdown(){
     clearTimeout(refreshTimer);clearInterval(moveTimer);moveTimer=null;
