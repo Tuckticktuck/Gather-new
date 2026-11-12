@@ -3691,9 +3691,10 @@ html[data-theme="light"] .offline-status{color:#59421d;background:#fff4d8;border
 #empty.home-workspace{padding-top:76px}
 @media(max-width:720px){
   .workspace-switcher{
-    top:9px;left:11px;right:auto;
-    width:calc(100vw - 22px);max-width:calc(100vw - 22px);
-    box-sizing:border-box;display:flex;flex-wrap:nowrap;justify-content:stretch;
+    position:fixed;top:9px;
+    left:max(11px,env(safe-area-inset-left));right:max(11px,env(safe-area-inset-right));
+    width:auto;max-width:none;box-sizing:border-box;
+    display:flex;flex-wrap:nowrap;justify-content:stretch;
     gap:4px;padding:4px;border:1px solid var(--line);border-radius:17px;
     overflow:hidden;
   }
