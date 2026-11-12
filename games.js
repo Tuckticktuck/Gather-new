@@ -160,7 +160,7 @@
       });
       $("games-choose-multiplayer").addEventListener("click", () => {
         closeGameTypeChooser();
-        window.GatherTag?.open?.();
+        openMultiplayerChooser();
       });
     }
 
@@ -257,6 +257,26 @@
     $("workspace-games-tab")?.setAttribute("aria-pressed", "false");
     $("workspace-messages-tab")?.classList.add("active");
     $("workspace-messages-tab")?.setAttribute("aria-pressed", "true");
+  }
+
+  function openMultiplayerChooser() {
+    if (!ctx || !userId()) return;
+    let overlay = $("games-multiplayer-chooser");
+    if (!overlay) {
+      overlay = node("div", "overlay games-overlay");
+      overlay.id = "games-multiplayer-chooser";
+      overlay.innerHTML = '<section class="modal games-create-modal games-type-chooser-modal" role="dialog" aria-modal="true" aria-labelledby="games-multiplayer-title"><button id="games-multiplayer-close" class="close" type="button" aria-label="Close">×</button><p class="eyebrow">MULTIPLAYER</p><h2 id="games-multiplayer-title">Choose a game</h2><p class="muted tiny">Pick a game for your group.</p><div class="games-type-chooser-options"><button id="games-multiplayer-tag" class="games-type-choice" type="button"><span class="games-type-choice-icon" aria-hidden="true">●</span><span><strong>Tag Arena</strong><small>Move around the arena and tag other players.</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button><button id="games-multiplayer-uno" class="games-type-choice" type="button"><span class="games-type-choice-icon" aria-hidden="true">▦</span><span><strong>UNO</strong><small>Play cards with your group.</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button></div></section>';
+      document.body.append(overlay);
+      $("games-multiplayer-close").addEventListener("click", () => { overlay.hidden = true; });
+      overlay.addEventListener("click", event => { if (event.target === overlay) overlay.hidden = true; });
+      $("games-multiplayer-tag").addEventListener("click", () => { overlay.hidden = true; window.GatherTag?.open?.(); });
+      $("games-multiplayer-uno").addEventListener("click", () => {
+        overlay.hidden = true;
+        if (window.GatherUno?.open) window.GatherUno.open();
+        else toast("UNO is being added. Its multiplayer lobby is not ready yet.");
+      });
+    }
+    overlay.hidden = false;
   }
 
   function openGameTypeChooser() {
