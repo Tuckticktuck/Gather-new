@@ -64,6 +64,25 @@
     const peer = chat.members?.find(member => member.user_id !== userId());
     return peer ? memberName(peer.user_id) : "Private chat";
   };
+  const byName = (a, b) => a.localeCompare(b, undefined, { sensitivity: "base" });
+  function appendSortedChatOptions(select, chats) {
+    const groups = [
+      { label: "Private chats", items: chats.filter(chat => chat.kind !== "group") },
+      { label: "Group chats", items: chats.filter(chat => chat.kind === "group") }
+    ];
+    groups.forEach(groupInfo => {
+      if (!groupInfo.items.length) return;
+      const group = node("optgroup");
+      group.label = groupInfo.label;
+      groupInfo.items.slice().sort((a, b) => byName(conversationName(a.id), conversationName(b.id)))
+        .forEach(chat => {
+          const option = node("option", "", conversationName(chat.id));
+          option.value = chat.id;
+          group.append(option);
+        });
+      select.append(group);
+    });
+  }
   const playerNames = game => memberName(game.player_one_id) + " vs " + memberName(game.player_two_id);
   const spectatorCount = game => Math.max(0, (chatList().find(chat => chat.id === game.conversation_id)?.members?.length || 2) - 2);
   const isPlayer = game => !!userId() && (game.player_one_id === userId() || game.player_two_id === userId());
@@ -159,7 +178,7 @@
       const overlay = node("div", "overlay games-overlay");
       overlay.id = "games-create-overlay";
       overlay.hidden = true;
-      overlay.innerHTML = '<section class="modal games-create-modal" role="dialog" aria-modal="true" aria-labelledby="games-create-title"><button id="games-create-close" class="close" type="button" aria-label="Close">×</button><p class="eyebrow">NEW MATCH</p><h2 id="games-create-title">Invite someone to play</h2><p class="muted tiny">Choose a conversation, a game and one opponent. In a group chat, everyone else can watch the match.</p><form id="games-create-form"><label>Conversation<select id="games-conversation" required></select></label><label>Game<select id="games-type" required><option value="chess">Chess</option><option value="checkers">Checkers</option><option value="tic_tac_toe">Tic-Tac-Toe</option><option value="connect_four">Connect Four</option><option value="battleship">Battleship</option></select></label><label>Invite player<select id="games-opponent" required></select></label><p id="games-spectator-note" class="games-spectator-note"></p><p id="games-create-status" class="status" role="status"></p><div class="games-form-actions"><button id="games-create-cancel" class="secondary-action" type="button">Cancel</button><button id="games-create-submit" class="primary" type="submit">Send invitation</button></div></form></section>';
+      overlay.innerHTML = '<section class="modal games-create-modal" role="dialog" aria-modal="true" aria-labelledby="games-create-title"><button id="games-create-close" class="close" type="button" aria-label="Close">×</button><p class="eyebrow">NEW MATCH</p><h2 id="games-create-title">Invite someone to play</h2><p class="muted tiny">Choose a conversation, a game and one opponent. In a group chat, everyone else can watch the match.</p><form id="games-create-form"><label>Choose a chat<select id="games-conversation" required></select><small class="games-picker-note">Chats are grouped by type. Choose a person from that chat in the next field.</small></label><label>Game<select id="games-type" required><option value="chess">Chess</option><option value="checkers">Checkers</option><option value="tic_tac_toe">Tic-Tac-Toe</option><option value="connect_four">Connect Four</option><option value="battleship">Battleship</option></select></label><label>Person to invite<select id="games-opponent" required></select></label><p id="games-spectator-note" class="games-spectator-note"></p><p id="games-create-status" class="status" role="status"></p><div class="games-form-actions"><button id="games-create-cancel" class="secondary-action" type="button">Cancel</button><button id="games-create-submit" class="primary" type="submit">Send invitation</button></div></form></section>';
       document.body.append(overlay);
       $("games-create-close").addEventListener("click", closeCreateModal);
       $("games-create-cancel").addEventListener("click", closeCreateModal);
@@ -323,11 +342,7 @@
     }
     const select = $("games-conversation");
     select.replaceChildren();
-    eligible.forEach(chat => {
-      const option = node("option", "", conversationName(chat.id));
-      option.value = chat.id;
-      select.append(option);
-    });
+    appendSortedChatOptions(select, eligible);
     const chosen = eligible.find(chat => chat.id === defaultConversationId) || eligible[0];
     select.value = chosen.id;
     updateOpponentOptions();
@@ -348,11 +363,18 @@
     const select = $("games-opponent");
     if (!select) return;
     select.replaceChildren();
-    (chat?.members || []).filter(member => member.user_id !== userId()).forEach(member => {
-      const option = node("option", "", memberName(member.user_id));
-      option.value = member.user_id;
-      select.append(option);
-    });
+    const people = (chat?.members || []).filter(member => member.user_id !== userId())
+      .slice().sort((a, b) => byName(memberName(a.user_id), memberName(b.user_id)));
+    if (people.length) {
+      const group = node("optgroup");
+      group.label = "People in this chat";
+      people.forEach(member => {
+        const option = node("option", "", memberName(member.user_id));
+        option.value = member.user_id;
+        group.append(option);
+      });
+      select.append(group);
+    }
     const watchers = Math.max(0, (chat?.members?.length || 2) - 2);
     $("games-spectator-note").textContent = chat?.kind === "group"
       ? watchers + " other group member" + (watchers === 1 ? " can" : "s can") + " spectate. Only the two selected players can move."
