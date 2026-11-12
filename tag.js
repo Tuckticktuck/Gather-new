@@ -1,7 +1,7 @@
 (() => {
   "use strict";
   let ctx=null, lobbies=[], activeLobbyId=null, activeLobby=null, players=[], channel=null, refreshTimer=null, moveTimer=null, syncTimer=null;
-  let busy=false, joystick={x:0,y:0}, movePending=false, moveQueued=null, panelOpen=false, predictedPosition=null, lastSyncedPosition=null;
+  let busy=false, joystick={x:0,y:0}, movePending=false, moveQueued=null, panelOpen=false, predictedPosition=null, lastSyncedPosition=null, keyboardKeys=new Set(), keyboardBound=false;
   const $=id=>document.getElementById(id);
   const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=String(text);return n;};
   const btn=(text,cls,fn)=>{const b=el("button",cls,text);b.type="button";b.addEventListener("click",fn);return b;};
@@ -22,8 +22,34 @@
       overlay.addEventListener("click",e=>{if(e.target===overlay)closePanel();});
     }
   }
+  function updateKeyboardMovement(){
+    let x=0,y=0;
+    if(keyboardKeys.has("ArrowLeft"))x--;
+    if(keyboardKeys.has("ArrowRight"))x++;
+    if(keyboardKeys.has("ArrowUp"))y--;
+    if(keyboardKeys.has("ArrowDown"))y++;
+    const length=Math.hypot(x,y)||1;
+    joystick={x:x/length,y:y/length};
+    const knob=$("tag-joystick")?.querySelector(".tag-joystick-knob");
+    if(knob)knob.style.transform="translate("+joystick.x*24+"px,"+joystick.y*24+"px)";
+  }
+  function bindKeyboard(){
+    if(keyboardBound)return;
+    keyboardBound=true;
+    window.addEventListener("keydown",e=>{
+      if(!activeLobbyId||!$("tag-arena")||!["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.key))return;
+      const target=e.target;
+      if(target&&(target.isContentEditable||/INPUT|TEXTAREA|SELECT/.test(target.tagName)))return;
+      e.preventDefault();keyboardKeys.add(e.key);updateKeyboardMovement();
+    });
+    window.addEventListener("keyup",e=>{
+      if(!["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.key))return;
+      keyboardKeys.delete(e.key);updateKeyboardMovement();
+    });
+    window.addEventListener("blur",()=>{keyboardKeys.clear();updateKeyboardMovement();});
+  }
   function init(options){
-    ctx=options;mount();
+    ctx=options;mount();bindKeyboard();
     if(!channel){
       channel=ctx.db.channel("gather-tag-lobbies-"+(uid()||"member"))
         .on("postgres_changes",{event:"*",schema:"public",table:"gather_tag_lobbies"},payload=>{
@@ -77,7 +103,7 @@
     if(!r.error)players=r.data||[];
   }
   function openPanel(){panelOpen=true;$("tag-overlay").hidden=false;renderPanel();void refresh();}
-  function closePanel(){panelOpen=false;$("tag-overlay").hidden=true;activeLobbyId=null;activeLobby=null;players=[];clearInterval(moveTimer);clearInterval(syncTimer);moveTimer=null;syncTimer=null;predictedPosition=null;lastSyncedPosition=null;joystick={x:0,y:0};}
+  function closePanel(){panelOpen=false;keyboardKeys.clear();joystick={x:0,y:0};$("tag-overlay").hidden=true;activeLobbyId=null;activeLobby=null;players=[];clearInterval(moveTimer);clearInterval(syncTimer);moveTimer=null;syncTimer=null;predictedPosition=null;lastSyncedPosition=null;joystick={x:0,y:0};}
   function status(message){const n=$("tag-status");if(n)n.textContent=message||"";}
   function renderPanel(){
     if(!panelOpen)return;
@@ -187,10 +213,10 @@
     if(activeLobby.status==="completed"){clearInterval(moveTimer);clearInterval(syncTimer);moveTimer=null;syncTimer=null;joystick={x:0,y:0};root.append(el("p","tag-complete","Round complete."));return;}
     const me=players.find(p=>p.user_id===uid());
     if(me?.status==="eliminated"){clearInterval(moveTimer);clearInterval(syncTimer);moveTimer=null;syncTimer=null;joystick={x:0,y:0};root.append(el("p","tag-complete","You have been eliminated. You can watch the rest of the round."));return;}
-    const pad=el("div","tag-joystick");pad.setAttribute("aria-label","Movement joystick");
+    const pad=el("div","tag-joystick");pad.id="tag-joystick";pad.setAttribute("aria-label","Movement joystick");
     const knob=el("span","tag-joystick-knob");pad.append(knob);
     const move=(e)=>{const r=pad.getBoundingClientRect();const dx=(e.clientX-(r.left+r.width/2))/(r.width/2);const dy=(e.clientY-(r.top+r.height/2))/(r.height/2);const len=Math.hypot(dx,dy)||1;joystick={x:dx/Math.max(1,len),y:dy/Math.max(1,len)};knob.style.transform="translate("+joystick.x*24+"px,"+joystick.y*24+"px)";};
-    const stop=()=>{joystick={x:0,y:0};knob.style.transform="translate(0,0)";};
+    const stop=()=>{if(keyboardKeys.size){updateKeyboardMovement();return;}joystick={x:0,y:0};knob.style.transform="translate(0,0)";};
     pad.addEventListener("pointerdown",e=>{pad.setPointerCapture(e.pointerId);move(e);});
     pad.addEventListener("pointermove",e=>{if(e.buttons)move(e);});
     pad.addEventListener("pointerup",stop);pad.addEventListener("pointercancel",stop);pad.addEventListener("lostpointercapture",stop);
@@ -252,7 +278,7 @@
   function shutdown(){
     clearTimeout(refreshTimer);clearInterval(moveTimer);clearInterval(syncTimer);moveTimer=null;syncTimer=null;predictedPosition=null;
     if(channel){ctx?.db?.removeChannel?.(channel);channel=null;}
-    ctx=null;panelOpen=false;activeLobbyId=null;activeLobby=null;players=[];lobbies=[];
+    ctx=null;panelOpen=false;keyboardKeys.clear();joystick={x:0,y:0};activeLobbyId=null;activeLobby=null;players=[];lobbies=[];
     const overlay=$("tag-overlay");if(overlay)overlay.hidden=true;
   }
   window.GatherTag={init,shutdown,open:openPanel,refresh};
