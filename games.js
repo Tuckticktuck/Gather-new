@@ -84,13 +84,13 @@
       switcher.innerHTML = '<button id="workspace-messages-tab" class="workspace-switch-tab active" type="button" aria-pressed="true"><span class="workspace-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H5l-1-4.2A7.5 7.5 0 1 1 20 11.5Z"></path></svg></span> Messages</button><button id="workspace-games-tab" class="workspace-switch-tab" type="button" aria-pressed="false"><span aria-hidden="true">♟</span> Games</button>';
       const home = $("empty");
       switcher.hidden = true;
-      document.body.appendChild(switcher);
+      main.appendChild(switcher);
       const positionSwitcher = () => {
         const rect = main.getBoundingClientRect();
-        switcher.style.position = "fixed";
-        switcher.style.top = Math.max(0, rect.top + 14) + "px";
-        switcher.style.left = Math.max(0, rect.left) + "px";
-        switcher.style.width = Math.max(0, Math.min(rect.width, window.innerWidth - Math.max(0, rect.left))) + "px";
+        switcher.style.position = "absolute";
+        switcher.style.top = "14px";
+        switcher.style.left = "0";
+        switcher.style.width = "100%";
         switcher.style.right = "auto";
       };
       positionSwitcher();
@@ -100,10 +100,9 @@
           const bar = $("workspace-switcher");
           const host = document.querySelector(".main");
           if (!bar || !host) return;
-          const rect = host.getBoundingClientRect();
-          bar.style.top = Math.max(0, rect.top + 14) + "px";
-          bar.style.left = Math.max(0, rect.left) + "px";
-          bar.style.width = Math.max(0, Math.min(rect.width, window.innerWidth - Math.max(0, rect.left))) + "px";
+          bar.style.top = "14px";
+          bar.style.left = "0";
+          bar.style.width = "100%";
         }, { passive: true });
       }
       $("workspace-messages-tab").addEventListener("click", showHomeFromHub);
