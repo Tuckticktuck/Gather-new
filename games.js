@@ -95,7 +95,7 @@
       hub.innerHTML = '<header class="games-hub-header"><div><p class="eyebrow">PLAY TOGETHER</p><h1>Gather Games</h1><p class="muted games-hub-subtitle">Your game conversations, invitations and matches — all in one place.</p></div><button id="games-new" class="primary games-new-button" type="button">＋ New game</button></header><section class="games-inbox-layout"><aside class="games-inbox-sidebar"><div class="games-inbox-sidebar-head"><h2>Game conversations</h2><p class="muted tiny">People and groups you have played with.</p></div><label class="games-search-wrap"><span class="sr-only">Search game conversations</span><input id="games-search" type="search" autocomplete="off" placeholder="Search people or groups…"></label><div id="games-list" class="games-conversation-list"></div></aside><section class="games-conversation-detail"><header class="games-detail-header"><div><p class="eyebrow">GAME HISTORY</p><h2 id="games-conversation-title">Choose a conversation</h2><p id="games-conversation-subtitle" class="muted tiny">Open a game conversation to see its history.</p></div><button id="games-refresh" class="outline" type="button">Refresh</button></header><p id="games-hub-status" class="status" role="status"></p><div id="games-conversation-games" class="games-list"></div></section></section>';
       const chat = $("chat");
       main.insertBefore(hub, chat || null);
-      $("games-new").addEventListener("click", () => openCreateModal());
+      $("games-new").addEventListener("click", () => openGameTypeChooser());
       $("games-refresh").addEventListener("click", () => refreshGames(true));
       $("games-search").addEventListener("input", event => { hubSearchQuery = event.target.value.trim().toLocaleLowerCase(); renderHub(); });
     }
@@ -146,6 +146,24 @@
       $("games-create-form").addEventListener("submit", createGame);
     }
 
+    if (!$("games-type-chooser")) {
+      const chooser = node("div", "overlay games-overlay");
+      chooser.id = "games-type-chooser";
+      chooser.hidden = true;
+      chooser.innerHTML = '<section class="modal games-create-modal games-type-chooser-modal" role="dialog" aria-modal="true" aria-labelledby="games-type-chooser-title"><button id="games-type-chooser-close" class="close" type="button" aria-label="Close">×</button><p class="eyebrow">START PLAYING</p><h2 id="games-type-chooser-title">New game</h2><p class="muted tiny">Choose the kind of match you want to start.</p><div class="games-type-chooser-options"><button id="games-choose-two-player" class="games-type-choice" type="button"><span class="games-type-choice-icon" aria-hidden="true">♟</span><span><strong>2-player games</strong><small>Head-to-head games with one opponent.</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button><button id="games-choose-multiplayer" class="games-type-choice" type="button"><span class="games-type-choice-icon" aria-hidden="true">◎</span><span><strong>Multiplayer</strong><small>Group games with more than two players.</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button></div></section>';
+      document.body.append(chooser);
+      $("games-type-chooser-close").addEventListener("click", closeGameTypeChooser);
+      chooser.addEventListener("click", event => { if (event.target === chooser) closeGameTypeChooser(); });
+      $("games-choose-two-player").addEventListener("click", () => {
+        closeGameTypeChooser();
+        openCreateModal();
+      });
+      $("games-choose-multiplayer").addEventListener("click", () => {
+        closeGameTypeChooser();
+        window.GatherTag?.open?.();
+      });
+    }
+
     if (!$("games-board-overlay")) {
       const overlay = node("div", "overlay games-overlay");
       overlay.id = "games-board-overlay";
@@ -163,6 +181,7 @@
         if (event.key !== "Escape") return;
         if (!$("games-board-overlay")?.hidden) closeBoardModal();
         else if (!$("games-create-overlay")?.hidden) closeCreateModal();
+        else if (!$("games-type-chooser")?.hidden) closeGameTypeChooser();
       });
     }
   }
@@ -238,6 +257,16 @@
     $("workspace-games-tab")?.setAttribute("aria-pressed", "false");
     $("workspace-messages-tab")?.classList.add("active");
     $("workspace-messages-tab")?.setAttribute("aria-pressed", "true");
+  }
+
+  function openGameTypeChooser() {
+    if (!ctx || !userId()) return;
+    $("games-type-chooser").hidden = false;
+  }
+
+  function closeGameTypeChooser() {
+    const overlay = $("games-type-chooser");
+    if (overlay) overlay.hidden = true;
   }
 
   function openCreateModal(defaultConversationId) {
