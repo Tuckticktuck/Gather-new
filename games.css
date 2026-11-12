@@ -340,3 +340,62 @@
   .games-detail-header{align-items:flex-start}
   .games-conversation-detail .games-list{grid-template-columns:minmax(0,1fr)}
 }
+
+
+/* Chess and Checkers: theme-forward board palette */
+.games-chess-board,.games-checkers-board{
+  --board-line:color-mix(in srgb,var(--accent) 78%,var(--text));
+  border:2px solid var(--accent);
+  border-radius:10px;
+  background:var(--accent);
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 38%,transparent),0 12px 30px #0002;
+  gap:1px;
+  padding:2px;
+}
+.games-chess-cell,.games-checkers-cell{
+  outline:1px solid color-mix(in srgb,var(--accent) 55%,transparent);
+  outline-offset:-1px;
+  transition:filter .14s ease,box-shadow .14s ease;
+}
+.games-chess-cell.dark,.games-checkers-cell.dark{
+  background:var(--accent);
+}
+.games-chess-cell.light,.games-checkers-cell.light{
+  background:var(--bg);
+}
+.games-chess-cell:not(:disabled):hover,.games-checkers-cell:not(:disabled):hover{filter:brightness(1.1)}
+.games-chess-cell.selected,.games-checkers-cell.selected{
+  box-shadow:inset 0 0 0 3px color-mix(in srgb,var(--accent) 45%,#f5d76e);
+  filter:brightness(1.13);
+}
+.games-chess-cell.legal-target:after,.games-checkers-cell.legal-target:after{
+  background:color-mix(in srgb,var(--accent) 78%,#ffffff);
+  opacity:.85;
+}
+.games-chess-cell.legal-capture:after{
+  border-color:color-mix(in srgb,var(--accent) 78%,#ffffff);
+}
+.games-chess-piece.black{
+  color:var(--accent);
+  -webkit-text-stroke:.65px color-mix(in srgb,var(--accent) 50%,#fff);
+  text-shadow:0 1px 2px #0008;
+}
+.games-chess-piece.white{
+  color:var(--text);
+  -webkit-text-stroke:.35px color-mix(in srgb,var(--text) 60%,var(--bg));
+  text-shadow:0 1px 2px #0005;
+}
+.games-checker-piece.black{
+  color:var(--accent-ink);
+  background:var(--accent);
+  border-color:color-mix(in srgb,var(--accent) 68%,#fff);
+  box-shadow:inset 0 2px 5px #ffffff55,0 3px 7px #0006;
+}
+.games-checker-piece.white{
+  color:var(--text);
+  background:var(--bg);
+  border-color:color-mix(in srgb,var(--accent) 38%,var(--line));
+  box-shadow:inset 0 2px 5px #ffffff35,0 3px 7px #0005;
+}
+.games-checker-piece.king{box-shadow:inset 0 0 0 3px color-mix(in srgb,var(--accent) 65%,#d7bd61),0 3px 7px #0006}
+@media(prefers-reduced-motion:reduce){.games-chess-cell,.games-checkers-cell{transition:none}}
