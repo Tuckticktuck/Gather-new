@@ -1,16 +1,18 @@
 "use strict";
 
-const CACHE_NAME = "gather-shell-v30";
+const CACHE_NAME = "gather-shell-v31";
 const APP_BASE = new URL("./", self.registration.scope);
 const SHELL_URLS = [
   "./",
   "./index.html",
-  "./app.css?v=20261111-game-sections-1",
+  "./app.css?v=20261112-curved-switcher-2",
   "./app.js?v=20261112-tag-lobby-1",
-  "./games.css?v=20261112-home-switcher-full-1",
+  "./games.css?v=20261112-home-switcher-curved-2",
   "./games.js?v=20261112-home-switcher-full-1",
   "./tag.css?v=20261112-tag-lobby-3",
   "./tag.js?v=20261112-tag-lobby-8",
+  "./uno.css?v=20261112-uno-1",
+  "./uno.js?v=20261112-uno-1",
   "./favicon.svg?v=20261111-1",
   "./manifest.webmanifest?v=20261111-pwa",
   "./icons/gather-180.png",
@@ -26,6 +28,8 @@ const STATIC_PATHS = new Set([
   "./games.js",
   "./tag.css",
   "./tag.js",
+  "./uno.css",
+  "./uno.js",
   "./favicon.svg",
   "./manifest.webmanifest",
   "./icons/gather-180.png",
