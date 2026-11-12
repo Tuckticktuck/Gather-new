@@ -1,7 +1,7 @@
 (() => {
   "use strict";
-  let ctx=null, lobbies=[], activeLobbyId=null, activeLobby=null, players=[], channel=null, refreshTimer=null, moveTimer=null, syncTimer=null;
-  let busy=false, joystick={x:0,y:0}, movePending=false, moveQueued=null, panelOpen=false, predictedPosition=null, lastSyncedPosition=null, keyboardKeys=new Set(), keyboardBound=false;
+  let ctx=null, lobbies=[], activeLobbyId=null, activeLobby=null, players=[], channel=null, refreshTimer=null, syncTimer=null;
+  let busy=false, joystick={x:0,y:0}, movePending=false, moveQueued=null, panelOpen=false, predictedPosition=null, lastSyncedPosition=null, keyboardKeys=new Set(), keyboardBound=false, arenaEngine=null;
   const $=id=>document.getElementById(id);
   const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=String(text);return n;};
   const btn=(text,cls,fn)=>{const b=el("button",cls,text);b.type="button";b.addEventListener("click",fn);return b;};
@@ -67,9 +67,10 @@
             if(row.user_id===uid()){
               lastSyncedPosition={x:Number(row.x),y:Number(row.y)};
               const own=players[idx>=0?idx:players.length-1];
-              if(Math.abs(joystick.x)+Math.abs(joystick.y)<.05){predictedPosition={...lastSyncedPosition};own.x=lastSyncedPosition.x;own.y=lastSyncedPosition.y;}
+              if(Math.abs(joystick.x)+Math.abs(joystick.y)<.05){predictedPosition={...lastSyncedPosition};own.x=lastSyncedPosition.x;own.y=lastSyncedPosition.y;arenaEngine?.setLocalPosition(lastSyncedPosition);}
               else if(predictedPosition){own.x=predictedPosition.x;own.y=predictedPosition.y;}
             }
+            if(row.user_id===uid()&&row.status!=="joined"&&activeLobby?.status==="active"){renderPanel();return;}
             renderArenaPositions();
           }else if(!activeLobbyId)scheduleRefresh();
         })
@@ -102,30 +103,10 @@
   }
   function openPanel(){panelOpen=true;$("tag-overlay").hidden=false;renderPanel();void refresh();}
   async function openInvitation(id){if(!ctx||!uid())return;mount();panelOpen=true;$("tag-overlay").hidden=false;const r=await ctx.db.from("gather_tag_lobbies").select("id,conversation_id,created_by,status,mode,join_mode,max_players,created_at,updated_at").eq("id",id).maybeSingle();if(r.error||!r.data){toast(r.error?.message||"That Tag invitation is no longer available.");return;}activeLobbyId=id;activeLobby=r.data;await joinLobby(r.data);}
-  function closePanel(){panelOpen=false;keyboardKeys.clear();joystick={x:0,y:0};$("tag-overlay").hidden=true;activeLobbyId=null;activeLobby=null;players=[];clearInterval(moveTimer);clearInterval(syncTimer);moveTimer=null;syncTimer=null;predictedPosition=null;lastSyncedPosition=null;joystick={x:0,y:0};}
-  function status(message){const n=$("tag-status");if(n)n.textContent=message||"";}
-  function renderPanel(){
-    if(!panelOpen)return;
-    const root=$("tag-modal-content");if(!root)return;root.replaceChildren();
-    if(activeLobbyId&&activeLobby){renderLobby(root);return;}
-    root.append(el("p","eyebrow","GATHER GAMES · MULTIPLAYER"));
-    root.append(el("h2","tag-title","Tag Arena"));
-    root.append(el("p","muted tiny","Create a lobby, customize your circle, and choose how the round works."));
-    const create=btn("＋ Create lobby","primary tag-create",renderCreate);root.append(create);
-    const list=el("div","tag-lobby-list");
-    const open=lobbies.filter(x=>x.status==="lobby");
-    if(!open.length)list.append(el("p","muted tiny tag-empty","No open lobbies right now. Create one to get started."));
-    open.forEach(l=>{
-      const card=el("article","tag-lobby-card");
-      const info=el("div","tag-lobby-info");info.append(el("strong","",modeName(l.mode)),el("span","muted tiny",conversationTitle(l.conversation_id)+" · "+(l.join_mode==="open"?"Open lobby":"Invite only")));
-      card.append(info,el("span","tag-player-count",l.max_players+" max"));
-      const join=btn("Join","outline",()=>joinLobby(l));
-      card.append(join);list.append(card);
-    });
-    root.append(el("h3","tag-section-title","Available lobbies"),list);
-    const active=lobbies.filter(x=>x.status==="active");
-    if(active.length){root.append(el("h3","tag-section-title","In progress"));active.forEach(l=>{const c=el("article","tag-lobby-card");c.append(el("div","tag-lobby-info",modeName(l.mode)+" · In progress"),btn("Watch / Play","outline",async()=>{activeLobbyId=l.id;activeLobby=l;await loadPlayers(l.id);renderPanel();}));root.append(c);});}
-    const st=el("p","status tag-status","");st.id="tag-status";root.append(st);
+  function closePanel(){
+    panelOpen=false;keyboardKeys.clear();joystick={x:0,y:0};stopArenaEngine();
+    $("tag-overlay").hidden=true;activeLobbyId=null;activeLobby=null;players=[];
+    predictedPosition=null;lastSyncedPosition=null;joystick={x:0,y:0};
   }
   function conversationTitle(id){const c=chats().find(x=>x.id===id);return c?.kind==="group"?(c.title||"Group chat"):c?.members?.find(m=>m.user_id!==uid())?.user_id?name(c.members.find(m=>m.user_id!==uid()).user_id):"Private conversation";}
   function renderCreate(){
@@ -201,41 +182,80 @@
     const back=btn("Back to Tag Arena","outline tag-back",()=>{activeLobbyId=null;activeLobby=null;players=[];renderPanel();});root.append(back);
     const st=el("p","status tag-status","");st.id="tag-status";root.append(st);
   }
+  function stopArenaEngine(){
+    if(arenaEngine){arenaEngine.destroy();arenaEngine=null;}
+    clearInterval(syncTimer);syncTimer=null;
+  }
   function renderArena(root){
-    const arena=el("div","tag-arena");arena.id="tag-arena";
-    players.filter(p=>p.status==="joined").forEach(p=>{const dot=el("span","tag-dot");dot.dataset.userId=p.user_id;dot.style.left=p.x+"%";dot.style.top=p.y+"%";dot.style.background=p.color;dot.title=name(p.user_id)+(p.is_it?" · It":"");if(p.user_id===uid())dot.classList.add("mine");if(p.is_it)dot.classList.add("is-it");arena.append(dot);});
+    const arena=el("canvas","tag-arena");arena.id="tag-arena";
+    arena.width=960;arena.height=540;
+    arena.setAttribute("role","img");
+    arena.setAttribute("aria-label","Tag Arena. Player circles move around the game field.");
     root.append(arena);
+
     if(activeLobby.mode==="last_standing")root.append(el("p","muted tiny","Tagged players are eliminated. The last player remaining wins."));
     else if(activeLobby.mode==="infection")root.append(el("p","muted tiny","Tagged players join the infected team. The infection spreads."));
     else if(activeLobby.mode==="team_tag")root.append(el("p","muted tiny","Work with your team to tag the opposing team."));
     else root.append(el("p","muted tiny","One player is It. Tagging passes It to the next player."));
-    if(activeLobby.status==="completed"){clearInterval(moveTimer);clearInterval(syncTimer);moveTimer=null;syncTimer=null;joystick={x:0,y:0};root.append(el("p","tag-complete","Round complete."));return;}
+
+    if(activeLobby.status==="completed"){
+      joystick={x:0,y:0};root.append(el("p","tag-complete","Round complete."));return;
+    }
     const me=players.find(p=>p.user_id===uid());
-    if(me?.status==="eliminated"){clearInterval(moveTimer);clearInterval(syncTimer);moveTimer=null;syncTimer=null;joystick={x:0,y:0};root.append(el("p","tag-complete","You have been eliminated. You can watch the rest of the round."));return;}
+    if(me?.status==="eliminated"){
+      joystick={x:0,y:0};
+      root.append(el("p","tag-complete","You have been eliminated. You can watch the rest of the round."));return;
+    }
+    if(me?.status!=="joined"){
+      joystick={x:0,y:0};
+      root.append(el("p","muted tiny","You are watching this match. You are not an active player."));return;
+    }
+
     const pad=el("div","tag-joystick");pad.id="tag-joystick";pad.setAttribute("aria-label","Movement joystick");
     const knob=el("span","tag-joystick-knob");pad.append(knob);
-    const move=(e)=>{const r=pad.getBoundingClientRect();const dx=(e.clientX-(r.left+r.width/2))/(r.width/2);const dy=(e.clientY-(r.top+r.height/2))/(r.height/2);const len=Math.hypot(dx,dy)||1;joystick={x:dx/Math.max(1,len),y:dy/Math.max(1,len)};knob.style.transform="translate("+joystick.x*24+"px,"+joystick.y*24+"px)";};
-    const stop=()=>{if(keyboardKeys.size){updateKeyboardMovement();return;}joystick={x:0,y:0};knob.style.transform="translate(0,0)";};
+    const move=(e)=>{
+      const r=pad.getBoundingClientRect();
+      const dx=(e.clientX-(r.left+r.width/2))/(r.width/2);
+      const dy=(e.clientY-(r.top+r.height/2))/(r.height/2);
+      const len=Math.hypot(dx,dy)||1;
+      joystick={x:dx/Math.max(1,len),y:dy/Math.max(1,len)};
+      knob.style.transform="translate("+joystick.x*24+"px,"+joystick.y*24+"px)";
+    };
+    const stop=()=>{
+      if(keyboardKeys.size){updateKeyboardMovement();return;}
+      joystick={x:0,y:0};knob.style.transform="translate(0,0)";
+    };
     pad.addEventListener("pointerdown",e=>{pad.setPointerCapture(e.pointerId);move(e);});
     pad.addEventListener("pointermove",e=>{if(e.buttons)move(e);});
     pad.addEventListener("pointerup",stop);pad.addEventListener("pointercancel",stop);pad.addEventListener("lostpointercapture",stop);
     const controls=el("div","tag-controls");controls.append(el("span","muted tiny","Move your circle"),pad);root.append(controls);
-    if(!moveTimer)moveTimer=setInterval(stepLocalMovement,50);
+
+    try{
+      if(!window.GatherTagEngine?.create)throw new Error("The Tag Canvas engine did not load. Reload Gather and try again.");
+      arenaEngine=window.GatherTagEngine.create(arena,{
+        localUserId:()=>uid(),
+        getInput:()=>joystick,
+        getPlayers:()=>players,
+        getPlayerName:id=>name(id),
+        onLocalMove:position=>{
+          const own=players.find(p=>p.user_id===uid()&&p.status==="joined");
+          if(!own)return;
+          predictedPosition={x:position.x,y:position.y};
+          own.x=position.x;own.y=position.y;
+        }
+      });
+      arenaEngine.setPlayers(players);
+      if(predictedPosition)arenaEngine.setLocalPosition(predictedPosition);
+      arenaEngine.start();
+    }catch(error){
+      arenaEngine=null;
+      root.append(el("p","status tag-status",error?.message||"Canvas rendering could not start."));
+      return;
+    }
     if(!syncTimer)syncTimer=setInterval(sendMove,240);
   }
-  function stepLocalMovement(){
-    if(!activeLobbyId||!$("tag-arena"))return;
-    if(Math.abs(joystick.x)+Math.abs(joystick.y)<.05)return;
-    const me=players.find(p=>p.user_id===uid()&&p.status==="joined");if(!me)return;
-    const base=predictedPosition||{x:Number(me.x),y:Number(me.y)};
-    if(!lastSyncedPosition)lastSyncedPosition={x:Number(me.x),y:Number(me.y)};
-    predictedPosition={
-      x:Math.max(2,Math.min(98,base.x+joystick.x*(me.is_it?.60:.50))),
-      y:Math.max(2,Math.min(98,base.y+joystick.y*(me.is_it?.60:.50)))
-    };
-    me.x=predictedPosition.x;me.y=predictedPosition.y;
-    const dot=$("tag-arena")?.querySelector('.tag-dot[data-user-id="'+uid()+'"]');
-    if(dot){dot.style.left=me.x+"%";dot.style.top=me.y+"%";}
+  function renderArenaPositions(){
+    if(arenaEngine)arenaEngine.setPlayers(players);
   }
   async function sendMove(){
     if(!activeLobbyId||movePending)return;
@@ -255,6 +275,7 @@
         predictedPosition={x:confirmed.x,y:confirmed.y};
         lastSyncedPosition={x:confirmed.x,y:confirmed.y};
         me.x=confirmed.x;me.y=confirmed.y;
+        arenaEngine?.setLocalPosition(confirmed);
         renderArenaPositions();
       }else{
         lastSyncedPosition={x:sent.x,y:sent.y};
@@ -275,7 +296,7 @@
     [...arena.querySelectorAll(".tag-dot")].forEach(dot=>{if(!players.some(p=>p.user_id===dot.dataset.userId&&p.status==="joined"))dot.remove();});
   }
   function shutdown(){
-    clearTimeout(refreshTimer);clearInterval(moveTimer);clearInterval(syncTimer);moveTimer=null;syncTimer=null;predictedPosition=null;
+    clearTimeout(refreshTimer);stopArenaEngine();predictedPosition=null;
     if(channel){ctx?.db?.removeChannel?.(channel);channel=null;}
     ctx=null;panelOpen=false;keyboardKeys.clear();joystick={x:0,y:0};activeLobbyId=null;activeLobby=null;players=[];lobbies=[];
     const overlay=$("tag-overlay");if(overlay)overlay.hidden=true;
