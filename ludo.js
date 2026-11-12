@@ -30,6 +30,7 @@
   let activeGame = null;
   let players = [];
   let games = [];
+  let membershipRows = [];
 
   const $ = id => document.getElementById(id);
   const el = (tag, cls, text) => {
@@ -126,6 +127,7 @@
     const ids = [...new Set(chats().map(chat => chat.id).filter(Boolean))];
     if (!ids.length) {
       games = [];
+      membershipRows = [];
       if (panelOpen && !activeGameId) renderLobbyList();
       return;
     }
@@ -141,6 +143,15 @@
       return;
     }
     games = result.data || [];
+    const gameIds = games.map(game => game.id);
+    if (gameIds.length) {
+      const members = await ctx.db.from("gather_multiplayer_players")
+        .select("game_id,user_id,status,color,ready,joined_at")
+        .in("game_id", gameIds);
+      membershipRows = members.error ? [] : (members.data || []);
+    } else {
+      membershipRows = [];
+    }
     if (activeGameId) {
       await loadGame();
       return;
@@ -271,7 +282,11 @@
     section.append(el("h3", "ludo-section-title", "Available lobbies"));
     const list = el("div", "ludo-lobby-list");
     const available = new Set(eligibleChats().map(chat => chat.id));
-    const shown = games.filter(game => available.has(game.conversation_id) && game.status === "active");
+    const shown = games.filter(game => {
+      if (!available.has(game.conversation_id) || game.status !== "active") return false;
+      if (game.join_mode === "open" || game.created_by === uid()) return true;
+      return membershipRows.some(player => player.game_id === game.id && player.user_id === uid() && ["joined", "invited"].includes(player.status));
+    });
     if (!shown.length) list.append(el("p", "ludo-empty muted tiny", "No active Ludo lobbies in your conversations yet."));
     shown.forEach(game => {
       const card = el("article", "ludo-lobby-card");
@@ -298,9 +313,9 @@
         }
       });
       card.append(info, action);
-      section.append(list);
       list.append(card);
     });
+    section.append(list);
     root.append(section);
     const history = games.filter(game => game.status === "completed");
     if (history.length) {
@@ -320,7 +335,7 @@
   }
 
   function playersForSummary(game) {
-    return Number(game.state?.joined_count) || null;
+    return membershipRows.filter(player => player.game_id === game.id && player.status === "joined").length;
   }
 
   function renderCreate() {
