@@ -1,7 +1,7 @@
 (() => {
   "use strict";
   let ctx=null, lobbies=[], activeLobbyId=null, activeLobby=null, players=[], channel=null, refreshTimer=null, moveTimer=null, syncTimer=null;
-  let busy=false, joystick={x:0,y:0}, movePending=false, moveQueued=null, panelOpen=false, predictedPosition=null;
+  let busy=false, joystick={x:0,y:0}, movePending=false, moveQueued=null, panelOpen=false, predictedPosition=null, lastSyncedPosition=null;
   const $=id=>document.getElementById(id);
   const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=String(text);return n;};
   const btn=(text,cls,fn)=>{const b=el("button",cls,text);b.type="button";b.addEventListener("click",fn);return b;};
@@ -40,7 +40,7 @@
             if(payload.eventType==="DELETE"){players=players.filter(p=>p.user_id!==payload.old?.user_id);}
             else if(idx>=0)players[idx]={...players[idx],...row};
             else players.push(row);
-            if(row.user_id===uid())predictedPosition={x:Number(row.x),y:Number(row.y)};
+            if(row.user_id===uid()){lastSyncedPosition={x:Number(row.x),y:Number(row.y)};if(Math.abs(joystick.x)+Math.abs(joystick.y)<.05){predictedPosition={...lastSyncedPosition};players[idx>=0?idx:players.length-1].x=lastSyncedPosition.x;players[idx>=0?idx:players.length-1].y=lastSyncedPosition.y;}}
             renderArenaPositions();
           }else if(!activeLobbyId)scheduleRefresh();
         })
@@ -72,7 +72,7 @@
     if(!r.error)players=r.data||[];
   }
   function openPanel(){panelOpen=true;$("tag-overlay").hidden=false;renderPanel();void refresh();}
-  function closePanel(){panelOpen=false;$("tag-overlay").hidden=true;activeLobbyId=null;activeLobby=null;players=[];clearInterval(moveTimer);clearInterval(syncTimer);moveTimer=null;syncTimer=null;predictedPosition=null;joystick={x:0,y:0};}
+  function closePanel(){panelOpen=false;$("tag-overlay").hidden=true;activeLobbyId=null;activeLobby=null;players=[];clearInterval(moveTimer);clearInterval(syncTimer);moveTimer=null;syncTimer=null;predictedPosition=null;lastSyncedPosition=null;joystick={x:0,y:0};}
   function status(message){const n=$("tag-status");if(n)n.textContent=message||"";}
   function renderPanel(){
     if(!panelOpen)return;
@@ -197,7 +197,7 @@
     if(!activeLobbyId||!$("tag-arena"))return;
     if(Math.abs(joystick.x)+Math.abs(joystick.y)<.05)return;
     const me=players.find(p=>p.user_id===uid()&&p.status==="joined");if(!me)return;
-    const base=predictedPosition||{x:Number(me.x),y:Number(me.y)};
+    const base=predictedPosition||{x:Number(me.x),y:Number(me.y)};\n    if(!lastSyncedPosition)lastSyncedPosition={x:Number(me.x),y:Number(me.y)};
     predictedPosition={
       x:Math.max(2,Math.min(98,base.x+joystick.x*.34)),
       y:Math.max(2,Math.min(98,base.y+joystick.y*.34))
@@ -215,7 +215,7 @@
     movePending=true;
     const lobbyId=activeLobbyId;
     try{
-      const r=await ctx.db.rpc("gather_tag_move",{p_lobby_id:lobbyId,p_x:target.x,p_y:target.y});
+      const r=await ctx.db.rpc("gather_tag_move",{p_lobby_id:lobbyId,p_x:sent.x,p_y:sent.y});
       if(r.error){
         if(!/Movement update is too large/.test(r.error.message))status(r.error.message);
         predictedPosition={x:confirmed.x,y:confirmed.y};
