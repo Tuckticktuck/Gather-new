@@ -522,7 +522,7 @@
       card.append(node("p","games-card-conversation muted tiny",conversationName(invite.conversation_id)));
       card.append(node("p","games-card-detail muted tiny",uno?((invite.join_mode==="open"?"Open":"Invite-only")+" lobby · "+(invite.settings?.max_players||10)+" player limit"):((invite.mode||"classic").replace(/_/g," ")+" · "+(invite.join_mode==="open"?"Open":"Invite-only")+" lobby")));
       const actions=node("div","games-card-actions");
-      actions.append(button(uno?"Join UNO":"Join Tag","primary games-card-primary",async()=>{if(uno)await window.GatherUno?.openInvitation?.(invite.id);else await window.GatherTag?.openInvitation?.(invite.id);await refreshGames(false);}));
+      actions.append(button(uno?"Join UNO":"Join Tag","primary games-card-primary",async()=>{if(uno)await window.GatherUno?.openInvitation?.(invite.id);else await window.GatherTag?.openInvitation?.(invite.id);await refreshGames(false);}));actions.append(button("Decline","outline",async()=>{const result=await ctx.db.rpc(uno?"gather_uno_decline":"gather_tag_decline",uno?{p_game_id:invite.id}:{p_lobby_id:invite.id});if(result.error){toast(result.error.message||"Could not decline invitation.");return;}toast("Invitation declined.");await refreshGames(false);}));
       card.append(actions);list.append(card);
     });
   }
