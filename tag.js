@@ -125,7 +125,24 @@
     if(activeLobby.status==="lobby"){
       const ready=btn(me.ready?"Not ready":"Ready up",me.ready?"outline":"primary",async()=>{const r=await ctx.db.rpc("gather_tag_ready",{p_lobby_id:activeLobbyId,p_ready:!me.ready});if(r.error)toast(r.error.message);else await refresh();});
       const actions=el("div","tag-actions");actions.append(ready);
-      if(activeLobby.created_by===uid()){const start=btn("Start match","primary",async()=>{const r=await ctx.db.rpc("gather_tag_start",{p_lobby_id:activeLobbyId});if(r.error)toast(r.error.message);else{activeLobby=Array.isArray(r.data)?r.data[0]:r.data;await refresh();}});start.disabled=players.filter(p=>p.status==="joined").length<2||players.some(p=>p.status==="joined"&&!p.ready);actions.append(start);}
+      if(activeLobby.created_by===uid()){
+        const start=btn("Start match","primary",async()=>{
+          if(busy)return;busy=true;start.disabled=true;status("Starting match…");
+          try{
+            const r=await ctx.db.rpc("gather_tag_start",{p_lobby_id:activeLobbyId});
+            if(r.error){status(r.error.message);toast(r.error.message);start.disabled=false;return;}
+            const latest=await ctx.db.from("gather_tag_lobbies").select("id,conversation_id,created_by,status,mode,join_mode,max_players,created_at,updated_at").eq("id",activeLobbyId).single();
+            if(latest.error){status("Start was requested, but the match status could not be refreshed: "+latest.error.message);start.disabled=false;return;}
+            activeLobby=latest.data;
+            await loadPlayers(activeLobbyId);
+            if(activeLobby.status==="active"){status("");renderPanel();}
+            else{status("The lobby is still waiting. Make sure every joined player is ready, then try again.");start.disabled=false;}
+          }catch(error){status(error?.message||"Could not start the match.");start.disabled=false;}
+          finally{busy=false;}
+        });
+        start.disabled=players.filter(p=>p.status==="joined").length<2||players.some(p=>p.status==="joined"&&!p.ready);
+        actions.append(start);
+      }
       actions.append(btn("Leave lobby","secondary-action",async()=>{await ctx.db.rpc("gather_tag_leave",{p_lobby_id:activeLobbyId});activeLobbyId=null;activeLobby=null;await refresh();}));
       root.append(actions);
       root.append(el("p","muted tiny","The host can start once at least two players have joined and everyone is ready."));
