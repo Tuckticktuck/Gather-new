@@ -485,3 +485,8 @@
 .games-type-choice small{font-size:11px;line-height:1.45;color:var(--muted)}
 .games-type-choice-arrow{margin-left:auto;color:var(--muted);font-size:20px}
 @media(max-width:520px){.games-type-choice{min-height:72px;padding:12px}}
+
+/* Full-width Messages / Games switcher on desktop. */
+.workspace-switcher{width:100%;max-width:none;align-self:stretch;box-sizing:border-box;}
+.workspace-switch-tab{flex:1;min-width:0;}
+@media(min-width:900px){.workspace-switcher{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));}}
