@@ -40,7 +40,12 @@
             if(payload.eventType==="DELETE"){players=players.filter(p=>p.user_id!==payload.old?.user_id);}
             else if(idx>=0)players[idx]={...players[idx],...row};
             else players.push(row);
-            if(row.user_id===uid()){lastSyncedPosition={x:Number(row.x),y:Number(row.y)};if(Math.abs(joystick.x)+Math.abs(joystick.y)<.05){predictedPosition={...lastSyncedPosition};players[idx>=0?idx:players.length-1].x=lastSyncedPosition.x;players[idx>=0?idx:players.length-1].y=lastSyncedPosition.y;}}
+            if(row.user_id===uid()){
+              lastSyncedPosition={x:Number(row.x),y:Number(row.y)};
+              const own=players[idx>=0?idx:players.length-1];
+              if(Math.abs(joystick.x)+Math.abs(joystick.y)<.05){predictedPosition={...lastSyncedPosition};own.x=lastSyncedPosition.x;own.y=lastSyncedPosition.y;}
+              else if(predictedPosition){own.x=predictedPosition.x;own.y=predictedPosition.y;}
+            }
             renderArenaPositions();
           }else if(!activeLobbyId)scheduleRefresh();
         })
@@ -197,7 +202,8 @@
     if(!activeLobbyId||!$("tag-arena"))return;
     if(Math.abs(joystick.x)+Math.abs(joystick.y)<.05)return;
     const me=players.find(p=>p.user_id===uid()&&p.status==="joined");if(!me)return;
-    const base=predictedPosition||{x:Number(me.x),y:Number(me.y)};\n    if(!lastSyncedPosition)lastSyncedPosition={x:Number(me.x),y:Number(me.y)};
+    const base=predictedPosition||{x:Number(me.x),y:Number(me.y)};
+    if(!lastSyncedPosition)lastSyncedPosition={x:Number(me.x),y:Number(me.y)};
     predictedPosition={
       x:Math.max(2,Math.min(98,base.x+joystick.x*.34)),
       y:Math.max(2,Math.min(98,base.y+joystick.y*.34))
@@ -210,8 +216,11 @@
     if(!activeLobbyId||movePending)return;
     const me=players.find(p=>p.user_id===uid()&&p.status==="joined");if(!me)return;
     const target=predictedPosition||{x:Number(me.x),y:Number(me.y)};
-    const confirmed={x:Number(me.x),y:Number(me.y)};
-    if(Math.hypot(target.x-confirmed.x,target.y-confirmed.y)<.35)return;
+    const confirmed=lastSyncedPosition||{x:Number(me.x),y:Number(me.y)};
+    const dx=target.x-confirmed.x,dy=target.y-confirmed.y,distance=Math.hypot(dx,dy);
+    if(distance<.35)return;
+    const scale=distance>7.5?7.5/distance:1;
+    const sent={x:confirmed.x+dx*scale,y:confirmed.y+dy*scale};
     movePending=true;
     const lobbyId=activeLobbyId;
     try{
@@ -219,10 +228,12 @@
       if(r.error){
         if(!/Movement update is too large/.test(r.error.message))status(r.error.message);
         predictedPosition={x:confirmed.x,y:confirmed.y};
+        lastSyncedPosition={x:confirmed.x,y:confirmed.y};
         me.x=confirmed.x;me.y=confirmed.y;
         renderArenaPositions();
       }else{
-        me.x=target.x;me.y=target.y;
+        lastSyncedPosition={x:sent.x,y:sent.y};
+        me.x=predictedPosition?.x??sent.x;me.y=predictedPosition?.y??sent.y;
       }
     }catch(error){status(error?.message||"Movement could not sync.");}
     finally{movePending=false;}
