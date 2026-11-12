@@ -3720,3 +3720,5 @@ body:has(.overlay:not([hidden])) #workspace-switcher{
 .layout:not(.show-home):not(.show-games) #workspace-switcher{
   display:none!important;
 }
+
+#workspace-switcher[hidden]{display:none!important}
