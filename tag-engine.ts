@@ -44,6 +44,9 @@
     private panel = "#17212e";
     private background = "#101722";
     private lastThemeRead = 0;
+    private lastDraw = 0;
+    private readonly labelCache = new Map<string, { text: string; width: number }>();
+    private readonly frameInterval = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? 50 : 33;
 
     constructor(canvas: HTMLCanvasElement, options: EngineOptions) {
       const context = canvas.getContext("2d", { alpha: false });
@@ -120,6 +123,7 @@
       if (this.running) return;
       this.running = true;
       this.lastFrame = 0;
+      this.lastDraw = 0;
       this.frameId = requestAnimationFrame(this.tick);
     }
 
@@ -136,12 +140,24 @@
       this.observer = null;
       window.removeEventListener("resize", this.resizeHandler);
       this.states.clear();
+      this.labelCache.clear();
     }
 
     private readonly tick = (time: number): void => {
       if (!this.running) return;
-      const delta = this.lastFrame ? Math.min(50, time - this.lastFrame) : 16.67;
+      if (document.hidden) {
+        this.lastFrame = 0;
+        this.frameId = requestAnimationFrame(this.tick);
+        return;
+      }
+      const elapsed = this.lastFrame ? Math.min(50, time - this.lastFrame) : this.frameInterval;
+      if (time - this.lastDraw < this.frameInterval) {
+        this.frameId = requestAnimationFrame(this.tick);
+        return;
+      }
+      const delta = this.lastFrame ? elapsed : this.frameInterval;
       this.lastFrame = time;
+      this.lastDraw = time;
       if (!this.lastThemeRead || time - this.lastThemeRead > 1000) {
         this.refreshTheme();
         this.lastThemeRead = time;
@@ -278,21 +294,25 @@
       }
 
       ctx.globalAlpha = 1;
-      ctx.shadowColor = state.color;
-      ctx.shadowBlur = 13;
       ctx.beginPath();
       ctx.arc(x, y, radius, 0, Math.PI * 2);
       ctx.fillStyle = state.color;
       ctx.fill();
-      ctx.shadowBlur = 0;
       ctx.lineWidth = 2;
       ctx.strokeStyle = "#ffffff";
       ctx.stroke();
 
       const fullName = this.options.getPlayerName(state.id) || "Player";
+      let cachedLabel = this.labelCache.get(state.id);
+      if (!cachedLabel || cachedLabel.text !== fullName) {
+        const label = fullName.length > 17 ? fullName.slice(0, 16) + "…" : fullName;
+        ctx.font = "600 10px system-ui, -apple-system, sans-serif";
+        cachedLabel = { text: fullName, width: Math.min(116, ctx.measureText(label).width) };
+        this.labelCache.set(state.id, cachedLabel);
+      }
       const label = fullName.length > 17 ? fullName.slice(0, 16) + "…" : fullName;
       ctx.font = "600 10px system-ui, -apple-system, sans-serif";
-      const textWidth = Math.min(116, ctx.measureText(label).width);
+      const textWidth = cachedLabel.width;
       const labelWidth = textWidth + 14;
       const labelHeight = 21;
       const labelX = this.clamp(x - labelWidth / 2, 4, this.width - labelWidth - 4);
