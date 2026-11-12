@@ -182,3 +182,80 @@
 @media(prefers-reduced-motion:reduce){
   :where(.tag-invite-option,.uno-invite-option){transition:none}
 }
+
+
+/* Refined game invite lists: clear selection, calmer surfaces, and consistent rhythm. */
+:where(.tag-people-picker,.uno-people-picker){
+  padding:15px;
+  border:1px solid color-mix(in srgb,var(--accent) 24%,var(--line));
+  border-radius:16px;
+  background:linear-gradient(145deg,color-mix(in srgb,var(--accent-surface) 56%,var(--panel)),var(--panel) 78%);
+  box-shadow:inset 0 1px 0 #ffffff08,0 5px 16px #0000000d;
+}
+:where(.tag-people-picker-head,.uno-people-heading){
+  gap:5px;
+  padding:1px 2px 3px;
+}
+:where(.tag-people-picker-head strong,.uno-people-heading strong){
+  font-size:13px;
+  font-weight:800;
+  letter-spacing:-.01em;
+}
+:where(.tag-people-picker-head small,.uno-people-heading small){
+  color:var(--muted);
+  font-size:10px;
+  line-height:1.5;
+}
+:where(.tag-invite-list,.uno-invites){
+  gap:9px!important;
+  max-height:276px;
+  padding:3px 6px 4px 2px;
+  scrollbar-gutter:stable;
+}
+:where(.tag-invite-option,.uno-invite-option){
+  position:relative;
+  min-height:48px;
+  padding:10px 12px!important;
+  border-radius:12px!important;
+  background:color-mix(in srgb,var(--panel) 94%,var(--accent))!important;
+  box-shadow:0 1px 2px #0000000a;
+}
+:where(.tag-invite-option:hover,.uno-invite-option:hover){
+  transform:translateY(-1px);
+  box-shadow:0 4px 12px color-mix(in srgb,var(--accent) 12%,transparent);
+}
+:where(.tag-invite-option:has(input:checked),.uno-invite-option:has(input:checked)){
+  border-color:color-mix(in srgb,var(--accent) 72%,var(--line))!important;
+  background:color-mix(in srgb,var(--accent-surface) 82%,var(--panel))!important;
+  box-shadow:inset 3px 0 0 var(--accent),0 2px 7px #0000000a;
+}
+:where(.tag-invite-option input,.uno-invite-option input){
+  appearance:auto;
+  width:17px!important;
+  height:17px!important;
+  flex-basis:17px;
+  cursor:pointer;
+}
+:where(.tag-invite-option span,.uno-invite-option span){
+  font-weight:650;
+  line-height:1.4;
+}
+:where(.tag-invite-list,.uno-invites)::-webkit-scrollbar{width:7px}
+:where(.tag-invite-list,.uno-invites)::-webkit-scrollbar-track{background:transparent}
+:where(.tag-invite-list,.uno-invites)::-webkit-scrollbar-thumb{
+  border:2px solid transparent;
+  border-radius:99px;
+  background:color-mix(in srgb,var(--accent) 48%,var(--muted));
+  background-clip:padding-box;
+}
+@media(hover:hover){
+  :where(.tag-invite-option,.uno-invite-option):hover{transform:translateY(-1px)}
+}
+@media(max-width:760px){
+  :where(.tag-people-picker,.uno-people-picker){padding:12px;border-radius:14px}
+  :where(.tag-invite-list,.uno-invites){max-height:230px;gap:7px!important}
+  :where(.tag-invite-option,.uno-invite-option){min-height:46px}
+}
+@media(prefers-reduced-motion:reduce){
+  :where(.tag-invite-option,.uno-invite-option){transition:none!important}
+}
