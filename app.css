@@ -1632,7 +1632,7 @@ html[data-theme="light"] .chat.chat-appearance-custom .messages .mine .bubble .m
 .admin-mode-header h2{margin:0 0 4px;font-size:calc(24px * var(--font-scale,1))}
 .admin-mode-header p:last-child{margin:0}
 .admin-mode-nav{display:flex;flex-wrap:wrap;gap:6px;padding-bottom:12px;border-bottom:1px solid var(--line)}
-.admin-mode-tab{flex:0 0 auto;padding:9px 13px;border:1px solid transparent;border-radius:9px;color:var(--muted);background:transparent;font-size:calc(10px * var(--font-scale,1));font-weight:750}
+.admin-mode-tab{flex:0 0 auto;padding:9px 13px;border:1px solid transparent;border-radius:13px;color:var(--muted);background:transparent;font-size:calc(10px * var(--font-scale,1));font-weight:750}
 .admin-mode-tab:hover{background:var(--accent-surface);color:var(--text)}
 .admin-mode-tab.active{border-color:var(--accent-outline-soft);background:var(--accent-surface);color:var(--accent-text)}
 .admin-mode-body{flex:1;min-height:0;overflow:auto;padding:2px 3px 8px;overscroll-behavior:contain}
@@ -3672,8 +3672,8 @@ html[data-theme="light"] .offline-status{color:#59421d;background:#fff4d8;border
 .workspace-switcher{
   position:absolute;z-index:6;top:0;left:0;right:0;
   display:flex;align-items:stretch;gap:5px;width:auto;max-width:none;
-  padding:7px clamp(18px,3vw,34px);border:0;border-bottom:1px solid var(--line);
-  border-radius:0;background:var(--panel);box-shadow:0 5px 20px #0002;
+  padding:7px clamp(18px,3vw,34px);border:1px solid var(--line);border-top:0;
+  border-radius:0 0 22px 22px;background:var(--panel);box-shadow:0 5px 20px #0002;
 }
 .workspace-switch-tab{
   display:inline-flex;flex:1;align-items:center;justify-content:center;gap:8px;
@@ -3690,7 +3690,7 @@ html[data-theme="light"] .offline-status{color:#59421d;background:#fff4d8;border
 .layout.show-chat #workspace-switcher{display:none}
 #empty.home-workspace{padding-top:76px}
 @media(max-width:720px){
-  .workspace-switcher{top:9px;left:11px;right:11px;width:auto;max-width:none;justify-content:stretch;padding:4px;border:1px solid var(--line);border-radius:13px}
+  .workspace-switcher{top:9px;left:11px;right:11px;width:auto;max-width:none;justify-content:stretch;padding:4px;border:1px solid var(--line);border-radius:17px}
   .workspace-switch-tab{flex:1;min-width:0;min-height:37px;padding:7px 10px;font-size:calc(11px * var(--font-scale,1))}
   #empty.home-workspace{padding-top:67px}
 }
