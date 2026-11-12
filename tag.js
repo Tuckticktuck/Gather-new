@@ -1,7 +1,7 @@
 (() => {
   "use strict";
-  let ctx=null, lobbies=[], activeLobbyId=null, activeLobby=null, players=[], channel=null, refreshTimer=null, moveTimer=null;
-  let busy=false, joystick={x:0,y:0}, movePending=false, moveQueued=null, panelOpen=false;
+  let ctx=null, lobbies=[], activeLobbyId=null, activeLobby=null, players=[], channel=null, refreshTimer=null, moveTimer=null, syncTimer=null;
+  let busy=false, joystick={x:0,y:0}, movePending=false, moveQueued=null, panelOpen=false, predictedPosition=null;
   const $=id=>document.getElementById(id);
   const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=String(text);return n;};
   const btn=(text,cls,fn)=>{const b=el("button",cls,text);b.type="button";b.addEventListener("click",fn);return b;};
@@ -26,13 +26,29 @@
     ctx=options;mount();
     if(!channel){
       channel=ctx.db.channel("gather-tag-lobbies-"+(uid()||"member"))
-        .on("postgres_changes",{event:"*",schema:"public",table:"gather_tag_lobbies"},()=>scheduleRefresh())
-        .on("postgres_changes",{event:"*",schema:"public",table:"gather_tag_players"},()=>scheduleRefresh())
+        .on("postgres_changes",{event:"*",schema:"public",table:"gather_tag_lobbies"},payload=>{
+          const next=payload?.new;
+          if(activeLobbyId&&next?.id===activeLobbyId){
+            if(next.status&&next.status!==activeLobby?.status){activeLobby={...activeLobby,...next};void loadPlayers(activeLobbyId).then(()=>renderPanel());}
+            else if(next.updated_at&&activeLobby)activeLobby.updated_at=next.updated_at;
+          }else scheduleRefresh();
+        })
+        .on("postgres_changes",{event:"*",schema:"public",table:"gather_tag_players"},payload=>{
+          const row=payload?.new;
+          if(activeLobbyId&&row?.lobby_id===activeLobbyId){
+            const idx=players.findIndex(p=>p.user_id===row.user_id);
+            if(payload.eventType==="DELETE"){players=players.filter(p=>p.user_id!==payload.old?.user_id);}
+            else if(idx>=0)players[idx]={...players[idx],...row};
+            else players.push(row);
+            if(row.user_id===uid())predictedPosition={x:Number(row.x),y:Number(row.y)};
+            renderArenaPositions();
+          }else if(!activeLobbyId)scheduleRefresh();
+        })
         .subscribe();
     }
     void refresh();
   }
-  function scheduleRefresh(){clearTimeout(refreshTimer);refreshTimer=setTimeout(()=>refresh(),180);}
+  function scheduleRefresh(){clearTimeout(refreshTimer);refreshTimer=setTimeout(()=>refresh(),350);}
   async function refresh(){
     if(!ctx||!uid())return;
     const ids=[...new Set(chats().map(c=>c.id).filter(Boolean))];
@@ -56,7 +72,7 @@
     if(!r.error)players=r.data||[];
   }
   function openPanel(){panelOpen=true;$("tag-overlay").hidden=false;renderPanel();void refresh();}
-  function closePanel(){panelOpen=false;$("tag-overlay").hidden=true;activeLobbyId=null;activeLobby=null;players=[];clearInterval(moveTimer);moveTimer=null;joystick={x:0,y:0};}
+  function closePanel(){panelOpen=false;$("tag-overlay").hidden=true;activeLobbyId=null;activeLobby=null;players=[];clearInterval(moveTimer);clearInterval(syncTimer);moveTimer=null;syncTimer=null;predictedPosition=null;joystick={x:0,y:0};}
   function status(message){const n=$("tag-status");if(n)n.textContent=message||"";}
   function renderPanel(){
     if(!panelOpen)return;
@@ -174,18 +190,42 @@
     pad.addEventListener("pointermove",e=>{if(e.buttons)move(e);});
     pad.addEventListener("pointerup",stop);pad.addEventListener("pointercancel",stop);pad.addEventListener("lostpointercapture",stop);
     const controls=el("div","tag-controls");controls.append(el("span","muted tiny","Move your circle"),pad);root.append(controls);
-    if(!moveTimer)moveTimer=setInterval(()=>{if(Math.abs(joystick.x)+Math.abs(joystick.y)>.1)sendMove();},300);
+    if(!moveTimer)moveTimer=setInterval(stepLocalMovement,50);
+    if(!syncTimer)syncTimer=setInterval(sendMove,240);
+  }
+  function stepLocalMovement(){
+    if(!activeLobbyId||!$("tag-arena"))return;
+    if(Math.abs(joystick.x)+Math.abs(joystick.y)<.05)return;
+    const me=players.find(p=>p.user_id===uid()&&p.status==="joined");if(!me)return;
+    const base=predictedPosition||{x:Number(me.x),y:Number(me.y)};
+    predictedPosition={
+      x:Math.max(2,Math.min(98,base.x+joystick.x*.34)),
+      y:Math.max(2,Math.min(98,base.y+joystick.y*.34))
+    };
+    me.x=predictedPosition.x;me.y=predictedPosition.y;
+    const dot=$("tag-arena")?.querySelector('.tag-dot[data-user-id="'+uid()+'"]');
+    if(dot){dot.style.left=me.x+"%";dot.style.top=me.y+"%";}
   }
   async function sendMove(){
     if(!activeLobbyId||movePending)return;
     const me=players.find(p=>p.user_id===uid()&&p.status==="joined");if(!me)return;
+    const target=predictedPosition||{x:Number(me.x),y:Number(me.y)};
+    const confirmed={x:Number(me.x),y:Number(me.y)};
+    if(Math.hypot(target.x-confirmed.x,target.y-confirmed.y)<.35)return;
     movePending=true;
-    const x=Math.max(2,Math.min(98,Number(me.x)+joystick.x*2.2));
-    const y=Math.max(2,Math.min(98,Number(me.y)+joystick.y*2.2));
-    const r=await ctx.db.rpc("gather_tag_move",{p_lobby_id:activeLobbyId,p_x:x,p_y:y});
-    movePending=false;
-    if(r.error){if(!/Movement update is too large/.test(r.error.message))status(r.error.message);return;}
-    await loadPlayers(activeLobbyId);renderArenaPositions();
+    const lobbyId=activeLobbyId;
+    try{
+      const r=await ctx.db.rpc("gather_tag_move",{p_lobby_id:lobbyId,p_x:target.x,p_y:target.y});
+      if(r.error){
+        if(!/Movement update is too large/.test(r.error.message))status(r.error.message);
+        predictedPosition={x:confirmed.x,y:confirmed.y};
+        me.x=confirmed.x;me.y=confirmed.y;
+        renderArenaPositions();
+      }else{
+        me.x=target.x;me.y=target.y;
+      }
+    }catch(error){status(error?.message||"Movement could not sync.");}
+    finally{movePending=false;}
   }
   function renderArenaPositions(){
     const arena=$("tag-arena");if(!arena)return;
@@ -199,7 +239,7 @@
     [...arena.querySelectorAll(".tag-dot")].forEach(dot=>{if(!players.some(p=>p.user_id===dot.dataset.userId&&p.status==="joined"))dot.remove();});
   }
   function shutdown(){
-    clearTimeout(refreshTimer);clearInterval(moveTimer);moveTimer=null;
+    clearTimeout(refreshTimer);clearInterval(moveTimer);clearInterval(syncTimer);moveTimer=null;syncTimer=null;predictedPosition=null;
     if(channel){ctx?.db?.removeChannel?.(channel);channel=null;}
     ctx=null;panelOpen=false;activeLobbyId=null;activeLobby=null;players=[];lobbies=[];
     const overlay=$("tag-overlay");if(overlay)overlay.hidden=true;
