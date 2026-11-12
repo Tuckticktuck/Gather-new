@@ -6,7 +6,8 @@
     checkers: { name: "Checkers", description: "Jump, capture and crown your pieces.", mark: "◈" },
     tic_tac_toe: { name: "Tic-Tac-Toe", description: "A quick three-in-a-row match.", mark: "×○" },
     connect_four: { name: "Connect Four", description: "Drop four discs in a row to win.", mark: "●" },
-    battleship: { name: "Battleship", description: "Place your fleet, then find and hit every ship square.", mark: "⚓" }
+    battleship: { name: "Battleship", description: "Place your fleet, then find and hit every ship square.", mark: "⚓" },
+    ludo: { name: "Ludo", description: "Race all four tokens around the board and into home. Roll a six to leave base.", mark: "●" }
   };
   const PIECES = {
     K: "♔", Q: "♕", R: "♖", B: "♗", N: "♘", P: "♙",
@@ -178,7 +179,7 @@
       const overlay = node("div", "overlay games-overlay");
       overlay.id = "games-create-overlay";
       overlay.hidden = true;
-      overlay.innerHTML = '<section class="modal games-create-modal" role="dialog" aria-modal="true" aria-labelledby="games-create-title"><button id="games-create-close" class="close" type="button" aria-label="Close">×</button><p class="eyebrow">NEW MATCH</p><h2 id="games-create-title">Invite someone to play</h2><p class="muted tiny">Choose a conversation, a game and one opponent. In a group chat, everyone else can watch the match.</p><form id="games-create-form"><label>Choose a chat<select id="games-conversation" required></select><small class="games-picker-note">Chats are grouped by type. Choose a person from that chat in the next field.</small></label><label>Game<select id="games-type" required><option value="chess">Chess</option><option value="checkers">Checkers</option><option value="tic_tac_toe">Tic-Tac-Toe</option><option value="connect_four">Connect Four</option><option value="battleship">Battleship</option></select></label><label>Person to invite<select id="games-opponent" required></select></label><p id="games-spectator-note" class="games-spectator-note"></p><p id="games-create-status" class="status" role="status"></p><div class="games-form-actions"><button id="games-create-cancel" class="secondary-action" type="button">Cancel</button><button id="games-create-submit" class="primary" type="submit">Send invitation</button></div></form></section>';
+      overlay.innerHTML = '<section class="modal games-create-modal" role="dialog" aria-modal="true" aria-labelledby="games-create-title"><button id="games-create-close" class="close" type="button" aria-label="Close">×</button><p class="eyebrow">NEW MATCH</p><h2 id="games-create-title">Invite someone to play</h2><p class="muted tiny">Choose a conversation, a game and one opponent. In a group chat, everyone else can watch the match.</p><form id="games-create-form"><label>Choose a chat<select id="games-conversation" required></select><small class="games-picker-note">Chats are grouped by type. Choose a person from that chat in the next field.</small></label><label>Game<select id="games-type" required><option value="chess">Chess</option><option value="checkers">Checkers</option><option value="tic_tac_toe">Tic-Tac-Toe</option><option value="connect_four">Connect Four</option><option value="battleship">Battleship</option><option value="ludo">Ludo</option></select></label><label>Person to invite<select id="games-opponent" required></select></label><p id="games-spectator-note" class="games-spectator-note"></p><p id="games-create-status" class="status" role="status"></p><div class="games-form-actions"><button id="games-create-cancel" class="secondary-action" type="button">Cancel</button><button id="games-create-submit" class="primary" type="submit">Send invitation</button></div></form></section>';
       document.body.append(overlay);
       $("games-create-close").addEventListener("click", closeCreateModal);
       $("games-create-cancel").addEventListener("click", closeCreateModal);
@@ -743,6 +744,7 @@
       return;
     }
     const battleshipPlacement = game.game_type === "battleship" && game.status === "active" && game.state?.phase === "placement";
+    const ludoTurn = game.game_type === "ludo" && game.status === "active";
     if (game.status === "completed") {
       if (game.result === "draw") status.textContent = "Match complete · Draw.";
       else if (game.result?.startsWith("ended_by_player_")) {
@@ -752,6 +754,15 @@
     } else if (battleshipPlacement) {
       const readyCount = [game.state?.placed?.p1, game.state?.placed?.p2].filter(Boolean).length;
       status.textContent = "Fleet setup · " + readyCount + " of 2 fleets ready.";
+    } else if (ludoTurn) {
+      const turnColor = game.state?.turn === "yellow" ? "Yellow" : "Red";
+      const ownTurn = isTurn && !isSpectator;
+      status.textContent = (isSpectator ? "Spectating · " : "") + turnColor + " to move.";
+      if (ownTurn && game.state?.dice !== null && game.state?.dice !== undefined) {
+        status.textContent = turnColor + " rolled a " + game.state.dice + ". Choose a token.";
+      } else if (ownTurn) {
+        status.textContent = "Your turn. Roll the dice.";
+      }
     } else {
       status.textContent = (isSpectator ? "Spectating · " : "") + (game.turn_user_id ? memberName(game.turn_user_id) + " to move." : "Match in progress.");
       if (isSpectator) status.textContent += " You can watch, but only the players can move.";
@@ -760,11 +771,14 @@
       ? (isSpectator ? "The players are positioning their ships. Fleet layouts stay private." : "Place your five ships on your own board, then lock in your fleet.")
       : game.game_type === "battleship" && game.status === "active"
         ? (isSpectator ? "Spectator view. You can follow hits and misses, but ship locations remain private." : isTurn ? "Your turn. Choose a square on the opponent's board." : "Waiting for your opponent to fire.")
-        : game.status === "completed" ? "This board is saved. You can request a rematch." :
+        : ludoTurn
+          ? (isSpectator ? "Spectator view · Watch each roll, capture and token as the race unfolds." : isTurn ? "Roll a six to bring a token onto the track. Land on an opponent to send it back to base. Reach home with an exact roll." : "Waiting for your opponent to roll.")
+          : game.status === "completed" ? "This board is saved. You can request a rematch." :
         isSpectator ? "Spectator view · The board updates live as the players take turns." :
         isTurn ? "Your turn. Select a piece or column to make a move." : "Waiting for your opponent's move.";
     const canMove = game.status === "active" && player && isTurn && !busy;
-    if (game.game_type === "battleship") {
+    if (game.game_type === "ludo") renderLudo(game, boardArea, canMove);
+    else if (game.game_type === "battleship") {
       ensureBattleshipPrivateState(game);
       if (battleshipPrivateLoading || battleshipPrivateState === null) {
         boardArea.append(node("p", "games-board-waiting", "Loading your private Battleship board…"));
@@ -1387,6 +1401,160 @@
     }
     selectedSquare = null;
     await commitMove(game, nextState, nextUser, result);
+  }
+
+  const LUDO_TRACK = (() => {
+    const cells = [];
+    for (let col = 1; col <= 13; col++) cells.push([0, col]);
+    for (let row = 1; row <= 13; row++) cells.push([row, 14]);
+    for (let col = 13; col >= 1; col--) cells.push([14, col]);
+    for (let row = 13; row >= 1; row--) cells.push([row, 0]);
+    return cells;
+  })();
+  const LUDO_SAFE_SQUARES = new Set([0, 8, 13, 21, 26, 34, 39, 47]);
+  const LUDO_TRACK_OFFSETS = { red: 0, yellow: 26 };
+  const ludoTrackIndex = (color, progress) => (LUDO_TRACK_OFFSETS[color] + progress) % 52;
+
+  function ludoTokenLabel(progress) {
+    if (progress < 0) return "Base";
+    if (progress === 57) return "Home";
+    if (progress >= 52) return "Home lane " + (progress - 51) + "/6";
+    return "Track " + (progress + 1) + "/52";
+  }
+
+  function ludoCanMove(progress, dice) {
+    if (!Number.isInteger(dice) || dice < 1 || dice > 6) return false;
+    if (progress === -1) return dice === 6;
+    return progress >= 0 && progress < 57 && progress + dice <= 57;
+  }
+
+  async function performLudoAction(game, action, tokenIndex) {
+    if (busy || !game || game.status !== "active" || !isPlayer(game)) return;
+    if (game.turn_user_id !== userId()) return;
+    busy = true;
+    const status = $("games-board-status");
+    if (status) status.textContent = action === "roll" ? "Rolling dice…" : "Moving token…";
+    try {
+      const response = await ctx.db.rpc("gather_ludo_action", {
+        p_game_id: game.id,
+        p_action: action,
+        p_token_index: tokenIndex === undefined ? null : tokenIndex
+      });
+      const updated = Array.isArray(response.data) ? response.data[0] : response.data;
+      if (response.error || !updated) {
+        toast(response.error?.message || "The Ludo move could not be saved.");
+        await refreshGames(false);
+        return;
+      }
+      games = [updated, ...games.filter(item => item.id !== updated.id)];
+      activeGame = updated;
+      renderAll();
+    } catch (error) {
+      toast(error?.message || "The Ludo move could not be saved.");
+      await refreshGames(false);
+    } finally {
+      busy = false;
+      if (activeGameId && activeGameId === game.id) renderBoardModal();
+    }
+  }
+
+  function renderLudo(game, container, canMove) {
+    const state = game.state || {};
+    const pieces = state.pieces || { red: [-1,-1,-1,-1], yellow: [-1,-1,-1,-1] };
+    const ownColor = game.player_one_id === userId() ? "red" : game.player_two_id === userId() ? "yellow" : null;
+    const dice = state.dice === null || state.dice === undefined ? null : Number(state.dice);
+    const board = node("div", "games-ludo-board");
+    board.setAttribute("role", "img");
+    board.setAttribute("aria-label", "Ludo board. Red and yellow each have four tokens.");
+    const trackContents = new Map();
+    ["red", "yellow"].forEach(color => {
+      (pieces[color] || []).forEach((progress, tokenIndex) => {
+        const value = Number(progress);
+        if (value >= 0 && value <= 51) {
+          const index = ludoTrackIndex(color, value);
+          if (!trackContents.has(index)) trackContents.set(index, []);
+          trackContents.get(index).push({ color, tokenIndex });
+        }
+      });
+    });
+    LUDO_TRACK.forEach(([row, col], index) => {
+      const cell = node("div", "games-ludo-track" + (LUDO_SAFE_SQUARES.has(index) ? " safe" : ""));
+      cell.style.gridRow = String(row + 1);
+      cell.style.gridColumn = String(col + 1);
+      cell.setAttribute("aria-label", "Track space " + (index + 1) + (LUDO_SAFE_SQUARES.has(index) ? ", safe space" : ""));
+      const tokens = trackContents.get(index) || [];
+      if (tokens.length) {
+        const stack = node("div", "games-ludo-track-tokens");
+        tokens.forEach(token => {
+          const chip = node("span", "games-ludo-dot " + token.color);
+          chip.textContent = String(token.tokenIndex + 1);
+          chip.setAttribute("aria-label", (token.color === "red" ? "Red" : "Yellow") + " token " + (token.tokenIndex + 1));
+          stack.append(chip);
+        });
+        cell.append(stack);
+      } else if (LUDO_SAFE_SQUARES.has(index)) {
+        cell.append(node("span", "games-ludo-safe-mark", "✦"));
+      }
+      board.append(cell);
+    });
+
+    const basePanel = (color, title, gridColumn, gridRow) => {
+      const panel = node("section", "games-ludo-base " + color);
+      panel.style.gridColumn = gridColumn;
+      panel.style.gridRow = gridRow;
+      const heading = node("div", "games-ludo-base-heading");
+      heading.append(node("strong", "", title), node("small", "", (pieces[color] || []).filter(value => Number(value) === 57).length + "/4 home"));
+      const tokens = node("div", "games-ludo-base-tokens");
+      (pieces[color] || [-1,-1,-1,-1]).forEach((progress, tokenIndex) => {
+        const value = Number(progress);
+        const label = ludoTokenLabel(value);
+        const token = node("div", "games-ludo-base-token");
+        const dot = node("span", "games-ludo-dot " + color, String(tokenIndex + 1));
+        token.append(dot, node("span", "games-ludo-token-state", label));
+        tokens.append(token);
+      });
+      panel.append(heading, tokens);
+      return panel;
+    };
+    board.append(basePanel("red", "Red · Player 1", "2 / span 5", "2 / span 5"));
+    board.append(basePanel("yellow", "Yellow · Player 2", "10 / span 5", "10 / span 5"));
+    const center = node("div", "games-ludo-center");
+    center.style.gridColumn = "7 / span 3";
+    center.style.gridRow = "7 / span 3";
+    center.append(node("strong", "", "LUDO"), node("small", "", "Race home"));
+    board.append(center);
+    container.append(board);
+
+    const controls = node("section", "games-ludo-controls");
+    const diceCard = node("div", "games-ludo-dice-card");
+    const diceLabel = node("span", "games-ludo-dice-label", "DICE");
+    const diceValue = node("strong", "games-ludo-dice", dice === null ? "—" : String(dice));
+    diceCard.append(diceLabel, diceValue);
+    const roll = button(dice === null ? "Roll dice" : "Dice rolled", "primary games-ludo-roll", () => performLudoAction(game, "roll"));
+    roll.disabled = !canMove || dice !== null;
+    if (dice !== null) roll.setAttribute("aria-label", "You rolled " + dice);
+    diceCard.append(roll);
+    controls.append(diceCard);
+
+    const tokenPanel = node("div", "games-ludo-token-panel");
+    tokenPanel.append(node("strong", "", ownColor ? "Your tokens" : "Tokens"));
+    const tokenButtons = node("div", "games-ludo-token-buttons");
+    const controlColors = ownColor ? [ownColor] : ["red", "yellow"];
+    controlColors.forEach(color => {
+      const colorTokens = pieces[color] || [-1,-1,-1,-1];
+      colorTokens.forEach((progress, tokenIndex) => {
+        const value = Number(progress);
+        const moveable = canMove && color === ownColor && dice !== null && ludoCanMove(value, dice);
+        const label = "Token " + (tokenIndex + 1) + " · " + ludoTokenLabel(value);
+        const tokenButton = button(label, "games-ludo-token-button " + color, () => performLudoAction(game, "move", tokenIndex));
+        tokenButton.disabled = !moveable;
+        tokenButtons.append(tokenButton);
+      });
+    });
+    tokenPanel.append(tokenButtons);
+    controls.append(tokenPanel);
+    if (state.message) controls.append(node("p", "games-ludo-message", state.message));
+    container.append(controls);
   }
 
   function renderChess(game, container, canMove) {
