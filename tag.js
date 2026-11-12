@@ -112,6 +112,7 @@
     root.append(el("p","muted tiny",conversationTitle(activeLobby.conversation_id)+" · "+(activeLobby.join_mode==="open"?"Open lobby":"Invite only")));
     const me=players.find(p=>p.user_id===uid());
     if(!me){root.append(el("p","muted","You are not currently in this lobby."),btn("Back to Tag Arena","outline",()=>{activeLobbyId=null;activeLobby=null;renderPanel();}));return;}
+    if(activeLobby.status==="cancelled"){root.append(el("p","tag-complete","The host closed this lobby."),btn("Back to Tag Arena","outline",()=>{activeLobbyId=null;activeLobby=null;renderPanel();}));return;}
     const customization=el("div","tag-customize");
     customization.append(el("strong","","Your circle"));
     const color=el("input","");color.type="color";color.value=me.color;color.setAttribute("aria-label","Choose your circle color");color.disabled=activeLobby.status!=="lobby";
@@ -146,6 +147,8 @@
     else if(activeLobby.mode==="team_tag")root.append(el("p","muted tiny","Work with your team to tag the opposing team."));
     else root.append(el("p","muted tiny","One player is It. Tagging passes It to the next player."));
     if(activeLobby.status==="completed"){clearInterval(moveTimer);moveTimer=null;joystick={x:0,y:0};root.append(el("p","tag-complete","Round complete."));return;}
+    const me=players.find(p=>p.user_id===uid());
+    if(me?.status==="eliminated"){clearInterval(moveTimer);moveTimer=null;joystick={x:0,y:0};root.append(el("p","tag-complete","You have been eliminated. You can watch the rest of the round."));return;}
     const pad=el("div","tag-joystick");pad.setAttribute("aria-label","Movement joystick");
     const knob=el("span","tag-joystick-knob");pad.append(knob);
     const move=(e)=>{const r=pad.getBoundingClientRect();const dx=(e.clientX-(r.left+r.width/2))/(r.width/2);const dy=(e.clientY-(r.top+r.height/2))/(r.height/2);const len=Math.hypot(dx,dy)||1;joystick={x:dx/Math.max(1,len),y:dy/Math.max(1,len)};knob.style.transform="translate("+joystick.x*24+"px,"+joystick.y*24+"px)";};
