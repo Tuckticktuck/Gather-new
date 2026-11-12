@@ -499,3 +499,8 @@
 .games-invitations-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:10px}
 .games-invitations-list>.games-empty{padding:16px}
 .games-invitation-card{min-width:0}
+
+/* Make chat choices and people choices visibly distinct in game invitations. */
+.games-create-modal .games-picker-note{display:block;margin:6px 0 0;color:var(--muted);font-size:10px;font-weight:500;line-height:1.5}
+.games-create-modal select optgroup{font-weight:800;color:var(--accent-text)}
+.games-create-modal select option{font-weight:500}
