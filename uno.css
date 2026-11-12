@@ -51,3 +51,69 @@
 .uno-invite-option input{accent-color:var(--accent)}
 
 .uno-people-picker[hidden]{display:none!important}
+
+/* Shared desktop invitation-list system: consistent columns, spacing, rows and scrolling. */
+:where(.tag-invite-list,.uno-invites){
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  align-content:start;
+  align-items:stretch;
+  gap:8px!important;
+  width:100%;
+  max-height:260px;
+  min-height:0;
+  overflow-y:auto;
+  overflow-x:hidden;
+  padding:2px 5px 2px 1px;
+  scrollbar-width:thin;
+  scrollbar-color:var(--accent) transparent;
+}
+:where(.tag-invite-option,.uno-invite-option){
+  display:flex!important;
+  align-items:center;
+  gap:10px!important;
+  box-sizing:border-box;
+  width:100%;
+  min-width:0;
+  min-height:44px;
+  margin:0!important;
+  padding:9px 11px!important;
+  border:1px solid var(--line)!important;
+  border-radius:11px!important;
+  background:var(--panel)!important;
+  color:var(--text)!important;
+  font-size:12px!important;
+  font-weight:600!important;
+  line-height:1.35;
+  letter-spacing:normal!important;
+  cursor:pointer;
+  transition:border-color .15s ease,background-color .15s ease,box-shadow .15s ease;
+}
+:where(.tag-invite-option:hover,.uno-invite-option:hover){
+  border-color:var(--accent)!important;
+  background:var(--accent-surface)!important;
+}
+:where(.tag-invite-option:focus-within,.uno-invite-option:focus-within){
+  outline:2px solid var(--accent);
+  outline-offset:1px;
+}
+:where(.tag-invite-option span,.uno-invite-option span){
+  display:block;
+  flex:1;
+  min-width:0;
+  overflow-wrap:anywhere;
+}
+:where(.tag-invite-option input,.uno-invite-option input){
+  width:16px!important;
+  height:16px!important;
+  min-height:16px!important;
+  flex:0 0 16px;
+  margin:0!important;
+  accent-color:var(--accent);
+}
+@media(max-width:760px){
+  :where(.tag-invite-list,.uno-invites){grid-template-columns:minmax(0,1fr)!important;max-height:230px}
+}
+@media(prefers-reduced-motion:reduce){
+  :where(.tag-invite-option,.uno-invite-option){transition:none}
+}
