@@ -41,9 +41,13 @@
     if(r.error){if(panelOpen)status("Could not load Tag lobbies: "+r.error.message);return;}
     lobbies=r.data||[];
     if(activeLobbyId){
+      const previousStatus=activeLobby?.status;
       const current=await ctx.db.from("gather_tag_lobbies").select("id,conversation_id,created_by,status,mode,join_mode,max_players,created_at,updated_at").eq("id",activeLobbyId).maybeSingle();
       if(!current.error&&current.data)activeLobby=current.data;
       await loadPlayers(activeLobbyId);
+      if(previousStatus==="active"&&activeLobby?.status==="active"&&$("tag-arena"))renderArenaPositions();
+      else renderPanel();
+      return;
     }
     renderPanel();
   }
@@ -75,7 +79,7 @@
     root.append(el("h3","tag-section-title","Available lobbies"),list);
     const active=lobbies.filter(x=>x.status==="active");
     if(active.length){root.append(el("h3","tag-section-title","In progress"));active.forEach(l=>{const c=el("article","tag-lobby-card");c.append(el("div","tag-lobby-info",modeName(l.mode)+" · In progress"),btn("Watch / Play","outline",async()=>{activeLobbyId=l.id;activeLobby=l;await loadPlayers(l.id);renderPanel();}));root.append(c);});}
-    root.append(el("p","status tag-status",""));const st=el("p","status tag-status","");st.id="tag-status";root.append(st);
+    const st=el("p","status tag-status","");st.id="tag-status";root.append(st);
   }
   function conversationTitle(id){const c=chats().find(x=>x.id===id);return c?.kind==="group"?(c.title||"Group chat"):c?.members?.find(m=>m.user_id!==uid())?.user_id?name(c.members.find(m=>m.user_id!==uid()).user_id):"Private conversation";}
   function renderCreate(){
@@ -126,6 +130,9 @@
       root.append(el("p","muted tiny","The host can start once at least two players have joined and everyone is ready."));
     } else {
       renderArena(root);
+      if(activeLobby.created_by===uid()&&activeLobby.status==="active"){
+        root.append(btn("End match","secondary-action tag-end",async()=>{if(!confirm("End this Tag match for everyone?"))return;const r=await ctx.db.rpc("gather_tag_end",{p_lobby_id:activeLobbyId});if(r.error)toast(r.error.message);else await refresh();}));
+      }
     }
     const back=btn("Back to Tag Arena","outline tag-back",()=>{activeLobbyId=null;activeLobby=null;players=[];renderPanel();});root.append(back);
     const st=el("p","status tag-status","");st.id="tag-status";root.append(st);
@@ -138,7 +145,7 @@
     else if(activeLobby.mode==="infection")root.append(el("p","muted tiny","Tagged players join the infected team. The infection spreads."));
     else if(activeLobby.mode==="team_tag")root.append(el("p","muted tiny","Work with your team to tag the opposing team."));
     else root.append(el("p","muted tiny","One player is It. Tagging passes It to the next player."));
-    if(activeLobby.status==="completed"){root.append(el("p","tag-complete","Round complete."));return;}
+    if(activeLobby.status==="completed"){clearInterval(moveTimer);moveTimer=null;joystick={x:0,y:0};root.append(el("p","tag-complete","Round complete."));return;}
     const pad=el("div","tag-joystick");pad.setAttribute("aria-label","Movement joystick");
     const knob=el("span","tag-joystick-knob");pad.append(knob);
     const move=(e)=>{const r=pad.getBoundingClientRect();const dx=(e.clientX-(r.left+r.width/2))/(r.width/2);const dy=(e.clientY-(r.top+r.height/2))/(r.height/2);const len=Math.hypot(dx,dy)||1;joystick={x:dx/Math.max(1,len),y:dy/Math.max(1,len)};knob.style.transform="translate("+joystick.x*24+"px,"+joystick.y*24+"px)";};
