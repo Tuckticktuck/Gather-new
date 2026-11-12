@@ -272,8 +272,7 @@
       $("games-multiplayer-tag").addEventListener("click", () => { overlay.hidden = true; window.GatherTag?.open?.(); });
       $("games-multiplayer-uno").addEventListener("click", () => {
         overlay.hidden = true;
-        if (window.GatherUno?.open) window.GatherUno.open();
-        else toast("UNO is being added. Its multiplayer lobby is not ready yet.");
+        window.GatherUno?.open?.();
       });
     }
     overlay.hidden = false;
