@@ -30,3 +30,10 @@
 .uno-rematch-wait{font-weight:750;color:var(--accent-text)}
 @media(max-width:520px){.uno-modal{border-radius:20px;padding:22px 14px}.uno-table{min-height:170px}.uno-finished-panel{padding:20px 12px}}
 @media(prefers-reduced-motion:reduce){.uno-modal,.uno-lobby-card,.uno-card,.uno-actions button{animation:none!important;transition:none!important}}
+
+.uno-color-picker{display:grid;justify-items:center;gap:12px;margin:14px 0;padding:18px;border:1px solid var(--accent-outline-soft);border-radius:18px;background:var(--accent-surface);animation:uno-modal-in .16s ease both}
+.uno-color-picker>strong{font-size:14px}
+.uno-color-choices{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;width:min(100%,380px)}
+.uno-color-choice{min-height:46px;border:2px solid #ffffffaa;border-radius:13px;color:#fff;font-weight:800;text-transform:capitalize;box-shadow:0 3px 8px #0002;transition:transform .15s ease,box-shadow .15s ease}
+.uno-color-choice:hover{transform:translateY(-2px);box-shadow:0 7px 14px #0003}
+.uno-color-choice.red{background:#d63b42}.uno-color-choice.blue{background:#2772c8}.uno-color-choice.green{background:#27975a}.uno-color-choice.yellow{background:#e2b72b;color:#202020}
