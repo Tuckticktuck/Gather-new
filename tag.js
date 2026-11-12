@@ -108,6 +108,30 @@
     $("tag-overlay").hidden=true;activeLobbyId=null;activeLobby=null;players=[];
     predictedPosition=null;lastSyncedPosition=null;joystick={x:0,y:0};
   }
+  function status(message){const n=$("tag-status");if(n)n.textContent=message||"";}
+  function renderPanel(){
+    if(!panelOpen)return;
+    const root=$("tag-modal-content");if(!root)return;stopArenaEngine();root.replaceChildren();
+    if(activeLobbyId&&activeLobby){renderLobby(root);return;}
+    root.append(el("p","eyebrow","GATHER GAMES · MULTIPLAYER"));
+    root.append(el("h2","tag-title","Tag Arena"));
+    root.append(el("p","muted tiny","Create a lobby, customize your circle, and choose how the round works."));
+    const create=btn("＋ Create lobby","primary tag-create",renderCreate);root.append(create);
+    const list=el("div","tag-lobby-list");
+    const open=lobbies.filter(x=>x.status==="lobby");
+    if(!open.length)list.append(el("p","muted tiny tag-empty","No open lobbies right now. Create one to get started."));
+    open.forEach(l=>{
+      const card=el("article","tag-lobby-card");
+      const info=el("div","tag-lobby-info");info.append(el("strong","",modeName(l.mode)),el("span","muted tiny",conversationTitle(l.conversation_id)+" · "+(l.join_mode==="open"?"Open lobby":"Invite only")));
+      card.append(info,el("span","tag-player-count",l.max_players+" max"));
+      const join=btn("Join","outline",()=>joinLobby(l));
+      card.append(join);list.append(card);
+    });
+    root.append(el("h3","tag-section-title","Available lobbies"),list);
+    const active=lobbies.filter(x=>x.status==="active");
+    if(active.length){root.append(el("h3","tag-section-title","In progress"));active.forEach(l=>{const c=el("article","tag-lobby-card");c.append(el("div","tag-lobby-info",modeName(l.mode)+" · In progress"),btn("Watch / Play","outline",async()=>{activeLobbyId=l.id;activeLobby=l;await loadPlayers(l.id);renderPanel();}));root.append(c);});}
+    const st=el("p","status tag-status","");st.id="tag-status";root.append(st);
+  }
   function conversationTitle(id){const c=chats().find(x=>x.id===id);return c?.kind==="group"?(c.title||"Group chat"):c?.members?.find(m=>m.user_id!==uid())?.user_id?name(c.members.find(m=>m.user_id!==uid()).user_id):"Private conversation";}
   function renderCreate(){
     const root=$("tag-modal-content");root.replaceChildren();
@@ -254,9 +278,6 @@
     }
     if(!syncTimer)syncTimer=setInterval(sendMove,240);
   }
-  function renderArenaPositions(){
-    if(arenaEngine)arenaEngine.setPlayers(players);
-  }
   async function sendMove(){
     if(!activeLobbyId||movePending)return;
     const me=players.find(p=>p.user_id===uid()&&p.status==="joined");if(!me)return;
@@ -285,15 +306,7 @@
     finally{movePending=false;}
   }
   function renderArenaPositions(){
-    const arena=$("tag-arena");if(!arena)return;
-    players.filter(p=>p.status==="joined").forEach(p=>{
-      let dot=[...arena.querySelectorAll(".tag-dot")].find(n=>n.dataset.userId===p.user_id);
-      if(!dot){dot=el("span","tag-dot");dot.dataset.userId=p.user_id;arena.append(dot);}
-      dot.style.left=p.x+"%";dot.style.top=p.y+"%";dot.style.background=p.color;
-      dot.title=name(p.user_id)+(p.is_it?" · It":"");
-      dot.classList.toggle("mine",p.user_id===uid());dot.classList.toggle("is-it",!!p.is_it);
-    });
-    [...arena.querySelectorAll(".tag-dot")].forEach(dot=>{if(!players.some(p=>p.user_id===dot.dataset.userId&&p.status==="joined"))dot.remove();});
+    if(arenaEngine)arenaEngine.setPlayers(players);
   }
   function shutdown(){
     clearTimeout(refreshTimer);stopArenaEngine();predictedPosition=null;
