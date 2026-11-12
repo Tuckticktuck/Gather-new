@@ -49,3 +49,5 @@
 .uno-invite-option{min-width:0}
 .uno-invite-option span{overflow-wrap:anywhere}
 .uno-invite-option input{accent-color:var(--accent)}
+
+.uno-people-picker[hidden]{display:none!important}
