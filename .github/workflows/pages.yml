@@ -29,6 +29,8 @@ jobs:
           node-version: 22
       - name: Build Tag Canvas engine
         run: npx --yes --package typescript@5.9.3 tsc --project tsconfig.tag.json
+      - name: Validate Tag JavaScript
+        run: node --check tag.js && node --check tag-engine.js && node --check service-worker.js
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
       - name: Upload website files
