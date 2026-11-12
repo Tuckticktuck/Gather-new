@@ -26,9 +26,6 @@
 .tag-host-mark{font-size:9px;font-weight:800;letter-spacing:.08em;color:var(--accent-text)}
 .tag-back{margin-top:16px}
 .tag-arena{position:relative;width:100%;aspect-ratio:16/9;min-height:190px;max-height:390px;overflow:hidden;margin:16px 0;border:1px solid var(--accent-border);border-radius:18px;background:radial-gradient(ellipse at center,color-mix(in srgb,var(--accent-soft) 65%,var(--panel)),var(--bg))}
-.tag-dot{position:absolute;width:clamp(15px,3.2vw,25px);height:clamp(15px,3.2vw,25px);border:2px solid #ffffffb0;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 2px 7px #0004;transition:left .18s linear,top .18s linear}
-.tag-dot.mine{outline:2px solid var(--text);outline-offset:3px}
-.tag-dot.is-it{box-shadow:0 0 0 4px #ef6b6b70,0 2px 7px #0004}
 .tag-controls{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:14px 0}
 .tag-joystick{position:relative;width:104px;height:104px;flex:none;border:1px solid var(--line);border-radius:50%;background:radial-gradient(circle,var(--panel) 0 26%,var(--accent-soft) 27% 100%);touch-action:none;user-select:none}
 .tag-joystick:before,.tag-joystick:after{content:"";position:absolute;background:var(--line)}
@@ -102,3 +99,6 @@
 @media(max-width:600px){
   .tag-arena{min-height:190px;max-height:330px;border-radius:15px}
 }
+
+/* Keep the game surface responsive without forcing layout work. */
+.tag-arena{contain:layout paint;touch-action:pan-y}
