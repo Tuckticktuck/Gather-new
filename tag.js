@@ -184,9 +184,9 @@
     else if(activeLobby.mode==="infection")root.append(el("p","muted tiny","Tagged players join the infected team. The infection spreads."));
     else if(activeLobby.mode==="team_tag")root.append(el("p","muted tiny","Work with your team to tag the opposing team."));
     else root.append(el("p","muted tiny","One player is It. Tagging passes It to the next player."));
-    if(activeLobby.status==="completed"){clearInterval(moveTimer);moveTimer=null;joystick={x:0,y:0};root.append(el("p","tag-complete","Round complete."));return;}
+    if(activeLobby.status==="completed"){clearInterval(moveTimer);clearInterval(syncTimer);moveTimer=null;syncTimer=null;joystick={x:0,y:0};root.append(el("p","tag-complete","Round complete."));return;}
     const me=players.find(p=>p.user_id===uid());
-    if(me?.status==="eliminated"){clearInterval(moveTimer);moveTimer=null;joystick={x:0,y:0};root.append(el("p","tag-complete","You have been eliminated. You can watch the rest of the round."));return;}
+    if(me?.status==="eliminated"){clearInterval(moveTimer);clearInterval(syncTimer);moveTimer=null;syncTimer=null;joystick={x:0,y:0};root.append(el("p","tag-complete","You have been eliminated. You can watch the rest of the round."));return;}
     const pad=el("div","tag-joystick");pad.setAttribute("aria-label","Movement joystick");
     const knob=el("span","tag-joystick-knob");pad.append(knob);
     const move=(e)=>{const r=pad.getBoundingClientRect();const dx=(e.clientX-(r.left+r.width/2))/(r.width/2);const dy=(e.clientY-(r.top+r.height/2))/(r.height/2);const len=Math.hypot(dx,dy)||1;joystick={x:dx/Math.max(1,len),y:dy/Math.max(1,len)};knob.style.transform="translate("+joystick.x*24+"px,"+joystick.y*24+"px)";};
@@ -205,8 +205,8 @@
     const base=predictedPosition||{x:Number(me.x),y:Number(me.y)};
     if(!lastSyncedPosition)lastSyncedPosition={x:Number(me.x),y:Number(me.y)};
     predictedPosition={
-      x:Math.max(2,Math.min(98,base.x+joystick.x*.34)),
-      y:Math.max(2,Math.min(98,base.y+joystick.y*.34))
+      x:Math.max(2,Math.min(98,base.x+joystick.x*(me.is_it?.60:.50))),
+      y:Math.max(2,Math.min(98,base.y+joystick.y*(me.is_it?.60:.50)))
     };
     me.x=predictedPosition.x;me.y=predictedPosition.y;
     const dot=$("tag-arena")?.querySelector('.tag-dot[data-user-id="'+uid()+'"]');
