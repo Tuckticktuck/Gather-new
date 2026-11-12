@@ -132,20 +132,60 @@
     if(active.length){root.append(el("h3","tag-section-title","In progress"));active.forEach(l=>{const c=el("article","tag-lobby-card");c.append(el("div","tag-lobby-info",modeName(l.mode)+" · In progress"),btn("Watch / Play","outline",async()=>{activeLobbyId=l.id;activeLobby=l;await loadPlayers(l.id);renderPanel();}));root.append(c);});}
     const st=el("p","status tag-status","");st.id="tag-status";root.append(st);
   }
-  function conversationTitle(id){const c=chats().find(x=>x.id===id);return c?.kind==="group"?(c.title||"Group chat"):c?.members?.find(m=>m.user_id!==uid())?.user_id?name(c.members.find(m=>m.user_id!==uid()).user_id):"Private conversation";}
+  function conversationTitle(id){const c=chats().find(x=>x.id===id);return c?.kind==="group"?(c.title||c.name||"Group chat"):c?.members?.find(m=>m.user_id!==uid())?.user_id?name(c.members.find(m=>m.user_id!==uid()).user_id):"Private conversation";}
+  const byName=(a,b)=>a.localeCompare(b,undefined,{sensitivity:"base"});
+  function sortedEligibleChats(){return chats().filter(c=>(c.members||[]).some(m=>m.user_id===uid())&&(c.members||[]).some(m=>m.user_id!==uid())).slice().sort((a,b)=>{const kind=(a.kind==="group"?1:0)-(b.kind==="group"?1:0);return kind||byName(conversationTitle(a.id),conversationTitle(b.id));});}
+  function appendChatOptions(select,list){[{label:"Private chats",items:list.filter(c=>c.kind!=="group")},{label:"Group chats",items:list.filter(c=>c.kind==="group")}].forEach(section=>{if(!section.items.length)return;const group=el("optgroup");group.label=section.label;section.items.slice().sort((a,b)=>byName(conversationTitle(a.id),conversationTitle(b.id))).forEach(c=>{const option=el("option","",conversationTitle(c.id));option.value=c.id;group.append(option);});select.append(group);});}
+  function sortedPeople(chat){return(chat?.members||[]).filter(m=>m.user_id!==uid()).slice().sort((a,b)=>byName(name(a.user_id),name(b.user_id)));}
   function renderCreate(){
     const root=$("tag-modal-content");root.replaceChildren();
-    root.append(el("p","eyebrow","NEW TAG LOBBY"),el("h2","tag-title","Set up your lobby"),el("p","muted tiny","Players can join, pick a unique color, and ready up before the host starts."));
+    root.append(el("p","eyebrow","NEW TAG LOBBY"),el("h2","tag-title","Set up your lobby"),el("p","muted tiny","Choose a chat first. People in that chat are shown separately, so you can choose exactly who receives an invite."));
     const form=el("form","tag-form");
-    const conv=el("label","","Conversation");const select=el("select");select.id="tag-conversation";select.required=true;
-    chats().filter(c=>(c.members||[]).some(m=>m.user_id===uid())&&(c.members||[]).some(m=>m.user_id!==uid())).forEach(c=>{const o=el("option","",conversationTitle(c.id));o.value=c.id;select.append(o);});conv.append(select);
+    const eligible=sortedEligibleChats();
+    const conv=el("label","tag-chat-field","Choose a chat");
+    const select=el("select");select.id="tag-conversation";select.required=true;
+    appendChatOptions(select,eligible);
+    conv.append(select,el("small","tag-picker-note","Chats are sorted into private and group sections."));
     const mode=el("label","","Mode");const modes=el("select");modes.id="tag-mode";[["classic","Classic"],["infection","Infection"],["team_tag","Team Tag"],["last_standing","Last Player Standing"]].forEach(([v,t])=>{const o=el("option","",t);o.value=v;modes.append(o);});mode.append(modes);
     const access=el("label","","Who can join?");const join=el("select");join.id="tag-join-mode";[["open","Anyone in this conversation"],["invite","Invited members only"]].forEach(([v,t])=>{const o=el("option","",t);o.value=v;join.append(o);});access.append(join);
+    const peoplePanel=el("section","tag-people-picker");peoplePanel.hidden=true;
+    const peopleHead=el("div","tag-people-picker-head");peopleHead.append(el("strong","","People in this chat"),el("small","muted tiny","Selected people will receive the invitation."));
+    const peopleList=el("div","tag-invite-list");peoplePanel.append(peopleHead,peopleList);
+    function drawPeople(){
+      peopleList.replaceChildren();
+      const chat=eligible.find(c=>c.id===select.value);
+      const people=sortedPeople(chat);
+      if(!people.length){peopleList.append(el("p","muted tiny","No other members are available in this chat."));return;}
+      people.forEach(person=>{
+        const label=el("label","tag-invite-option");
+        const checkbox=el("input");checkbox.type="checkbox";checkbox.value=person.user_id;checkbox.checked=true;
+        label.append(checkbox,el("span","",name(person.user_id)));
+        peopleList.append(label);
+      });
+    }
     const count=el("label","","Player limit");const max=el("select");max.id="tag-max";[4,6,8,10,12,16,20].forEach(v=>{const o=el("option","",String(v)+" players");o.value=String(v);if(v===12)o.selected=true;max.append(o);});count.append(max);
     const color=el("label","tag-color-label","Your circle color");const input=el("input");input.type="color";input.id="tag-color";input.value="#38bdf8";color.append(input);
     const message=el("p","status","");message.id="tag-status";
-    const actions=el("div","tag-actions");actions.append(btn("Back","secondary-action",()=>renderPanel()));const submit=btn("Create lobby","primary",async()=>{if(busy)return;busy=true;submit.disabled=true;message.textContent="Creating lobby…";const conversationId=select.value;const c=chats().find(x=>x.id===conversationId);const invitees=(c?.members||[]).map(m=>m.user_id).filter(id=>id!==uid());const result=await ctx.db.rpc("gather_tag_create",{p_conversation_id:conversationId,p_mode:modes.value,p_join_mode:join.value,p_invited_user_ids:join.value==="invite"?invitees:[],p_color:input.value,p_max_players:Number(max.value)});busy=false;submit.disabled=false;if(result.error){message.textContent=result.error.message;return;}activeLobby=Array.isArray(result.data)?result.data[0]:result.data;activeLobbyId=activeLobby?.id;if(!activeLobbyId){message.textContent="The lobby was created but could not be opened. Refresh Tag Arena.";return;}await refresh();});
-    actions.append(submit);form.append(conv,mode,access,count,color,message,actions);form.addEventListener("submit",e=>e.preventDefault());root.append(form);
+    const actions=el("div","tag-actions");actions.append(btn("Back","secondary-action",()=>renderPanel()));
+    const submit=btn("Create lobby","primary",async()=>{
+      if(busy)return;
+      const invitees=join.value==="invite"?[...peopleList.querySelectorAll("input:checked")].map(x=>x.value):[];
+      if(join.value==="invite"&&!invitees.length){message.textContent="Select at least one person or choose an open lobby.";return;}
+      if(invitees.length+1>Number(max.value)){message.textContent="The player limit must include you and every invited person.";return;}
+      busy=true;submit.disabled=true;message.textContent="Creating lobby…";
+      const conversationId=select.value;
+      const result=await ctx.db.rpc("gather_tag_create",{p_conversation_id:conversationId,p_mode:modes.value,p_join_mode:join.value,p_invited_user_ids:invitees,p_color:input.value,p_max_players:Number(max.value)});
+      busy=false;submit.disabled=false;
+      if(result.error){message.textContent=result.error.message;return;}
+      activeLobby=Array.isArray(result.data)?result.data[0]:result.data;activeLobbyId=activeLobby?.id;
+      if(!activeLobbyId){message.textContent="The lobby was created but could not be opened. Refresh Tag Arena.";return;}
+      await refresh();
+    });
+    select.addEventListener("change",drawPeople);
+    join.addEventListener("change",()=>{peoplePanel.hidden=join.value!=="invite";});
+    actions.append(submit);form.append(conv,mode,access,peoplePanel,count,color,message,actions);form.addEventListener("submit",e=>e.preventDefault());root.append(form);
+    drawPeople();
+    peoplePanel.hidden=join.value!=="invite";
     if(!select.options.length){message.textContent="Join a conversation before creating a Tag lobby.";submit.disabled=true;}
   }
   async function joinLobby(lobby){
