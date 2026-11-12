@@ -12,8 +12,6 @@
   const toast=m=>ctx?.toast?.(m);
   const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   function mount(){
-    const header=document.querySelector(".games-hub-header");
-    if(header&&!$("tag-open")){const b=btn("● Tag Arena","outline tag-open",()=>openPanel());b.id="tag-open";header.append(b);}
     if(!$("tag-overlay")){
       const overlay=el("div","overlay tag-overlay");overlay.id="tag-overlay";overlay.hidden=true;
       overlay.innerHTML='<section class="modal tag-modal" role="dialog" aria-modal="true" aria-labelledby="tag-modal-title"><button id="tag-close" class="close" type="button" aria-label="Close">×</button><div id="tag-modal-content"></div></section>';
