@@ -38,3 +38,48 @@
 .tag-complete{padding:13px;border-radius:12px;background:var(--accent-soft);font-weight:800}
 .tag-status{min-height:18px}
 @media(max-width:600px){.tag-modal{padding:20px 15px}.tag-lobby-card{flex-wrap:wrap}.tag-lobby-info{flex-basis:60%}.tag-controls{align-items:center}.tag-joystick{width:112px;height:112px}}
+
+
+/* Tag Arena lobby setup refresh */
+.tag-overlay{padding:22px;background:rgba(5,8,14,.76);backdrop-filter:blur(13px)}
+.tag-modal{width:min(570px,calc(100vw - 28px));max-height:min(90vh,820px);padding:clamp(22px,4vw,34px);border:1px solid color-mix(in srgb,var(--accent) 32%,#ffffff20);border-radius:24px;background:radial-gradient(ellipse at 90% 0%,color-mix(in srgb,var(--accent) 17%,transparent),transparent 42%),linear-gradient(155deg,#202632 0%,#171b25 68%,#151923 100%);box-shadow:0 28px 90px #0009,0 1px 0 #ffffff12 inset}
+.tag-modal:before{content:"";position:absolute;top:0;left:8%;right:8%;height:1px;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--accent) 75%,white),transparent)}
+.tag-modal .close{top:20px;right:20px;width:34px;height:34px;border-radius:11px;background:#ffffff0b;color:#dce4ed;transition:background .18s,border-color .18s,transform .18s}
+.tag-modal .close:hover{background:#ffffff18;border-color:var(--accent);transform:rotate(90deg)}
+.tag-modal .eyebrow{display:inline-flex;align-items:center;gap:7px;margin:0 0 13px;padding:6px 9px;border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);border-radius:999px;color:var(--accent);background:color-mix(in srgb,var(--accent) 9%,transparent);font-size:9px;font-weight:850;letter-spacing:.13em}
+.tag-title{margin:0 42px 7px 0;font-size:clamp(23px,4vw,28px);font-weight:800;letter-spacing:-.035em;line-height:1.15}
+.tag-modal #tag-modal-content>.muted{max-width:440px;margin:0 0 23px;color:#aeb8c7;font-size:12px;line-height:1.6}
+.tag-form{gap:16px;margin-top:23px}
+.tag-form label{gap:8px;margin:0;color:#dce4ef;font-size:11px;font-weight:750;letter-spacing:.015em}
+.tag-form label select,.tag-form label input:not([type=color]){min-height:47px;margin:0;padding:0 14px;border:1px solid #ffffff20;border-radius:12px;color:#f3f6fb;background-color:#ffffff09;font-size:12px;font-weight:550;outline:none;transition:border-color .18s,background .18s,box-shadow .18s}
+.tag-form label select{appearance:none;padding-right:42px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23b9c7d8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
+.tag-form label select option{color:#f3f6fb;background:#202632}
+.tag-form label select:focus,.tag-form label input:focus{border-color:var(--accent);background-color:#ffffff10;box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
+.tag-form .tag-color-label{display:flex!important;justify-content:flex-start;gap:12px;padding:12px 14px;border:1px solid #ffffff18;border-radius:13px;background:#ffffff07}
+.tag-form input[type=color],.tag-customize input[type=color]{width:43px;height:39px;padding:3px;border:1px solid #ffffff30;border-radius:11px;background:#111722;cursor:pointer}
+.tag-form input[type=color]::-webkit-color-swatch-wrapper,.tag-customize input[type=color]::-webkit-color-swatch-wrapper{padding:2px}
+.tag-form input[type=color]::-webkit-color-swatch,.tag-customize input[type=color]::-webkit-color-swatch{border:0;border-radius:7px}
+.tag-form .tag-color-label:after{content:"Pick your player color";margin-left:auto;color:#93a1b3;font-size:10px;font-weight:500}
+.tag-form .tag-status{min-height:0;margin:0;color:#ffb4b4;font-size:11px}
+.tag-actions{display:flex;gap:10px;margin-top:5px;padding-top:16px;border-top:1px solid #ffffff12}
+.tag-actions>button{min-height:47px;margin:0;border-radius:12px;font-size:12px;font-weight:800;transition:transform .16s,filter .16s,border-color .16s}
+.tag-actions>button:hover{filter:brightness(1.07);transform:translateY(-1px)}
+.tag-actions>button:first-child{flex:0 0 30%;border:1px solid #ffffff20;color:#c5cfdb;background:#ffffff08}
+.tag-actions>button:last-child{flex:1;box-shadow:0 7px 22px color-mix(in srgb,var(--accent) 20%,transparent)}
+.tag-actions>button:disabled{opacity:.55;cursor:not-allowed;transform:none}
+.tag-create{min-height:46px;margin:20px 0 22px;border-radius:12px}
+.tag-section-title{margin:20px 0 10px;color:#dce4ef;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.tag-lobby-card{padding:14px;border-color:#ffffff18;border-radius:14px;background:#ffffff07;transition:border-color .18s,background .18s}
+.tag-lobby-card:hover{border-color:color-mix(in srgb,var(--accent) 48%,transparent);background:#ffffff0b}
+.tag-empty{border-color:#ffffff25;color:#aeb8c7;background:#ffffff05}
+@media(max-width:600px){
+ .tag-overlay{padding:12px;align-items:center}
+ .tag-modal{width:min(100%,520px);max-height:calc(100dvh - 24px);padding:24px 18px 20px;border-radius:20px}
+ .tag-modal .close{top:15px;right:15px}
+ .tag-title{font-size:24px}
+ .tag-form{gap:14px;margin-top:20px}
+ .tag-form label select,.tag-form label input:not([type=color]){min-height:46px;font-size:13px}
+ .tag-actions{gap:8px}
+ .tag-actions>button:first-child{flex-basis:31%}
+}
+@media(prefers-reduced-motion:reduce){.tag-modal *{transition:none!important}}
