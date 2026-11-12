@@ -473,3 +473,15 @@
 .games-chess-piece.white{color:#fffaf0;-webkit-text-stroke:0;text-shadow:0 1px 1px #20252b99}
 .games-chess-piece.black{color:#252a30;-webkit-text-stroke:0;text-shadow:0 1px 1px #fff5}
 @media(max-width:520px){.games-chess-piece{font-size:clamp(27px,7.6vw,40px)}}
+
+/* New game category chooser */
+.games-type-chooser-modal{max-width:480px}
+.games-type-chooser-options{display:grid;gap:10px;margin-top:22px}
+.games-type-choice{display:flex;align-items:center;gap:14px;width:100%;min-height:78px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--text);text-align:left;cursor:pointer;transition:border-color .16s ease,background .16s ease,transform .16s ease}
+.games-type-choice:hover{border-color:var(--accent);background:var(--accent-surface);transform:translateY(-1px)}
+.games-type-choice-icon{display:grid;place-items:center;flex:none;width:42px;height:42px;border:1px solid var(--accent-border);border-radius:12px;background:var(--accent-surface);color:var(--accent);font-size:23px}
+.games-type-choice>span:nth-child(2){display:grid;gap:5px;min-width:0}
+.games-type-choice strong{font-size:14px}
+.games-type-choice small{font-size:11px;line-height:1.45;color:var(--muted)}
+.games-type-choice-arrow{margin-left:auto;color:var(--muted);font-size:20px}
+@media(max-width:520px){.games-type-choice{min-height:72px;padding:12px}}
