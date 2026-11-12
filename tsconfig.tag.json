@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "target": "ES2018",
+    "lib": ["DOM", "ES2018"],
+    "strict": true,
+    "skipLibCheck": true,
+    "removeComments": false,
+    "sourceMap": false,
+    "outFile": "tag-engine.js"
+  },
+  "files": ["tag-engine.ts"]
+}
