@@ -93,7 +93,7 @@
     const count=el("label","","Player limit");const max=el("select");max.id="tag-max";[4,6,8,10,12,16,20].forEach(v=>{const o=el("option","",String(v)+" players");o.value=String(v);if(v===12)o.selected=true;max.append(o);});count.append(max);
     const color=el("label","tag-color-label","Your circle color");const input=el("input");input.type="color";input.id="tag-color";input.value="#38bdf8";color.append(input);
     const message=el("p","status","");message.id="tag-status";
-    const actions=el("div","tag-actions");actions.append(btn("Back","secondary-action",()=>renderPanel()));const submit=btn("Create lobby","primary",async()=>{if(busy)return;busy=true;submit.disabled=true;message.textContent="Creating lobby…";const conversationId=select.value;const c=chats().find(x=>x.id===conversationId);const invitees=(c?.members||[]).map(m=>m.user_id).filter(id=>id!==uid());const result=await ctx.db.rpc("gather_tag_create",{p_conversation_id:conversationId,p_mode:modes.value,p_join_mode:join.value,p_invited_user_ids:join.value==="invite"?invitees:[],p_color:input.value,p_max_players:Number(max.value)});busy=false;submit.disabled=false;if(result.error){message.textContent=result.error.message;return;}activeLobby=result.data;activeLobbyId=result.data.id;await refresh();});
+    const actions=el("div","tag-actions");actions.append(btn("Back","secondary-action",()=>renderPanel()));const submit=btn("Create lobby","primary",async()=>{if(busy)return;busy=true;submit.disabled=true;message.textContent="Creating lobby…";const conversationId=select.value;const c=chats().find(x=>x.id===conversationId);const invitees=(c?.members||[]).map(m=>m.user_id).filter(id=>id!==uid());const result=await ctx.db.rpc("gather_tag_create",{p_conversation_id:conversationId,p_mode:modes.value,p_join_mode:join.value,p_invited_user_ids:join.value==="invite"?invitees:[],p_color:input.value,p_max_players:Number(max.value)});busy=false;submit.disabled=false;if(result.error){message.textContent=result.error.message;return;}activeLobby=Array.isArray(result.data)?result.data[0]:result.data;activeLobbyId=activeLobby?.id;if(!activeLobbyId){message.textContent="The lobby was created but could not be opened. Refresh Tag Arena.";return;}await refresh();});
     actions.append(submit);form.append(conv,mode,access,count,color,message,actions);form.addEventListener("submit",e=>e.preventDefault());root.append(form);
     if(!select.options.length){message.textContent="Join a conversation before creating a Tag lobby.";submit.disabled=true;}
   }
@@ -101,7 +101,7 @@
     const palette=["#38BDF8","#F97316","#A78BFA","#34D399","#F472B6","#FACC15","#60A5FA","#FB7185","#2DD4BF","#C084FC","#A3E635","#F59E0B"];
     const existing=await ctx.db.from("gather_tag_players").select("color").eq("lobby_id",lobby.id).eq("status","joined");
     const used=new Set((existing.data||[]).map(p=>String(p.color).toLowerCase()));
-    const color=palette.find(c=>!used.has(c.toLowerCase()))||palette[Math.floor(Math.random()*palette.length)];
+    let color=palette.find(c=>!used.has(c.toLowerCase()));if(!color){do{color="#"+Math.floor(Math.random()*0xffffff).toString(16).padStart(6,"0").toUpperCase();}while(used.has(color.toLowerCase()));}
     const r=await ctx.db.rpc("gather_tag_join",{p_lobby_id:lobby.id,p_color:color});
     if(r.error){toast(r.error.message);return;}
     activeLobbyId=lobby.id;activeLobby=lobby;await loadPlayers(lobby.id);renderPanel();
@@ -125,7 +125,7 @@
     if(activeLobby.status==="lobby"){
       const ready=btn(me.ready?"Not ready":"Ready up",me.ready?"outline":"primary",async()=>{const r=await ctx.db.rpc("gather_tag_ready",{p_lobby_id:activeLobbyId,p_ready:!me.ready});if(r.error)toast(r.error.message);else await refresh();});
       const actions=el("div","tag-actions");actions.append(ready);
-      if(activeLobby.created_by===uid()){const start=btn("Start match","primary",async()=>{const r=await ctx.db.rpc("gather_tag_start",{p_lobby_id:activeLobbyId});if(r.error)toast(r.error.message);else{activeLobby=r.data;await refresh();}});start.disabled=players.filter(p=>p.status==="joined").length<2||players.some(p=>p.status==="joined"&&!p.ready);actions.append(start);}
+      if(activeLobby.created_by===uid()){const start=btn("Start match","primary",async()=>{const r=await ctx.db.rpc("gather_tag_start",{p_lobby_id:activeLobbyId});if(r.error)toast(r.error.message);else{activeLobby=Array.isArray(r.data)?r.data[0]:r.data;await refresh();}});start.disabled=players.filter(p=>p.status==="joined").length<2||players.some(p=>p.status==="joined"&&!p.ready);actions.append(start);}
       actions.append(btn("Leave lobby","secondary-action",async()=>{await ctx.db.rpc("gather_tag_leave",{p_lobby_id:activeLobbyId});activeLobbyId=null;activeLobby=null;await refresh();}));
       root.append(actions);
       root.append(el("p","muted tiny","The host can start once at least two players have joined and everyone is ready."));
