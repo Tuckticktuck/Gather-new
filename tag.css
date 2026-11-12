@@ -102,3 +102,15 @@
 
 /* Keep the game surface responsive without forcing layout work. */
 .tag-arena{contain:layout paint;touch-action:pan-y}
+
+/* Chat and people sections in Tag invitations. */
+.tag-picker-note{display:block;color:#aeb8c7;font-size:10px;font-weight:500;line-height:1.5}
+.tag-people-picker{display:grid;gap:10px;padding:13px;border:1px solid color-mix(in srgb,var(--accent) 34%,#ffffff20);border-radius:14px;background:#ffffff08}
+.tag-people-picker-head,.tag-people-picker-head small{display:grid;gap:4px}
+.tag-people-picker-head strong{font-size:12px;color:#f1f5fa}
+.tag-people-picker-head small{font-size:10px;font-weight:500}
+.tag-invite-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:7px}
+.tag-invite-option{display:flex!important;grid-template-columns:none!important;align-items:center;gap:8px!important;min-width:0;padding:9px 10px;border:1px solid #ffffff1b;border-radius:10px;background:#ffffff06;font-size:11px!important;font-weight:600!important;letter-spacing:0!important}
+.tag-invite-option input{width:16px;height:16px;min-height:0!important;flex:none;accent-color:var(--accent)}
+.tag-invite-option span{overflow-wrap:anywhere}
+.tag-form select optgroup{font-weight:800}
