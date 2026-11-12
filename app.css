@@ -3690,7 +3690,18 @@ html[data-theme="light"] .offline-status{color:#59421d;background:#fff4d8;border
 .layout.show-chat #workspace-switcher{display:none}
 #empty.home-workspace{padding-top:76px}
 @media(max-width:720px){
-  .workspace-switcher{top:9px;left:11px;right:11px;width:auto;max-width:none;justify-content:stretch;padding:4px;border:1px solid var(--line);border-radius:17px}
-  .workspace-switch-tab{flex:1;min-width:0;min-height:37px;padding:7px 10px;font-size:calc(11px * var(--font-scale,1))}
+  .workspace-switcher{
+    top:9px;left:11px;right:auto;
+    width:calc(100vw - 22px);max-width:calc(100vw - 22px);
+    box-sizing:border-box;display:flex;flex-wrap:nowrap;justify-content:stretch;
+    gap:4px;padding:4px;border:1px solid var(--line);border-radius:17px;
+    overflow:hidden;
+  }
+  .workspace-switch-tab{
+    box-sizing:border-box;flex:1 1 0;width:0;min-width:0;max-width:50%;
+    min-height:37px;padding:7px 4px;gap:6px;white-space:nowrap;
+    font-size:calc(11px * var(--font-scale,1));overflow:hidden;
+  }
+  .workspace-switch-tab>span{flex:none}
   #empty.home-workspace{padding-top:67px}
 }
