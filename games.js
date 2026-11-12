@@ -83,7 +83,28 @@
       switcher.setAttribute("aria-label", "Gather sections");
       switcher.innerHTML = '<button id="workspace-messages-tab" class="workspace-switch-tab active" type="button" aria-pressed="true"><span class="workspace-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H5l-1-4.2A7.5 7.5 0 1 1 20 11.5Z"></path></svg></span> Messages</button><button id="workspace-games-tab" class="workspace-switch-tab" type="button" aria-pressed="false"><span aria-hidden="true">♟</span> Games</button>';
       const home = $("empty");
-      main.insertBefore(switcher, home || main.firstChild);
+      document.body.appendChild(switcher);
+      const positionSwitcher = () => {
+        const rect = main.getBoundingClientRect();
+        switcher.style.position = "fixed";
+        switcher.style.top = Math.max(0, rect.top) + "px";
+        switcher.style.left = Math.max(0, rect.left) + "px";
+        switcher.style.width = Math.max(0, Math.min(rect.width, window.innerWidth - Math.max(0, rect.left))) + "px";
+        switcher.style.right = "auto";
+      };
+      positionSwitcher();
+      if (!window.__gatherSwitcherResizeBound) {
+        window.__gatherSwitcherResizeBound = true;
+        window.addEventListener("resize", () => {
+          const bar = $("workspace-switcher");
+          const host = document.querySelector(".main");
+          if (!bar || !host) return;
+          const rect = host.getBoundingClientRect();
+          bar.style.top = Math.max(0, rect.top) + "px";
+          bar.style.left = Math.max(0, rect.left) + "px";
+          bar.style.width = Math.max(0, Math.min(rect.width, window.innerWidth - Math.max(0, rect.left))) + "px";
+        }, { passive: true });
+      }
       $("workspace-messages-tab").addEventListener("click", showHomeFromHub);
       $("workspace-games-tab").addEventListener("click", showHub);
     }
