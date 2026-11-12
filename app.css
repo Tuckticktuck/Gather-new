@@ -3711,3 +3711,12 @@ html[data-theme="light"] .offline-status{color:#59421d;background:#fff4d8;border
 .layout.show-home #workspace-switcher,
 .layout.show-games #workspace-switcher{display:flex}
 
+
+/* The workspace switcher belongs to the two home screens only.
+   Hide it whenever a modal, notification panel, or game overlay is open. */
+body:has(.overlay:not([hidden])) #workspace-switcher{
+  display:none!important;
+}
+.layout:not(.show-home):not(.show-games) #workspace-switcher{
+  display:none!important;
+}
