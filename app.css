@@ -3670,8 +3670,9 @@ html[data-theme="light"] .offline-status{color:#59421d;background:#fff4d8;border
 
 /* Full-width Messages / Games switcher across the main workspace. */
 .workspace-switcher{
-  position:absolute;z-index:6;top:0;left:0;right:0;
-  display:flex;align-items:stretch;gap:5px;width:auto;max-width:none;
+  position:fixed;z-index:100;top:0;left:0;right:auto;
+  display:flex;align-items:stretch;gap:5px;box-sizing:border-box;
+  max-width:100vw;min-width:0;overflow:hidden;
   padding:7px clamp(18px,3vw,34px);border:1px solid var(--line);border-top:0;
   border-radius:0 0 22px 22px;background:var(--panel);box-shadow:0 5px 20px #0002;
 }
@@ -3691,11 +3692,10 @@ html[data-theme="light"] .offline-status{color:#59421d;background:#fff4d8;border
 #empty.home-workspace{padding-top:76px}
 @media(max-width:720px){
   .workspace-switcher{
-    position:fixed;top:9px;
-    left:max(11px,env(safe-area-inset-left));right:max(11px,env(safe-area-inset-right));
-    width:auto;max-width:none;box-sizing:border-box;
+    position:fixed;top:0;left:0;right:auto;
+    width:auto;max-width:100vw;box-sizing:border-box;
     display:flex;flex-wrap:nowrap;justify-content:stretch;
-    gap:4px;padding:4px;border:1px solid var(--line);border-radius:17px;
+    gap:4px;padding:4px 5px;border:1px solid var(--line);border-radius:17px;
     overflow:hidden;
   }
   .workspace-switch-tab{
