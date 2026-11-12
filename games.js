@@ -87,7 +87,7 @@
       const positionSwitcher = () => {
         const rect = main.getBoundingClientRect();
         switcher.style.position = "fixed";
-        switcher.style.top = Math.max(0, rect.top) + "px";
+        switcher.style.top = Math.max(0, rect.top + 14) + "px";
         switcher.style.left = Math.max(0, rect.left) + "px";
         switcher.style.width = Math.max(0, Math.min(rect.width, window.innerWidth - Math.max(0, rect.left))) + "px";
         switcher.style.right = "auto";
@@ -100,7 +100,7 @@
           const host = document.querySelector(".main");
           if (!bar || !host) return;
           const rect = host.getBoundingClientRect();
-          bar.style.top = Math.max(0, rect.top) + "px";
+          bar.style.top = Math.max(0, rect.top + 14) + "px";
           bar.style.left = Math.max(0, rect.left) + "px";
           bar.style.width = Math.max(0, Math.min(rect.width, window.innerWidth - Math.max(0, rect.left))) + "px";
         }, { passive: true });
