@@ -83,6 +83,7 @@
       switcher.setAttribute("aria-label", "Gather sections");
       switcher.innerHTML = '<button id="workspace-messages-tab" class="workspace-switch-tab active" type="button" aria-pressed="true"><span class="workspace-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H5l-1-4.2A7.5 7.5 0 1 1 20 11.5Z"></path></svg></span> Messages</button><button id="workspace-games-tab" class="workspace-switch-tab" type="button" aria-pressed="false"><span aria-hidden="true">♟</span> Games</button>';
       const home = $("empty");
+      switcher.hidden = true;
       document.body.appendChild(switcher);
       const positionSwitcher = () => {
         const rect = main.getBoundingClientRect();
@@ -255,6 +256,8 @@
     chat.hidden = true;
     hub.hidden = false;
     const layout = $("layout");
+    const switcher = $("workspace-switcher");
+    if (switcher) switcher.hidden = false;
     layout?.classList.remove("show-chat", "show-home");
     layout?.classList.add("show-games");
     $("home-open").hidden = true;
@@ -271,6 +274,8 @@
     const home = $("empty");
     if (hub) hub.hidden = true;
     if (home) home.hidden = false;
+    const switcher = $("workspace-switcher");
+    if (switcher) switcher.hidden = false;
     const chat = $("chat");
     if (chat) chat.hidden = true;
     $("layout")?.classList.remove("show-games", "show-chat");
