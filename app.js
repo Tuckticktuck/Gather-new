@@ -1970,7 +1970,9 @@ function subscribeNotifications(){
       const item=S.notifications.find(x=>x.id===payload.new.id);
       const mutedMessage=item?.kind==="message"&&item.conversation_id&&S.chatSettings.muted[item.conversation_id];
       if(item&&!activeConversationMessage&&!mutedMessage&&$("notifications-modal")?.hidden)toast(item.title||"You have a new Gather notification.");
-    }).subscribe();
+    })
+    .on("postgres_changes",{event:"UPDATE",schema:"public",table:"notifications",filter:"recipient_id=eq."+uid},async()=>{await loadNotifications();})
+    .subscribe();
 }
 async function markNotificationRead(id){
   const at=new Date().toISOString();
