@@ -3668,16 +3668,16 @@ html[data-theme="light"] .offline-status{color:#59421d;background:#fff4d8;border
 @media(max-width:720px){.layout.show-games .sidebar{display:none}.layout.show-games .main{display:block}}
 
 
-/* Top-level Messages / Games switcher. */
+/* Full-width Messages / Games switcher across the main workspace. */
 .workspace-switcher{
-  position:absolute;z-index:6;top:14px;left:clamp(18px,3vw,34px);
-  display:flex;align-items:center;gap:5px;width:max-content;max-width:calc(100% - 36px);
-  padding:4px;border:1px solid var(--line);border-radius:13px;
-  background:var(--panel);box-shadow:0 5px 20px #0002;
+  position:absolute;z-index:6;top:0;left:0;right:0;
+  display:flex;align-items:stretch;gap:5px;width:auto;max-width:none;
+  padding:7px clamp(18px,3vw,34px);border:0;border-bottom:1px solid var(--line);
+  border-radius:0;background:var(--panel);box-shadow:0 5px 20px #0002;
 }
 .workspace-switch-tab{
-  display:inline-flex;align-items:center;justify-content:center;gap:8px;
-  min-width:116px;min-height:39px;padding:8px 15px;border:1px solid transparent;
+  display:inline-flex;flex:1;align-items:center;justify-content:center;gap:8px;
+  min-width:0;min-height:39px;padding:8px 15px;border:1px solid transparent;
   border-radius:9px;color:var(--muted);background:transparent;
   font-size:calc(11px * var(--font-scale,1));font-weight:750;
 }
@@ -3690,7 +3690,7 @@ html[data-theme="light"] .offline-status{color:#59421d;background:#fff4d8;border
 .layout.show-chat #workspace-switcher{display:none}
 #empty.home-workspace{padding-top:76px}
 @media(max-width:720px){
-  .workspace-switcher{top:9px;left:11px;right:11px;width:auto;max-width:none;justify-content:stretch}
+  .workspace-switcher{top:9px;left:11px;right:11px;width:auto;max-width:none;justify-content:stretch;padding:4px;border:1px solid var(--line);border-radius:13px}
   .workspace-switch-tab{flex:1;min-width:0;min-height:37px;padding:7px 10px;font-size:calc(11px * var(--font-scale,1))}
   #empty.home-workspace{padding-top:67px}
 }
