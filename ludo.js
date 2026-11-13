@@ -741,6 +741,7 @@
     const lastRoll = state.last_roll === null || state.last_roll === undefined ? null : Number(state.last_roll);
     const displayDice = dice !== null ? dice : lastRoll;
     const board = el("div", "ludo-board");
+    board.setAttribute("role", "group");
     board.setAttribute("aria-label", "Ludo board with four colored home areas and a shared track.");
 
     const occupants = new Map();
@@ -753,17 +754,18 @@
         else if (value === 57) location = "home";
         if (!location) return;
         if (!occupants.has(location)) occupants.set(location, []);
-        occupants.get(location).push({ color: color.key, tokenIndex });
+        occupants.get(location).push({ color: color.key, tokenIndex, progress: value });
       });
     });
 
+    const canSelect = token => myTurn && token.color === myColor && dice !== null && canMoveToken(token.progress, dice);
     TRACK.forEach(([row, col], index) => {
       const cell = el("div", "ludo-track-cell" + (SAFE.has(index) ? " safe" : ""));
       cell.style.gridRow = String(row + 1);
       cell.style.gridColumn = String(col + 1);
       cell.setAttribute("aria-label", "Track space " + (index + 1) + (SAFE.has(index) ? ", safe" : ""));
-      appendOccupants(cell, occupants.get("track:" + index));
-      if (SAFE.has(index) && !occupants.has("track:" + index)) cell.append(el("span", "ludo-safe-mark", ""));
+      appendOccupants(cell, occupants.get("track:" + index), canSelect);
+      if (SAFE.has(index) && !occupants.has("track:" + index)) cell.append(el("span", "ludo-safe-mark", "✦"));
       board.append(cell);
     });
 
@@ -773,7 +775,7 @@
         cell.style.gridRow = String(row + 1);
         cell.style.gridColumn = String(col + 1);
         cell.setAttribute("aria-label", color.label + " home lane " + (index + 1));
-        appendOccupants(cell, occupants.get("lane:" + color.key + ":" + index));
+        appendOccupants(cell, occupants.get("lane:" + color.key + ":" + index), canSelect);
         board.append(cell);
       });
     });
@@ -795,7 +797,14 @@
       const baseTokens = el("div", "ludo-base-tokens");
       myTokens.forEach((progress, tokenIndex) => {
         if (Number(progress) !== -1) return;
-        const token = el("span", "ludo-base-token");
+        const selectable = myTurn && base.color === myColor && dice === 6;
+        const token = selectable
+          ? btn(String(tokenIndex + 1), "ludo-base-token ludo-token-selectable", () => callAction("move", tokenIndex))
+          : el("span", "ludo-base-token");
+        if (selectable) {
+          token.setAttribute("aria-label", "Move token " + (tokenIndex + 1) + " out of base");
+          token.title = "Move token " + (tokenIndex + 1);
+        }
         token.append(el("span", "ludo-token-dot " + base.color, String(tokenIndex + 1)));
         baseTokens.append(token);
       });
@@ -809,9 +818,8 @@
     center.style.gridColumn = "7 / span 3";
     center.append(el("strong", "", "LUDO"), el("small", "", "Home"));
     const homeTokens = occupants.get("home") || [];
-    if (homeTokens.length) appendOccupants(center, homeTokens);
+    if (homeTokens.length) appendOccupants(center, homeTokens, () => false);
     board.append(center);
-
     root.append(board);
 
     const tokenControls = el("section", "ludo-controls");
@@ -826,7 +834,7 @@
     diceValue.setAttribute("aria-label", displayDice === null ? "No dice roll yet" : (dice !== null ? "Dice rolled " : "Last roll was ") + displayDice);
     diceFace.append(diceLabel, diceValue);
     diceCard.append(diceFace);
-    const roll = btn(myTurn && dice === null ? "Roll dice" : dice === null ? "Waiting" : "Choose token",
+    const roll = btn(myTurn && dice === null ? "Roll dice" : dice === null ? "Waiting" : "Move a token",
       "primary ludo-roll", () => callAction("roll"));
     roll.disabled = !myTurn || dice !== null;
     roll.title = myTurn && dice === null ? "Roll the dice" : "Wait for your turn or move a token";
@@ -854,7 +862,6 @@
       tokenToggle.textContent = panel.hidden ? "Tokens" : "Hide tokens";
       tokenToggle.setAttribute("aria-expanded", String(!panel.hidden));
     });
-    tokenToggle.type = "button";
     tokenToggle.setAttribute("aria-label", "View tokens");
     tokenToggle.setAttribute("aria-expanded", "false");
     tokenControls.append(tokenToggle, panel);
@@ -862,11 +869,19 @@
     root.append(tokenControls);
   }
 
-  function appendOccupants(target, tokens) {
+  function appendOccupants(target, tokens, canSelect = () => false) {
     if (!tokens?.length) return;
     const stack = el("div", "ludo-occupants");
     tokens.forEach(token => {
-      stack.append(el("span", "ludo-token-dot " + token.color, String(token.tokenIndex + 1)));
+      if (canSelect(token)) {
+        const piece = btn(String(token.tokenIndex + 1), "ludo-token-dot " + token.color + " ludo-token-selectable",
+          () => callAction("move", token.tokenIndex));
+        piece.setAttribute("aria-label", "Move " + token.color + " token " + (token.tokenIndex + 1));
+        piece.title = "Move token " + (token.tokenIndex + 1);
+        stack.append(piece);
+      } else {
+        stack.append(el("span", "ludo-token-dot " + token.color, String(token.tokenIndex + 1)));
+      }
     });
     target.append(stack);
   }
