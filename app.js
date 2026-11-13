@@ -1118,11 +1118,15 @@ async function signedIn(user,retry=false){
     window.GatherUno?.init({db,user:()=>S.user,chats:()=>S.chats,profiles:()=>S.profiles,toast});
     window.GatherLudo?.init({db,user:()=>S.user,chats:()=>S.chats,profiles:()=>S.profiles,toast});
     subscribeMessages();
-    await loadNotifications();subscribeNotifications();
-    await loadAnnouncements();subscribeAnnouncements();
+    // Start friend data immediately after chats are ready, in parallel with secondary home data.
+    const friendsLoad=loadFriends();
+    const [notificationsLoaded,announcementsLoaded,friendsLoaded,blockedLoaded]=await Promise.all([
+      loadNotifications(),loadAnnouncements(),friendsLoad,loadBlocked()
+    ]);
+    subscribeNotifications();subscribeAnnouncements();
+    if(!friendsLoaded)console.warn("Gather friend list could not be loaded.");
+    if(!blockedLoaded)console.warn("Gather blocked list could not be loaded.");
     setChatLoadStatus("");
-    if(!await loadFriends())console.warn("Gather friend list could not be loaded.");
-    if(!await loadBlocked())console.warn("Gather blocked list could not be loaded.");
     renderChats();
   }catch(e){
     const reason=S.loadError||e.message||"An unexpected error occurred.";
@@ -1212,7 +1216,7 @@ async function loadFriends(){
   const uid=S.user.id;
   const [friendsResult,requestsResult,favoritesResult]=await Promise.all([
     db.from("friendships").select("friend_id,created_at").eq("user_id",uid).order("created_at",{ascending:false}),
-    db.from("friend_requests").select("id,sender_id,recipient_id,status,created_at").or("sender_id.eq."+uid+",recipient_id.eq."+uid).order("created_at",{ascending:false}).limit(80),
+    db.from("friend_requests").select("id,sender_id,recipient_id,status,created_at,responded_at").or("sender_id.eq."+uid+",recipient_id.eq."+uid).order("created_at",{ascending:false}).limit(80),
     db.from("favorite_friends").select("friend_id").eq("user_id",uid)
   ]);
   if(S.user?.id!==uid)return false;
@@ -1251,11 +1255,13 @@ async function loadFriends(){
     profiles.data.forEach(x=>S.profiles[x.id]=x);
   }
   $("friends-error").textContent="";
-  await refreshFriendLastSeen();
+  // Render the actual friend list as soon as friend/profile rows arrive. Presence is
+  // supplementary and must never hold the list behind extra network round trips.
+  renderFriends();renderChats();
   syncFriendPresenceChannels();
   ensurePresenceDisplayTimer();
-  await syncOwnPresence();
-  renderFriends();renderChats();
+  void refreshFriendLastSeen().then(()=>{if(S.user?.id===uid){renderFriends();renderChats();}});
+  void syncOwnPresence();
   return true;
 }
 
