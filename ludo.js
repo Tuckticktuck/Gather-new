@@ -523,7 +523,7 @@
       }
       root.append(actionBar);
       root.append(el("p", "muted tiny ludo-lobby-hint tag-lobby-hint", "The host can start once at least two players have joined and everyone is ready."));
-      root.append(btn("Back to Games", "outline tag-back", async () => { activeGameId = null; activeGame = null; players = []; await refresh(); }));
+      root.append(btn("Back to Ludo", "outline tag-back", async () => { activeGameId = null; activeGame = null; players = []; await refresh(); }));
       return;
     }
 
