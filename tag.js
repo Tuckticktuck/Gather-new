@@ -105,8 +105,8 @@
   async function openInvitation(id){if(!ctx||!uid())return;mount();panelOpen=true;$("tag-overlay").hidden=false;const r=await ctx.db.from("gather_tag_lobbies").select("id,conversation_id,created_by,status,mode,join_mode,max_players,created_at,updated_at").eq("id",id).maybeSingle();if(r.error||!r.data){toast(r.error?.message||"That Tag invitation is no longer available.");return;}activeLobbyId=id;activeLobby=r.data;await joinLobby(r.data);}
   async function openGame(id){
     if(!ctx||!uid())return;mount();panelOpen=true;$("tag-overlay").hidden=false;
-    const r=await ctx.db.from("gather_tag_lobbies").select("id,conversation_id,created_by,status,mode,join_mode,max_players,created_at,updated_at").eq("id",id).eq("status","active").maybeSingle();
-    if(r.error||!r.data){toast(r.error?.message||"That Tag match is no longer active.");return;}
+    const r=await ctx.db.from("gather_tag_lobbies").select("id,conversation_id,created_by,status,mode,join_mode,max_players,created_at,updated_at").eq("id",id).in("status",["lobby","active"]).maybeSingle();
+    if(r.error||!r.data){toast(r.error?.message||"That Tag lobby is no longer available.");return;}
     activeLobbyId=id;activeLobby=r.data;await loadPlayers(id);renderPanel();
   }
   function closePanel(){
