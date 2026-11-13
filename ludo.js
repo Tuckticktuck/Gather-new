@@ -79,7 +79,7 @@
     const overlay = el("div", "overlay ludo-overlay");
     overlay.id = "ludo-overlay";
     overlay.hidden = true;
-    overlay.innerHTML = '<section class="modal ludo-modal tag-modal" role="dialog" aria-modal="true" aria-labelledby="ludo-title"><button id="ludo-close" class="close" type="button" aria-label="Close">×</button><div id="ludo-content"></div></section>';
+    overlay.innerHTML = '<section class="modal ludo-modal tag-modal" role="dialog" aria-modal="true" aria-labelledby="ludo-dialog-title"><button id="ludo-close" class="close" type="button" aria-label="Close">×</button><div id="ludo-content"></div></section>';
     document.body.append(overlay);
     $("ludo-close").addEventListener("click", close);
     overlay.addEventListener("click", event => {
@@ -332,7 +332,9 @@
     const root = $("ludo-content");
     root.replaceChildren();
     root.append(el("p", "eyebrow", "NEW LUDO LOBBY"));
-    root.append(el("h2", "ludo-title", "Set up your lobby"));
+    const title = el("h2", "ludo-title", "Set up your lobby");
+    title.id = "ludo-dialog-title";
+    root.append(title);
     root.append(el("p", "muted tiny ludo-intro", "Choose a chat first. People in that chat are shown separately, so you can choose exactly who receives an invite."));
     const form = el("form", "ludo-form tag-form");
     const chatSelect = el("select");
@@ -446,7 +448,9 @@
     const joined = me?.status === "joined";
     const top = el("div", "ludo-game-top");
     const heading = el("div", "ludo-game-heading");
-    heading.append(el("p", "eyebrow", started ? "MATCH IN PROGRESS" : "WAITING ROOM"), el("h2", "ludo-title", started ? "Ludo match" : "Ludo lobby"), el("p", "muted tiny ludo-intro", conversationName(game.conversation_id) + " · " + (game.join_mode === "open" ? "Open lobby" : "Invite only")));
+    const dialogTitle = el("h2", "ludo-title", started ? "Ludo match" : "Ludo lobby");
+    dialogTitle.id = "ludo-dialog-title";
+    heading.append(el("p", "eyebrow", started ? "MATCH IN PROGRESS" : "WAITING ROOM"), dialogTitle, el("p", "muted tiny ludo-intro", conversationName(game.conversation_id) + " · " + (game.join_mode === "open" ? "Open lobby" : "Invite only")));
     top.append(heading, el("span", "ludo-player-count", joinedPlayers(players).length + "/" + maxPlayers(game) + " players"));
     root.append(top);
 
