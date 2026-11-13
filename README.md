@@ -1,36 +1,34 @@
 # Gather — Private Chat
 
-Static chat app powered by Supabase Auth, Postgres, Row Level Security, and Realtime.
+Gather is a static Progressive Web App powered by **GitHub Pages** and **Supabase**.
 
-## Hosting architecture
-- **GitHub** (`Tuckticktuck/Gather-new`) is the source-code repository.
-- **Netlify** hosts the static frontend and can deploy updates automatically from the GitHub `main` branch.
-- **Supabase** remains the backend for authentication, database access, storage, and realtime features.
+## Hosting and backend
 
-The frontend does not require a framework build step. `netlify.toml` sets the publish directory to the repository root (`.`).
+- **GitHub** (Tuckticktuck/Gather-new) stores the source code and publishes the frontend through the GitHub Pages workflow in .github/workflows/pages.yml.
+- **Supabase** provides authentication, Postgres, Row Level Security, storage, and realtime features.
 
-## Connect this repository to Netlify
-1. In Netlify, choose **Add new project → Import an existing project**.
-2. Choose **GitHub** and authorize access to `Tuckticktuck/Gather-new`.
-3. Select the `main` branch.
-4. Leave the build command empty and set the publish directory to `.` (the repository root). The committed `netlify.toml` also supplies this publish setting.
-5. Deploy a preview first. Do not change the public production URL until authentication and core chat features have been tested.
+The frontend has no framework build step. GitHub Actions compiles the Tag Canvas engine, validates the JavaScript, and publishes the repository root to GitHub Pages whenever changes are pushed to main.
 
-Protect preview deployments or use a separate staging Supabase project. Preview URLs can be opened by anyone who has the URL unless access protection is enabled.
+## GitHub Pages setup
 
-## Configure Supabase Auth after choosing the Netlify URL
-In the Supabase project **Private Chat**, open **Authentication → URL Configuration**. Add the exact Netlify production URL to the allowed redirect URLs. Update the **Site URL** only when ready to make Netlify the primary address. Keep the existing GitHub Pages URL in the allowed redirect list during the transition. Also test password recovery and email confirmation links from the new domain.
+1. Open the repository's **Settings → Pages**.
+2. Set the publishing source to **GitHub Actions**.
+3. Confirm the workflow in .github/workflows/pages.yml is enabled.
+4. Push changes to main; the workflow publishes the site.
+5. Check the **Actions** tab for build and deployment status.
 
-Do not put Supabase service-role keys or other server secrets in frontend files or Netlify's published output. The browser app must use only the public/publishable client key.
+The current GitHub Pages address is:
 
-## Existing GitHub Pages fallback
-The existing GitHub Pages site can remain available while Netlify is tested:
-`https://tuckticktuck.github.io/Gather-new/`
+https://tuckticktuck.github.io/Gather-new/
 
-Do not disable GitHub Pages until the Netlify deployment and Supabase authentication flow have been verified.
+## Supabase Auth configuration
+
+In the Supabase project **Private Chat**, open **Authentication → URL Configuration**. Set the Site URL to the GitHub Pages address and add it to the allowed redirect URLs. Test sign-in, sign-up, password recovery, and email confirmation links after changing the URL configuration.
+
+Do not put Supabase service-role keys or other server secrets in frontend files. The browser app must use only the public/publishable client key.
 
 ## Install Gather
 
-Gather is an installable Progressive Web App (PWA). Open the site over HTTPS and use the **Install** control or your browser's install option on supported browsers. On iPhone or iPad, open Gather in Safari, tap **Share → Add to Home Screen**, enable **Open as Web App** if shown, and tap **Add**.
+Gather is an installable Progressive Web App. Open the site over HTTPS and use the **Install** control or your browser's install option on supported browsers. On iPhone or iPad, open Gather in Safari, tap **Share → Add to Home Screen**, enable **Open as Web App** if shown, and tap **Add**.
 
 The service worker caches only the public app shell (HTML, CSS, JavaScript, manifest, and icons). Authentication, conversations, attachments, and other account data are not stored in the offline cache. Signing in, sending messages, and syncing require an internet connection.
