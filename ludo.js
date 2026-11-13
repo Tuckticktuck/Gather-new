@@ -329,113 +329,21 @@
   }
 
   function renderCreate() {
-    const root = $("ludo-content");
-    root.replaceChildren();
-    root.append(el("p", "eyebrow", "NEW LUDO LOBBY"));
-    const title = el("h2", "ludo-title", "Set up your lobby");
-    title.id = "ludo-dialog-title";
-    root.append(title);
-    root.append(el("p", "muted tiny ludo-intro", "Choose a chat first. People in that chat are shown separately, so you can choose exactly who receives an invite."));
-    const form = el("form", "ludo-form tag-form");
-    const chatSelect = el("select");
-    chatSelect.required = true;
-    const eligible = eligibleChats();
-    appendChatOptions(chatSelect, eligible);
-    form.append(makeField("Choose a chat", chatSelect));
-
-    const mode = el("select");
-    mode.innerHTML = '<option value="open">Open lobby — conversation members can join</option><option value="invite">Invite-only — selected players</option>';
-    form.append(makeField("Who can join?", mode));
-
-    const max = el("select");
-    [2, 3, 4].forEach(value => {
-      const option = el("option", "", value + " players");
-      option.value = String(value);
-      if (value === 4) option.selected = true;
-      max.append(option);
+    const root=$("ludo-content");root.replaceChildren();root.append(el("p","eyebrow","NEW LUDO LOBBY"));
+    const title=el("h2","ludo-title","Set up your lobby");title.id="ludo-dialog-title";
+    root.append(title,el("p","muted tiny ludo-intro","Choose friends to invite. Game invitations do not create a group conversation."));
+    const form=el("form","ludo-form tag-form"),selected=[];
+    const choose=el("button","outline","Choose people");choose.type="button";const summary=el("small","muted tiny","No people selected");
+    const people=el("section","ludo-people-picker tag-people-picker");people.append(choose,summary);form.append(people);
+    const max=el("select");[2,3,4].forEach(v=>{const o=el("option","",v+" players");o.value=String(v);if(v===4)o.selected=true;max.append(o);});form.append(makeField("Player limit",max));
+    const color=el("select");COLORS.forEach(item=>{const o=el("option","",item.label);o.value=item.hex;color.append(o);});form.append(makeField("Your color",color));
+    const actions=el("div","ludo-actions tag-actions");actions.append(btn("Back","secondary-action",renderLobbyList));
+    const submit=btn("Create lobby","primary",()=>{});submit.type="submit";actions.append(submit);form.append(actions);
+    form.addEventListener("submit",async event=>{event.preventDefault();if(busy)return;if(!selected.length){toast("Choose at least one person to invite.");return;}if(selected.length+1>Number(max.value)){toast("The player limit must include you and everyone you invite.");return;}
+      busy=true;submit.disabled=true;try{const result=await ctx.db.rpc("gather_ludo_create",{p_conversation_id:null,p_join_mode:"invite",p_invited_user_ids:selected.slice(),p_max_players:Number(max.value),p_creator_color:color.value});if(result.error)throw result.error;activeGameId=result.data.id;await loadGame();}
+      catch(error){toast(error?.message||"Could not create the Ludo lobby.");}finally{busy=false;submit.disabled=false;}
     });
-    form.append(makeField("Player limit", max));
-
-    const color = el("select");
-    COLORS.forEach(item => {
-      const option = el("option", "", item.label);
-      option.value = item.hex;
-      color.append(option);
-    });
-    form.append(makeField("Your color", color));
-
-    const invitePanel = el("section", "ludo-people-picker tag-people-picker");
-    const heading = el("div", "ludo-people-heading tag-people-picker-head");
-    heading.append(el("strong", "", "People in this chat"), el("small", "muted tiny", "Select who should receive a private invitation."));
-    const invites = el("div", "ludo-invites tag-invite-list");
-    invitePanel.append(heading, invites);
-    form.append(invitePanel);
-
-    function drawInvites() {
-      invites.replaceChildren();
-      const chat = eligible.find(item => item.id === chatSelect.value);
-      const members = (chat?.members || []).filter(member => member.user_id !== uid())
-        .slice().sort((a, b) => byName(name(a.user_id), name(b.user_id)));
-      if (!members.length) {
-        invites.append(el("p", "muted tiny", "No other members are available in this chat."));
-        return;
-      }
-      members.forEach(member => {
-        const label = el("label", "ludo-invite-option tag-invite-option");
-        const checkbox = el("input");
-        checkbox.type = "checkbox";
-        checkbox.value = member.user_id;
-        label.append(checkbox, el("span", "", name(member.user_id)));
-        invites.append(label);
-      });
-    }
-    chatSelect.addEventListener("change", drawInvites);
-    mode.addEventListener("change", () => { invitePanel.hidden = mode.value !== "invite"; });
-    max.addEventListener("change", () => {
-      invites.querySelectorAll("input:checked").forEach((checkbox, index) => {
-        if (index >= Number(max.value) - 1) checkbox.checked = false;
-      });
-    });
-
-    const actions = el("div", "ludo-actions tag-actions");
-    actions.append(btn("Back", "secondary-action", renderLobbyList));
-    const submit = btn("Create lobby", "primary", () => {});
-    submit.type = "submit";
-    actions.append(submit);
-    form.append(el("p", "muted tiny", "The host starts the match after at least one other player has joined and everyone is ready."), actions);
-    form.addEventListener("submit", async event => {
-      event.preventDefault();
-      if (busy) return;
-      const ids = mode.value === "invite" ? [...invites.querySelectorAll("input:checked")].map(input => input.value) : [];
-      if (mode.value === "invite" && !ids.length) { toast("Select at least one person to invite, or choose an open lobby."); return; }
-      if (ids.length + 1 > Number(max.value)) { toast("The player limit must include you and everyone you invite."); return; }
-      busy = true;
-      submit.disabled = true;
-      try {
-        const result = await ctx.db.rpc("gather_ludo_create", {
-          p_conversation_id: chatSelect.value,
-          p_join_mode: mode.value,
-          p_invited_user_ids: ids,
-          p_max_players: Number(max.value),
-          p_creator_color: color.value
-        });
-        if (result.error) throw result.error;
-        activeGameId = result.data.id;
-        await loadGame();
-      } catch (error) {
-        toast(error?.message || "Could not create the Ludo lobby.");
-      } finally {
-        busy = false;
-        submit.disabled = false;
-      }
-    });
-    root.append(form);
-    drawInvites();
-    invitePanel.hidden = mode.value !== "invite";
-    if (!chatSelect.options.length) {
-      submit.disabled = true;
-      form.append(el("p", "muted tiny", "Join a conversation before creating a Ludo lobby."));
-    }
+    root.append(form);window.GatherPeoplePicker?.create({db:ctx.db,button:choose,summary,onChange:ids=>selected.splice(0,selected.length,...ids)});
   }
 
   function renderGamePanel() {
