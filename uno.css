@@ -371,3 +371,19 @@
 .uno-modal .tag-lobby-hint,.ludo-modal .tag-lobby-hint{display:block;margin:0 0 54px;padding:0;border:0;background:none;color:#aeb8c7;font-size:13px;line-height:1.65}
 .uno-modal .tag-back,.ludo-modal .tag-back{min-height:48px;margin:0;padding:0 17px;border-radius:13px;background:color-mix(in srgb,var(--accent) 14%,transparent);border:1px solid color-mix(in srgb,var(--accent) 38%,#ffffff18);color:var(--accent-text);font-size:13px}
 @media(max-width:600px){.uno-modal.tag-modal,.ludo-modal.tag-modal{width:calc(100vw - 20px);max-height:calc(100dvh - 24px);padding:22px 17px;border-radius:23px}.uno-modal .uno-lobby-feature,.ludo-modal .ludo-lobby-feature{gap:12px;margin:20px 0 24px;padding:14px}.uno-modal .uno-lobby-feature strong,.ludo-modal .ludo-lobby-feature strong{font-size:15px}.uno-modal .tag-lobby-actions button,.ludo-modal .tag-lobby-actions button{min-height:60px}.uno-modal .tag-lobby-hint,.ludo-modal .tag-lobby-hint{margin-bottom:38px}}
+
+
+/* Match Ludo's control language and keep UNO card/icon typography consistent. */
+.uno-modal .close{display:grid;place-items:center;width:40px;height:40px;border-radius:13px;border:1px solid var(--line);background:color-mix(in srgb,var(--panel) 88%,var(--accent));color:var(--text);font:700 22px/1 system-ui,sans-serif}
+.uno-modal button{font-family:inherit;letter-spacing:normal}
+.uno-modal button:focus-visible,.uno-modal select:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 75%,white);outline-offset:2px}
+.uno-modal .uno-card{box-sizing:border-box;flex:0 0 auto;min-width:68px;min-height:102px;border-radius:15px}
+.uno-modal .uno-card-corner,.uno-modal .uno-card-center,.uno-modal .uno-card-color{font-family:ui-rounded,system-ui,-apple-system,"Segoe UI",sans-serif}
+.uno-modal .uno-card-center{display:grid;place-items:center;line-height:1}
+.uno-modal .uno-deck{display:grid;place-items:center;font-family:ui-rounded,system-ui,sans-serif;font-size:20px;letter-spacing:-.06em}
+.uno-modal .uno-roster{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr))}
+.uno-modal .uno-player-row{min-width:0;border-radius:13px}
+.uno-modal .uno-hand-strip{gap:clamp(7px,1.4vw,12px);padding:16px 8px 22px}
+.uno-modal .uno-hand-controls{flex-wrap:wrap}
+.uno-modal .uno-hand-controls button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:42px;padding:9px 13px;border-radius:12px;font-size:12px;font-weight:800}
+@media(max-width:600px){.uno-modal .uno-card{width:68px;height:102px}.uno-modal .uno-table{min-height:165px}}
