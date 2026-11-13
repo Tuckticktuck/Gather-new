@@ -387,3 +387,114 @@
   .ludo-overlay:has(.ludo-board) .ludo-roster{gap:4px}
   .ludo-overlay:has(.ludo-board) .ludo-player-row{min-height:25px;padding:3px 6px}
 }
+
+
+/* Ultra-compact active Ludo HUD: the board owns the screen. */
+.ludo-overlay:has(.ludo-board) #ludo-content{
+  grid-template-columns:minmax(0,1fr);
+  grid-template-rows:auto auto minmax(0,1fr) auto auto;
+  grid-template-areas:"top" "roster" "board" "controls" "end";
+  gap:4px;justify-items:center;
+}
+.ludo-overlay:has(.ludo-board) .ludo-game-top{
+  width:100%;padding:0 142px 0 40px;min-height:24px;
+}
+.ludo-overlay:has(.ludo-board) .ludo-game-heading{padding:0;gap:0}
+.ludo-overlay:has(.ludo-board) .ludo-game-heading .eyebrow,
+.ludo-overlay:has(.ludo-board) .ludo-game-heading .ludo-intro{display:none}
+.ludo-overlay:has(.ludo-board) .ludo-game-heading .ludo-title{font-size:clamp(14px,1.8vh,19px);line-height:1.1}
+.ludo-overlay:has(.ludo-board) .ludo-player-count{font-size:9px}
+.ludo-overlay:has(.ludo-board) .ludo-roster--match{
+  grid-area:roster;display:flex;align-items:center;justify-content:center;
+  width:100%;min-height:0;height:22px;margin:0;padding:0;gap:7px;
+  border:0;background:transparent;overflow:visible;
+}
+.ludo-overlay:has(.ludo-board) .ludo-roster--match .ludo-section-title,
+.ludo-overlay:has(.ludo-board) .ludo-roster--match .tag-player-copy,
+.ludo-overlay:has(.ludo-board) .ludo-roster--match .tag-host-mark{display:none!important}
+.ludo-overlay:has(.ludo-board) .ludo-roster--match .ludo-player-row{
+  display:grid;place-items:center;flex:0 0 18px;width:18px;height:18px;
+  min-height:18px;padding:0;margin:0;border:0;border-radius:50%;
+  background:transparent;box-shadow:none;
+}
+.ludo-overlay:has(.ludo-board) .ludo-roster--match .ludo-player-swatch{
+  width:16px!important;height:16px!important;min-width:16px;min-height:16px;
+  flex:0 0 16px;border:2px solid rgba(255,255,255,.85);
+}
+.ludo-overlay:has(.ludo-board) .ludo-board{
+  grid-area:board;justify-self:center;align-self:center;
+  width:min(100%,calc(100dvh - 135px),calc(100vw - 30px));
+  max-width:min(100%,calc(100dvh - 135px),calc(100vw - 30px));
+  max-height:100%;height:auto;aspect-ratio:1/1;margin:0;
+}
+.ludo-overlay:has(.ludo-board) .ludo-controls{
+  grid-area:controls;position:relative;display:flex;flex-direction:row;
+  align-items:center;justify-content:center;gap:7px;flex-wrap:nowrap;
+  width:100%;max-width:100%;min-width:0;margin:0;
+}
+.ludo-overlay:has(.ludo-board) .ludo-dice-card{
+  display:flex;flex-direction:row;align-items:center;gap:5px;
+  padding:3px 6px;border:0;background:transparent;box-shadow:none;
+}
+.ludo-overlay:has(.ludo-board) .ludo-dice-label{font-size:8px}
+.ludo-overlay:has(.ludo-board) .ludo-dice-value{width:27px;height:27px;font-size:15px}
+.ludo-overlay:has(.ludo-board) .ludo-roll,
+.ludo-overlay:has(.ludo-board) .ludo-token-toggle{
+  min-height:29px;padding:5px 9px;border-radius:9px;font-size:10px;white-space:nowrap;
+}
+.ludo-overlay:has(.ludo-board) .ludo-token-toggle{min-width:58px}
+.ludo-overlay:has(.ludo-board) .ludo-token-panel{
+  position:absolute;z-index:35;right:0;bottom:calc(100% + 7px);
+  width:min(390px,calc(100vw - 24px));max-height:38dvh;overflow:auto;
+  padding:9px;border:1px solid var(--border,rgba(255,255,255,.18));
+  border-radius:12px;background:var(--panel-strong,#252332);
+  box-shadow:0 12px 34px #0008;
+}
+.ludo-overlay:has(.ludo-board) .ludo-token-panel[hidden]{display:none!important}
+.ludo-overlay:has(.ludo-board) .ludo-token-panel>strong{display:block;margin-bottom:6px;font-size:10px}
+.ludo-overlay:has(.ludo-board) .ludo-token-buttons{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+.ludo-overlay:has(.ludo-board) .ludo-token-button{min-height:28px;padding:4px;font-size:8px}
+.ludo-overlay:has(.ludo-board) .ludo-message{
+  position:absolute;left:50%;bottom:calc(100% + 7px);transform:translateX(-50%);
+  width:max-content;max-width:min(80vw,420px);margin:0;padding:5px 8px;
+  border-radius:8px;font-size:9px;pointer-events:none;
+}
+.ludo-overlay:has(.ludo-board) .ludo-end-actions{
+  grid-area:end;justify-self:end;align-self:center;width:100%;margin:0;padding:0;border:0;
+}
+.ludo-overlay:has(.ludo-board) .ludo-end-actions button{min-width:0;min-height:26px;padding:4px 8px;font-size:9px}
+.ludo-overlay:has(.ludo-board) .game-chat-dock{top:0;right:0;left:auto}
+.ludo-overlay:has(.ludo-board) .game-chat-toggle{min-height:28px;padding:5px 8px;font-size:9px}
+.ludo-overlay:has(.ludo-board) .game-chat-panel{top:34px;right:0;left:auto}
+@media(max-width:700px){
+  .ludo-overlay:has(.ludo-board)>.ludo-modal{
+    padding:calc(5px + env(safe-area-inset-top)) max(5px,env(safe-area-inset-right)) calc(5px + env(safe-area-inset-bottom)) max(5px,env(safe-area-inset-left))!important;
+  }
+  .ludo-overlay:has(.ludo-board) #ludo-content{
+    grid-template-rows:auto auto minmax(0,1fr) auto auto;gap:3px;
+  }
+  .ludo-overlay:has(.ludo-board) .ludo-game-top{padding:0 112px 0 36px;min-height:22px}
+  .ludo-overlay:has(.ludo-board) .ludo-game-heading .ludo-title{font-size:14px}
+  .ludo-overlay:has(.ludo-board) .ludo-player-count{font-size:8px}
+  .ludo-overlay:has(.ludo-board) .ludo-roster--match{height:18px;gap:5px}
+  .ludo-overlay:has(.ludo-board) .ludo-roster--match .ludo-player-row{width:15px;height:15px;flex-basis:15px}
+  .ludo-overlay:has(.ludo-board) .ludo-roster--match .ludo-player-swatch{width:14px!important;height:14px!important;min-width:14px;min-height:14px;flex-basis:14px}
+  .ludo-overlay:has(.ludo-board) .ludo-board{
+    width:min(100%,calc(100vw - 12px),calc(100dvh - 115px));
+    max-width:min(100%,calc(100vw - 12px),calc(100dvh - 115px));
+  }
+  .ludo-overlay:has(.ludo-board) .ludo-controls{gap:5px}
+  .ludo-overlay:has(.ludo-board) .ludo-dice-card{gap:3px;padding:2px}
+  .ludo-overlay:has(.ludo-board) .ludo-dice-value{width:25px;height:25px;font-size:14px}
+  .ludo-overlay:has(.ludo-board) .ludo-roll,
+  .ludo-overlay:has(.ludo-board) .ludo-token-toggle{min-height:26px;padding:4px 7px;font-size:9px}
+  .ludo-overlay:has(.ludo-board) .ludo-token-toggle{min-width:50px}
+  .ludo-overlay:has(.ludo-board) .ludo-token-panel{width:min(340px,calc(100vw - 18px));max-height:34dvh;padding:7px}
+  .ludo-overlay:has(.ludo-board) .ludo-token-buttons{grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}
+  .ludo-overlay:has(.ludo-board) .ludo-token-button{min-height:25px;font-size:8px}
+  .ludo-overlay:has(.ludo-board) .ludo-end-actions button{min-height:23px;padding:3px 7px;font-size:8px}
+  .ludo-overlay:has(.ludo-board) .game-chat-toggle{min-height:25px;padding:4px 6px;font-size:8px}
+}
+@media(max-height:560px) and (min-width:701px){
+  .ludo-overlay:has(.ludo-board) .ludo-board{width:min(100%,calc(100dvh - 105px),calc(100vw - 30px));max-width:min(100%,calc(100dvh - 105px),calc(100vw - 30px))}
+}
