@@ -205,3 +205,9 @@
 @media(max-width:520px){
   .uno-pass-button{flex:1}
 }
+
+/* Persistent UNO game and invitation list. */
+.uno-lobby-list{margin-bottom:16px}
+.uno-lobby-card .uno-lobby-info small{line-height:1.45}
+.uno-lobby-card button{flex:0 0 auto;white-space:nowrap}
+@media(max-width:520px){.uno-lobby-card{align-items:flex-start;flex-direction:column}.uno-lobby-card button{width:100%}}
