@@ -261,7 +261,7 @@
     } else {
       renderArena(root);
       if(activeLobby.status==="completed"){
-        const result=activeLobby.mode==="team_tag"?(activeLobby.winning_team?activeLobby.winning_team+" team wins!":"The round ended in a draw."):(activeLobby.winner_user_id?name(activeLobby.winner_user_id)+" wins!":"The round ended in a draw.");
+        const result=activeLobby.mode==="team_tag"?(activeLobby.winning_team?(activeLobby.winning_team==="taggers"?"Taggers":"Runners")+" team wins!":"The round ended in a draw."):(activeLobby.winner_user_id?name(activeLobby.winner_user_id)+" wins!":"The round ended in a draw.");
         root.append(el("p","tag-round-result",result));
         if(activeLobby.created_by===uid())root.append(btn("Return to lobby · Set next round","primary tag-end",async()=>{const r=await ctx.db.rpc("gather_tag_return_lobby",{p_lobby_id:activeLobbyId});if(r.error){toast(r.error.message);return;}await refresh();}));
       }else if(activeLobby.created_by===uid()&&activeLobby.status==="active"){
