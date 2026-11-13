@@ -1933,9 +1933,9 @@ function renderGameNotificationCards(list){
     const decline=el("button","outline","Decline");decline.type="button";decline.addEventListener("click",async()=>{decline.disabled=true;await window.GatherGames?.respondToInvitation?.(game.id,false);renderNotifications();});
     actions.append(view,accept,decline);card.append(actions);list.append(card);
   });
-  if(unoInvites.length||invitations.length||rematchOffers.size)list.append(el("h3","notification-section-heading","Invitations"));
   const rematchOffers=new Map();
   S.notifications.filter(item=>item.kind==="uno_rematch"&&!item.read_at).forEach(item=>{if(item.body)rematchOffers.set(item.body,item);});
+  if(unoInvites.length||invitations.length||rematchOffers.size)list.append(el("h3","notification-section-heading","Invitations"));
   rematchOffers.forEach((item,offerId)=>{
     const card=el("article","notification-center-item notification-game-item unread");
     const icon=el("span","notification-center-icon","🃏");
