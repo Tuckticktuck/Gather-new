@@ -3718,3 +3718,9 @@ html[data-theme="light"] .offline-status{color:#59421d;background:#fff4d8;border
 }
 
 #workspace-switcher[hidden]{display:none!important}
+
+
+/* Matching controller glyph for the Messages / Games workspace switcher. */
+.workspace-switch-tab .workspace-game-icon{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;color:var(--accent)}
+.workspace-switch-tab .workspace-game-icon svg{display:block;width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.workspace-switch-tab.active .workspace-game-icon{color:var(--accent-text)}
