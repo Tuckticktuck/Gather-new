@@ -1196,7 +1196,7 @@ async function loadChats(){
 }
 async function loadRequests(){
   if(!S.user)return false;
-  const r=await db.from("conversation_requests").select("id,sender_id,recipient_id,status,created_at").or("sender_id.eq."+S.user.id+",recipient_id.eq."+S.user.id).order("created_at",{ascending:false}).limit(60);
+  const r=await db.from("conversation_requests").select("id,sender_id,recipient_id,status,created_at,responded_at").or("sender_id.eq."+S.user.id+",recipient_id.eq."+S.user.id).order("created_at",{ascending:false}).limit(60);
   if(r.error){S.loadError="Chat requests could not be loaded: "+r.error.message;toast(S.loadError);return false;}
   S.requests=r.data||[];
   const ids=[...new Set(S.requests.flatMap(x=>[x.sender_id,x.recipient_id]).filter(id=>id!==S.user.id))];
