@@ -824,3 +824,59 @@
 .game-people-names small{font-size:11px;color:var(--muted,#aaa)}
 .tag-people-picker,.uno-people-picker,.ludo-people-picker{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .tag-people-picker>small,.uno-people-picker>small,.ludo-people-picker>small{flex-basis:100%}
+
+
+/* Stable, contained layout for the shared game-invite picker */
+.game-people-overlay{
+  position:fixed!important;inset:0!important;z-index:10050!important;
+  display:flex;align-items:center;justify-content:center;
+  box-sizing:border-box;width:100%;height:100%;padding:16px;
+  overflow-y:auto;overscroll-behavior:contain;
+  background:rgba(0,0,0,.68);
+}
+.game-people-overlay[hidden]{display:none!important}
+.game-people-modal{
+  position:relative;box-sizing:border-box!important;
+  display:flex!important;flex-direction:column;align-items:stretch;
+  gap:14px;width:min(520px,100%)!important;min-width:0!important;
+  max-width:520px!important;max-height:min( min(760px, calc(100dvh - 32px)), 92vh)!important;
+  height:auto;margin:0!important;padding:clamp(16px,3vw,24px)!important;
+  overflow:hidden;border-radius:20px;
+}
+.game-people-modal *{box-sizing:border-box;min-width:0}
+.game-people-head{width:100%;flex:0 0 auto;align-items:center}
+.game-people-head>div{flex:1;min-width:0}
+.game-people-head h2{font-size:clamp(20px,4vw,25px);line-height:1.2;overflow-wrap:anywhere}
+.game-people-head .muted{line-height:1.4}
+.game-people-done{min-height:40px;padding:9px 16px;white-space:nowrap}
+.game-people-search{display:block;flex:0 0 auto;width:100%;margin:0}
+.game-people-search input{display:block;width:100%;max-width:100%;min-height:44px;margin:0}
+.game-people-count{flex:0 0 auto;min-height:16px}
+.game-people-list{
+  display:flex!important;flex:1 1 auto;flex-direction:column;align-content:stretch;
+  width:100%;min-height:0;max-height:none;height:auto;
+  gap:8px;padding:2px 4px 4px 0;margin:0;
+  overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;
+}
+.game-people-option{
+  display:flex!important;flex:0 0 auto;width:100%;max-width:100%;
+  min-height:58px;min-width:0;padding:10px 12px!important;
+  gap:11px!important;overflow:hidden;
+}
+.game-people-option input{flex:0 0 18px;width:18px;height:18px;margin:0}
+.game-people-avatar{width:36px;height:36px;flex:0 0 36px}
+.game-people-names{flex:1 1 auto;min-width:0;overflow:hidden}
+.game-people-names strong,.game-people-names small{
+  display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+@media(max-width:600px){
+  .game-people-overlay{align-items:center;padding:12px}
+  .game-people-modal{width:100%!important;max-width:100%!important;max-height:calc(100dvh - 24px)!important;padding:16px!important;border-radius:18px}
+  .game-people-head{gap:8px}
+  .game-people-head .eyebrow{font-size:10px}
+  .game-people-done{min-height:38px;padding:8px 13px}
+}
+@media(max-height:560px){
+  .game-people-overlay{align-items:flex-start}
+  .game-people-modal{max-height:calc(100dvh - 24px)!important}
+}
