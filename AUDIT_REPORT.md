@@ -78,4 +78,8 @@ A malicious player could potentially submit a forged board state or an incorrect
 
 ## Deployment
 
-The CI build and static validation completed successfully for the audited source. GitHub Pages publishing experienced an artifact-metadata failure on a workflow retry (the retry saw duplicate `github-pages` artifacts). This was a GitHub Actions/Pages artifact lookup issue after the build and upload steps, not a source-validation failure. The deployment status should be checked against the newest clean workflow run before treating the latest repository commit as published.
+The CI build, TypeScript compilation, JavaScript syntax checks, static validation, artifact upload, and GitHub Pages deployment all completed successfully for commit `6350550170dc6ee8542a9abd2c9122a5606b4220`.
+
+An earlier deployment retry encountered a GitHub Actions artifact-metadata issue (zero or duplicate `github-pages` artifacts). A fresh workflow run resolved that issue.
+
+Verified deployment: [GitHub Actions run 43521972569](https://github.com/Tuckticktuck/Gather-new/actions/runs/43521972569).
