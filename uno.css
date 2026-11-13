@@ -217,3 +217,101 @@
 .uno-card-center.uno-action-icon{font-family:Arial,sans-serif;font-size:39px;font-weight:900;line-height:1;letter-spacing:-.06em;transform:none}
 .uno-card-corner.uno-action-icon{font-family:Arial,sans-serif;font-size:17px;font-weight:900;line-height:1;letter-spacing:-.04em}
 @media(max-width:520px){.uno-card-center.uno-action-icon{font-size:34px}.uno-card-corner.uno-action-icon{font-size:15px}}
+
+
+/* Refined UNO card face: layered frame, richer color, and clearer hierarchy. */
+.uno-card{
+  isolation:isolate;
+  overflow:hidden;
+  width:82px;
+  height:122px;
+  padding:9px 8px;
+  border:1px solid rgba(255,255,255,.92);
+  border-radius:15px;
+  color:#fff;
+  background-color:#2772c8;
+  box-shadow:0 5px 10px #0003,0 12px 22px #0002,inset 0 0 0 4px rgba(255,255,255,.16),inset 0 0 0 5px rgba(12,18,24,.12);
+}
+.uno-card::before{
+  content:"";
+  position:absolute;
+  z-index:-1;
+  inset:5px;
+  border:1px solid rgba(255,255,255,.23);
+  border-radius:11px;
+  background:linear-gradient(145deg,rgba(255,255,255,.13),transparent 42%,rgba(0,0,0,.10));
+  pointer-events:none;
+}
+.uno-card::after{
+  content:"";
+  position:absolute;
+  z-index:-1;
+  width:130%;
+  height:42%;
+  top:-19%;
+  left:-15%;
+  border-radius:50%;
+  background:linear-gradient(180deg,rgba(255,255,255,.15),transparent);
+  transform:rotate(-12deg);
+  pointer-events:none;
+}
+.uno-card.red{background:linear-gradient(145deg,#ee535b 0%,#c92535 100%)}
+.uno-card.blue{background:linear-gradient(145deg,#438ce0 0%,#2056a4 100%)}
+.uno-card.green{background:linear-gradient(145deg,#36b875 0%,#147247 100%)}
+.uno-card.yellow{background:linear-gradient(145deg,#ffe16a 0%,#d69b13 100%);color:#29200a}
+.uno-card.wild{background:conic-gradient(from 35deg,#e83d48 0 25%,#2776d2 0 50%,#25a866 0 75%,#edc43a 0)}
+.uno-card-corner{
+  position:relative;
+  z-index:1;
+  align-self:flex-start;
+  font-size:14px;
+  line-height:1;
+  font-weight:900;
+  letter-spacing:-.04em;
+  text-shadow:0 1px 2px #0003;
+}
+.uno-card-center{
+  position:relative;
+  z-index:1;
+  display:grid;
+  place-items:center;
+  width:57px;
+  height:70px;
+  border:2px solid rgba(255,255,255,.86);
+  border-radius:50%;
+  background:linear-gradient(145deg,rgba(255,255,255,.25),rgba(255,255,255,.08));
+  box-shadow:inset 0 1px 4px rgba(255,255,255,.16),0 2px 5px rgba(0,0,0,.12);
+  font-size:27px;
+  font-weight:900;
+  letter-spacing:-.045em;
+  text-shadow:0 2px 3px #0003;
+  transform:rotate(-12deg);
+}
+.uno-card.yellow .uno-card-center{border-color:rgba(42,31,6,.62);background:rgba(255,255,255,.22);text-shadow:none}
+.uno-card-color{
+  position:relative;
+  z-index:1;
+  align-self:flex-end;
+  font-size:8px;
+  line-height:1;
+  font-weight:900;
+  letter-spacing:.12em;
+  opacity:.9;
+}
+.uno-card-center.uno-action-icon{font-family:Arial,sans-serif;font-size:38px;letter-spacing:-.07em}
+.uno-card-corner.uno-action-icon{font-family:Arial,sans-serif;font-size:18px}
+.uno-card-small{width:82px;height:122px}
+.uno-hand-strip .uno-card:hover{transform:translateY(-9px) scale(1.045);box-shadow:0 16px 25px #0005,0 0 0 1px rgba(255,255,255,.18)}
+.uno-card:active{transform:translateY(-2px) scale(.985)}
+.uno-card-unplayable{filter:saturate(.55) brightness(.88);opacity:.56}
+@media(max-width:520px){
+  .uno-card{width:70px;height:106px;padding:8px 7px;border-radius:13px}
+  .uno-card::before{inset:4px;border-radius:9px}
+  .uno-card-center{width:49px;height:60px;font-size:23px}
+  .uno-card-center.uno-action-icon{font-size:33px}
+  .uno-card-corner{font-size:12px}
+  .uno-card-corner.uno-action-icon{font-size:16px}
+  .uno-card-color{font-size:7px}
+  .uno-card-small{width:70px;height:106px}
+}
+@media(prefers-reduced-motion:reduce){.uno-card,.uno-hand-strip .uno-card:hover{transition:none!important}}
