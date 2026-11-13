@@ -1,5 +1,4 @@
 -- Game-only lobby access and duplicate creation safeguards.
--- Applied to the Private Chat Supabase project.
 
 CREATE OR REPLACE FUNCTION private.gather_multiplayer_create(p_conversation_id uuid, p_game_type text, p_join_mode text, p_invited_user_ids uuid[] DEFAULT '{}'::uuid[], p_settings jsonb DEFAULT '{}'::jsonb, p_initial_state jsonb DEFAULT '{}'::jsonb, p_creator_color text DEFAULT '#38BDF8'::text)
  RETURNS gather_multiplayer_games
@@ -179,7 +178,7 @@ begin
   select * into v_player from public.gather_multiplayer_players where game_id=p_game_id and user_id=v_uid;
   if v_game.conversation_id is not null then
     if not private.is_conversation_member(v_game.conversation_id) or not private.can_send_message(v_game.conversation_id) then raise exception 'You cannot join this conversation game.'; end if;
-  elsif v_player.status not in ('invited','joined','left') then
+  elsif coalesce(v_player.status,'') not in ('invited','joined','left') then
     raise exception 'You must have a game invitation to join this lobby.';
   end if;
   if v_player.status='joined' then return v_player; end if;
@@ -358,7 +357,7 @@ begin
  select * into p from public.gather_multiplayer_players where game_id=p_game_id and user_id=auth.uid();
  if g.conversation_id is not null then
    if not private.is_conversation_member(g.conversation_id) or not private.can_send_message(g.conversation_id) then raise exception 'You cannot join this conversation game.'; end if;
- elsif p.status not in ('invited','joined','left','declined') then
+ elsif coalesce(p.status,'') not in ('invited','joined','left','declined') then
    raise exception 'You must have a game invitation to join this lobby.';
  end if;
  if exists(select 1 from public.gather_multiplayer_players where game_id=p_game_id and user_id=auth.uid() and status='joined') then
