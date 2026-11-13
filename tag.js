@@ -103,6 +103,12 @@
   }
   function openPanel(){panelOpen=true;$("tag-overlay").hidden=false;renderPanel();void refresh();}
   async function openInvitation(id){if(!ctx||!uid())return;mount();panelOpen=true;$("tag-overlay").hidden=false;const r=await ctx.db.from("gather_tag_lobbies").select("id,conversation_id,created_by,status,mode,join_mode,max_players,created_at,updated_at").eq("id",id).maybeSingle();if(r.error||!r.data){toast(r.error?.message||"That Tag invitation is no longer available.");return;}activeLobbyId=id;activeLobby=r.data;await joinLobby(r.data);}
+  async function openGame(id){
+    if(!ctx||!uid())return;mount();panelOpen=true;$("tag-overlay").hidden=false;
+    const r=await ctx.db.from("gather_tag_lobbies").select("id,conversation_id,created_by,status,mode,join_mode,max_players,created_at,updated_at").eq("id",id).eq("status","active").maybeSingle();
+    if(r.error||!r.data){toast(r.error?.message||"That Tag match is no longer active.");return;}
+    activeLobbyId=id;activeLobby=r.data;await loadPlayers(id);renderPanel();
+  }
   function closePanel(){
     panelOpen=false;keyboardKeys.clear();joystick={x:0,y:0};stopArenaEngine();
     $("tag-overlay").hidden=true;activeLobbyId=null;activeLobby=null;players=[];
@@ -354,5 +360,5 @@
     ctx=null;panelOpen=false;keyboardKeys.clear();joystick={x:0,y:0};activeLobbyId=null;activeLobby=null;players=[];lobbies=[];
     const overlay=$("tag-overlay");if(overlay)overlay.hidden=true;
   }
-  window.GatherTag={init,shutdown,open:openPanel,openInvitation,refresh};
+  window.GatherTag={init,shutdown,open:openPanel,openInvitation,openGame,refresh};
 })();
