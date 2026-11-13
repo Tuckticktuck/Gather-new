@@ -1659,3 +1659,176 @@
   }
   .ludo-overlay:has(.ludo-board) .ludo-base .ludo-token-dot {font-size:10px}
 }
+
+
+/* Ludo token visual correction: circular home tokens and higher-contrast track pieces. */
+.ludo-overlay:has(.ludo-board) .ludo-base-tokens {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  align-items:center;
+  justify-items:center;
+  gap:clamp(8px,1vw,14px);
+  width:100%;
+}
+.ludo-overlay:has(.ludo-board) .ludo-base-token {
+  display:grid;
+  place-items:center;
+  box-sizing:border-box;
+  width:min(100%,clamp(52px,6.3vw,84px));
+  min-width:0;
+  min-height:0;
+  height:auto;
+  aspect-ratio:1/1;
+  justify-self:center;
+  padding:5px;
+  border:1px solid color-mix(in srgb,currentColor 46%,#ffffff2a);
+  border-radius:50%;
+  background:
+    radial-gradient(circle at 28% 20%,#ffffff15,transparent 55%),
+    color-mix(in srgb,var(--panel) 80%,currentColor 20%);
+  box-shadow:0 4px 12px #0004,inset 0 1px 2px #ffffff20;
+}
+.ludo-overlay:has(.ludo-board) .ludo-base .ludo-token-dot {
+  display:grid;
+  place-items:center;
+  box-sizing:border-box;
+  width:100%;
+  min-width:0;
+  max-width:none;
+  height:100%;
+  min-height:0;
+  aspect-ratio:1/1;
+  align-self:center;
+  justify-self:center;
+  border:2px solid #ffffffd9;
+  border-radius:50%!important;
+  font-size:clamp(12px,1.3vw,17px);
+  line-height:1;
+  font-weight:950;
+  letter-spacing:-.02em;
+  box-shadow:0 3px 8px #0006,inset 0 2px 3px #ffffff55,inset 0 -3px 5px #0002;
+}
+
+/* Track pieces use a predictable 2-by-2 layout instead of flex wrapping. */
+.ludo-overlay:has(.ludo-board) .ludo-track-cell .ludo-occupants,
+.ludo-overlay:has(.ludo-board) .ludo-home-lane .ludo-occupants {
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  grid-auto-rows:minmax(0,1fr);
+  place-items:center;
+  box-sizing:border-box;
+  width:100%;
+  height:100%;
+  min-width:0;
+  min-height:0;
+  max-width:100%;
+  max-height:100%;
+  padding:1px;
+  gap:0;
+  overflow:hidden;
+}
+.ludo-overlay:has(.ludo-board) .ludo-track-cell .ludo-token-dot,
+.ludo-overlay:has(.ludo-board) .ludo-home-lane .ludo-token-dot {
+  display:grid;
+  place-items:center;
+  box-sizing:border-box;
+  width:min(88%,30px);
+  min-width:0;
+  max-width:30px;
+  height:auto;
+  aspect-ratio:1/1;
+  border:2px solid #ffffffed;
+  border-radius:50%!important;
+  font-size:clamp(7px,.82vw,11px);
+  line-height:1;
+  font-weight:950;
+  text-shadow:0 1px 2px #0008;
+  box-shadow:
+    0 2px 5px #0009,
+    0 0 0 1px #10151d99,
+    inset 0 2px 3px #ffffff85,
+    inset 0 -3px 5px #0003;
+}
+.ludo-overlay:has(.ludo-board) .ludo-track-cell .ludo-token-dot:only-child,
+.ludo-overlay:has(.ludo-board) .ludo-home-lane .ludo-token-dot:only-child {
+  grid-column:1/-1;
+  width:min(58%,34px);
+  max-width:34px;
+  font-size:clamp(8px,.92vw,12px);
+}
+.ludo-overlay:has(.ludo-board) .ludo-center .ludo-occupants {
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  grid-auto-rows:minmax(0,1fr);
+  place-items:center;
+  width:78%;
+  height:auto;
+  max-width:100%;
+  padding:2px;
+  gap:2px;
+}
+.ludo-overlay:has(.ludo-board) .ludo-center .ludo-token-dot {
+  width:min(82%,32px);
+  max-width:32px;
+  height:auto;
+  aspect-ratio:1/1;
+  border:2px solid #ffffffed;
+  border-radius:50%!important;
+  font-size:clamp(8px,.9vw,12px);
+  font-weight:950;
+  box-shadow:0 2px 7px #0008,inset 0 2px 3px #ffffff80;
+}
+
+/* Rich, readable token finishes by player color. */
+.ludo-overlay:has(.ludo-board) .ludo-token-dot.red {
+  color:#fff;
+  background:radial-gradient(circle at 30% 22%,#ffffff70,transparent 36%),linear-gradient(145deg,#ff8a92 0%,#e74d5c 58%,#b82e40 100%)!important;
+}
+.ludo-overlay:has(.ludo-board) .ludo-token-dot.green {
+  color:#fff;
+  background:radial-gradient(circle at 30% 22%,#ffffff70,transparent 36%),linear-gradient(145deg,#8aefbb 0%,#27ad70 58%,#14754b 100%)!important;
+}
+.ludo-overlay:has(.ludo-board) .ludo-token-dot.yellow {
+  color:#332407;
+  text-shadow:0 1px 0 #ffffff75;
+  background:radial-gradient(circle at 30% 22%,#ffffffa8,transparent 38%),linear-gradient(145deg,#ffe9a4 0%,#e9b849 58%,#b67a1e 100%)!important;
+}
+.ludo-overlay:has(.ludo-board) .ludo-token-dot.blue {
+  color:#fff;
+  background:radial-gradient(circle at 30% 22%,#ffffff75,transparent 36%),linear-gradient(145deg,#a4caff 0%,#4d89e5 58%,#2853a5 100%)!important;
+}
+@media(max-width:700px) {
+  .ludo-overlay:has(.ludo-board) .ludo-base-token {
+    width:min(100%,clamp(42px,14vw,68px));
+    padding:4px;
+  }
+  .ludo-overlay:has(.ludo-board) .ludo-base .ludo-token-dot {
+    font-size:clamp(11px,3vw,15px);
+  }
+  .ludo-overlay:has(.ludo-board) .ludo-track-cell .ludo-token-dot,
+  .ludo-overlay:has(.ludo-board) .ludo-home-lane .ludo-token-dot {
+    width:min(88%,22px);
+    max-width:22px;
+    border-width:1.5px;
+    font-size:clamp(6px,1.9vw,9px);
+  }
+  .ludo-overlay:has(.ludo-board) .ludo-track-cell .ludo-token-dot:only-child,
+  .ludo-overlay:has(.ludo-board) .ludo-home-lane .ludo-token-dot:only-child {
+    width:min(58%,25px);
+    max-width:25px;
+    font-size:clamp(7px,2.1vw,10px);
+  }
+  .ludo-overlay:has(.ludo-board) .ludo-center .ludo-token-dot {
+    width:min(82%,24px);
+    max-width:24px;
+  }
+}
+@media(max-width:380px) {
+  .ludo-overlay:has(.ludo-board) .ludo-base-token {
+    width:min(100%,48px);
+  }
+  .ludo-overlay:has(.ludo-board) .ludo-track-cell .ludo-token-dot,
+  .ludo-overlay:has(.ludo-board) .ludo-home-lane .ludo-token-dot {max-width:17px}
+  .ludo-overlay:has(.ludo-board) .ludo-track-cell .ludo-token-dot:only-child,
+  .ludo-overlay:has(.ludo-board) .ludo-home-lane .ludo-token-dot:only-child {max-width:20px}
+}
