@@ -136,3 +136,29 @@
 .ludo-join-panel select{min-height:46px;width:100%;padding:0 12px;border:1px solid #ffffff20;border-radius:11px;color:#f3f6fb;background:#ffffff09}
 .ludo-modal .tag-actions{margin-top:16px;padding-top:16px}
 @media(max-width:600px){.ludo-modal.tag-modal{width:calc(100vw - 12px);max-height:calc(100dvh - 24px);padding:24px 18px 20px;border-radius:20px}.ludo-modal.tag-modal .close{top:15px;right:15px}.ludo-form.tag-form{gap:14px}.ludo-form.tag-form .ludo-field select{min-height:46px;font-size:13px}}
+
+
+/* Waiting-room layout shared with the Tag Arena reference design. */
+.uno-modal.tag-modal,.ludo-modal.tag-modal{width:min(620px,calc(100vw - 28px));max-width:620px;max-height:min(88vh,850px);padding:25px;border-radius:28px}
+.uno-modal .uno-game-top,.ludo-modal .ludo-game-top{display:block;margin:0 0 24px}
+.uno-modal .uno-game-heading,.ludo-modal .ludo-game-heading{display:grid;gap:9px}
+.uno-modal .uno-game-heading .eyebrow,.ludo-modal .ludo-game-heading .eyebrow{display:inline-flex;width:max-content;max-width:100%;align-items:center;padding:9px 15px;border:1px solid color-mix(in srgb,var(--accent) 42%,#ffffff20);border-radius:999px;background:color-mix(in srgb,var(--accent) 10%,transparent);color:var(--accent-text);font-size:10px;font-weight:850;letter-spacing:.18em}
+.uno-modal .uno-game-heading .uno-title,.ludo-modal .ludo-game-heading .ludo-title{margin:10px 0 0;font-size:clamp(27px,5vw,38px);letter-spacing:-.045em}
+.uno-modal .uno-game-heading .uno-intro,.ludo-modal .ludo-game-heading .ludo-intro{margin:0;color:#aeb8c7;font-size:14px;line-height:1.5}
+.uno-modal .uno-game-count,.ludo-modal .ludo-player-count{display:none}
+.uno-modal .uno-lobby-feature,.ludo-modal .ludo-lobby-feature{display:flex;align-items:center;gap:18px;min-height:96px;margin:26px 0 30px;padding:18px 20px;border:1px solid #ffffff18;border-radius:20px;background:#ffffff05}
+.uno-modal .uno-lobby-feature strong,.ludo-modal .ludo-lobby-feature strong{font-size:18px;font-weight:800;white-space:nowrap}
+.uno-modal .uno-lobby-feature>span:last-child,.ludo-modal .ludo-lobby-feature>span:last-child{flex:1;color:#aeb8c7;font-size:13px;line-height:1.5}
+.uno-modal .uno-roster,.ludo-modal .ludo-roster{margin:0 0 14px;padding-bottom:12px;border-bottom:1px solid #ffffff18}
+.uno-modal .uno-roster .tag-section-title,.ludo-modal .ludo-roster .tag-section-title{margin:0 0 14px;font-size:13px;font-weight:850;letter-spacing:.13em;text-transform:uppercase;color:#dce4ef}
+.uno-modal .uno-player-row,.ludo-modal .ludo-player-row{min-height:76px;padding:13px 15px;border:1px solid #ffffff18;border-radius:17px;background:#ffffff04}
+.uno-modal .uno-player-row .tag-player-copy strong,.ludo-modal .ludo-player-row .tag-player-copy strong{font-size:15px}
+.uno-modal .uno-player-row .tag-player-copy small,.ludo-modal .ludo-player-row .tag-player-copy small{font-size:13px}
+.uno-modal .tag-lobby-actions,.ludo-modal .tag-lobby-actions{display:grid;grid-template-columns:1fr;gap:10px;margin:20px 0 8px;padding:0;border:0}
+.uno-modal .tag-lobby-actions button,.ludo-modal .tag-lobby-actions button{width:100%;min-height:70px;border-radius:18px;font-size:15px;font-weight:800}
+.uno-modal .tag-lobby-actions button.primary,.ludo-modal .tag-lobby-actions button.primary{background:linear-gradient(120deg,color-mix(in srgb,var(--accent) 78%,#ffffff 4%),color-mix(in srgb,var(--accent) 62%,#000000));color:#102a27}
+.uno-modal .tag-lobby-actions button.secondary-action,.ludo-modal .tag-lobby-actions button.secondary-action{background:#ffffff08;border:1px solid #ffffff28;color:#dce4ef}
+.uno-modal .tag-lobby-actions button.outline,.ludo-modal .tag-lobby-actions button.outline{background:color-mix(in srgb,var(--accent) 14%,transparent);border:1px solid color-mix(in srgb,var(--accent) 40%,#ffffff18);color:var(--accent-text)}
+.uno-modal .tag-lobby-hint,.ludo-modal .tag-lobby-hint{display:block;margin:0 0 54px;padding:0;border:0;background:none;color:#aeb8c7;font-size:13px;line-height:1.65}
+.uno-modal .tag-back,.ludo-modal .tag-back{min-height:48px;margin:0;padding:0 17px;border-radius:13px;background:color-mix(in srgb,var(--accent) 14%,transparent);border:1px solid color-mix(in srgb,var(--accent) 38%,#ffffff18);color:var(--accent-text);font-size:13px}
+@media(max-width:600px){.uno-modal.tag-modal,.ludo-modal.tag-modal{width:calc(100vw - 20px);max-height:calc(100dvh - 24px);padding:22px 17px;border-radius:23px}.uno-modal .uno-lobby-feature,.ludo-modal .ludo-lobby-feature{gap:12px;margin:20px 0 24px;padding:14px}.uno-modal .uno-lobby-feature strong,.ludo-modal .ludo-lobby-feature strong{font-size:15px}.uno-modal .tag-lobby-actions button,.ludo-modal .tag-lobby-actions button{min-height:60px}.uno-modal .tag-lobby-hint,.ludo-modal .tag-lobby-hint{margin-bottom:38px}}
