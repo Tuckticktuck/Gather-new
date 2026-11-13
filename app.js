@@ -721,6 +721,7 @@ function showAuth() {
   window.GatherGames?.shutdown();
   window.GatherTag?.shutdown();
   window.GatherUno?.shutdown();
+  window.GatherLudo?.shutdown();
   saveActiveChatDraft();clearUnreadDividerState();
   closeTypingChannel();
   stopOnlinePresence();
@@ -1115,6 +1116,7 @@ async function signedIn(user,retry=false){
     window.GatherGames?.init({db,user:()=>S.user,chats:()=>S.chats,activeChatId:()=>S.active,profiles:()=>S.profiles,toast,onGamesUpdated:()=>{renderNotificationBadge();if(S.notificationView==="games"||S.notificationView==="all")renderNotifications();}});
     window.GatherTag?.init({db,user:()=>S.user,chats:()=>S.chats,profiles:()=>S.profiles,toast});
     window.GatherUno?.init({db,user:()=>S.user,chats:()=>S.chats,profiles:()=>S.profiles,toast});
+    window.GatherLudo?.init({db,user:()=>S.user,chats:()=>S.chats,profiles:()=>S.profiles,toast});
     subscribeMessages();
     await loadNotifications();subscribeNotifications();
     await loadAnnouncements();subscribeAnnouncements();
