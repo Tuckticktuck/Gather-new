@@ -880,3 +880,12 @@
   .game-people-overlay{align-items:flex-start}
   .game-people-modal{max-height:calc(100dvh - 24px)!important}
 }
+
+.game-people-done{
+  display:inline-grid!important;place-items:center;
+  width:42px;min-width:42px;height:42px;min-height:42px;
+  padding:0!important;border-radius:12px!important;
+  font-size:25px;line-height:1;font-weight:800;
+}
+.game-people-done span{display:block;transform:translateY(-1px)}
+.game-people-done:focus-visible{outline:3px solid var(--accent,#40826d);outline-offset:3px}
