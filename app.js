@@ -1835,7 +1835,6 @@ function notificationItemsForView(view=S.notificationView){
   }
   if(view==="games")return [];
   if(view==="messages")return items.filter(item=>item.kind==="message");
-  if(view==="other")return items.filter(item=>item.kind!=="announcement"&&item.kind!=="message");
   return items;
 }
 function notificationUnreadCount(){
@@ -1874,7 +1873,7 @@ function notificationDisplayItems(items){
   return display;
 }
 function setNotificationView(view){
-  if(!["all","admin","messages","games","other"].includes(view))return;
+  if(!["all","admin","messages","games"].includes(view))return;
   S.notificationView=view;
   renderNotifications();
 }
@@ -1966,7 +1965,6 @@ function renderNotifications(){
       all:"You're all caught up. New messages and requests will appear here.",
       admin:"There are no Gather Admin announcements in your notifications yet.",
       messages:"No recent message notifications. Messages in the conversation you're currently viewing stay out of this list.",
-      other:"There are no other updates right now.",
       games:"No live games or invitations right now. Your active matches and new invitations will appear here."
     };
     list.append(el("p","muted tiny",emptyText[S.notificationView]||emptyText.all));
