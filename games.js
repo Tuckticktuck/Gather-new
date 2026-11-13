@@ -457,7 +457,7 @@
       ctx.db.from("gather_multiplayer_players").select("game_id,user_id,status,joined_at,gather_multiplayer_games!inner(id,conversation_id,game_type,status,created_by,join_mode,settings,created_at,updated_at,state)").eq("user_id", userId()).eq("status", "invited").eq("gather_multiplayer_games.game_type", "ludo").eq("gather_multiplayer_games.status", "active"),
       ctx.db.from("gather_multiplayer_players").select("game_id,gather_multiplayer_games!inner(id,conversation_id,game_type,status,created_by,join_mode,settings,created_at,updated_at)").eq("user_id", userId()).eq("status", "joined").eq("gather_multiplayer_games.game_type", "uno").eq("gather_multiplayer_games.status", "active"),
       ctx.db.from("gather_multiplayer_players").select("game_id,gather_multiplayer_games!inner(id,conversation_id,game_type,status,created_by,join_mode,settings,created_at,updated_at,state)").eq("user_id", userId()).eq("status", "joined").eq("gather_multiplayer_games.game_type", "ludo").eq("gather_multiplayer_games.status", "active"),
-      ctx.db.from("gather_tag_players").select("lobby_id,gather_tag_lobbies!inner(id,conversation_id,created_by,status,mode,join_mode,max_players,created_at,updated_at)").eq("user_id", userId()).eq("status", "joined").eq("gather_tag_lobbies.status", "active")
+      ctx.db.from("gather_tag_players").select("lobby_id,gather_tag_lobbies!inner(id,conversation_id,created_by,status,mode,join_mode,max_players,created_at,updated_at)").eq("user_id", userId()).eq("status", "joined").in("gather_tag_lobbies.status", ["lobby", "active"])
     ]);
     externalInvitations = [];
     if (!unoInvites.error) (unoInvites.data || []).forEach(row => { const game=row.gather_multiplayer_games; if(game) externalInvitations.push({kind:"uno",id:game.id,conversation_id:game.conversation_id,created_by:game.created_by,created_at:game.created_at,join_mode:game.join_mode,settings:game.settings}); });
@@ -595,9 +595,9 @@
       identity.append(node("span","games-card-mark",kind==="uno"?"▦":kind==="ludo"?"◉":kind==="tag"?"●":"♟"));
       const other=kind==="classic"?playerNames(game):memberName(game.created_by);
       copy.append(node("strong","",title),node("small","muted",other+" · "+conversationName(game.conversation_id)));
-      identity.append(copy);top.append(identity,node("span","games-status-pill status-active","Live"));card.append(top);
+      identity.append(copy);top.append(identity,node("span","games-status-pill "+(kind==="tag"&&game.status==="lobby"?"status-pending":"status-active"),kind==="tag"&&game.status==="lobby"?"Waiting room":"Live"));card.append(top);
       const actions=node("div","games-card-actions");
-      actions.append(button("Open game","primary games-card-primary",()=>{
+      actions.append(button(kind==="tag"&&game.status==="lobby"?"Open lobby":"Open game","primary games-card-primary",()=>{
         if(kind==="classic")openGame(game);
         else if(kind==="uno")window.GatherUno?.openGame?.(game.id);
         else if(kind==="ludo")window.GatherLudo?.openGame?.(game.id);
