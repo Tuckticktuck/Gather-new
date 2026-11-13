@@ -223,6 +223,19 @@
     }) || null;
   }
 
+  async function verifyPartyLobbyRoster(table, foreignKey, gameId, expectedIds) {
+    const result = await ctx.db.from(table)
+      .select("user_id,status")
+      .eq(foreignKey, gameId)
+      .in("status", ["joined", "invited"]);
+    if (result.error) throw result.error;
+    const expected = [...new Set(expectedIds)].sort();
+    const actual = (result.data || []).map(row => row.user_id).sort();
+    if (actual.length !== expected.length || actual.some((id, index) => id !== expected[index])) {
+      throw new Error("A lobby of this type already exists with a different player group. Finish or close that lobby before starting Quick Play for this party.");
+    }
+  }
+
   function renderPartyPoll(card, party) {
     const poll = party.poll;
     if (!poll) return;
@@ -383,7 +396,10 @@
         });
         if (response.error) throw response.error;
         gameId = response.data?.id;
-        if (gameId) window.GatherUno?.openGame?.(gameId);
+        if (gameId) {
+          await verifyPartyLobbyRoster("gather_multiplayer_players", "game_id", gameId, [uid(), ...otherIds]);
+          window.GatherUno?.openGame?.(gameId);
+        }
       } else if (type === "ludo") {
         const existing = await ctx.db.from("gather_multiplayer_games")
           .select("id").eq("created_by", uid()).eq("game_type", "ludo").eq("status", "active")
@@ -399,7 +415,10 @@
         });
         if (response.error) throw response.error;
         gameId = response.data?.id;
-        if (gameId) window.GatherLudo?.openGame?.(gameId);
+        if (gameId) {
+          await verifyPartyLobbyRoster("gather_multiplayer_players", "game_id", gameId, [uid(), ...otherIds]);
+          window.GatherLudo?.openGame?.(gameId);
+        }
       } else if (type === "tag") {
         const existing = await ctx.db.from("gather_tag_lobbies")
           .select("id").eq("created_by", uid()).in("status", ["lobby", "active"])
@@ -416,7 +435,10 @@
         });
         if (response.error) throw response.error;
         gameId = response.data?.id;
-        if (gameId) window.GatherTag?.openGame?.(gameId);
+        if (gameId) {
+          await verifyPartyLobbyRoster("gather_tag_players", "lobby_id", gameId, [uid(), ...otherIds]);
+          window.GatherTag?.openGame?.(gameId);
+        }
       }
       if (!gameId) throw new Error("The game lobby was created but could not be opened. Refresh the Games tab and check your invitations.");
       toast("Quick Play started " + GAME_LABELS[type] + " for your party.");
