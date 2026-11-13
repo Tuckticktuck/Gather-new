@@ -210,6 +210,14 @@
     const me=players.find(p=>p.user_id===uid());
     if(!me){root.append(el("p","muted","You are not currently in this lobby."),btn("Back to Tag Arena","outline",()=>{activeLobbyId=null;activeLobby=null;renderPanel();}));return;}
     if(activeLobby.status==="cancelled"){root.append(el("p","tag-complete","The host closed this lobby."),btn("Back to Tag Arena","outline",()=>{activeLobbyId=null;activeLobby=null;renderPanel();}));return;}
+    if(activeLobby.status==="lobby"&&activeLobby.created_by===uid()){
+      const modeWrap=el("label","tag-mode-setting");
+      modeWrap.append(el("strong","","Game mode"));
+      const modeSelect=el("select","tag-mode-select");
+      [["classic","Classic"],["infection","Infection"],["team_tag","Team Tag"],["last_standing","Last Player Standing"]].forEach(([value,label])=>{const option=el("option","",label);option.value=value;option.selected=activeLobby.mode===value;modeSelect.append(option);});
+      modeSelect.addEventListener("change",async()=>{modeSelect.disabled=true;try{const r=await ctx.db.rpc("gather_tag_set_mode",{p_lobby_id:activeLobbyId,p_mode:modeSelect.value});if(r.error)throw r.error;activeLobby=r.data||{...activeLobby,mode:modeSelect.value};toast("Game mode updated.");renderPanel();}catch(error){toast(error?.message||"Could not change the game mode.");modeSelect.value=activeLobby.mode;modeSelect.disabled=false;}});
+      modeWrap.append(modeSelect,el("small","muted tiny","The host can change this before starting the next round."));root.append(modeWrap);
+    }
     const customization=el("div","tag-customize");
     customization.append(el("strong","","Your circle"));
     const color=el("input","");color.type="color";color.value=me.color;color.setAttribute("aria-label","Choose your circle color");color.disabled=activeLobby.status!=="lobby";
@@ -246,7 +254,7 @@
     } else {
       renderArena(root);
       if(activeLobby.created_by===uid()&&activeLobby.status==="active"){
-        root.append(btn("End match","secondary-action tag-end",async()=>{if(!confirm("End this Tag match for everyone?"))return;const r=await ctx.db.rpc("gather_tag_end",{p_lobby_id:activeLobbyId});if(r.error)toast(r.error.message);else await refresh();}));
+        root.append(btn("End match · Return to lobby","secondary-action tag-end",async()=>{if(!confirm("End this round and return everyone to the lobby?"))return;const r=await ctx.db.rpc("gather_tag_end",{p_lobby_id:activeLobbyId});if(r.error){toast(r.error.message);return;}toast("Match ended. You are back in the lobby.");await refresh();}));
       }
     }
     const back=btn("Back to Tag Arena","outline tag-back",()=>{activeLobbyId=null;activeLobby=null;players=[];renderPanel();});root.append(back);
