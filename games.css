@@ -787,7 +787,7 @@
 @media(max-width:560px){.tag-round-setting{padding:12px}.tag-round-clock{padding:9px 14px}.tag-round-result{font-size:15px}}
 
 /* Compact slide-out temporary chat for each multiplayer game */
-.game-chat-dock{position:relative;z-index:30;display:flex;justify-content:flex-start;align-items:flex-start;margin:0 0 12px;pointer-events:none}
+.game-chat-dock{position:fixed;top:max(82px,calc(env(safe-area-inset-top,0px) + 72px));left:max(14px,env(safe-area-inset-left,0px));z-index:9999;display:flex;justify-content:flex-start;align-items:flex-start;pointer-events:none}
 .game-chat-toggle{pointer-events:auto;display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border,rgba(255,255,255,.2));border-radius:12px;background:var(--panel-strong,rgba(35,31,48,.94));color:var(--text,#fff);padding:9px 13px;font:inherit;font-size:13px;font-weight:700;box-shadow:0 5px 18px rgba(0,0,0,.18);cursor:pointer}
 .game-chat-toggle.active{border-color:var(--accent,#65a58d)}
 .game-chat-panel{pointer-events:auto;position:absolute;top:44px;left:0;width:min(340px,calc(100vw - 36px));height:min(430px,62vh);display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--border,rgba(255,255,255,.2));border-radius:16px;background:var(--surface,#292536);box-shadow:0 16px 42px rgba(0,0,0,.35)}
@@ -806,4 +806,4 @@
 .game-chat-form input{flex:1;min-width:0;border:1px solid var(--border,rgba(255,255,255,.2));border-radius:10px;padding:10px;background:var(--input-bg,rgba(0,0,0,.2));color:inherit;font:inherit;font-size:13px}
 .game-chat-form button{border:0;border-radius:10px;padding:0 13px;background:var(--accent,#40826d);color:white;font-weight:700;cursor:pointer}
 .game-chat-form button:disabled{opacity:.5;cursor:wait}
-@media(max-width:600px){.game-chat-panel{height:min(390px,58vh);width:min(310px,calc(100vw - 28px))}}
+@media(max-width:600px){.game-chat-dock{top:max(72px,calc(env(safe-area-inset-top,0px) + 64px));left:max(10px,env(safe-area-inset-left,0px))}.game-chat-panel{height:min(390px,58vh);width:min(310px,calc(100vw - 28px))}}
