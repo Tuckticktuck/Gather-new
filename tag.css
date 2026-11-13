@@ -318,3 +318,69 @@
   .tag-modal .tag-arena{min-height:42vh;border-radius:15px}
   .tag-modal .tag-controls{justify-content:space-between}
 }
+
+
+/* Keep setup and waiting rooms in centered panels; only active arenas go fullscreen. */
+.tag-overlay:not(:has(#tag-arena)){
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  padding:18px!important;background:rgba(5,8,14,.78)!important;backdrop-filter:blur(13px);
+}
+.tag-modal:not(:has(#tag-arena)):not(.ludo-modal):not(.uno-modal){
+  position:relative!important;width:min(570px,calc(100vw - 28px))!important;
+  height:auto!important;min-height:0!important;max-width:570px!important;
+  max-height:min(90dvh,820px)!important;margin:auto!important;
+  padding:clamp(22px,4vw,34px)!important;overflow-y:auto!important;
+  border:1px solid color-mix(in srgb,var(--accent) 32%,#ffffff20)!important;
+  border-radius:24px!important;box-shadow:0 28px 90px #0009!important;
+}
+.tag-modal:not(:has(#tag-arena))>#tag-close{
+  position:absolute!important;top:20px!important;right:20px!important;
+}
+
+/* Ludo and UNO use a modal for setup/waiting, then expand only when the board exists. */
+.ludo-overlay,.uno-overlay{
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  padding:14px!important;background:rgba(5,8,14,.78)!important;backdrop-filter:blur(13px);
+}
+.ludo-modal:not(:has(.ludo-board)),.uno-modal:not(:has(.uno-board)){
+  position:relative!important;height:auto!important;min-height:0!important;margin:auto!important;
+  overflow-y:auto!important;border:1px solid color-mix(in srgb,var(--accent) 30%,#ffffff24)!important;
+  border-radius:24px!important;box-shadow:0 28px 90px #0009!important;
+}
+.ludo-modal:not(:has(.ludo-board)){
+  width:min(920px,calc(100vw - 28px))!important;max-width:920px!important;
+  max-height:min(92dvh,900px)!important;padding:clamp(18px,3vw,30px)!important;
+}
+.uno-modal:not(:has(.uno-board)){
+  width:min(760px,calc(100vw - 28px))!important;max-width:760px!important;
+  max-height:min(90dvh,900px)!important;padding:26px!important;
+}
+.ludo-overlay:has(.ludo-board),.uno-overlay:has(.uno-board){
+  position:fixed!important;inset:0!important;z-index:9999!important;
+  display:flex!important;align-items:stretch!important;justify-content:stretch!important;
+  padding:0!important;background:rgba(5,8,14,.97)!important;
+}
+.ludo-modal:has(.ludo-board),.uno-modal:has(.uno-board){
+  position:relative!important;display:flex!important;flex-direction:column!important;
+  width:100%!important;height:100%!important;min-height:100dvh!important;
+  max-width:none!important;max-height:none!important;margin:0!important;
+  padding:calc(22px + env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) calc(20px + env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left))!important;
+  overflow-y:auto!important;border:0!important;border-radius:0!important;box-shadow:none!important;
+}
+.ludo-modal:has(.ludo-board) #ludo-close,.uno-modal:has(.uno-board) #uno-close{
+  position:fixed!important;z-index:10001!important;top:max(14px,env(safe-area-inset-top))!important;
+  right:max(14px,env(safe-area-inset-right))!important;
+}
+.ludo-modal:has(.ludo-board) #ludo-content,.uno-modal:has(.uno-board) #uno-content{
+  width:min(100%,1200px);margin:0 auto;flex:1;
+}
+.ludo-modal:has(.ludo-board) .ludo-board{width:min(100%,min(72vh,760px));}
+.uno-modal:has(.uno-board) .uno-board{width:min(100%,1100px);margin:0 auto;}
+@media(max-width:600px){
+  .tag-overlay:not(:has(#tag-arena)){padding:12px!important}
+  .tag-modal:not(:has(#tag-arena)):not(.ludo-modal):not(.uno-modal){max-height:calc(100dvh - 24px)!important;padding:24px 18px!important}
+  .uno-modal:not(:has(.uno-board)){padding:22px 17px!important}
+  .ludo-modal:has(.ludo-board),.uno-modal:has(.uno-board){
+    padding:calc(68px + env(safe-area-inset-top)) 14px calc(16px + env(safe-area-inset-bottom))!important;
+  }
+}
