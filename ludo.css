@@ -570,3 +570,21 @@
 .ludo-overlay:has(.ludo-board) .ludo-base-token.ludo-token-selectable {
   padding:0!important; font-size:0; overflow:visible;
 }
+
+
+/* Keep the Ludo match-menu hamburger precisely centered in its trigger. */
+.ludo-overlay:has(.ludo-board)>.ludo-modal>#ludo-close.ludo-menu-trigger {
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  position:absolute;
+}
+.ludo-overlay:has(.ludo-board)>.ludo-modal>#ludo-close.ludo-menu-trigger::before {
+  position:absolute!important;
+  left:50%!important;
+  top:50%!important;
+  width:19px!important;
+  height:14px!important;
+  margin:0!important;
+  transform:translate(-50%,-50%)!important;
+}
