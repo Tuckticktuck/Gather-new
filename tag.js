@@ -269,6 +269,7 @@
       }
     }
     const back=btn("Back to Tag Arena","outline tag-back",()=>{activeLobbyId=null;activeLobby=null;players=[];renderPanel();});root.append(back);
+    if(me.status==="joined"&&activeLobby.status!=="completed"&&activeLobby.status!=="cancelled")window.GatherGameChat?.attach(root,ctx.db,"tag",activeLobbyId,uid(),name);
     const st=el("p","status tag-status","");st.id="tag-status";root.append(st);
   }
   function stopArenaEngine(){
