@@ -260,8 +260,12 @@
       root.append(el("p","muted tiny","The host can start once at least two players have joined and everyone is ready."));
     } else {
       renderArena(root);
-      if(activeLobby.created_by===uid()&&activeLobby.status==="active"){
-        root.append(btn("End match · Return to lobby","secondary-action tag-end",async()=>{if(!confirm("End this round and return everyone to the lobby?"))return;const r=await ctx.db.rpc("gather_tag_end",{p_lobby_id:activeLobbyId});if(r.error){toast(r.error.message);return;}toast("Match ended. You are back in the lobby.");await refresh();}));
+      if(activeLobby.status==="completed"){
+        const result=activeLobby.mode==="team_tag"?(activeLobby.winning_team?activeLobby.winning_team+" team wins!":"The round ended in a draw."):(activeLobby.winner_user_id?name(activeLobby.winner_user_id)+" wins!":"The round ended in a draw.");
+        root.append(el("p","tag-round-result",result));
+        if(activeLobby.created_by===uid())root.append(btn("Return to lobby · Set next round","primary tag-end",async()=>{const r=await ctx.db.rpc("gather_tag_return_lobby",{p_lobby_id:activeLobbyId});if(r.error){toast(r.error.message);return;}await refresh();}));
+      }else if(activeLobby.created_by===uid()&&activeLobby.status==="active"){
+        root.append(btn("End match","secondary-action tag-end",async()=>{if(!confirm("End this round and return everyone to the lobby?"))return;const r=await ctx.db.rpc("gather_tag_return_lobby",{p_lobby_id:activeLobbyId});if(r.error){toast(r.error.message);return;}await refresh();}));
       }
     }
     const back=btn("Back to Tag Arena","outline tag-back",()=>{activeLobbyId=null;activeLobby=null;players=[];renderPanel();});root.append(back);
