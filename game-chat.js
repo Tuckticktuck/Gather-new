@@ -1,8 +1,12 @@
 (function(){
-  let activeCleanup=null;
+  let activeCleanup=null,activeKey=null,activeWrap=null;
   const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   function attach(root,db,type,id,userId,nameOf){
     if(!root||!db||!id||!userId)return;
+    const key=String(type)+":"+String(id);
+    // Game screens are rebuilt during state refreshes. Reuse the same chat dock
+    // so an open panel, loaded messages, and its polling loop survive rerenders.
+    if(activeKey===key&&activeWrap){if(activeWrap.parentNode!==root)root.prepend(activeWrap);return;}
     if(activeCleanup){activeCleanup();activeCleanup=null;}
     const wrap=document.createElement("div");wrap.className="game-chat-dock";
     const toggle=document.createElement("button");toggle.type="button";toggle.className="game-chat-toggle";toggle.textContent="☰  Game chat";toggle.setAttribute("aria-expanded","false");
@@ -28,7 +32,8 @@
     function shut(){panel.hidden=true;toggle.setAttribute("aria-expanded","false");toggle.classList.remove("active");if(timer){clearInterval(timer);timer=null;}}
     toggle.addEventListener("click",()=>panel.hidden?open():shut());close.addEventListener("click",shut);
     form.addEventListener("submit",async e=>{e.preventDefault();const body=input.value.trim();if(!body)return;send.disabled=true;try{const r=await db.rpc("gather_game_chat_send",{p_game_type:type,p_game_id:id,p_body:body});if(r.error)throw r.error;input.value="";await load();}catch(error){list.textContent=error?.message||"Message could not be sent.";}finally{send.disabled=false;input.focus();}});
-    activeCleanup=()=>{closed=true;shut();wrap.remove();};
+    activeKey=key;activeWrap=wrap;
+    activeCleanup=()=>{closed=true;shut();wrap.remove();if(activeWrap===wrap){activeKey=null;activeWrap=null;} };
   }
   window.GatherGameChat={attach};
 })();
