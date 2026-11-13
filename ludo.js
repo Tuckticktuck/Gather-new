@@ -79,7 +79,7 @@
     const overlay = el("div", "overlay ludo-overlay");
     overlay.id = "ludo-overlay";
     overlay.hidden = true;
-    overlay.innerHTML = '<section class="modal ludo-modal" role="dialog" aria-modal="true" aria-labelledby="ludo-title"><button id="ludo-close" class="close" type="button" aria-label="Close">×</button><div id="ludo-content"></div></section>';
+    overlay.innerHTML = '<section class="modal ludo-modal tag-modal" role="dialog" aria-modal="true" aria-labelledby="ludo-title"><button id="ludo-close" class="close" type="button" aria-label="Close">×</button><div id="ludo-content"></div></section>';
     document.body.append(overlay);
     $("ludo-close").addEventListener("click", close);
     overlay.addEventListener("click", event => {
@@ -332,9 +332,9 @@
     const root = $("ludo-content");
     root.replaceChildren();
     root.append(el("p", "eyebrow", "NEW LUDO LOBBY"));
-    root.append(el("h2", "ludo-title", "Set up your game"));
-    root.append(el("p", "muted tiny", "Choose 2, 3, or 4 players. Every player gets a different color."));
-    const form = el("form", "ludo-form");
+    root.append(el("h2", "ludo-title", "Set up your lobby"));
+    root.append(el("p", "muted tiny ludo-intro", "Choose a chat first. People in that chat are shown separately, so you can choose exactly who receives an invite."));
+    const form = el("form", "ludo-form tag-form");
     const chatSelect = el("select");
     chatSelect.required = true;
     const eligible = eligibleChats();
@@ -362,10 +362,10 @@
     });
     form.append(makeField("Your color", color));
 
-    const invitePanel = el("section", "ludo-people-picker");
-    const heading = el("div", "ludo-people-heading");
+    const invitePanel = el("section", "ludo-people-picker tag-people-picker");
+    const heading = el("div", "ludo-people-heading tag-people-picker-head");
     heading.append(el("strong", "", "People in this chat"), el("small", "muted tiny", "Select who should receive a private invitation."));
-    const invites = el("div", "ludo-invites");
+    const invites = el("div", "ludo-invites tag-invite-list");
     invitePanel.append(heading, invites);
     form.append(invitePanel);
 
@@ -379,7 +379,7 @@
         return;
       }
       members.forEach(member => {
-        const label = el("label", "ludo-invite-option");
+        const label = el("label", "ludo-invite-option tag-invite-option");
         const checkbox = el("input");
         checkbox.type = "checkbox";
         checkbox.value = member.user_id;
@@ -395,8 +395,8 @@
       });
     });
 
-    const actions = el("div", "ludo-actions");
-    actions.append(btn("Back", "outline", renderLobbyList));
+    const actions = el("div", "ludo-actions tag-actions");
+    actions.append(btn("Back", "secondary-action", renderLobbyList));
     const submit = btn("Create lobby", "primary", () => {});
     submit.type = "submit";
     actions.append(submit);
@@ -446,12 +446,12 @@
     const joined = me?.status === "joined";
     const top = el("div", "ludo-game-top");
     const heading = el("div", "ludo-game-heading");
-    heading.append(el("p", "eyebrow", "GATHER GAMES · LUDO"), el("h2", "ludo-title", started ? "Ludo match" : "Ludo lobby"));
+    heading.append(el("p", "eyebrow", started ? "MATCH IN PROGRESS" : "WAITING ROOM"), el("h2", "ludo-title", started ? "Ludo match" : "Ludo lobby"), el("p", "muted tiny ludo-intro", conversationName(game.conversation_id) + " · " + (game.join_mode === "open" ? "Open lobby" : "Invite only")));
     top.append(heading, el("span", "ludo-player-count", joinedPlayers(players).length + "/" + maxPlayers(game) + " players"));
     root.append(top);
 
-    const actionBar = el("div", "ludo-actions");
-    actionBar.append(btn("Back to lobbies", "outline", async () => {
+    const actionBar = el("div", "ludo-actions tag-actions");
+    actionBar.append(btn("Back to lobbies", "secondary-action", async () => {
       activeGameId = null; activeGame = null; players = [];
       await refresh();
     }));
@@ -522,14 +522,17 @@
   }
 
   function renderPlayers(root) {
-    const roster = el("section", "ludo-roster");
-    roster.append(el("h3", "ludo-section-title", "Players"));
+    const roster = el("section", "ludo-roster tag-roster");
+    roster.append(el("h3", "ludo-section-title tag-section-title", "Players · " + joinedPlayers(players).length + "/" + maxPlayers(activeGame)));
     players.forEach(player => {
-      const row = el("div", "ludo-player-row");
+      const row = el("div", "ludo-player-row tag-player-row");
       const color = colorKey(player.color);
-      const swatch = el("span", "ludo-player-swatch " + (color || ""));
-      row.append(swatch, el("span", "ludo-player-name", name(player.user_id) + (player.user_id === uid() ? " (you)" : "")));
-      row.append(el("small", "ludo-player-state", player.status === "invited" ? "Invited" : player.ready ? "Ready" : "Not ready"));
+      const swatch = el("span", "ludo-player-swatch tag-player-swatch " + (color || ""));
+      const copy = el("div", "tag-player-copy");
+      copy.append(el("strong", "ludo-player-name", name(player.user_id) + (player.user_id === uid() ? " (you)" : "")));
+      copy.append(el("small", "ludo-player-state muted tiny", player.status === "invited" ? "Invited" : player.ready ? "Ready" : "Not ready"));
+      row.append(swatch, copy);
+      if(player.user_id===activeGame.created_by)row.append(el("span","tag-host-mark","HOST"));
       roster.append(row);
     });
     root.append(roster);
