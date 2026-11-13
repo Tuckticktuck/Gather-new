@@ -194,3 +194,14 @@
 @media(prefers-reduced-motion:reduce){
   :where(.tag-invite-option,.uno-invite-option){transition:none!important}
 }
+
+
+/* Clear UNO draw-and-choose turn state. */
+.uno-turn-message{max-width:650px;margin:8px auto 12px;text-align:center;line-height:1.5}
+.uno-deck:disabled{opacity:.55;filter:saturate(.55);cursor:not-allowed}
+.uno-card-unplayable{opacity:.46;filter:saturate(.65);cursor:not-allowed!important;transform:none!important}
+.uno-card-drawn{outline:3px solid var(--accent);outline-offset:3px;box-shadow:0 0 0 5px color-mix(in srgb,var(--accent) 18%,transparent),0 8px 16px #0003}
+.uno-pass-button{margin-left:0!important;white-space:nowrap}
+@media(max-width:520px){
+  .uno-pass-button{flex:1}
+}
