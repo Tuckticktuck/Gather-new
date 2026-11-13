@@ -26,6 +26,7 @@
   let refreshTimer = null;
   let busy = false;
   let panelOpen = false;
+  let panelView = "list";
   let activeGameId = null;
   let activeGame = null;
   let players = [];
@@ -169,7 +170,7 @@
       await loadGame();
       return;
     }
-    if (panelOpen) renderLobbyList();
+    if (panelOpen && panelView === "list") renderLobbyList();
   }
 
   async function loadPlayers(id) {
@@ -210,6 +211,7 @@
     }
     mount();
     panelOpen = true;
+    panelView = "list";
     activeGameId = null;
     activeGame = null;
     players = [];
@@ -222,18 +224,20 @@
     if (!ctx || !uid()) return;
     mount();
     panelOpen = true;
+    panelView = "game";
     $("ludo-overlay").hidden = false;
     activeGameId = id;
     await loadGame();
   }
   async function openGame(id) {
     if (!ctx || !uid()) return;
-    mount();panelOpen=true;activeGameId=id;activeGame=null;players=[];
+    mount();panelOpen=true;panelView="game";activeGameId=id;activeGame=null;players=[];
     $("ludo-overlay").hidden=false;await loadGame();
   }
 
   function close() {
     panelOpen = false;
+    panelView = "list";
     $("ludo-overlay").hidden = true;
     activeGameId = null;
     activeGame = null;
@@ -279,6 +283,7 @@
   }
 
   function renderLobbyList() {
+    panelView = "list";
     const root = $("ludo-content");
     if (!root) return;
     root.replaceChildren();
@@ -344,6 +349,7 @@
   }
 
   function renderCreate() {
+    panelView = "create";
     const root=$("ludo-content");root.replaceChildren();root.append(el("p","eyebrow","NEW LUDO LOBBY"));
     const title=el("h2","ludo-title","Set up your lobby");title.id="ludo-dialog-title";
     root.append(title,el("p","muted tiny ludo-intro","Choose friends to invite. Game invitations do not create a group conversation."));
@@ -355,13 +361,14 @@
     const actions=el("div","ludo-actions tag-actions");actions.append(btn("Back","secondary-action",renderLobbyList));
     const submit=btn("Create lobby","primary",()=>{});submit.type="submit";actions.append(submit);form.append(actions);
     form.addEventListener("submit",async event=>{event.preventDefault();if(busy)return;if(!selected.length){toast("Choose at least one person to invite.");return;}if(selected.length+1>Number(max.value)){toast("The player limit must include you and everyone you invite.");return;}
-      busy=true;submit.disabled=true;try{const result=await ctx.db.rpc("gather_ludo_create",{p_conversation_id:null,p_join_mode:"invite",p_invited_user_ids:selected.slice(),p_max_players:Number(max.value),p_creator_color:color.value});if(result.error)throw result.error;activeGameId=result.data.id;await loadGame();}
+      busy=true;submit.disabled=true;try{const result=await ctx.db.rpc("gather_ludo_create",{p_conversation_id:null,p_join_mode:"invite",p_invited_user_ids:selected.slice(),p_max_players:Number(max.value),p_creator_color:color.value});if(result.error)throw result.error;activeGameId=result.data.id;panelView="game";await loadGame();}
       catch(error){toast(error?.message||"Could not create the Ludo lobby.");}finally{busy=false;submit.disabled=false;}
     });
     root.append(form);window.GatherPeoplePicker?.create({db:ctx.db,button:choose,summary,onChange:ids=>selected.splice(0,selected.length,...ids)});
   }
 
   function renderGamePanel() {
+    panelView = "game";
     const root = $("ludo-content");
     if (!root || !activeGame) return;
     root.replaceChildren();
