@@ -29,8 +29,10 @@ jobs:
           node-version: 22
       - name: Build Tag Canvas engine
         run: npx --yes --package typescript@5.9.3 tsc --project tsconfig.tag.json
-      - name: Validate Tag JavaScript
-        run: node --check tag.js && node --check tag-engine.js && node --check uno.js && node --check ludo.js && node --check game-people-picker.js && node --check game-chat.js && node --check service-worker.js
+      - name: Validate all JavaScript
+        run: find . -type f -name '*.js' -not -path './node_modules/*' -print0 | xargs -0 -n1 node --check
+      - name: Validate site assets, HTML IDs, CSS structure, and service-worker cache
+        run: node scripts/validate-site.mjs
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
       - name: Upload website files
