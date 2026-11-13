@@ -341,7 +341,7 @@
 .uno-roster.tag-roster{margin:14px 0}
 .uno-roster .tag-section-title{margin:0 0 3px;font-size:12px}
 .uno-player-row.tag-player-row{min-height:46px;padding:9px 11px;border-color:#ffffff18;background:#ffffff06}
-.uno-player-row .tag-player-swatch{background:var(--accent)}
+.uno-player-row .tag-player-swatch{width:23px;height:23px;border:2px solid #ffffff70;background:var(--accent);border-radius:50%;box-shadow:0 0 0 1px #0002}
 .uno-lobby-wait.tag-lobby-hint{margin:12px 0;padding:13px 14px;border:1px solid #ffffff18;border-radius:12px;background:#ffffff07;color:#aeb8c7;line-height:1.55}
 .uno-modal .tag-actions{margin-top:16px;padding-top:16px}
 @media(max-width:600px){.uno-modal.tag-modal{width:min(100%,520px);max-height:calc(100dvh - 24px);padding:24px 18px 20px;border-radius:20px}.uno-modal.tag-modal .close{top:15px;right:15px}.uno-form.tag-form{gap:14px}.uno-form.tag-form .uno-field select{min-height:46px;font-size:13px}}
