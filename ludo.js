@@ -383,15 +383,10 @@
     heading.append(el("p", "eyebrow", started ? "MATCH IN PROGRESS" : "WAITING ROOM"), dialogTitle, el("p", "muted tiny ludo-intro", conversationName(game.conversation_id) + " · " + (game.join_mode === "open" ? "Open lobby" : "Invite only")));
     top.append(heading, el("span", "ludo-player-count", joinedPlayers(players).length + "/" + maxPlayers(game) + " players"));
     root.append(top);
+    // Keep the chat toggle in the top-right corner, outside the board layout.
     if(joined) window.GatherGameChat?.attach(root, ctx.db, "ludo", game.id, uid(), name);
 
     const actionBar = el("div", "ludo-actions tag-actions tag-lobby-actions");
-    if (game.status === "active" && joined && started) {
-      actionBar.append(btn("End match", "outline", async () => {
-        if (!window.confirm("End this Ludo match for everyone?")) return;
-        await callAction("end");
-      }));
-    }
 
     if (game.status === "cancelled") {
       root.append(el("p", "ludo-empty muted", "This Ludo lobby was cancelled."));
@@ -471,8 +466,15 @@
     }
 
     renderPlayers(root);
-    root.append(actionBar);
     renderBoard(root, joined);
+    if (game.status === "active" && joined && started) {
+      const endActions = el("div", "ludo-end-actions");
+      endActions.append(btn("End match", "outline", async () => {
+        if (!window.confirm("End this Ludo match for everyone?")) return;
+        await callAction("end");
+      }));
+      root.append(endActions);
+    }
   }
 
   function renderPlayers(root) {
