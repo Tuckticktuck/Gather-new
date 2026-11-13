@@ -213,6 +213,11 @@
     activeGameId = id;
     await loadGame();
   }
+  async function openGame(id) {
+    if (!ctx || !uid()) return;
+    mount();panelOpen=true;activeGameId=id;activeGame=null;players=[];
+    $("ludo-overlay").hidden=false;await loadGame();
+  }
 
   function close() {
     panelOpen = false;
@@ -741,5 +746,5 @@
     close();
   }
 
-  window.GatherLudo = { init, open, openInvitation, refresh, shutdown };
+  window.GatherLudo = { init, open, openInvitation, openGame, refresh, shutdown };
 })();
