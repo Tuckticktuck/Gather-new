@@ -384,3 +384,26 @@
     padding:calc(68px + env(safe-area-inset-top)) 14px calc(16px + env(safe-area-inset-bottom))!important;
   }
 }
+
+
+/* Active game screens fit the visible device viewport: no page-level scrolling. */
+.tag-modal:has(#tag-arena){height:100dvh!important;min-height:0!important;overflow:hidden!important;box-sizing:border-box}
+.tag-modal:has(#tag-arena) #tag-modal-content{height:100%;min-height:0;overflow:hidden;box-sizing:border-box}
+.tag-modal .tag-arena{min-height:0!important;height:auto;flex:1 1 auto;margin:clamp(6px,1.5vh,16px) 0!important}
+.tag-modal:has(#tag-arena) .tag-controls{flex:0 0 auto;padding:clamp(4px,1vh,12px) 0!important}
+@media(max-width:600px){.tag-modal:has(#tag-arena){padding:calc(58px + env(safe-area-inset-top)) 12px calc(10px + env(safe-area-inset-bottom))!important}.tag-modal:has(#tag-arena) .tag-arena{min-height:0!important;margin:6px 0!important}.tag-modal:has(#tag-arena) .tag-controls{gap:12px}.tag-modal:has(#tag-arena) .tag-joystick{width:clamp(76px,19vw,112px);height:clamp(76px,19vw,112px)}}
+
+/* UNO and Ludo match views use a fixed viewport canvas; only game controls remain interactive. */
+.ludo-overlay:has(.ludo-board),.uno-overlay:has(.uno-board){height:100dvh!important;overflow:hidden!important}
+.ludo-modal:has(.ludo-board),.uno-modal:has(.uno-board){box-sizing:border-box;height:100dvh!important;min-height:0!important;overflow:hidden!important}
+.ludo-modal:has(.ludo-board) #ludo-content,.uno-modal:has(.uno-board) #uno-content{height:100%;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.ludo-modal:has(.ludo-board) .ludo-board{flex:0 1 auto;max-height:min(53dvh, min(68vw, 620px));width:min(100%,min(53dvh,68vw,620px))!important;margin:4px auto 8px!important}
+.ludo-modal:has(.ludo-board) .ludo-roster{flex:0 0 auto;margin:5px 0!important;gap:5px}
+.ludo-modal:has(.ludo-board) .ludo-actions{flex:0 0 auto;margin:5px 0!important}
+.uno-modal:has(.uno-board) .uno-board{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;justify-content:space-evenly;gap:clamp(4px,1vh,10px);padding:clamp(7px,1.5vh,16px)!important;margin:4px auto!important;overflow:hidden}
+.uno-modal:has(.uno-board) .uno-table{min-height:0!important;height:clamp(110px,25dvh,220px);flex:0 1 auto;margin:4px 0!important;padding:8px}
+.uno-modal:has(.uno-board) .uno-roster{flex:0 0 auto;margin:4px 0!important;max-height:13dvh;overflow:hidden}
+.uno-modal:has(.uno-board) .uno-hand-area{flex:0 0 auto;margin-top:3px!important}
+.uno-modal:has(.uno-board) .uno-hand-strip{min-height:clamp(112px,17dvh,166px)!important;padding:12px 24px 12px!important}
+.uno-modal:has(.uno-board) .uno-turn-banner{padding:7px 10px!important}
+@media(max-width:600px){.ludo-modal:has(.ludo-board),.uno-modal:has(.uno-board){padding:calc(58px + env(safe-area-inset-top)) 10px calc(8px + env(safe-area-inset-bottom))!important}.ludo-modal:has(.ludo-board) .ludo-board{width:min(100%,min(48dvh,88vw))!important;max-height:48dvh!important}.ludo-modal:has(.ludo-board) .ludo-roster{max-height:11dvh}.uno-modal:has(.uno-board) .uno-table{height:clamp(96px,20dvh,165px)}.uno-modal:has(.uno-board) .uno-hand-strip{min-height:clamp(100px,15dvh,145px)!important}}
