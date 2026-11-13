@@ -610,6 +610,11 @@
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   }
 
+  function getLiveGames() {
+    return games.filter(game => game.status === "active" && [game.player_one_id,game.player_two_id].includes(userId()))
+      .sort((a,b)=>new Date(b.updated_at||b.created_at)-new Date(a.updated_at||a.created_at));
+  }
+
   async function respondToInvitation(gameId, accept) {
     const game = games.find(item => item.id === gameId);
     if (!game || game.status !== "pending" || game.player_two_id !== userId()) return;
@@ -1695,6 +1700,7 @@
     openCreateModal,
     openInvitation,
     getPendingInvitations,
+    getLiveGames,
     respondToInvitation,
     refresh: () => refreshGames(true),
     shutdown
