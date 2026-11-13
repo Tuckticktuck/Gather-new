@@ -453,6 +453,7 @@
     heading.append(el("p", "eyebrow", started ? "MATCH IN PROGRESS" : "WAITING ROOM"), dialogTitle, el("p", "muted tiny ludo-intro", conversationName(game.conversation_id) + " · " + (game.join_mode === "open" ? "Open lobby" : "Invite only")));
     top.append(heading, el("span", "ludo-player-count", joinedPlayers(players).length + "/" + maxPlayers(game) + " players"));
     root.append(top);
+    if(joined) window.GatherGameChat?.attach(root, ctx.db, "ludo", game.id, uid(), name);
 
     const actionBar = el("div", "ludo-actions tag-actions tag-lobby-actions");
     if (game.status === "active" && joined && started) {
