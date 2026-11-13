@@ -433,24 +433,21 @@
   async function refreshGames(showStatus) {
     if (!ctx || !userId()) return;
     const ids = [...new Set(chatList().map(chat => chat.id).filter(Boolean))];
-    if (!ids.length) {
-      games = [];
-      externalInvitations = [];
-      externalLiveGames = [];
-      renderAll();
-      return;
-    }
     if (showStatus && $("games-hub-status")) $("games-hub-status").textContent = "Refreshing games…";
-    const result = await ctx.db.from("gather_games")
-      .select("id,conversation_id,game_type,status,created_by,player_one_id,player_two_id,turn_user_id,state,winner_id,result,revision,created_at,updated_at")
-      .in("conversation_id", ids)
-      .order("updated_at", { ascending: false })
-      .limit(120);
-    if (result.error) {
-      if ($("games-hub-status")) $("games-hub-status").textContent = "Games could not be loaded: " + result.error.message;
-      return;
+    if (ids.length) {
+      const result = await ctx.db.from("gather_games")
+        .select("id,conversation_id,game_type,status,created_by,player_one_id,player_two_id,turn_user_id,state,winner_id,result,revision,created_at,updated_at")
+        .in("conversation_id", ids)
+        .order("updated_at", { ascending: false })
+        .limit(120);
+      if (result.error) {
+        if ($("games-hub-status")) $("games-hub-status").textContent = "Games could not be loaded: " + result.error.message;
+        return;
+      }
+      games = result.data || [];
+    } else {
+      games = [];
     }
-    games = result.data || [];
     const [unoInvites, tagInvites, ludoInvites, unoJoined, ludoJoined, tagJoined] = await Promise.all([
       ctx.db.from("gather_multiplayer_players").select("game_id,user_id,status,joined_at,gather_multiplayer_games!inner(id,conversation_id,game_type,status,created_by,join_mode,settings,created_at,updated_at)").eq("user_id", userId()).eq("status", "invited").eq("gather_multiplayer_games.game_type", "uno").eq("gather_multiplayer_games.status", "active"),
       ctx.db.from("gather_tag_players").select("lobby_id,user_id,status,joined_at,gather_tag_lobbies!inner(id,conversation_id,created_by,status,mode,join_mode,max_players,created_at,updated_at)").eq("user_id", userId()).eq("status", "invited").in("gather_tag_lobbies.status", ["lobby", "active"]),
