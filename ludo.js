@@ -214,7 +214,7 @@
     await loadGame();
     if (!activeGame) return;
     const me = currentPlayer();
-    if (me?.status === "invited" || (activeGame.join_mode === "open" && !me)) {
+    if (!activeGame.state?.started && (me?.status === "invited" || (activeGame.join_mode === "open" && !me))) {
       const next = availableColors(uid())[0];
       if (!next) {
         toast("All four Ludo colors are already taken.");
