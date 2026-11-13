@@ -642,7 +642,7 @@
       cell.style.gridColumn = String(col + 1);
       cell.setAttribute("aria-label", "Track space " + (index + 1) + (SAFE.has(index) ? ", safe" : ""));
       appendOccupants(cell, occupants.get("track:" + index));
-      if (SAFE.has(index) && !occupants.has("track:" + index)) cell.append(el("span", "ludo-safe-mark", "✦"));
+      if (SAFE.has(index) && !occupants.has("track:" + index)) cell.append(el("span", "ludo-safe-mark", ""));
       board.append(cell);
     });
 
