@@ -807,3 +807,20 @@
 .game-chat-form button{border:0;border-radius:10px;padding:0 13px;background:var(--accent,#40826d);color:white;font-weight:700;cursor:pointer}
 .game-chat-form button:disabled{opacity:.5;cursor:wait}
 @media(max-width:600px){.game-chat-dock{top:max(72px,calc(env(safe-area-inset-top,0px) + 64px));left:max(10px,env(safe-area-inset-left,0px))}.game-chat-panel{height:min(390px,58vh);width:min(310px,calc(100vw - 28px))}}
+
+.game-people-overlay{z-index:10050}
+.game-people-modal{width:min(520px,calc(100vw - 24px));max-height:min(82vh,720px);display:flex;flex-direction:column;gap:12px}
+.game-people-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.game-people-head h2{margin:2px 0 4px}
+.game-people-head p{margin:0}
+.game-people-done{flex:none}
+.game-people-search input{width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid var(--border,rgba(255,255,255,.2));border-radius:11px;background:var(--input-bg,rgba(0,0,0,.18));color:inherit;font:inherit}
+.game-people-count{font-size:12px;color:var(--muted,#aaa)}
+.game-people-list{overflow:auto;min-height:120px;max-height:52vh;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:7px}
+.game-people-option{display:flex!important;align-items:center;gap:10px!important;padding:10px;border:1px solid var(--border,rgba(255,255,255,.12));border-radius:12px;background:rgba(255,255,255,.035);cursor:pointer}
+.game-people-avatar{width:34px;height:34px;flex:none;display:grid;place-items:center;border-radius:50%;background:var(--accent,#40826d);color:white;font-weight:800}
+.game-people-names{display:flex;min-width:0;flex-direction:column;gap:2px}
+.game-people-names strong{font-size:13px;overflow:hidden;text-overflow:ellipsis}
+.game-people-names small{font-size:11px;color:var(--muted,#aaa)}
+.tag-people-picker,.uno-people-picker,.ludo-people-picker{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.tag-people-picker>small,.uno-people-picker>small,.ludo-people-picker>small{flex-basis:100%}
