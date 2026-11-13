@@ -30,7 +30,7 @@ jobs:
       - name: Build Tag Canvas engine
         run: npx --yes --package typescript@5.9.3 tsc --project tsconfig.tag.json
       - name: Validate Tag JavaScript
-        run: node --check tag.js && node --check tag-engine.js && node --check service-worker.js
+        run: node --check tag.js && node --check tag-engine.js && node --check uno.js && node --check ludo.js && node --check game-people-picker.js && node --check game-chat.js && node --check service-worker.js
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
       - name: Upload website files
