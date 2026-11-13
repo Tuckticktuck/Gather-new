@@ -435,6 +435,8 @@
     const ids = [...new Set(chatList().map(chat => chat.id).filter(Boolean))];
     if (!ids.length) {
       games = [];
+      externalInvitations = [];
+      externalLiveGames = [];
       renderAll();
       return;
     }
