@@ -211,3 +211,9 @@
 .uno-lobby-card .uno-lobby-info small{line-height:1.45}
 .uno-lobby-card button{flex:0 0 auto;white-space:nowrap}
 @media(max-width:520px){.uno-lobby-card{align-items:flex-start;flex-direction:column}.uno-lobby-card button{width:100%}}
+
+
+/* UNO action cards use compact symbols instead of oversized action words. */
+.uno-card-center.uno-action-icon{font-family:Arial,sans-serif;font-size:39px;font-weight:900;line-height:1;letter-spacing:-.06em;transform:none}
+.uno-card-corner.uno-action-icon{font-family:Arial,sans-serif;font-size:17px;font-weight:900;line-height:1;letter-spacing:-.04em}
+@media(max-width:520px){.uno-card-center.uno-action-icon{font-size:34px}.uno-card-corner.uno-action-icon{font-size:15px}}
