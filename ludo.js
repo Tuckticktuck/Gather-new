@@ -648,7 +648,10 @@
 
     const tokenControls = el("section", "ludo-controls");
     const diceCard = el("div", "ludo-dice-card");
-    diceCard.append(el("span", "ludo-dice-label", "DICE"), el("strong", "ludo-dice-value", dice === null ? "—" : String(dice)));
+    diceCard.setAttribute("aria-label", "Current dice roll");
+    const diceValue = el("strong", "ludo-dice-value", dice === null ? "—" : String(dice));
+    diceValue.setAttribute("aria-label", dice === null ? "No dice roll yet" : "Dice rolled " + dice);
+    diceCard.append(diceValue);
     const roll = btn(myTurn && dice === null ? "Roll" : dice === null ? "Waiting" : "Rolled", "primary ludo-roll", () => callAction("roll"));
     roll.disabled = !myTurn || dice !== null;
     diceCard.append(roll);
