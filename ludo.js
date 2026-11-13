@@ -465,7 +465,7 @@
       return;
     }
 
-    renderPlayers(root);
+    renderPlayers(root, true);
     renderBoard(root, joined);
     if (game.status === "active" && joined && started) {
       const endActions = el("div", "ludo-end-actions");
@@ -477,18 +477,26 @@
     }
   }
 
-  function renderPlayers(root) {
-    const roster = el("section", "ludo-roster tag-roster");
-    roster.append(el("h3", "ludo-section-title tag-section-title", "Players · " + joinedPlayers(players).length + "/" + maxPlayers(activeGame)));
-    players.forEach(player => {
+  function renderPlayers(root, compactMatch = false) {
+    const roster = el("section", "ludo-roster tag-roster" + (compactMatch ? " ludo-roster--match" : ""));
+    if (!compactMatch) {
+      roster.append(el("h3", "ludo-section-title tag-section-title", "Players · " + joinedPlayers(players).length + "/" + maxPlayers(activeGame)));
+    }
+    const visiblePlayers = compactMatch ? joinedPlayers(players) : players;
+    visiblePlayers.forEach(player => {
       const row = el("div", "ludo-player-row tag-player-row");
       const color = colorKey(player.color);
       const swatch = el("span", "ludo-player-swatch tag-player-swatch " + (color || ""));
-      const copy = el("div", "tag-player-copy");
-      copy.append(el("strong", "ludo-player-name", name(player.user_id) + (player.user_id === uid() ? " (you)" : "")));
-      copy.append(el("small", "ludo-player-state muted tiny", player.status === "invited" ? "Invited" : player.ready ? "Ready" : "Not ready"));
-      row.append(swatch, copy);
-      if(player.user_id===activeGame.created_by)row.append(el("span","tag-host-mark","HOST"));
+      if (compactMatch) {
+        row.setAttribute("aria-label", (color || "Player") + " player");
+        row.append(swatch);
+      } else {
+        const copy = el("div", "tag-player-copy");
+        copy.append(el("strong", "ludo-player-name", name(player.user_id) + (player.user_id === uid() ? " (you)" : "")));
+        copy.append(el("small", "ludo-player-state muted tiny", player.status === "invited" ? "Invited" : player.ready ? "Ready" : "Not ready"));
+        row.append(swatch, copy);
+        if(player.user_id===activeGame.created_by)row.append(el("span","tag-host-mark","HOST"));
+      }
       roster.append(row);
     });
     root.append(roster);
@@ -641,12 +649,13 @@
     const tokenControls = el("section", "ludo-controls");
     const diceCard = el("div", "ludo-dice-card");
     diceCard.append(el("span", "ludo-dice-label", "DICE"), el("strong", "ludo-dice-value", dice === null ? "—" : String(dice)));
-    const roll = btn(myTurn && dice === null ? "Roll dice" : dice === null ? "Waiting" : "Rolled", "primary ludo-roll", () => callAction("roll"));
+    const roll = btn(myTurn && dice === null ? "Roll" : dice === null ? "Waiting" : "Rolled", "primary ludo-roll", () => callAction("roll"));
     roll.disabled = !myTurn || dice !== null;
     diceCard.append(roll);
     tokenControls.append(diceCard);
 
     const panel = el("div", "ludo-token-panel");
+    panel.hidden = true;
     panel.append(el("strong", "", myColor ? "Your tokens" : "Token positions"));
     const list = el("div", "ludo-token-buttons");
     const shownColors = myColor ? [myColor] : COLORS.map(color => color.key);
@@ -661,7 +670,15 @@
       });
     });
     panel.append(list);
-    tokenControls.append(panel);
+    const tokenToggle = btn("Tokens", "secondary-action ludo-token-toggle", () => {
+      panel.hidden = !panel.hidden;
+      tokenToggle.textContent = panel.hidden ? "Tokens" : "Hide tokens";
+      tokenToggle.setAttribute("aria-expanded", String(!panel.hidden));
+    });
+    tokenToggle.type = "button";
+    tokenToggle.setAttribute("aria-label", "View tokens");
+    tokenToggle.setAttribute("aria-expanded", "false");
+    tokenControls.append(tokenToggle, panel);
     if (state.message) tokenControls.append(el("p", "ludo-message", state.message));
     root.append(tokenControls);
   }
