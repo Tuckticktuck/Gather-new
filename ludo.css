@@ -223,1772 +223,337 @@
 .ludo-safe-mark:before{content:"";display:block;width:42%;height:42%;min-width:5px;min-height:5px;background:var(--accent);clip-path:polygon(50% 0,62% 35%,100% 50%,62% 65%,50% 100%,38% 65%,0 50%,38% 35%);filter:drop-shadow(0 1px 2px #0003)}
 
 
-/* Keep every Ludo player marker and token geometrically circular. */
-.ludo-modal .ludo-player-swatch,.ludo-modal .ludo-player-row .tag-player-swatch{box-sizing:border-box;width:23px!important;height:23px!important;min-width:23px;min-height:23px;flex:0 0 23px;aspect-ratio:1/1;border-radius:50%!important;}
-.ludo-modal .ludo-token-dot{box-sizing:border-box;aspect-ratio:1/1;border-radius:50%!important;flex-shrink:0;}
-.ludo-modal .ludo-lobby-feature .ludo-player-swatch{width:48px!important;height:48px!important;min-width:48px;min-height:48px;flex:0 0 48px;aspect-ratio:1/1;}
 
-
-/* Ludo board geometry and match controls: keep every grid space square. */
-.ludo-modal #ludo-content{position:relative;min-width:0}
-.ludo-modal .ludo-board{
-  box-sizing:border-box;
-  width:min(100%,680px);
-  height:auto;
-  aspect-ratio:1 / 1;
-  grid-template-columns:repeat(15,minmax(0,1fr));
-  grid-template-rows:repeat(15,minmax(0,1fr));
-  align-content:stretch;
-  justify-content:stretch;
-}
-.ludo-modal .ludo-board>.ludo-track-cell,
-.ludo-modal .ludo-board>.ludo-home-lane{
-  box-sizing:border-box;
-  min-width:0;
-  min-height:0;
-  aspect-ratio:1 / 1;
-}
-.ludo-modal .ludo-board>.ludo-base,
-.ludo-modal .ludo-board>.ludo-center{box-sizing:border-box;min-width:0;min-height:0}
-.ludo-modal .ludo-game-heading{padding-right:clamp(112px,18vw,158px)}
-.ludo-modal .game-chat-dock{
-  position:absolute;
-  top:0;
-  right:0;
-  left:auto;
-  z-index:20;
-  pointer-events:auto;
-}
-.ludo-modal .game-chat-toggle{
-  min-height:40px;
-  padding:9px 12px;
-  border-radius:12px;
-  white-space:nowrap;
-}
-.ludo-modal .game-chat-panel{top:48px;right:0;left:auto}
-.ludo-modal .ludo-end-actions{
-  display:flex;
-  justify-content:flex-end;
-  width:min(100%,680px);
-  margin:12px auto 0;
-  padding-top:10px;
-  border-top:1px solid #ffffff18;
-}
-.ludo-modal .ludo-end-actions button{
-  width:auto;
-  min-width:140px;
-  min-height:44px;
-  padding:10px 16px;
-  border-radius:12px;
-  font-size:12px;
-  font-weight:800;
-}
-@media(max-width:600px){
-  .ludo-modal .ludo-game-heading{padding-right:104px}
-  .ludo-modal .game-chat-toggle{min-height:38px;padding:8px 9px;font-size:11px}
-  .ludo-modal .game-chat-panel{width:min(310px,calc(100vw - 52px))}
-  .ludo-modal .ludo-end-actions button{min-width:128px;min-height:42px}
-}
-
-
-/* Active Ludo match: prioritize the board and compress secondary UI. */
-.ludo-overlay:has(.ludo-board){
-  position:fixed!important;inset:0!important;z-index:1200!important;
-  display:flex!important;align-items:stretch!important;justify-content:stretch!important;
-  box-sizing:border-box;width:100%;height:100dvh;padding:0!important;overflow:hidden!important;
-  background:rgba(0,0,0,.82);
+/* =========================================================
+   LUDO ACTIVE MATCH — consolidated responsive design system
+   ========================================================= */
+.ludo-overlay:has(.ludo-board) {
+  position:fixed!important; inset:0!important; z-index:1200!important;
+  display:flex!important; align-items:stretch!important; justify-content:stretch!important;
+  width:100%; height:100dvh; padding:0!important; overflow:hidden!important;
+  background:rgba(5,9,16,.84);
+  backdrop-filter:blur(12px);
 }
 .ludo-overlay:has(.ludo-board)[hidden]{display:none!important}
-.ludo-overlay:has(.ludo-board)>.ludo-modal{
-  display:flex!important;flex-direction:column;box-sizing:border-box!important;
-  width:100%!important;max-width:none!important;height:100dvh!important;max-height:100dvh!important;
-  min-height:0;margin:0!important;padding:calc(10px + env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left))!important;
-  overflow:hidden!important;border:0!important;border-radius:0!important;
+.ludo-overlay:has(.ludo-board)>.ludo-modal {
+  position:relative; display:flex!important; flex-direction:column;
+  box-sizing:border-box!important; width:100%!important; max-width:none!important;
+  height:100dvh!important; max-height:100dvh!important; min-height:0;
+  margin:0!important; padding:calc(12px + env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left))!important;
+  overflow:hidden!important; border:0!important; border-radius:0!important;
+  background:
+    radial-gradient(ellipse at 78% 12%,color-mix(in srgb,var(--accent) 14%,transparent),transparent 42%),
+    linear-gradient(145deg,#1b2330 0%,#111823 56%,#10151f 100%);
 }
-.ludo-overlay:has(.ludo-board)>.ludo-modal>.close{top:10px;left:10px;right:auto;z-index:30;width:34px;height:34px}
-.ludo-overlay:has(.ludo-board) #ludo-content{
-  display:grid;flex:1 1 auto;grid-template-columns:minmax(0,1fr) minmax(190px, min(25vw,270px));
-  grid-template-rows:auto auto minmax(0,1fr) auto;
-  grid-template-areas:"top top" "roster roster" "board controls" "end controls";
-  align-items:center;align-content:stretch;gap:clamp(5px,1vh,11px) clamp(12px,2vw,24px);
-  width:100%;height:100%;min-width:0;min-height:0;overflow:hidden;
+.ludo-overlay:has(.ludo-board)>.ludo-modal>#ludo-close,
+.ludo-overlay:has(.ludo-board)>.ludo-modal>.close {
+  position:absolute; top:calc(12px + env(safe-area-inset-top)); left:16px; right:auto; z-index:60;
+  display:grid; place-items:center; width:46px; height:46px; border-radius:14px;
+  border:1px solid #ffffff24; background:#ffffff0d; color:#f4f7fb;
+  font:700 21px/1 system-ui; cursor:pointer;
 }
-.ludo-overlay:has(.ludo-board) .ludo-game-top{grid-area:top;min-width:0;margin:0;padding:0 150px 0 42px}
-.ludo-overlay:has(.ludo-board) .ludo-game-heading{padding:0;gap:2px}
-.ludo-overlay:has(.ludo-board) .ludo-game-heading .eyebrow{margin:0;font-size:9px;letter-spacing:.14em}
-.ludo-overlay:has(.ludo-board) .ludo-game-heading .ludo-title{margin:0;font-size:clamp(17px,2.3vh,24px);line-height:1.1}
-.ludo-overlay:has(.ludo-board) .ludo-game-heading .ludo-intro{display:none}
-.ludo-overlay:has(.ludo-board) .ludo-roster{grid-area:roster;display:flex;align-items:center;gap:6px;min-width:0;max-width:100%;margin:0;padding:0;border:0;overflow-x:auto;overscroll-behavior-x:contain}
-.ludo-overlay:has(.ludo-board) .ludo-roster .tag-section-title{display:none}
-.ludo-overlay:has(.ludo-board) .ludo-player-row{display:flex;flex:0 0 auto;gap:6px;min-height:30px;padding:5px 8px;border-radius:9px}
-.ludo-overlay:has(.ludo-board) .ludo-player-row .tag-player-swatch{width:10px!important;height:10px!important;min-width:10px;min-height:10px;flex-basis:10px}
-.ludo-overlay:has(.ludo-board) .ludo-player-name{max-width:110px;font-size:10px}
-.ludo-overlay:has(.ludo-board) .ludo-player-state{font-size:8px}
-.ludo-overlay:has(.ludo-board) .ludo-board{
-  grid-area:board;justify-self:center;align-self:center;box-sizing:border-box;
-  width:min(100%,calc(100dvh - 155px));max-width:min(100%,calc(100dvh - 155px));
-  height:auto;max-height:100%;aspect-ratio:1/1;margin:0;
+.ludo-overlay:has(.ludo-board)>.ludo-modal>.close:hover {background:#ffffff18}
+.ludo-overlay:has(.ludo-board) .ludo-menu-trigger {font-size:0!important}
+.ludo-overlay:has(.ludo-board) .ludo-menu-trigger::before {
+  content:""; width:19px; height:14px;
+  background:linear-gradient(#f4f7fb 0 0) top/19px 2px no-repeat,
+             linear-gradient(#f4f7fb 0 0) center/19px 2px no-repeat,
+             linear-gradient(#f4f7fb 0 0) bottom/19px 2px no-repeat;
 }
-.ludo-overlay:has(.ludo-board) .ludo-controls{
-  grid-area:controls;display:flex;flex-direction:column;justify-content:center;align-self:center;
-  width:100%;max-width:270px;min-width:0;gap:8px;margin:0;
+.ludo-overlay:has(.ludo-board) #ludo-content {
+  position:relative; display:grid; flex:1 1 auto;
+  grid-template-columns:minmax(230px,clamp(250px,25vw,330px)) minmax(0,1fr);
+  grid-template-rows:66px 42px minmax(0,1fr);
+  grid-template-areas:"top top" "roster roster" "controls board";
+  align-items:center; justify-items:stretch; align-content:stretch;
+  gap:clamp(8px,1.1vh,14px) clamp(18px,2.4vw,38px);
+  width:100%; min-width:0; min-height:0; overflow:hidden;
 }
-.ludo-overlay:has(.ludo-board) .ludo-dice-card,.ludo-overlay:has(.ludo-board) .ludo-token-panel{
-  gap:7px;padding:9px;border-radius:12px;
+.ludo-overlay:has(.ludo-board) .ludo-game-top {
+  grid-area:top; position:relative; display:flex; align-items:center; justify-content:center;
+  width:100%; min-width:0; min-height:54px; margin:0; padding:0 170px 0 64px!important;
+  text-align:center;
 }
-.ludo-overlay:has(.ludo-board) .ludo-dice-card{display:grid;grid-template-columns:auto 42px 1fr;align-items:center;text-align:left}
-.ludo-overlay:has(.ludo-board) .ludo-dice-label{font-size:8px}
-.ludo-overlay:has(.ludo-board) .ludo-dice-value{width:38px;height:38px;border-radius:10px;font-size:20px}
-.ludo-overlay:has(.ludo-board) .ludo-roll{min-height:36px;padding:7px 8px;font-size:10px}
-.ludo-overlay:has(.ludo-board) .ludo-token-panel>strong{font-size:10px}
-.ludo-overlay:has(.ludo-board) .ludo-token-buttons{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
-.ludo-overlay:has(.ludo-board) .ludo-token-button{min-height:34px;padding:6px 5px;font-size:9px}
-.ludo-overlay:has(.ludo-board) .ludo-message{padding:7px 8px;font-size:9px;line-height:1.35}
-.ludo-overlay:has(.ludo-board) .ludo-end-actions{grid-area:end;justify-self:end;align-self:end;width:auto;margin:0;padding:0;border:0}
-.ludo-overlay:has(.ludo-board) .ludo-end-actions button{min-width:0;min-height:34px;padding:7px 11px;font-size:10px}
-.ludo-overlay:has(.ludo-board) .game-chat-dock{top:0;right:0}
-.ludo-overlay:has(.ludo-board) .game-chat-toggle{min-height:34px;padding:7px 10px;font-size:10px}
-.ludo-overlay:has(.ludo-board) .game-chat-panel{top:40px;right:0;left:auto}
-@media(max-width:700px){
-  .ludo-overlay:has(.ludo-board)>.ludo-modal{
-    padding:calc(8px + env(safe-area-inset-top)) max(7px,env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom)) max(7px,env(safe-area-inset-left))!important;
-  }
-  .ludo-overlay:has(.ludo-board) #ludo-content{
-    grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr) auto auto;
-    grid-template-areas:"top" "roster" "board" "controls" "end";
-    gap:clamp(4px,.7vh,7px);justify-items:center;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-game-top{width:100%;padding-right:118px}
-  .ludo-overlay:has(.ludo-board) .ludo-board{
-    width:min(100%,calc(100vw - 24px),calc(100dvh - 255px));
-    max-width:min(100%,calc(100vw - 24px),calc(100dvh - 255px));
-    max-height:100%;margin:0 auto;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-roster{width:100%;justify-content:flex-start}
-  .ludo-overlay:has(.ludo-board) .ludo-controls{
-    display:grid;grid-template-columns:92px minmax(0,1fr);align-items:stretch;
-    width:100%;max-width:560px;gap:6px;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-dice-card{display:flex;gap:4px;padding:6px}
-  .ludo-overlay:has(.ludo-board) .ludo-dice-value{width:30px;height:30px;font-size:17px}
-  .ludo-overlay:has(.ludo-board) .ludo-roll{min-height:30px;padding:5px;font-size:9px}
-  .ludo-overlay:has(.ludo-board) .ludo-token-panel{gap:4px;padding:6px}
-  .ludo-overlay:has(.ludo-board) .ludo-token-panel>strong{font-size:9px}
-  .ludo-overlay:has(.ludo-board) .ludo-token-buttons{grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}
-  .ludo-overlay:has(.ludo-board) .ludo-token-button{min-height:27px;padding:4px;font-size:8px}
-  .ludo-overlay:has(.ludo-board) .ludo-message{grid-column:1/-1}
-  .ludo-overlay:has(.ludo-board) .ludo-end-actions{justify-self:end}
-  .ludo-overlay:has(.ludo-board) .ludo-end-actions button{min-height:29px;padding:5px 9px;font-size:9px}
-  .ludo-overlay:has(.ludo-board) .game-chat-toggle{min-height:31px;padding:6px 8px;font-size:9px}
+.ludo-overlay:has(.ludo-board) .ludo-game-heading {
+  display:grid; justify-items:center; gap:4px; min-width:0; max-width:100%; padding:0!important;
+  text-align:center;
 }
-@media(max-height:560px) and (min-width:701px){
-  .ludo-overlay:has(.ludo-board) #ludo-content{grid-template-columns:minmax(0,1fr) 190px;gap:5px 10px}
-  .ludo-overlay:has(.ludo-board) .ludo-board{width:min(100%,calc(100dvh - 115px));max-width:min(100%,calc(100dvh - 115px))}
-  .ludo-overlay:has(.ludo-board) .ludo-roster{gap:4px}
-  .ludo-overlay:has(.ludo-board) .ludo-player-row{min-height:25px;padding:3px 6px}
+.ludo-overlay:has(.ludo-board) .ludo-game-heading .eyebrow {
+  margin:0; color:color-mix(in srgb,var(--accent) 72%,white);
+  font-size:9px; font-weight:900; letter-spacing:.2em;
 }
-
-
-/* Ultra-compact active Ludo HUD: the board owns the screen. */
-.ludo-overlay:has(.ludo-board) #ludo-content{
-  grid-template-columns:minmax(0,1fr);
-  grid-template-rows:auto auto minmax(0,1fr) auto auto;
-  grid-template-areas:"top" "roster" "board" "controls" "end";
-  gap:4px;justify-items:center;
+.ludo-overlay:has(.ludo-board) .ludo-game-heading .ludo-title {
+  margin:0!important; color:#f5f7fb; font-family:ui-serif,Georgia,serif;
+  font-size:clamp(25px,3vw,36px)!important; font-weight:850; letter-spacing:.015em;
+  line-height:1.02; text-shadow:0 5px 20px #0007;
 }
-.ludo-overlay:has(.ludo-board) .ludo-game-top{
-  width:100%;padding:0 142px 0 40px;min-height:24px;
+.ludo-overlay:has(.ludo-board) .ludo-game-heading .ludo-intro {display:none}
+.ludo-overlay:has(.ludo-board) .ludo-player-count {
+  position:absolute; right:0; top:50%; transform:translateY(-50%);
+  padding:8px 12px; border:1px solid #ffffff20; border-radius:999px;
+  background:#ffffff0b; color:#dbe4ef; font-size:11px; font-weight:800;
 }
-.ludo-overlay:has(.ludo-board) .ludo-game-heading{padding:0;gap:0}
-.ludo-overlay:has(.ludo-board) .ludo-game-heading .eyebrow,
-.ludo-overlay:has(.ludo-board) .ludo-game-heading .ludo-intro{display:none}
-.ludo-overlay:has(.ludo-board) .ludo-game-heading .ludo-title{font-size:clamp(14px,1.8vh,19px);line-height:1.1}
-.ludo-overlay:has(.ludo-board) .ludo-player-count{font-size:9px}
-.ludo-overlay:has(.ludo-board) .ludo-roster--match{
-  grid-area:roster;display:flex;align-items:center;justify-content:center;
-  width:100%;min-height:0;height:22px;margin:0;padding:0;gap:7px;
-  border:0;background:transparent;overflow:visible;
+.ludo-overlay:has(.ludo-board) .game-chat-dock {position:absolute;top:0;right:0;left:auto;z-index:50}
+.ludo-overlay:has(.ludo-board) .game-chat-toggle {
+  min-height:46px!important; padding:11px 17px!important; border:1px solid #ffffff26!important;
+  border-radius:14px!important; background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 72%,#fff 5%),color-mix(in srgb,var(--accent) 60%,#000))!important;
+  color:#10241f!important; font-size:13px!important; font-weight:900!important;
+  box-shadow:0 8px 24px #0004; transition:transform .18s ease,filter .18s ease;
+}
+.ludo-overlay:has(.ludo-board) .game-chat-toggle:hover {transform:translateY(-2px);filter:brightness(1.08)}
+.ludo-overlay:has(.ludo-board) .game-chat-panel {top:54px;right:0;left:auto;z-index:55}
+.ludo-overlay:has(.ludo-board) .ludo-roster--match {
+  grid-area:roster; display:flex; align-items:center; justify-content:center; gap:10px;
+  width:100%; min-width:0; height:38px; margin:0; padding:0;
+  border:0; background:transparent; overflow:hidden;
 }
 .ludo-overlay:has(.ludo-board) .ludo-roster--match .ludo-section-title,
 .ludo-overlay:has(.ludo-board) .ludo-roster--match .tag-player-copy,
-.ludo-overlay:has(.ludo-board) .ludo-roster--match .tag-host-mark{display:none!important}
-.ludo-overlay:has(.ludo-board) .ludo-roster--match .ludo-player-row{
-  display:grid;place-items:center;flex:0 0 18px;width:18px;height:18px;
-  min-height:18px;padding:0;margin:0;border:0;border-radius:50%;
-  background:transparent;box-shadow:none;
+.ludo-overlay:has(.ludo-board) .ludo-roster--match .tag-host-mark {display:none!important}
+.ludo-overlay:has(.ludo-board) .ludo-roster--match .ludo-player-row {
+  display:grid; place-items:center; flex:0 0 26px; width:26px; height:26px;
+  min-height:26px; margin:0; padding:0; border:0; border-radius:50%; background:transparent;
 }
-.ludo-overlay:has(.ludo-board) .ludo-roster--match .ludo-player-swatch{
-  width:16px!important;height:16px!important;min-width:16px;min-height:16px;
-  flex:0 0 16px;border:2px solid rgba(255,255,255,.85);
-}
-.ludo-overlay:has(.ludo-board) .ludo-board{
-  grid-area:board;justify-self:center;align-self:center;
-  width:min(100%,calc(100dvh - 135px),calc(100vw - 30px));
-  max-width:min(100%,calc(100dvh - 135px),calc(100vw - 30px));
-  max-height:100%;height:auto;aspect-ratio:1/1;margin:0;
-}
-.ludo-overlay:has(.ludo-board) .ludo-controls{
-  grid-area:controls;position:relative;display:flex;flex-direction:row;
-  align-items:center;justify-content:center;gap:7px;flex-wrap:nowrap;
-  width:100%;max-width:100%;min-width:0;margin:0;
-}
-.ludo-overlay:has(.ludo-board) .ludo-dice-card{
-  display:flex;flex-direction:row;align-items:center;gap:5px;
-  padding:3px 6px;border:0;background:transparent;box-shadow:none;
-}
-.ludo-overlay:has(.ludo-board) .ludo-dice-label{font-size:8px}
-.ludo-overlay:has(.ludo-board) .ludo-dice-value{width:27px;height:27px;font-size:15px}
-.ludo-overlay:has(.ludo-board) .ludo-roll,
-.ludo-overlay:has(.ludo-board) .ludo-token-toggle{
-  min-height:29px;padding:5px 9px;border-radius:9px;font-size:10px;white-space:nowrap;
-}
-.ludo-overlay:has(.ludo-board) .ludo-token-toggle{min-width:58px}
-.ludo-overlay:has(.ludo-board) .ludo-token-panel{
-  position:absolute;z-index:35;right:0;bottom:calc(100% + 7px);
-  width:min(390px,calc(100vw - 24px));max-height:38dvh;overflow:auto;
-  padding:9px;border:1px solid var(--border,rgba(255,255,255,.18));
-  border-radius:12px;background:var(--panel-strong,#252332);
-  box-shadow:0 12px 34px #0008;
-}
-.ludo-overlay:has(.ludo-board) .ludo-token-panel[hidden]{display:none!important}
-.ludo-overlay:has(.ludo-board) .ludo-token-panel>strong{display:block;margin-bottom:6px;font-size:10px}
-.ludo-overlay:has(.ludo-board) .ludo-token-buttons{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
-.ludo-overlay:has(.ludo-board) .ludo-token-button{min-height:28px;padding:4px;font-size:8px}
-.ludo-overlay:has(.ludo-board) .ludo-message{
-  position:absolute;left:50%;bottom:calc(100% + 7px);transform:translateX(-50%);
-  width:max-content;max-width:min(80vw,420px);margin:0;padding:5px 8px;
-  border-radius:8px;font-size:9px;pointer-events:none;
-}
-.ludo-overlay:has(.ludo-board) .ludo-end-actions{
-  grid-area:end;justify-self:end;align-self:center;width:100%;margin:0;padding:0;border:0;
-}
-.ludo-overlay:has(.ludo-board) .ludo-end-actions button{min-width:0;min-height:26px;padding:4px 8px;font-size:9px}
-.ludo-overlay:has(.ludo-board) .game-chat-dock{top:0;right:0;left:auto}
-.ludo-overlay:has(.ludo-board) .game-chat-toggle{min-height:28px;padding:5px 8px;font-size:9px}
-.ludo-overlay:has(.ludo-board) .game-chat-panel{top:34px;right:0;left:auto}
-@media(max-width:700px){
-  .ludo-overlay:has(.ludo-board)>.ludo-modal{
-    padding:calc(5px + env(safe-area-inset-top)) max(5px,env(safe-area-inset-right)) calc(5px + env(safe-area-inset-bottom)) max(5px,env(safe-area-inset-left))!important;
-  }
-  .ludo-overlay:has(.ludo-board) #ludo-content{
-    grid-template-rows:auto auto minmax(0,1fr) auto auto;gap:3px;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-game-top{padding:0 112px 0 36px;min-height:22px}
-  .ludo-overlay:has(.ludo-board) .ludo-game-heading .ludo-title{font-size:14px}
-  .ludo-overlay:has(.ludo-board) .ludo-player-count{font-size:8px}
-  .ludo-overlay:has(.ludo-board) .ludo-roster--match{height:18px;gap:5px}
-  .ludo-overlay:has(.ludo-board) .ludo-roster--match .ludo-player-row{width:15px;height:15px;flex-basis:15px}
-  .ludo-overlay:has(.ludo-board) .ludo-roster--match .ludo-player-swatch{width:14px!important;height:14px!important;min-width:14px;min-height:14px;flex-basis:14px}
-  .ludo-overlay:has(.ludo-board) .ludo-board{
-    width:min(100%,calc(100vw - 12px),calc(100dvh - 115px));
-    max-width:min(100%,calc(100vw - 12px),calc(100dvh - 115px));
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-controls{gap:5px}
-  .ludo-overlay:has(.ludo-board) .ludo-dice-card{gap:3px;padding:2px}
-  .ludo-overlay:has(.ludo-board) .ludo-dice-value{width:25px;height:25px;font-size:14px}
-  .ludo-overlay:has(.ludo-board) .ludo-roll,
-  .ludo-overlay:has(.ludo-board) .ludo-token-toggle{min-height:26px;padding:4px 7px;font-size:9px}
-  .ludo-overlay:has(.ludo-board) .ludo-token-toggle{min-width:50px}
-  .ludo-overlay:has(.ludo-board) .ludo-token-panel{width:min(340px,calc(100vw - 18px));max-height:34dvh;padding:7px}
-  .ludo-overlay:has(.ludo-board) .ludo-token-buttons{grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}
-  .ludo-overlay:has(.ludo-board) .ludo-token-button{min-height:25px;font-size:8px}
-  .ludo-overlay:has(.ludo-board) .ludo-end-actions button{min-height:23px;padding:3px 7px;font-size:8px}
-  .ludo-overlay:has(.ludo-board) .game-chat-toggle{min-height:25px;padding:4px 6px;font-size:8px}
-}
-@media(max-height:560px) and (min-width:701px){
-  .ludo-overlay:has(.ludo-board) .ludo-board{width:min(100%,calc(100dvh - 105px),calc(100vw - 30px));max-width:min(100%,calc(100dvh - 105px),calc(100vw - 30px))}
-}
-
-/* Board-first Ludo polish: reclaim screen space and improve board clarity. */
-.ludo-overlay:has(.ludo-board)>.ludo-modal{
-  padding:calc(5px + env(safe-area-inset-top)) max(5px,env(safe-area-inset-right)) calc(5px + env(safe-area-inset-bottom)) max(5px,env(safe-area-inset-left))!important;
-}
-.ludo-overlay:has(.ludo-board) #ludo-content{
-  grid-template-columns:minmax(0,1fr);
-  grid-template-rows:min-content min-content minmax(0,1fr) min-content min-content;
-  grid-template-areas:"top" "roster" "board" "controls" "end";
-  gap:clamp(2px,.45vh,6px);
-  align-content:stretch;
-  justify-items:center;
-}
-.ludo-overlay:has(.ludo-board) .ludo-game-top{
-  width:100%;
-  min-height:22px;
-  padding:0 128px 0 38px;
-}
-.ludo-overlay:has(.ludo-board) .ludo-game-heading .ludo-title{
-  font-size:clamp(15px,2vh,21px);
-  font-weight:850;
-  letter-spacing:-.035em;
-}
-.ludo-overlay:has(.ludo-board) .ludo-roster--match{
-  min-height:17px;
-  height:17px;
-  gap:6px;
-}
-.ludo-overlay:has(.ludo-board) .ludo-board{
-  box-sizing:border-box;
-  width:min(100%,calc(100vw - 8px),calc(100dvh - 88px));
-  max-width:min(100%,calc(100vw - 8px),calc(100dvh - 88px));
-  max-height:100%;
-  height:auto;
-  aspect-ratio:1/1;
-  padding:clamp(5px,.9vw,9px);
-  gap:clamp(1px,.28vw,3px);
-  margin:0;
-  border:1px solid color-mix(in srgb,var(--accent) 34%,var(--line));
-  border-radius:clamp(13px,2vw,23px);
-  background:
-    radial-gradient(circle at 50% 50%,color-mix(in srgb,var(--accent) 13%,transparent),transparent 38%),
-    linear-gradient(145deg,color-mix(in srgb,var(--panel) 94%,var(--accent)),var(--bg));
-  box-shadow:0 18px 44px #0004,inset 0 1px 0 #ffffff24,0 0 0 1px #ffffff08;
-}
-.ludo-overlay:has(.ludo-board) .ludo-track-cell,
-.ludo-overlay:has(.ludo-board) .ludo-home-lane{
-  border-width:1px;
-  border-color:color-mix(in srgb,var(--line) 72%,var(--accent));
-  border-radius:clamp(3px,.5vw,7px);
-  background:linear-gradient(145deg,color-mix(in srgb,var(--panel) 95%,white 5%),color-mix(in srgb,var(--panel) 90%,var(--accent) 10%));
-  box-shadow:inset 0 1px 0 #ffffff18,inset 0 -1px 0 #0000000c;
-}
-.ludo-overlay:has(.ludo-board) .ludo-track-cell.safe{
-  border-color:color-mix(in srgb,var(--accent) 58%,var(--line));
-  background:linear-gradient(145deg,color-mix(in srgb,var(--accent-surface) 90%,white 10%),var(--accent-surface));
-  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 20%,transparent);
-}
-.ludo-overlay:has(.ludo-board) .ludo-home-lane.red{background:linear-gradient(145deg,color-mix(in srgb,#d85a60 32%,var(--panel)),color-mix(in srgb,#d85a60 18%,var(--panel)))}
-.ludo-overlay:has(.ludo-board) .ludo-home-lane.green{background:linear-gradient(145deg,color-mix(in srgb,#39a96b 32%,var(--panel)),color-mix(in srgb,#39a96b 18%,var(--panel)))}
-.ludo-overlay:has(.ludo-board) .ludo-home-lane.yellow{background:linear-gradient(145deg,color-mix(in srgb,#d9ad45 36%,var(--panel)),color-mix(in srgb,#d9ad45 20%,var(--panel)))}
-.ludo-overlay:has(.ludo-board) .ludo-home-lane.blue{background:linear-gradient(145deg,color-mix(in srgb,#4f83d1 32%,var(--panel)),color-mix(in srgb,#4f83d1 18%,var(--panel)))}
-.ludo-overlay:has(.ludo-board) .ludo-base{
-  gap:clamp(4px,.65vw,8px);
-  padding:clamp(5px,.95vw,11px);
-  border-width:1px;
-  border-radius:clamp(9px,1.5vw,17px);
-  box-shadow:inset 0 1px 0 #ffffff24,0 3px 9px #00000016;
-}
-.ludo-overlay:has(.ludo-board) .ludo-base-heading strong{
-  font-size:clamp(8px,1.3vw,14px);
-  letter-spacing:-.02em;
-}
-.ludo-overlay:has(.ludo-board) .ludo-base-token{
-  min-height:clamp(17px,2.9vw,28px);
-  border-radius:8px;
-  background:color-mix(in srgb,var(--panel) 80%,white 5%);
-  box-shadow:inset 0 1px 0 #ffffff20;
-}
-.ludo-overlay:has(.ludo-board) .ludo-token-dot{
-  width:clamp(14px,2.5vw,25px);
-  height:clamp(14px,2.5vw,25px);
-  font-size:clamp(8px,1.1vw,11px);
-  border-width:2px;
-  box-shadow:0 2px 5px #0005,inset 0 1px 2px #ffffff70;
-}
-.ludo-overlay:has(.ludo-board) .ludo-center{
-  gap:4px;
-  border-width:2px;
-  border-radius:clamp(10px,1.7vw,18px);
-  background:linear-gradient(145deg,color-mix(in srgb,var(--accent-surface) 92%,white 8%),var(--accent-surface));
-  box-shadow:0 7px 18px #0003,inset 0 1px 0 #ffffff30;
-}
-.ludo-overlay:has(.ludo-board) .ludo-center strong{
-  font-size:clamp(10px,1.8vw,20px);
-  font-weight:950;
-}
-.ludo-overlay:has(.ludo-board) .ludo-controls{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  flex-wrap:nowrap;
-  width:100%;
-  max-width:min(100%,600px);
-  gap:clamp(5px,1vw,10px);
-  margin:0;
-}
-.ludo-overlay:has(.ludo-board) .ludo-dice-card{
-  display:flex;
-  flex-direction:row;
-  align-items:center;
-  gap:6px;
-  padding:4px 8px;
-  border:1px solid var(--line);
-  border-radius:13px;
-  background:color-mix(in srgb,var(--panel) 92%,var(--accent) 8%);
-  box-shadow:0 3px 12px #0002,inset 0 1px 0 #ffffff14;
-}
-.ludo-overlay:has(.ludo-board) .ludo-dice-label{
-  font-size:8px;
-  letter-spacing:.13em;
-}
-.ludo-overlay:has(.ludo-board) .ludo-dice-value{
-  width:29px;
-  height:29px;
-  border-radius:9px;
-  font-size:16px;
-  box-shadow:0 3px 9px #0002,inset 0 1px 0 #ffffff22;
-}
-.ludo-overlay:has(.ludo-board) .ludo-roll,
-.ludo-overlay:has(.ludo-board) .ludo-token-toggle{
-  min-height:31px;
-  padding:6px 11px;
-  border-radius:10px;
-  font-size:10px;
-  font-weight:850;
-  box-shadow:0 3px 10px #0002;
-  transition:transform .16s ease,filter .16s ease,box-shadow .16s ease;
-}
-.ludo-overlay:has(.ludo-board) .ludo-roll:not(:disabled):hover,
-.ludo-overlay:has(.ludo-board) .ludo-token-toggle:hover{
-  transform:translateY(-1px);
-  filter:brightness(1.06);
-  box-shadow:0 5px 13px #0003;
-}
-.ludo-overlay:has(.ludo-board) .ludo-token-panel{
-  right:0;
-  bottom:calc(100% + 8px);
-  border:1px solid color-mix(in srgb,var(--accent) 34%,var(--line));
-  background:color-mix(in srgb,var(--panel) 94%,var(--accent) 6%);
-  box-shadow:0 14px 38px #0008,inset 0 1px 0 #ffffff16;
-  backdrop-filter:blur(16px);
-}
-.ludo-overlay:has(.ludo-board) .ludo-message{
-  border-color:color-mix(in srgb,var(--accent) 34%,var(--line));
-  color:var(--text);
-  background:color-mix(in srgb,var(--panel) 94%,var(--accent) 6%);
-  box-shadow:0 5px 16px #0003;
-}
-.ludo-overlay:has(.ludo-board) .ludo-end-actions button{
-  min-height:27px;
-  padding:4px 10px;
-  border-radius:9px;
-  font-size:9px;
-}
-@media(max-width:700px){
-  .ludo-overlay:has(.ludo-board)>.ludo-modal{
-    padding:calc(4px + env(safe-area-inset-top)) max(4px,env(safe-area-inset-right)) calc(4px + env(safe-area-inset-bottom)) max(4px,env(safe-area-inset-left))!important;
-  }
-  .ludo-overlay:has(.ludo-board) #ludo-content{
-    grid-template-rows:min-content min-content minmax(0,1fr) min-content min-content;
-    gap:2px;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-game-top{
-    min-height:20px;
-    padding:0 104px 0 36px;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-game-heading .ludo-title{font-size:14px}
-  .ludo-overlay:has(.ludo-board) .ludo-roster--match{height:15px;min-height:15px;gap:5px}
-  .ludo-overlay:has(.ludo-board) .ludo-roster--match .ludo-player-row{width:14px;height:14px;flex-basis:14px}
-  .ludo-overlay:has(.ludo-board) .ludo-roster--match .ludo-player-swatch{width:13px!important;height:13px!important;min-width:13px;min-height:13px;flex-basis:13px}
-  .ludo-overlay:has(.ludo-board) .ludo-board{
-    width:min(100%,calc(100vw - 6px),calc(100dvh - 76px));
-    max-width:min(100%,calc(100vw - 6px),calc(100dvh - 76px));
-    border-radius:13px;
-    padding:5px;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-controls{gap:5px}
-  .ludo-overlay:has(.ludo-board) .ludo-dice-card{gap:4px;padding:3px 6px}
-  .ludo-overlay:has(.ludo-board) .ludo-dice-label{font-size:7px}
-  .ludo-overlay:has(.ludo-board) .ludo-dice-value{width:25px;height:25px;font-size:14px}
-  .ludo-overlay:has(.ludo-board) .ludo-roll,
-  .ludo-overlay:has(.ludo-board) .ludo-token-toggle{min-height:27px;padding:5px 8px;font-size:9px}
-  .ludo-overlay:has(.ludo-board) .ludo-end-actions button{min-height:23px;padding:3px 7px;font-size:8px}
-}
-@media(max-height:560px) and (min-width:701px){
-  .ludo-overlay:has(.ludo-board) .ludo-board{
-    width:min(100%,calc(100vw - 10px),calc(100dvh - 68px));
-    max-width:min(100%,calc(100vw - 10px),calc(100dvh - 68px));
-  }
-}
-@media(prefers-reduced-motion:reduce){
-  .ludo-overlay:has(.ludo-board) .ludo-roll,
-  .ludo-overlay:has(.ludo-board) .ludo-token-toggle{transition:none!important}
-}
-
-/* Comfortable Ludo control dock: clear dice display and intentional bottom placement. */
-.ludo-overlay:has(.ludo-board) #ludo-content{
-  grid-template-rows:min-content min-content minmax(0,1fr) auto auto;
-  gap:clamp(3px,.55vh,8px);
-}
-.ludo-overlay:has(.ludo-board) .ludo-board{
-  align-self:center;
-}
-.ludo-overlay:has(.ludo-board) .ludo-controls{
-  align-self:end;
-  justify-self:center;
-  min-height:48px;
-  width:max-content;
-  max-width:min(100%,680px);
-  padding:6px 9px;
-  gap:9px;
-  border:1px solid color-mix(in srgb,var(--accent) 22%,var(--line));
-  border-radius:16px;
-  background:color-mix(in srgb,var(--panel) 90%,var(--accent) 10%);
-  box-shadow:0 7px 22px #0003,inset 0 1px 0 #ffffff18;
-  backdrop-filter:blur(14px);
-}
-.ludo-overlay:has(.ludo-board) .ludo-dice-card{
-  min-width:42px;
-  justify-content:center;
-  padding:0 5px;
-  border:0;
-  background:transparent;
-  box-shadow:none;
-}
-.ludo-overlay:has(.ludo-board) .ludo-dice-label{display:none!important}
-.ludo-overlay:has(.ludo-board) .ludo-dice-value{
-  width:35px;
-  height:35px;
-  border-radius:11px;
-  font-size:18px;
-  font-weight:900;
-  background:linear-gradient(145deg,color-mix(in srgb,var(--accent) 24%,var(--panel)),var(--panel));
-  border:1px solid color-mix(in srgb,var(--accent) 38%,var(--line));
-}
-.ludo-overlay:has(.ludo-board) .ludo-roll,
-.ludo-overlay:has(.ludo-board) .ludo-token-toggle{
-  min-height:40px;
-  min-width:82px;
-  padding:8px 15px;
-  border-radius:12px;
-  font-size:12px;
-  font-weight:850;
-}
-.ludo-overlay:has(.ludo-board) .ludo-end-actions{
-  justify-self:center;
-  align-self:end;
-  width:min(100%,680px);
-  padding:0 0 max(2px,env(safe-area-inset-bottom));
-}
-.ludo-overlay:has(.ludo-board) .ludo-end-actions button{
-  min-height:36px;
-  padding:7px 13px;
-  font-size:10px;
-}
-.ludo-overlay:has(.ludo-board) .game-chat-panel{
-  max-height:min(62dvh,520px);
-}
-@media(min-width:900px){
-  .ludo-overlay:has(.ludo-board)>.ludo-modal{
-    padding:12px max(20px,env(safe-area-inset-right)) 12px max(20px,env(safe-area-inset-left))!important;
-  }
-  .ludo-overlay:has(.ludo-board) #ludo-content{
-    gap:clamp(5px,.8vh,12px);
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-game-top{
-    min-height:30px;
-    padding-left:48px;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-roster--match{
-    height:22px;
-    min-height:22px;
-    gap:9px;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-roster--match .ludo-player-row{
-    width:21px;height:21px;flex-basis:21px;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-roster--match .ludo-player-swatch{
-    width:18px!important;height:18px!important;min-width:18px;min-height:18px;flex-basis:18px;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-controls{
-    min-height:58px;
-    padding:8px 13px;
-    gap:12px;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-dice-value{width:40px;height:40px;font-size:20px}
-  .ludo-overlay:has(.ludo-board) .ludo-roll,
-  .ludo-overlay:has(.ludo-board) .ludo-token-toggle{
-    min-height:44px;min-width:104px;padding:9px 18px;font-size:13px;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-end-actions button{
-    min-height:40px;padding:8px 16px;font-size:11px;
-  }
-}
-@media(max-width:700px){
-  .ludo-overlay:has(.ludo-board) #ludo-content{
-    grid-template-rows:min-content min-content minmax(0,1fr) auto auto;
-    gap:clamp(3px,.6vh,6px);
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-controls{
-    width:min(100%,440px);
-    min-height:52px;
-    padding:6px 8px;
-    margin:0 auto 2px;
-    gap:7px;
-    border-radius:15px;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-dice-card{min-width:39px;padding:0 3px}
-  .ludo-overlay:has(.ludo-board) .ludo-dice-value{width:34px;height:34px;font-size:17px}
-  .ludo-overlay:has(.ludo-board) .ludo-roll,
-  .ludo-overlay:has(.ludo-board) .ludo-token-toggle{
-    min-height:42px;min-width:88px;padding:8px 13px;font-size:12px;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-end-actions{
-    width:100%;
-    padding-bottom:max(4px,env(safe-area-inset-bottom));
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-end-actions button{min-height:36px;font-size:10px}
-}
-@media(max-width:380px){
-  .ludo-overlay:has(.ludo-board) .ludo-controls{gap:5px;padding:5px 6px}
-  .ludo-overlay:has(.ludo-board) .ludo-roll,
-  .ludo-overlay:has(.ludo-board) .ludo-token-toggle{min-width:76px;padding-inline:9px}
-}
-
-
-/* Ludo match menu, board sizing, token containment and dice readability. */
-.ludo-overlay:has(.ludo-board) > .ludo-modal {
-  position:relative;
-  width:100vw;
-  max-width:100vw;
-}
-.ludo-overlay:has(.ludo-board) #ludo-close.ludo-menu-trigger {
-  position:absolute;
-  z-index:95;
-  top:calc(10px + env(safe-area-inset-top));
-  left:calc(12px + env(safe-area-inset-left));
-  right:auto;
-  display:grid;
-  place-items:center;
-  width:44px;
-  height:44px;
-  border-radius:14px;
-  border:1px solid color-mix(in srgb,var(--accent) 42%,var(--line));
-  background:color-mix(in srgb,var(--panel) 92%,var(--accent) 8%);
-  color:var(--text);
-  font:800 21px/1 system-ui,sans-serif;
-  box-shadow:0 8px 22px #0004,inset 0 1px 0 #ffffff18;
-  backdrop-filter:blur(14px);
-  transition:transform .18s ease,background .18s ease,box-shadow .18s ease;
-}
-.ludo-overlay:has(.ludo-board) #ludo-close.ludo-menu-trigger:hover {
-  transform:translateY(-1px);
-  background:var(--accent-surface);
-  box-shadow:0 11px 25px #0005;
-}
-.ludo-game-menu {
-  position:absolute;
-  z-index:94;
-  top:calc(62px + env(safe-area-inset-top));
-  left:calc(12px + env(safe-area-inset-left));
-  display:grid;
-  gap:6px;
-  width:min(285px,calc(100vw - 28px));
-  padding:12px;
-  border:1px solid color-mix(in srgb,var(--accent) 38%,var(--line));
-  border-radius:19px;
-  background:color-mix(in srgb,var(--panel) 94%,var(--accent) 6%);
-  box-shadow:0 22px 56px #0009,inset 0 1px 0 #ffffff1c;
-  backdrop-filter:blur(20px);
-  transform-origin:top left;
-  animation:ludo-menu-enter .18s cubic-bezier(.2,.8,.2,1) both;
-}
-.ludo-game-menu[hidden] {display:none!important}
-.ludo-menu-heading {
-  display:grid;
-  gap:3px;
-  padding:3px 7px 9px;
-  border-bottom:1px solid color-mix(in srgb,var(--line) 80%,transparent);
-}
-.ludo-menu-heading .eyebrow {
-  margin:0;
-  color:var(--accent-text);
-  font-size:8px;
-  font-weight:900;
-  letter-spacing:.17em;
-}
-.ludo-menu-heading strong {font-size:15px;font-weight:850;letter-spacing:-.02em}
-.ludo-menu-action {
-  display:grid;
-  grid-template-columns:36px minmax(0,1fr);
-  align-items:center;
-  gap:10px;
-  width:100%;
-  min-height:54px;
-  padding:8px 10px;
-  border:1px solid transparent;
-  border-radius:13px;
-  color:var(--text);
-  text-align:left;
-  background:transparent;
-  cursor:pointer;
-  transition:transform .16s ease,border-color .16s ease,background .16s ease,opacity .16s ease;
-}
-.ludo-menu-action:not(:disabled):hover {
-  transform:translateX(2px);
-  border-color:color-mix(in srgb,var(--accent) 35%,var(--line));
-  background:color-mix(in srgb,var(--accent-surface) 75%,transparent);
-}
-.ludo-menu-action:focus-visible {outline:3px solid color-mix(in srgb,var(--accent) 65%,white);outline-offset:2px}
-.ludo-menu-action:disabled {opacity:.42;cursor:not-allowed}
-.ludo-menu-icon {
-  display:grid;
-  place-items:center;
-  width:34px;
-  height:34px;
-  border:1px solid color-mix(in srgb,var(--accent) 34%,var(--line));
-  border-radius:11px;
-  color:var(--accent-text);
-  background:color-mix(in srgb,var(--accent) 14%,var(--panel));
-  font-size:17px;
-  font-weight:900;
-}
-.ludo-menu-copy {display:grid;gap:3px;min-width:0}
-.ludo-menu-copy strong {font-size:11px;font-weight:850}
-.ludo-menu-copy small {color:var(--muted);font-size:9px;line-height:1.35}
-.ludo-menu-action.danger .ludo-menu-icon {
-  color:var(--danger,#e17b7b);
-  border-color:color-mix(in srgb,var(--danger,#e17b7b) 35%,var(--line));
-  background:color-mix(in srgb,var(--danger,#e17b7b) 10%,var(--panel));
-}
-.ludo-menu-action.danger:not(:disabled):hover {
-  border-color:color-mix(in srgb,var(--danger,#e17b7b) 34%,var(--line));
-  background:color-mix(in srgb,var(--danger,#e17b7b) 9%,transparent);
-}
-.ludo-overlay:has(.ludo-board) .ludo-game-top {padding-left:62px}
-.ludo-overlay:has(.ludo-board) #ludo-content {
-  grid-template-columns:minmax(0,1fr);
-  grid-template-rows:min-content min-content minmax(0,1fr) auto;
-  grid-template-areas:"top" "roster" "board" "controls";
-  gap:clamp(4px,.7vh,10px);
+.ludo-overlay:has(.ludo-board) .ludo-roster--match .ludo-player-swatch {
+  box-sizing:border-box; width:22px!important; height:22px!important;
+  min-width:22px; min-height:22px; flex:0 0 22px; border:2px solid #ffffffd9;
 }
 .ludo-overlay:has(.ludo-board) .ludo-board {
-  width:min(100%,calc(100vw - 4px),calc(100dvh - 154px));
-  max-width:min(100%,calc(100vw - 4px),calc(100dvh - 154px));
-  max-height:100%;
-  padding:clamp(6px,.95vw,10px);
-  gap:clamp(1px,.2vw,2px);
-  border-radius:clamp(14px,2vw,24px);
-  animation:ludo-board-enter .3s ease both;
+  grid-area:board; justify-self:center; align-self:center; box-sizing:border-box;
+  width:min(100%,calc(100dvh - 170px)); max-width:min(100%,calc(100dvh - 170px));
+  height:auto; max-height:100%; aspect-ratio:1/1; margin:0;
+  padding:clamp(7px,.9vw,13px); gap:clamp(2px,.25vw,4px);
+  border:1px solid #ffffff24; border-radius:24px;
+  background:linear-gradient(145deg,#263447,#151e2a 72%);
+  box-shadow:0 24px 70px #0008,inset 0 1px 0 #ffffff24,0 0 0 5px #ffffff06;
+  animation:ludo-board-enter .38s cubic-bezier(.2,.75,.25,1) both;
 }
 .ludo-overlay:has(.ludo-board) .ludo-track-cell,
 .ludo-overlay:has(.ludo-board) .ludo-home-lane {
-  position:relative;
-  min-width:0;
-  min-height:0;
-  overflow:hidden;
-  transition:filter .16s ease,box-shadow .16s ease;
+  box-sizing:border-box; min-width:0; min-height:0; overflow:hidden; isolation:isolate;
+  border:1px solid #ffffff20; border-radius:clamp(3px,.4vw,7px);
+  box-shadow:inset 0 1px 0 #ffffff16;
 }
-.ludo-overlay:has(.ludo-board) .ludo-track-cell:hover,
-.ludo-overlay:has(.ludo-board) .ludo-home-lane:hover {filter:brightness(1.08)}
-.ludo-overlay:has(.ludo-board) .ludo-occupants {
-  display:flex;
-  flex-wrap:wrap;
-  justify-content:center;
-  align-content:center;
-  align-items:center;
-  gap:1px;
-  width:100%;
-  max-width:100%;
-  max-height:100%;
-  overflow:hidden;
-  pointer-events:none;
+.ludo-overlay:has(.ludo-board) .ludo-track-cell {background:linear-gradient(145deg,#f4f6f8,#dfe5eb)}
+.ludo-overlay:has(.ludo-board) .ludo-track-cell.safe {background:linear-gradient(145deg,#e6edf3,#cbd7e2);border-color:#ffffffb0}
+.ludo-overlay:has(.ludo-board) .ludo-safe-mark {color:#64748b;filter:drop-shadow(0 1px 1px #fff)}
+.ludo-overlay:has(.ludo-board) .ludo-home-lane.red {background:linear-gradient(145deg,#f08b91,#c84b57)}
+.ludo-overlay:has(.ludo-board) .ludo-home-lane.green {background:linear-gradient(145deg,#83d9a6,#2b985d)}
+.ludo-overlay:has(.ludo-board) .ludo-home-lane.yellow {background:linear-gradient(145deg,#f5d782,#c69732)}
+.ludo-overlay:has(.ludo-board) .ludo-home-lane.blue {background:linear-gradient(145deg,#8eb7f0,#3d70bd)}
+.ludo-overlay:has(.ludo-board) .ludo-base {
+  box-sizing:border-box; display:flex; flex-direction:column; justify-content:center; gap:clamp(5px,.65vw,10px);
+  min-width:0; min-height:0; padding:clamp(7px,1vw,14px); border:1px solid #ffffff35;
+  border-radius:clamp(9px,1.3vw,18px); box-shadow:0 7px 20px #0003,inset 0 1px 0 #ffffff24;
 }
-.ludo-overlay:has(.ludo-board) .ludo-token-dot {
-  box-sizing:border-box;
-  flex:0 0 clamp(9px,1.15vw,14px);
-  width:clamp(9px,1.15vw,14px);
-  height:clamp(9px,1.15vw,14px);
-  max-width:47%;
-  max-height:47%;
-  border-width:1px;
-  font-size:clamp(5px,.68vw,8px);
-  line-height:1;
-  box-shadow:0 2px 5px #0006,inset 0 1px 2px #ffffff72;
-  animation:ludo-token-pop .22s cubic-bezier(.2,.8,.2,1) both;
-}
-.ludo-overlay:has(.ludo-board) .ludo-center .ludo-occupants {
-  width:82%;
-  max-width:82%;
-  gap:2px;
-}
-.ludo-overlay:has(.ludo-board) .ludo-center .ludo-token-dot {
-  flex-basis:clamp(12px,1.55vw,18px);
-  width:clamp(12px,1.55vw,18px);
-  height:clamp(12px,1.55vw,18px);
-  max-width:48%;
-  max-height:48%;
-  font-size:clamp(7px,.78vw,10px);
-}
-.ludo-overlay:has(.ludo-board) .ludo-controls {
-  width:min(100%,520px);
-  min-height:68px;
-  padding:8px 12px;
-  gap:clamp(8px,1.2vw,14px);
-  border-radius:18px;
-  box-shadow:0 10px 28px #0004,inset 0 1px 0 #ffffff20;
-}
-.ludo-overlay:has(.ludo-board) .ludo-dice-card {
-  display:flex;
-  flex:0 0 auto;
-  flex-direction:row;
-  align-items:center;
-  justify-content:center;
-  gap:10px;
-  min-width:0;
-  padding:0;
-}
-.ludo-overlay:has(.ludo-board) .ludo-dice-face {
-  display:grid;
-  justify-items:center;
-  align-content:center;
-  gap:2px;
-  min-width:54px;
-}
-.ludo-overlay:has(.ludo-board) .ludo-dice-label {
-  display:block!important;
-  color:var(--muted);
-  font-size:8px;
-  font-weight:900;
-  letter-spacing:.11em;
-  white-space:nowrap;
-}
-.ludo-overlay:has(.ludo-board) .ludo-dice-value {
-  display:grid;
-  flex:0 0 50px;
-  place-items:center;
-  box-sizing:border-box;
-  width:50px;
-  height:50px;
-  min-width:50px;
-  min-height:50px;
-  margin:0;
-  border-radius:15px;
-  border:1px solid color-mix(in srgb,var(--accent) 48%,var(--line));
-  color:var(--accent-text);
-  background:
-    radial-gradient(circle at 30% 20%,#ffffff38,transparent 44%),
-    linear-gradient(145deg,color-mix(in srgb,var(--accent) 30%,var(--panel)),var(--panel));
-  box-shadow:0 5px 13px #0003,inset 0 1px 0 #ffffff40;
-  font-size:26px;
-  font-weight:950;
-  font-variant-numeric:tabular-nums;
-}
-.ludo-overlay:has(.ludo-board) .ludo-roll,
-.ludo-overlay:has(.ludo-board) .ludo-token-toggle {
-  flex:0 0 auto;
-  min-width:88px;
-  min-height:48px;
-  padding:9px 13px;
-  border-radius:13px;
-  font-size:12px;
-  font-weight:900;
-  box-shadow:0 4px 12px #0003;
-  transition:transform .16s ease,filter .16s ease,box-shadow .16s ease;
-}
-.ludo-overlay:has(.ludo-board) .ludo-roll:not(:disabled):active,
-.ludo-overlay:has(.ludo-board) .ludo-token-toggle:active {transform:scale(.96)}
-.ludo-overlay:has(.ludo-board) .ludo-roll.is-pending {filter:saturate(1.16);opacity:.9}
-.ludo-overlay:has(.ludo-board) .ludo-dice-value.is-rolling {animation:ludo-dice-shuffle .12s linear infinite}
-.ludo-overlay:has(.ludo-board) .ludo-dice-value.is-result {animation:ludo-dice-land .48s cubic-bezier(.15,.85,.25,1.25) both}
-.ludo-overlay:has(.ludo-board) .ludo-token-button:not(:disabled):active {transform:scale(.98)}
-@keyframes ludo-menu-enter {
-  from {opacity:0;transform:translateY(-7px) scale(.97)}
-  to {opacity:1;transform:translateY(0) scale(1)}
-}
-@keyframes ludo-board-enter {
-  from {opacity:0;transform:translateY(7px) scale(.992)}
-  to {opacity:1;transform:translateY(0) scale(1)}
-}
-@keyframes ludo-token-pop {
-  from {opacity:.35;transform:scale(.78)}
-  to {opacity:1;transform:scale(1)}
-}
-@keyframes ludo-dice-shuffle {
-  0% {transform:rotate(-7deg) translateY(-1px)}
-  50% {transform:rotate(7deg) translateY(1px)}
-  100% {transform:rotate(-7deg) translateY(-1px)}
-}
-@keyframes ludo-dice-land {
-  0% {transform:scale(.76) rotate(-16deg);filter:brightness(1.35)}
-  65% {transform:scale(1.12) rotate(5deg)}
-  100% {transform:scale(1) rotate(0);filter:brightness(1)}
-}
-@media(min-width:900px) {
-  .ludo-overlay:has(.ludo-board) .ludo-board {
-    width:min(100%,calc(100dvh - 154px),calc(100vw - 4px));
-    max-width:min(100%,calc(100dvh - 154px),calc(100vw - 4px));
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-game-top {padding-left:68px}
-  .ludo-overlay:has(.ludo-board) .ludo-controls {min-height:76px;padding:9px 16px}
-  .ludo-overlay:has(.ludo-board) .ludo-dice-value {
-    flex-basis:58px;width:58px;height:58px;min-width:58px;min-height:58px;font-size:30px;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-dice-face {min-width:62px}
-  .ludo-overlay:has(.ludo-board) .ludo-roll,
-  .ludo-overlay:has(.ludo-board) .ludo-token-toggle {min-height:54px;min-width:104px;font-size:13px}
-}
-@media(max-width:700px) {
-  .ludo-overlay:has(.ludo-board) > .ludo-modal {padding:calc(4px + env(safe-area-inset-top)) max(4px,env(safe-area-inset-right)) calc(4px + env(safe-area-inset-bottom)) max(4px,env(safe-area-inset-left))!important}
-  .ludo-overlay:has(.ludo-board) #ludo-close.ludo-menu-trigger {
-    top:calc(7px + env(safe-area-inset-top));
-    left:calc(7px + env(safe-area-inset-left));
-    width:40px;height:40px;border-radius:12px;font-size:19px;
-  }
-  .ludo-game-menu {
-    top:calc(54px + env(safe-area-inset-top));
-    left:calc(7px + env(safe-area-inset-left));
-    width:min(280px,calc(100vw - 22px));
-    padding:10px;
-    border-radius:17px;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-game-top {padding-left:53px;padding-right:104px}
-  .ludo-overlay:has(.ludo-board) #ludo-content {
-    grid-template-rows:min-content min-content minmax(0,1fr) auto;
-    gap:clamp(3px,.55vh,7px);
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-board {
-    width:min(100%,calc(100vw - 4px),calc(100dvh - 132px));
-    max-width:min(100%,calc(100vw - 4px),calc(100dvh - 132px));
-    padding:5px;
-    border-radius:14px;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-occupants {gap:0}
-  .ludo-overlay:has(.ludo-board) .ludo-token-dot {
-    flex-basis:clamp(8px,2.3vw,11px);
-    width:clamp(8px,2.3vw,11px);
-    height:clamp(8px,2.3vw,11px);
-    font-size:clamp(5px,1.35vw,7px);
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-center .ludo-token-dot {
-    flex-basis:clamp(11px,3vw,15px);
-    width:clamp(11px,3vw,15px);
-    height:clamp(11px,3vw,15px);
-    font-size:clamp(6px,1.6vw,8px);
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-controls {
-    width:min(100%,440px);
-    min-height:66px;
-    padding:7px 8px;
-    gap:7px;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-dice-card {gap:7px}
-  .ludo-overlay:has(.ludo-board) .ludo-dice-face {min-width:47px}
-  .ludo-overlay:has(.ludo-board) .ludo-dice-value {
-    flex-basis:46px;width:46px;height:46px;min-width:46px;min-height:46px;font-size:24px;border-radius:13px;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-dice-label {font-size:7px}
-  .ludo-overlay:has(.ludo-board) .ludo-roll,
-  .ludo-overlay:has(.ludo-board) .ludo-token-toggle {
-    min-width:80px;min-height:46px;padding:8px 9px;font-size:11px;
-  }
-}
-@media(max-width:360px) {
-  .ludo-overlay:has(.ludo-board) .ludo-controls {gap:5px;padding:6px}
-  .ludo-overlay:has(.ludo-board) .ludo-dice-card {gap:4px}
-  .ludo-overlay:has(.ludo-board) .ludo-dice-value {flex-basis:42px;width:42px;height:42px;min-width:42px;min-height:42px}
-  .ludo-overlay:has(.ludo-board) .ludo-roll,
-  .ludo-overlay:has(.ludo-board) .ludo-token-toggle {min-width:70px;padding-inline:7px}
-}
-@media(prefers-reduced-motion:reduce) {
-  .ludo-game-menu,
-  .ludo-menu-action,
-  .ludo-overlay:has(.ludo-board) .ludo-board,
-  .ludo-overlay:has(.ludo-board) .ludo-token-dot,
-  .ludo-overlay:has(.ludo-board) .ludo-roll,
-  .ludo-overlay:has(.ludo-board) .ludo-token-toggle,
-  .ludo-overlay:has(.ludo-board) .ludo-dice-value {
-    animation:none!important;
-    transition:none!important;
-  }
-}
-
-
-/* Final responsive Ludo match layout: controls beside the board on desktop,
-   separated and docked along the bottom on phones. */
-@media (min-width:701px) {
-  .ludo-overlay:has(.ludo-board) > .ludo-modal {
-    padding:clamp(12px,1.8vh,22px) clamp(18px,2.4vw,36px)!important;
-  }
-  .ludo-overlay:has(.ludo-board) #ludo-content {
-    grid-template-columns:minmax(190px,clamp(220px,23vw,300px)) minmax(0,1fr);
-    grid-template-rows:min-content min-content minmax(0,1fr);
-    grid-template-areas:
-      "top top"
-      "roster roster"
-      "controls board";
-    column-gap:clamp(18px,2.4vw,36px);
-    row-gap:clamp(6px,.9vh,12px);
-    align-items:stretch;
-    justify-items:stretch;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-game-top {
-    padding-left:66px;
-    padding-right:clamp(170px,19vw,240px);
-    min-height:52px;
-  }
-  .ludo-overlay:has(.ludo-board) .game-chat-toggle {
-    min-height:50px;
-    padding:12px 19px;
-    border-radius:16px;
-    font-size:14px;
-    font-weight:850;
-    box-shadow:0 7px 20px #0003;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-roster--match {
-    min-height:30px;
-    height:30px;
-    justify-content:center;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-board {
-    width:min(100%,calc(100dvh - 150px));
-    max-width:min(100%,calc(100dvh - 150px));
-    max-height:100%;
-    margin:0;
-    justify-self:stretch;
-    align-self:center;
-    padding:clamp(8px,.9vw,13px);
-    gap:clamp(2px,.22vw,3px);
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-controls {
-    width:100%;
-    max-width:none;
-    min-width:0;
-    min-height:0;
-    height:fit-content;
-    align-self:center;
-    display:flex;
-    flex-direction:column;
-    align-items:stretch;
-    justify-content:center;
-    gap:14px;
-    padding:clamp(14px,1.5vw,22px);
-    border:1px solid color-mix(in srgb,var(--accent) 38%,var(--line));
-    border-radius:22px;
-    background:color-mix(in srgb,var(--panel) 94%,var(--accent) 6%);
-    box-shadow:0 16px 40px #0004,inset 0 1px 0 #ffffff1c;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-dice-card {
-    width:100%;
-    display:grid;
-    grid-template-columns:minmax(0,1fr) auto;
-    justify-items:stretch;
-    align-items:center;
-    gap:12px;
-    padding:13px;
-    border-radius:16px;
-    background:color-mix(in srgb,var(--bg) 65%,var(--panel));
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-dice-face {
-    justify-items:start;
-    gap:7px;
-    min-width:0;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-dice-value {
-    width:66px;
-    height:66px;
-    min-width:66px;
-    min-height:66px;
-    flex-basis:66px;
-    border-radius:18px;
-    font-size:36px;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-dice-label {font-size:10px}
-  .ludo-overlay:has(.ludo-board) .ludo-roll {
-    width:100%;
-    min-height:52px;
-    font-size:14px;
-    border-radius:14px;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-token-toggle {
-    width:100%;
-    min-height:52px;
-    font-size:14px;
-    border-radius:14px;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-token-panel {
-    width:100%;
-    box-sizing:border-box;
-    padding:14px;
-    border-radius:16px;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-token-buttons {
-    grid-template-columns:1fr;
-    gap:8px;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-token-button {
-    min-height:43px;
-    font-size:12px;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-message {
-    font-size:12px;
-  }
-}
-@media (max-width:700px) {
-  .ludo-overlay:has(.ludo-board) > .ludo-modal {
-    padding:calc(5px + env(safe-area-inset-top)) max(5px,env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(5px,env(safe-area-inset-left))!important;
-  }
-  .ludo-overlay:has(.ludo-board) #ludo-content {
-    grid-template-columns:minmax(0,1fr);
-    grid-template-rows:min-content min-content minmax(0,1fr) min-content;
-    grid-template-areas:"top" "roster" "board" "controls";
-    gap:clamp(3px,.45vh,7px);
-    justify-items:stretch;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-game-top {
-    min-height:44px;
-    padding-left:51px;
-    padding-right:0;
-    margin:0;
-  }
-  .ludo-overlay:has(.ludo-board) .game-chat-toggle {
-    min-height:44px;
-    padding:10px 13px;
-    border-radius:14px;
-    font-size:12px;
-    font-weight:850;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-board {
-    width:min(100%,calc(100vw - 10px),calc(100dvh - 158px));
-    max-width:min(100%,calc(100vw - 10px),calc(100dvh - 158px));
-    max-height:100%;
-    padding:clamp(5px,1vw,8px);
-    margin:0 auto;
-    gap:clamp(1px,.22vw,2px);
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-controls {
-    position:relative;
-    display:grid;
-    grid-template-columns:minmax(0,1fr) minmax(0,1fr);
-    grid-template-rows:auto auto;
-    align-items:stretch;
-    justify-content:stretch;
-    gap:8px;
-    width:100%;
-    max-width:560px;
-    min-height:0;
-    margin:0 auto;
-    padding:9px;
-    border:1px solid color-mix(in srgb,var(--accent) 38%,var(--line));
-    border-radius:17px;
-    background:color-mix(in srgb,var(--panel) 96%,var(--accent) 4%);
-    box-shadow:0 9px 24px #0004,inset 0 1px 0 #ffffff18;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-dice-card {
-    display:grid;
-    grid-template-columns:auto minmax(0,1fr);
-    grid-template-rows:auto;
-    justify-items:center;
-    align-items:center;
-    gap:7px;
-    min-width:0;
-    padding:7px;
-    border-radius:12px;
-    background:color-mix(in srgb,var(--bg) 65%,var(--panel));
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-dice-face {
-    min-width:0;
-    gap:3px;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-dice-label {font-size:7px}
-  .ludo-overlay:has(.ludo-board) .ludo-dice-value {
-    width:44px;
-    height:44px;
-    min-width:44px;
-    min-height:44px;
-    flex-basis:44px;
-    border-radius:12px;
-    font-size:23px;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-roll {
-    width:100%;
-    min-width:0;
-    min-height:48px;
-    padding:8px 7px;
-    font-size:11px;
-    border-radius:11px;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-token-toggle {
-    grid-column:2;
-    grid-row:1;
-    align-self:stretch;
-    width:100%;
-    min-width:0;
-    min-height:62px;
-    padding:8px;
-    font-size:13px;
-    border-radius:12px;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-token-panel {
-    grid-column:1/-1;
-    width:100%;
-    box-sizing:border-box;
-    padding:10px;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-token-buttons {
-    grid-template-columns:repeat(2,minmax(0,1fr));
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-token-button {
-    min-height:39px;
-    font-size:10px;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-message {
-    grid-column:1/-1;
-    font-size:10px;
-  }
-}
-@media(max-width:380px) {
-  .ludo-overlay:has(.ludo-board) .ludo-board {
-    width:min(100%,calc(100vw - 8px),calc(100dvh - 150px));
-    max-width:min(100%,calc(100vw - 8px),calc(100dvh - 150px));
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-controls {gap:6px;padding:7px}
-  .ludo-overlay:has(.ludo-board) .ludo-dice-card {gap:5px;padding:5px}
-  .ludo-overlay:has(.ludo-board) .ludo-dice-value {width:39px;height:39px;min-width:39px;min-height:39px;flex-basis:39px;font-size:21px}
-  .ludo-overlay:has(.ludo-board) .ludo-roll {font-size:10px}
-  .ludo-overlay:has(.ludo-board) .ludo-token-toggle {font-size:12px}
-}
-@media(prefers-reduced-motion:reduce) {
-  .ludo-overlay:has(.ludo-board) .ludo-dice-card,
-  .ludo-overlay:has(.ludo-board) .ludo-token-toggle {transition:none!important}
-}
-
-
-/* Centered Ludo title treatment for lobby and live-match views, on every screen. */
-.ludo-modal .ludo-game-top {
-  position:relative;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  box-sizing:border-box;
-  width:100%;
-  min-height:58px;
-  padding:8px 58px!important;
-  text-align:center;
-}
-.ludo-modal .ludo-game-heading {
-  position:absolute;
-  top:50%;
-  left:50%;
-  display:grid;
-  justify-items:center;
-  gap:3px;
-  width:max-content;
-  max-width:calc(100% - 116px);
-  padding:0!important;
-  transform:translate(-50%,-50%);
-  text-align:center;
-}
-.ludo-modal .ludo-game-heading .eyebrow {
-  justify-content:center;
-  margin:0;
-  font-size:9px;
-  font-weight:850;
-  letter-spacing:.2em;
-  opacity:.78;
-}
-.ludo-modal .ludo-game-heading .ludo-title {
-  margin:0!important;
-  font-family:ui-serif,Georgia,"Times New Roman",serif;
-  font-size:clamp(23px,3vw,34px)!important;
-  font-weight:800;
-  line-height:1.04;
-  letter-spacing:.015em;
-  text-align:center;
-  text-wrap:balance;
-  color:var(--text);
-  text-shadow:0 2px 0 #0003,0 5px 18px color-mix(in srgb,var(--accent) 24%,transparent);
-}
-.ludo-modal .ludo-game-heading .ludo-intro {
-  margin:1px 0 0;
-  font-size:10px;
-  text-align:center;
-}
-@media(max-width:700px) {
-  .ludo-modal .ludo-game-top {
-    min-height:55px;
-    padding:7px 50px!important;
-  }
-  .ludo-modal .ludo-game-heading {max-width:calc(100% - 100px)}
-  .ludo-modal .ludo-game-heading .ludo-title {
-    font-size:clamp(21px,6vw,29px)!important;
-  }
-}
-@media(prefers-reduced-motion:reduce) {
-  .ludo-modal .ludo-game-heading .ludo-title {text-shadow:0 2px 0 #0002}
-}
-
-
-/* Ludo token sizing correction: every occupied square gets a contained 2x2 token grid. */
-.ludo-overlay:has(.ludo-board) .ludo-track-cell,
-.ludo-overlay:has(.ludo-board) .ludo-home-lane {
-  overflow:hidden;
-  isolation:isolate;
-}
-.ludo-overlay:has(.ludo-board) .ludo-occupants {
-  display:grid!important;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  grid-auto-rows:minmax(0,1fr);
-  place-items:center;
-  align-content:center;
-  justify-content:center;
-  box-sizing:border-box;
-  width:100%;
-  height:100%;
-  max-width:100%;
-  max-height:100%;
-  min-width:0;
-  min-height:0;
-  gap:clamp(0px,.12vw,2px);
-  padding:2px;
-  overflow:hidden;
-}
-.ludo-overlay:has(.ludo-board) .ludo-occupants > .ludo-token-dot {
-  display:grid;
-  place-items:center;
-  box-sizing:border-box;
-  width:84%;
-  height:auto;
-  max-width:21px;
-  min-width:0;
-  aspect-ratio:1/1;
-  flex:none;
-  margin:0;
-  border:1.5px solid #ffffffc9;
-  border-radius:50%;
-  font-size:clamp(6px,.72vw,9px);
-  line-height:1;
-  font-weight:900;
-  overflow:hidden;
-  box-shadow:0 1px 4px #0006,inset 0 1px 2px #ffffff75;
-}
-.ludo-overlay:has(.ludo-board) .ludo-occupants > .ludo-token-dot:only-child {
-  grid-column:1/-1;
-  width:46%;
-  max-width:24px;
-  font-size:clamp(7px,.82vw,10px);
-}
-.ludo-overlay:has(.ludo-board) .ludo-center .ludo-occupants {
-  width:78%;
-  height:68%;
-  padding:3px;
-  gap:2px;
-}
-.ludo-overlay:has(.ludo-board) .ludo-center .ludo-token-dot {
-  width:86%;
-  max-width:25px;
-  font-size:clamp(7px,.8vw,10px);
-}
-.ludo-overlay:has(.ludo-board) .ludo-base .ludo-occupants {
-  display:grid!important;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  grid-auto-rows:minmax(0,1fr);
-  width:min(100%,230px);
-  height:auto;
-  min-height:0;
-  max-height:none;
-  gap:clamp(5px,.8vw,10px);
-  padding:0;
-  overflow:visible;
-}
-.ludo-overlay:has(.ludo-board) .ludo-base .ludo-token-dot {
-  width:100%;
-  max-width:none;
-  height:auto;
-  min-width:0;
-  aspect-ratio:1/1;
-  border:2px solid #ffffffa8;
-  border-radius:50%;
-  font-size:clamp(10px,1.15vw,14px);
-  box-shadow:0 2px 7px #0005,inset 0 1px 2px #ffffff75;
-}
-.ludo-overlay:has(.ludo-board) .ludo-token-panel {
-  gap:10px;
-}
-.ludo-overlay:has(.ludo-board) .ludo-token-buttons {
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:8px;
-}
-.ludo-overlay:has(.ludo-board) .ludo-token-button {
-  min-height:42px;
-  padding:8px 10px;
-  border-radius:12px;
-  font-size:clamp(10px,.9vw,12px);
-  white-space:normal;
-  line-height:1.2;
-  text-overflow:clip;
-}
-@media(max-width:700px) {
-  .ludo-overlay:has(.ludo-board) .ludo-occupants {
-    gap:0;
-    padding:1px;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-occupants > .ludo-token-dot {
-    width:82%;
-    max-width:16px;
-    border-width:1px;
-    font-size:clamp(5px,1.55vw,8px);
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-occupants > .ludo-token-dot:only-child {
-    width:46%;
-    max-width:19px;
-    font-size:clamp(6px,1.8vw,9px);
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-center .ludo-occupants {
-    width:80%;
-    height:70%;
-    padding:2px;
-    gap:1px;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-center .ludo-token-dot {
-    width:84%;
-    max-width:19px;
-    font-size:clamp(6px,1.7vw,9px);
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-base .ludo-occupants {
-    width:min(100%,220px);
-    gap:clamp(6px,1vw,10px);
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-base .ludo-token-dot {
-    width:100%;
-    max-width:none;
-    font-size:clamp(10px,2.8vw,14px);
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-token-button {
-    min-height:40px;
-    font-size:10px;
-  }
-}
-@media(max-width:380px) {
-  .ludo-overlay:has(.ludo-board) .ludo-occupants > .ludo-token-dot {
-    max-width:13px;
-    font-size:5px;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-occupants > .ludo-token-dot:only-child {
-    max-width:16px;
-    font-size:6px;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-base .ludo-token-dot {font-size:10px}
-}
-
-
-/* Ludo token visual correction: circular home tokens and higher-contrast track pieces. */
+.ludo-overlay:has(.ludo-board) .ludo-base.red {background:linear-gradient(145deg,#963d49,#5b2634)}
+.ludo-overlay:has(.ludo-board) .ludo-base.green {background:linear-gradient(145deg,#277c52,#174d39)}
+.ludo-overlay:has(.ludo-board) .ludo-base.yellow {background:linear-gradient(145deg,#9a742b,#5d481e)}
+.ludo-overlay:has(.ludo-board) .ludo-base.blue {background:linear-gradient(145deg,#365f9f,#203b68)}
+.ludo-overlay:has(.ludo-board) .ludo-base-heading {color:#fff}
+.ludo-overlay:has(.ludo-board) .ludo-base-heading strong {font-size:clamp(9px,1vw,13px);font-weight:900}
+.ludo-overlay:has(.ludo-board) .ludo-base-heading small {color:#ffffffb8;font-size:clamp(7px,.72vw,10px)}
 .ludo-overlay:has(.ludo-board) .ludo-base-tokens {
-  display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  align-items:center;
-  justify-items:center;
-  gap:clamp(8px,1vw,14px);
-  width:100%;
+  display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); justify-items:center; align-items:center;
+  gap:clamp(5px,.6vw,9px); width:100%;
 }
 .ludo-overlay:has(.ludo-board) .ludo-base-token {
-  display:grid;
-  place-items:center;
-  box-sizing:border-box;
-  width:min(100%,clamp(52px,6.3vw,84px));
-  min-width:0;
-  min-height:0;
-  height:auto;
-  aspect-ratio:1/1;
-  justify-self:center;
-  padding:5px;
-  border:1px solid color-mix(in srgb,currentColor 46%,#ffffff2a);
-  border-radius:50%;
-  background:
-    radial-gradient(circle at 28% 20%,#ffffff15,transparent 55%),
-    color-mix(in srgb,var(--panel) 80%,currentColor 20%);
-  box-shadow:0 4px 12px #0004,inset 0 1px 2px #ffffff20;
+  display:grid; place-items:center; box-sizing:border-box;
+  width:clamp(28px,3.3vw,44px)!important; height:clamp(28px,3.3vw,44px)!important;
+  min-width:0!important; min-height:0!important; padding:0!important; aspect-ratio:1/1;
+  border:1px solid #ffffff40; border-radius:50%!important; background:#ffffff15;
+  box-shadow:inset 0 2px 4px #0003,0 2px 5px #0003;
 }
-.ludo-overlay:has(.ludo-board) .ludo-base .ludo-token-dot {
-  display:grid;
-  place-items:center;
-  box-sizing:border-box;
-  width:100%;
-  min-width:0;
-  max-width:none;
-  height:100%;
-  min-height:0;
-  aspect-ratio:1/1;
-  align-self:center;
-  justify-self:center;
-  border:2px solid #ffffffd9;
-  border-radius:50%!important;
-  font-size:clamp(12px,1.3vw,17px);
-  line-height:1;
-  font-weight:950;
-  letter-spacing:-.02em;
-  box-shadow:0 3px 8px #0006,inset 0 2px 3px #ffffff55,inset 0 -3px 5px #0002;
+.ludo-overlay:has(.ludo-board) .ludo-base-token>.ludo-token-dot {
+  display:grid!important; place-items:center; box-sizing:border-box;
+  width:100%!important; height:100%!important; min-width:0!important; min-height:0!important;
+  aspect-ratio:1/1; border-radius:50%!important;
 }
-
-/* Track pieces use a predictable 2-by-2 layout instead of flex wrapping. */
-.ludo-overlay:has(.ludo-board) .ludo-track-cell .ludo-occupants,
-.ludo-overlay:has(.ludo-board) .ludo-home-lane .ludo-occupants {
-  display:grid!important;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  grid-auto-rows:minmax(0,1fr);
-  place-items:center;
-  box-sizing:border-box;
-  width:100%;
-  height:100%;
-  min-width:0;
-  min-height:0;
-  max-width:100%;
-  max-height:100%;
-  padding:1px;
-  gap:0;
-  overflow:hidden;
-}
-.ludo-overlay:has(.ludo-board) .ludo-track-cell .ludo-token-dot,
-.ludo-overlay:has(.ludo-board) .ludo-home-lane .ludo-token-dot {
-  display:grid;
-  place-items:center;
-  box-sizing:border-box;
-  width:min(88%,30px);
-  min-width:0;
-  max-width:30px;
-  height:auto;
-  aspect-ratio:1/1;
-  border:2px solid #ffffffed;
-  border-radius:50%!important;
-  font-size:clamp(7px,.82vw,11px);
-  line-height:1;
-  font-weight:950;
-  text-shadow:0 1px 2px #0008;
-  box-shadow:
-    0 2px 5px #0009,
-    0 0 0 1px #10151d99,
-    inset 0 2px 3px #ffffff85,
-    inset 0 -3px 5px #0003;
-}
-.ludo-overlay:has(.ludo-board) .ludo-track-cell .ludo-token-dot:only-child,
-.ludo-overlay:has(.ludo-board) .ludo-home-lane .ludo-token-dot:only-child {
-  grid-column:1/-1;
-  width:min(58%,34px);
-  max-width:34px;
-  font-size:clamp(8px,.92vw,12px);
-}
-.ludo-overlay:has(.ludo-board) .ludo-center .ludo-occupants {
-  display:grid!important;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  grid-auto-rows:minmax(0,1fr);
-  place-items:center;
-  width:78%;
-  height:auto;
-  max-width:100%;
-  padding:2px;
-  gap:2px;
-}
-.ludo-overlay:has(.ludo-board) .ludo-center .ludo-token-dot {
-  width:min(82%,32px);
-  max-width:32px;
-  height:auto;
-  aspect-ratio:1/1;
-  border:2px solid #ffffffed;
-  border-radius:50%!important;
-  font-size:clamp(8px,.9vw,12px);
-  font-weight:950;
-  box-shadow:0 2px 7px #0008,inset 0 2px 3px #ffffff80;
-}
-
-/* Rich, readable token finishes by player color. */
-.ludo-overlay:has(.ludo-board) .ludo-token-dot.red {
-  color:#fff;
-  background:radial-gradient(circle at 30% 22%,#ffffff70,transparent 36%),linear-gradient(145deg,#ff8a92 0%,#e74d5c 58%,#b82e40 100%)!important;
-}
-.ludo-overlay:has(.ludo-board) .ludo-token-dot.green {
-  color:#fff;
-  background:radial-gradient(circle at 30% 22%,#ffffff70,transparent 36%),linear-gradient(145deg,#8aefbb 0%,#27ad70 58%,#14754b 100%)!important;
-}
-.ludo-overlay:has(.ludo-board) .ludo-token-dot.yellow {
-  color:#332407;
-  text-shadow:0 1px 0 #ffffff75;
-  background:radial-gradient(circle at 30% 22%,#ffffffa8,transparent 38%),linear-gradient(145deg,#ffe9a4 0%,#e9b849 58%,#b67a1e 100%)!important;
-}
-.ludo-overlay:has(.ludo-board) .ludo-token-dot.blue {
-  color:#fff;
-  background:radial-gradient(circle at 30% 22%,#ffffff75,transparent 36%),linear-gradient(145deg,#a4caff 0%,#4d89e5 58%,#2853a5 100%)!important;
-}
-@media(max-width:700px) {
-  .ludo-overlay:has(.ludo-board) .ludo-base-token {
-    width:min(100%,clamp(42px,14vw,68px));
-    padding:4px;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-base .ludo-token-dot {
-    font-size:clamp(11px,3vw,15px);
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-track-cell .ludo-token-dot,
-  .ludo-overlay:has(.ludo-board) .ludo-home-lane .ludo-token-dot {
-    width:min(88%,22px);
-    max-width:22px;
-    border-width:1.5px;
-    font-size:clamp(6px,1.9vw,9px);
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-track-cell .ludo-token-dot:only-child,
-  .ludo-overlay:has(.ludo-board) .ludo-home-lane .ludo-token-dot:only-child {
-    width:min(58%,25px);
-    max-width:25px;
-    font-size:clamp(7px,2.1vw,10px);
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-center .ludo-token-dot {
-    width:min(82%,24px);
-    max-width:24px;
-  }
-}
-@media(max-width:380px) {
-  .ludo-overlay:has(.ludo-board) .ludo-base-token {
-    width:min(100%,48px);
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-track-cell .ludo-token-dot,
-  .ludo-overlay:has(.ludo-board) .ludo-home-lane .ludo-token-dot {max-width:17px}
-  .ludo-overlay:has(.ludo-board) .ludo-track-cell .ludo-token-dot:only-child,
-  .ludo-overlay:has(.ludo-board) .ludo-home-lane .ludo-token-dot:only-child {max-width:20px}
-}
-
-
-/* Hard geometry override: use explicit equal width/height so tokens cannot stretch into ovals. */
-.ludo-overlay:has(.ludo-board) .ludo-base-tokens {
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  grid-auto-rows:auto;
-  justify-items:center;
-  align-items:center;
-  gap:clamp(5px,.65vw,8px);
-}
-.ludo-overlay:has(.ludo-board) .ludo-base-token {
-  display:grid;
-  place-items:center;
-  box-sizing:border-box;
-  width:clamp(36px,4.2vw,52px)!important;
-  height:clamp(36px,4.2vw,52px)!important;
-  min-width:0!important;
-  min-height:0!important;
-  max-width:100%;
-  max-height:none;
-  padding:0!important;
-  aspect-ratio:1/1;
-  border:0;
-  border-radius:50%!important;
-  background:transparent;
-  box-shadow:none;
-  overflow:visible;
-}
-.ludo-overlay:has(.ludo-board) .ludo-base-token > .ludo-token-dot {
-  display:grid!important;
-  place-items:center;
-  box-sizing:border-box;
-  width:100%!important;
-  height:100%!important;
-  min-width:0!important;
-  min-height:0!important;
-  max-width:none!important;
-  max-height:none!important;
-  aspect-ratio:1/1;
-  padding:0;
-  border-radius:50%!important;
-  line-height:1;
+.ludo-overlay:has(.ludo-board) .ludo-occupants {
+  display:grid!important; grid-template-columns:repeat(2,minmax(0,1fr)); grid-auto-rows:minmax(0,1fr);
+  place-items:center; box-sizing:border-box; width:100%; height:100%; min-width:0; min-height:0;
+  padding:1px; gap:0; overflow:hidden; pointer-events:none;
 }
 .ludo-overlay:has(.ludo-board) .ludo-track-cell .ludo-token-dot,
 .ludo-overlay:has(.ludo-board) .ludo-home-lane .ludo-token-dot,
 .ludo-overlay:has(.ludo-board) .ludo-center .ludo-token-dot {
-  display:grid!important;
-  place-items:center;
-  box-sizing:border-box;
-  width:min(100%,24px)!important;
-  height:auto!important;
-  min-width:0!important;
-  min-height:0!important;
-  max-width:24px!important;
-  aspect-ratio:1/1;
-  padding:0;
-  border-radius:50%!important;
-  justify-self:center;
-  align-self:center;
-  flex:none;
+  display:grid!important; place-items:center; box-sizing:border-box; flex:none!important;
+  width:clamp(11px,.98vw,17px)!important; height:clamp(11px,.98vw,17px)!important;
+  min-width:0!important; min-height:0!important; max-width:none!important; max-height:none!important;
+  padding:0!important; margin:0!important; aspect-ratio:1/1; border:1.5px solid #fff!important;
+  border-radius:50%!important; color:#fff; font-size:clamp(6px,.56vw,9px)!important;
+  line-height:1!important; font-weight:950; text-shadow:0 1px 2px #000b;
+  box-shadow:0 1px 4px #000b,0 0 0 1px #10151dcc,inset 0 1px 2px #ffffffa0!important;
 }
 .ludo-overlay:has(.ludo-board) .ludo-track-cell .ludo-token-dot:only-child,
 .ludo-overlay:has(.ludo-board) .ludo-home-lane .ludo-token-dot:only-child {
-  grid-column:1/-1;
-  width:min(100%,27px)!important;
-  max-width:27px!important;
-  height:auto!important;
-  aspect-ratio:1/1;
+  grid-column:1/-1; width:clamp(15px,1.25vw,21px)!important; height:clamp(15px,1.25vw,21px)!important;
+  font-size:clamp(7px,.68vw,10px)!important;
+}
+.ludo-overlay:has(.ludo-board) .ludo-token-dot.red {background:radial-gradient(circle at 30% 22%,#ffb9be,#ee5966 52%,#a92337)!important}
+.ludo-overlay:has(.ludo-board) .ludo-token-dot.green {background:radial-gradient(circle at 30% 22%,#c0f7d5,#36bd7c 52%,#116b43)!important}
+.ludo-overlay:has(.ludo-board) .ludo-token-dot.yellow {background:radial-gradient(circle at 30% 22%,#fff2bd,#f0c34e 52%,#9b6816)!important;color:#352508}
+.ludo-overlay:has(.ludo-board) .ludo-token-dot.blue {background:radial-gradient(circle at 30% 22%,#d4e5ff,#5795f0 52%,#234b9a)!important}
+.ludo-overlay:has(.ludo-board) .ludo-center {
+  display:flex; flex-direction:column; justify-content:center; align-items:center; gap:4px;
+  border:1px solid #ffffff45; border-radius:16px; color:#fff;
+  background:linear-gradient(145deg,#34445a,#1d2b3e); box-shadow:0 7px 20px #0004,inset 0 1px 0 #ffffff22;
+}
+.ludo-overlay:has(.ludo-board) .ludo-center strong {font-size:clamp(10px,1.6vw,18px);letter-spacing:.16em}
+.ludo-overlay:has(.ludo-board) .ludo-center small {color:#ffffff9c}
+.ludo-overlay:has(.ludo-board) .ludo-controls {
+  grid-area:controls; position:relative; display:flex; flex-direction:column; justify-content:center; align-items:stretch;
+  width:100%; max-width:330px; min-width:0; margin:0; gap:12px; align-self:center;
+}
+.ludo-overlay:has(.ludo-board) .ludo-dice-card,
+.ludo-overlay:has(.ludo-board) .ludo-token-panel {
+  display:flex; flex-direction:column; align-items:stretch; gap:12px; min-width:0;
+  padding:16px; border:1px solid #ffffff22; border-radius:19px;
+  background:linear-gradient(145deg,#ffffff12,#ffffff06); box-shadow:0 12px 30px #0003,inset 0 1px 0 #ffffff15;
+}
+.ludo-overlay:has(.ludo-board) .ludo-dice-card {display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;text-align:left}
+.ludo-overlay:has(.ludo-board) .ludo-dice-face {display:grid;justify-items:start;gap:8px;min-width:0}
+.ludo-overlay:has(.ludo-board) .ludo-dice-label {color:#ffffffa8;font-size:9px;font-weight:900;letter-spacing:.17em}
+.ludo-overlay:has(.ludo-board) .ludo-dice-value {
+  display:grid; place-items:center; box-sizing:border-box; width:76px; height:76px;
+  border:1px solid color-mix(in srgb,var(--accent) 60%,#fff); border-radius:21px;
+  color:#f7fbff; background:linear-gradient(145deg,#ffffff20,#ffffff08);
+  box-shadow:0 8px 24px #0004,inset 0 2px 5px #ffffff2b;
+  font:900 42px/1 ui-rounded,system-ui,sans-serif;
+}
+.ludo-overlay:has(.ludo-board) .ludo-dice-value.is-rolling {animation:ludo-dice-roll .56s ease-in-out}
+.ludo-overlay:has(.ludo-board) .ludo-dice-value.is-result {animation:ludo-dice-result .42s cubic-bezier(.2,.8,.2,1)}
+.ludo-overlay:has(.ludo-board) .ludo-roll,
+.ludo-overlay:has(.ludo-board) .ludo-token-toggle {
+  display:inline-flex; align-items:center; justify-content:center; min-height:50px; padding:11px 14px;
+  border-radius:14px; font-size:13px; font-weight:900; transition:transform .16s ease,filter .16s ease,box-shadow .16s ease;
+}
+.ludo-overlay:has(.ludo-board) .ludo-roll:not(:disabled):hover,
+.ludo-overlay:has(.ludo-board) .ludo-token-toggle:hover {transform:translateY(-2px);filter:brightness(1.08);box-shadow:0 8px 20px #0003}
+.ludo-overlay:has(.ludo-board) .ludo-token-toggle {width:100%;border:1px solid #ffffff24;background:#ffffff0b;color:#f2f6fb}
+.ludo-overlay:has(.ludo-board) .ludo-token-panel[hidden] {display:none!important}
+.ludo-overlay:has(.ludo-board) .ludo-token-panel>strong {font-size:13px;color:#f4f7fb}
+.ludo-overlay:has(.ludo-board) .ludo-token-buttons {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.ludo-overlay:has(.ludo-board) .ludo-token-button {
+  min-height:43px; padding:9px 10px; border:1px solid #ffffff20; border-radius:12px;
+  color:#f4f7fb; background:#ffffff0a; font-size:11px; font-weight:800; white-space:normal;
+  line-height:1.25; transition:transform .15s ease,background .15s ease;
+}
+.ludo-overlay:has(.ludo-board) .ludo-token-button:not(:disabled):hover {transform:translateY(-1px);background:#ffffff18}
+.ludo-overlay:has(.ludo-board) .ludo-token-button:disabled {opacity:.38}
+.ludo-overlay:has(.ludo-board) .ludo-message {
+  margin:0; padding:12px 14px; border:1px solid #ffffff1c; border-radius:14px;
+  color:#d4deeb; background:#ffffff08; font-size:11px; line-height:1.5;
+}
+.ludo-overlay:has(.ludo-board) .ludo-end-actions {grid-area:end;display:flex;justify-content:flex-end;width:100%;margin:0;padding:0;border:0}
+.ludo-overlay:has(.ludo-board) .ludo-end-actions button {min-height:40px;padding:8px 13px;border-radius:12px}
+.ludo-overlay:has(.ludo-board) .ludo-game-menu {
+  position:absolute; top:calc(66px + env(safe-area-inset-top)); left:16px; z-index:80;
+  display:grid; gap:7px; width:min(320px,calc(100vw - 32px)); padding:14px;
+  border:1px solid #ffffff24; border-radius:20px;
+  background:linear-gradient(145deg,#273447,#141d2a); box-shadow:0 22px 70px #000b;
+  animation:ludo-menu-enter .18s ease-out both;
+}
+.ludo-overlay:has(.ludo-board) .ludo-game-menu[hidden] {display:none!important}
+.ludo-overlay:has(.ludo-board) .ludo-menu-heading {display:grid;gap:4px;padding:4px 5px 9px;color:#f5f7fb}
+.ludo-overlay:has(.ludo-board) .ludo-menu-heading .eyebrow {font-size:9px;letter-spacing:.17em;color:#aab8c9}
+.ludo-overlay:has(.ludo-board) .ludo-menu-action {
+  display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:10px 12px;
+  border:1px solid #ffffff18;border-radius:13px;background:#ffffff08;color:#f4f7fb;text-align:left;
+}
+.ludo-overlay:has(.ludo-board) .ludo-menu-action:hover {background:#ffffff15}
+.ludo-overlay:has(.ludo-board) .ludo-menu-icon {
+  display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:10px;
+  background:color-mix(in srgb,var(--accent) 20%,transparent);font-size:15px;
+}
+.ludo-overlay:has(.ludo-board) .ludo-menu-copy {display:grid;gap:3px;min-width:0}
+.ludo-overlay:has(.ludo-board) .ludo-menu-copy strong {font-size:12px}
+.ludo-overlay:has(.ludo-board) .ludo-menu-copy small {color:#aeb9c8;font-size:10px;line-height:1.4}
+.ludo-overlay:has(.ludo-board) .ludo-menu-action.danger {border-color:#ef777733}
+.ludo-overlay:has(.ludo-board) .ludo-menu-action.danger .ludo-menu-icon {background:#e75a6426;color:#ff9ca4}
+.ludo-overlay:has(.ludo-board) .ludo-menu-action:disabled {opacity:.4}
+@keyframes ludo-board-enter {from{opacity:0;transform:scale(.985)}to{opacity:1;transform:scale(1)}}
+@keyframes ludo-dice-roll {0%,100%{transform:rotate(0) scale(1)}25%{transform:rotate(-14deg) scale(1.08)}50%{transform:rotate(12deg) scale(.94)}75%{transform:rotate(-7deg) scale(1.04)}}
+@keyframes ludo-dice-result {0%{transform:scale(.86)}65%{transform:scale(1.12)}100%{transform:scale(1)}}
+@keyframes ludo-menu-enter {from{opacity:0;transform:translateY(-6px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(max-width:900px) and (min-width:701px) {
+  .ludo-overlay:has(.ludo-board) #ludo-content {grid-template-columns:minmax(190px,230px) minmax(0,1fr);gap:10px 16px}
+  .ludo-overlay:has(.ludo-board) .ludo-dice-card {grid-template-columns:1fr;justify-items:center;text-align:center}
+  .ludo-overlay:has(.ludo-board) .ludo-dice-face {justify-items:center}
+  .ludo-overlay:has(.ludo-board) .ludo-dice-value {width:64px;height:64px;font-size:36px}
+  .ludo-overlay:has(.ludo-board) .ludo-token-buttons {grid-template-columns:1fr}
 }
 @media(max-width:700px) {
-  .ludo-overlay:has(.ludo-board) .ludo-base-token {
-    width:clamp(32px,9vw,44px)!important;
-    height:clamp(32px,9vw,44px)!important;
+  .ludo-overlay:has(.ludo-board)>.ludo-modal {
+    padding:calc(7px + env(safe-area-inset-top)) max(7px,env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom)) max(7px,env(safe-area-inset-left))!important;
   }
+  .ludo-overlay:has(.ludo-board) #ludo-content {
+    grid-template-columns:minmax(0,1fr);grid-template-rows:54px 27px minmax(0,1fr) auto;
+    grid-template-areas:"top" "roster" "board" "controls";
+    gap:5px;justify-items:stretch;
+  }
+  .ludo-overlay:has(.ludo-board) .ludo-game-top {min-height:48px;padding:0 132px 0 52px!important}
+  .ludo-overlay:has(.ludo-board) .ludo-game-heading .ludo-title {font-size:clamp(23px,6vw,30px)!important}
+  .ludo-overlay:has(.ludo-board) .ludo-player-count {right:0;padding:6px 8px;font-size:9px}
+  .ludo-overlay:has(.ludo-board) .game-chat-dock {top:0;right:0}
+  .ludo-overlay:has(.ludo-board) .game-chat-toggle {min-height:40px!important;padding:9px 11px!important;font-size:11px!important}
+  .ludo-overlay:has(.ludo-board) .game-chat-panel {top:47px;width:min(310px,calc(100vw - 24px))}
+  .ludo-overlay:has(.ludo-board) .ludo-roster--match {height:25px;gap:7px}
+  .ludo-overlay:has(.ludo-board) .ludo-roster--match .ludo-player-row {width:20px;height:20px;flex-basis:20px;min-height:20px}
+  .ludo-overlay:has(.ludo-board) .ludo-roster--match .ludo-player-swatch {width:17px!important;height:17px!important;min-width:17px;min-height:17px;flex-basis:17px}
+  .ludo-overlay:has(.ludo-board) .ludo-board {
+    width:min(100%,calc(100vw - 14px),calc(100dvh - 205px));
+    max-width:min(100%,calc(100vw - 14px),calc(100dvh - 205px));
+    max-height:100%;padding:6px;gap:2px;border-radius:17px;
+  }
+  .ludo-overlay:has(.ludo-board) .ludo-base {padding:5px;gap:4px;border-radius:9px}
+  .ludo-overlay:has(.ludo-board) .ludo-base-token {width:clamp(25px,7.8vw,34px)!important;height:clamp(25px,7.8vw,34px)!important}
+  .ludo-overlay:has(.ludo-board) .ludo-base-tokens {gap:4px}
   .ludo-overlay:has(.ludo-board) .ludo-track-cell .ludo-token-dot,
   .ludo-overlay:has(.ludo-board) .ludo-home-lane .ludo-token-dot,
   .ludo-overlay:has(.ludo-board) .ludo-center .ludo-token-dot {
-    width:min(100%,19px)!important;
-    max-width:19px!important;
+    width:clamp(10px,2.65vw,14px)!important;height:clamp(10px,2.65vw,14px)!important;
+    font-size:clamp(5px,1.45vw,7px)!important;border-width:1px!important;
   }
   .ludo-overlay:has(.ludo-board) .ludo-track-cell .ludo-token-dot:only-child,
   .ludo-overlay:has(.ludo-board) .ludo-home-lane .ludo-token-dot:only-child {
-    width:min(100%,22px)!important;
-    max-width:22px!important;
+    width:clamp(13px,3.4vw,17px)!important;height:clamp(13px,3.4vw,17px)!important;
   }
+  .ludo-overlay:has(.ludo-board) .ludo-controls {
+    display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto auto;
+    width:100%;max-width:560px;margin:0 auto;gap:8px;padding:9px;
+    border:1px solid #ffffff20;border-radius:17px;background:#ffffff0a;
+  }
+  .ludo-overlay:has(.ludo-board) .ludo-dice-card {
+    display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;padding:7px;
+    border:0;background:transparent;box-shadow:none;
+  }
+  .ludo-overlay:has(.ludo-board) .ludo-dice-face {justify-items:center;gap:4px}
+  .ludo-overlay:has(.ludo-board) .ludo-dice-label {font-size:7px}
+  .ludo-overlay:has(.ludo-board) .ludo-dice-value {width:46px;height:46px;border-radius:13px;font-size:25px}
+  .ludo-overlay:has(.ludo-board) .ludo-roll {min-height:46px;padding:7px;font-size:11px}
+  .ludo-overlay:has(.ludo-board) .ludo-token-toggle {grid-column:2;grid-row:1;min-height:60px;font-size:13px}
+  .ludo-overlay:has(.ludo-board) .ludo-token-panel {grid-column:1/-1;padding:10px}
+  .ludo-overlay:has(.ludo-board) .ludo-token-buttons {grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ludo-overlay:has(.ludo-board) .ludo-token-button {min-height:40px;font-size:10px}
+  .ludo-overlay:has(.ludo-board) .ludo-message {grid-column:1/-1;padding:8px 10px;font-size:10px}
+  .ludo-overlay:has(.ludo-board) .ludo-game-menu {top:calc(58px + env(safe-area-inset-top));left:8px;width:min(310px,calc(100vw - 16px))}
 }
 @media(max-width:380px) {
-  .ludo-overlay:has(.ludo-board) .ludo-base-token {
-    width:30px!important;
-    height:30px!important;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-track-cell .ludo-token-dot,
-  .ludo-overlay:has(.ludo-board) .ludo-home-lane .ludo-token-dot,
-  .ludo-overlay:has(.ludo-board) .ludo-center .ludo-token-dot {
-    width:min(100%,16px)!important;
-    max-width:16px!important;
-  }
+  .ludo-overlay:has(.ludo-board) #ludo-content {grid-template-rows:48px 22px minmax(0,1fr) auto;gap:3px}
+  .ludo-overlay:has(.ludo-board) .ludo-board {width:min(100%,calc(100vw - 10px),calc(100dvh - 190px));max-width:min(100%,calc(100vw - 10px),calc(100dvh - 190px))}
+  .ludo-overlay:has(.ludo-board) .ludo-base-token {width:23px!important;height:23px!important}
+  .ludo-overlay:has(.ludo-board) .ludo-dice-value {width:40px;height:40px;font-size:22px}
+  .ludo-overlay:has(.ludo-board) .ludo-controls {gap:5px;padding:6px}
 }
-
-
-/* Final track-token geometry: fixed equal dimensions prevent oval shapes in board cells. */
-.ludo-overlay:has(.ludo-board) .ludo-track-cell .ludo-occupants > .ludo-token-dot,
-.ludo-overlay:has(.ludo-board) .ludo-home-lane .ludo-occupants > .ludo-token-dot {
-  display:grid!important;
-  place-items:center;
-  box-sizing:border-box;
-  flex:none!important;
-  width:clamp(12px,1.55vw,19px)!important;
-  height:clamp(12px,1.55vw,19px)!important;
-  min-width:0!important;
-  min-height:0!important;
-  max-width:none!important;
-  max-height:none!important;
-  aspect-ratio:1/1;
-  padding:0!important;
-  margin:0!important;
-  border-radius:50%!important;
-  line-height:1!important;
-  font-size:clamp(6px,.62vw,9px)!important;
-  font-weight:950;
-  border:1.5px solid #fff!important;
-  box-shadow:0 1px 5px #000b,0 0 0 1px #10151dcc,inset 0 1.5px 2px #ffffff9c,inset 0 -2px 3px #0004!important;
-  text-shadow:0 1px 2px #0009;
-  transform:none!important;
+@media(max-height:620px) and (min-width:701px) {
+  .ludo-overlay:has(.ludo-board) #ludo-content {grid-template-rows:48px 28px minmax(0,1fr)}
+  .ludo-overlay:has(.ludo-board) .ludo-board {width:min(100%,calc(100dvh - 120px));max-width:min(100%,calc(100dvh - 120px))}
+  .ludo-overlay:has(.ludo-board) .ludo-dice-value {width:56px;height:56px;font-size:31px}
+  .ludo-overlay:has(.ludo-board) .ludo-controls {gap:8px}
 }
-.ludo-overlay:has(.ludo-board) .ludo-track-cell .ludo-occupants > .ludo-token-dot:only-child,
-.ludo-overlay:has(.ludo-board) .ludo-home-lane .ludo-occupants > .ludo-token-dot:only-child {
-  grid-column:1/-1;
-  width:clamp(16px,1.9vw,22px)!important;
-  height:clamp(16px,1.9vw,22px)!important;
-  font-size:clamp(7px,.72vw,10px)!important;
-}
-@media(max-width:700px) {
-  .ludo-overlay:has(.ludo-board) .ludo-track-cell .ludo-occupants > .ludo-token-dot,
-  .ludo-overlay:has(.ludo-board) .ludo-home-lane .ludo-occupants > .ludo-token-dot {
-    width:clamp(11px,3.6vw,16px)!important;
-    height:clamp(11px,3.6vw,16px)!important;
-    font-size:clamp(5px,1.7vw,7px)!important;
-    border-width:1px!important;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-track-cell .ludo-occupants > .ludo-token-dot:only-child,
-  .ludo-overlay:has(.ludo-board) .ludo-home-lane .ludo-occupants > .ludo-token-dot:only-child {
-    width:clamp(14px,4.4vw,19px)!important;
-    height:clamp(14px,4.4vw,19px)!important;
-    font-size:clamp(6px,1.9vw,8px)!important;
-  }
-}
-@media(max-width:380px) {
-  .ludo-overlay:has(.ludo-board) .ludo-track-cell .ludo-occupants > .ludo-token-dot,
-  .ludo-overlay:has(.ludo-board) .ludo-home-lane .ludo-occupants > .ludo-token-dot {
-    width:11px!important;
-    height:11px!important;
-    font-size:5px!important;
-  }
-  .ludo-overlay:has(.ludo-board) .ludo-track-cell .ludo-occupants > .ludo-token-dot:only-child,
-  .ludo-overlay:has(.ludo-board) .ludo-home-lane .ludo-occupants > .ludo-token-dot:only-child {
-    width:14px!important;
-    height:14px!important;
-  }
+@media(prefers-reduced-motion:reduce) {
+  .ludo-overlay:has(.ludo-board) *,
+  .ludo-overlay:has(.ludo-board) *::before,
+  .ludo-overlay:has(.ludo-board) *::after {animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
 }
