@@ -378,7 +378,7 @@
         });
         if (response.error) throw response.error;
         gameId = response.data?.id;
-        if (gameId) window.GatherUno?.openInvitation?.(gameId);
+        if (gameId) window.GatherUno?.openGame?.(gameId);
       } else if (type === "ludo") {
         const existing = await ctx.db.from("gather_multiplayer_games")
           .select("id").eq("created_by", uid()).eq("game_type", "ludo").eq("status", "active")
@@ -394,7 +394,7 @@
         });
         if (response.error) throw response.error;
         gameId = response.data?.id;
-        if (gameId) window.GatherLudo?.openInvitation?.(gameId);
+        if (gameId) window.GatherLudo?.openGame?.(gameId);
       } else if (type === "tag") {
         const existing = await ctx.db.from("gather_tag_lobbies")
           .select("id").eq("created_by", uid()).in("status", ["lobby", "active"])
