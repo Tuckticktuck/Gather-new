@@ -1840,14 +1840,14 @@
   grid-auto-rows:auto;
   justify-items:center;
   align-items:center;
-  gap:clamp(6px,.8vw,10px);
+  gap:clamp(5px,.65vw,8px);
 }
 .ludo-overlay:has(.ludo-board) .ludo-base-token {
   display:grid;
   place-items:center;
   box-sizing:border-box;
-  width:clamp(44px,5.2vw,68px)!important;
-  height:clamp(44px,5.2vw,68px)!important;
+  width:clamp(36px,4.2vw,52px)!important;
+  height:clamp(36px,4.2vw,52px)!important;
   min-width:0!important;
   min-height:0!important;
   max-width:100%;
@@ -1903,8 +1903,8 @@
 }
 @media(max-width:700px) {
   .ludo-overlay:has(.ludo-board) .ludo-base-token {
-    width:clamp(38px,11vw,58px)!important;
-    height:clamp(38px,11vw,58px)!important;
+    width:clamp(32px,9vw,44px)!important;
+    height:clamp(32px,9vw,44px)!important;
   }
   .ludo-overlay:has(.ludo-board) .ludo-track-cell .ludo-token-dot,
   .ludo-overlay:has(.ludo-board) .ludo-home-lane .ludo-token-dot,
@@ -1920,8 +1920,8 @@
 }
 @media(max-width:380px) {
   .ludo-overlay:has(.ludo-board) .ludo-base-token {
-    width:36px!important;
-    height:36px!important;
+    width:30px!important;
+    height:30px!important;
   }
   .ludo-overlay:has(.ludo-board) .ludo-track-cell .ludo-token-dot,
   .ludo-overlay:has(.ludo-board) .ludo-home-lane .ludo-token-dot,
