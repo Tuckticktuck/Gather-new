@@ -23,7 +23,7 @@ for (const match of html.matchAll(/<(?:script|link)\b[^>]*>/gi)) {
 for (const ref of localAssets) {
   const url = new URL(ref, base);
   const relativePath = url.pathname.replace(/^\/Gather-new\//, "");
-  assert.ok(existsSync(join(root, relativePath)), \`Missing local asset: \${ref}\`);
+  assert.ok(existsSync(join(root, relativePath)), "Missing local asset: " + ref);
 }
 
 const shellBlock = serviceWorker.match(/const SHELL_URLS = \[([\s\S]*?)\]\.map/);
@@ -35,7 +35,7 @@ const shellSet = new Set(shellRefs.map(ref => {
 }));
 for (const ref of localAssets) {
   const url = new URL(ref, base);
-  assert.ok(shellSet.has(url.pathname + url.search), \`Service worker shell is missing current asset version: \${ref}\`);
+  assert.ok(shellSet.has(url.pathname + url.search), "Service worker shell is missing current asset version: " + ref);
 }
 
 for (const file of ["manifest.webmanifest", "tsconfig.tag.json"]) {
@@ -49,7 +49,7 @@ for (const ref of cssFiles) {
   const css = readFileSync(join(root, relativePath), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
   const opens = (css.match(/{/g) || []).length;
   const closes = (css.match(/}/g) || []).length;
-  assert.equal(opens, closes, \`Unbalanced CSS braces in \${relativePath}\`);
+  assert.equal(opens, closes, "Unbalanced CSS braces in " + relativePath);
 }
 
-console.log(\`Static validation passed: \${ids.length} unique HTML IDs, \${localAssets.length} local assets, \${cssFiles.length} CSS files, service-worker asset versions aligned.\`);
+console.log("Static validation passed: " + ids.length + " unique HTML IDs, " + localAssets.length + " local assets, " + cssFiles.length + " CSS files, service-worker asset versions aligned.");
