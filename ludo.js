@@ -419,11 +419,23 @@
       if (!joined) renderJoinPrompt(root);
       else {
         const ready = btn(me.ready ? "Not ready" : "Ready", me.ready ? "secondary-action" : "primary", async () => {
+          if (busy || !activeGame || activeGame.id !== game.id) return;
+          busy = true;
+          ready.disabled = true;
+          ready.textContent = "Updating…";
           try {
-            const result = await ctx.db.rpc("gather_ludo_ready", { p_game_id: game.id, p_ready: !me.ready });
+            const result = await ctx.db.rpc("gather_ludo_ready", {
+              p_game_id: game.id,
+              p_ready: !me.ready
+            });
             if (result.error) throw result.error;
             await loadGame();
-          } catch (error) { toast(error?.message || "Your ready status could not be changed."); }
+          } catch (error) {
+            toast(error?.message || "Your ready status could not be changed.");
+            await loadGame();
+          } finally {
+            busy = false;
+          }
         });
         actionBar.append(ready);
       }
