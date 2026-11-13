@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "gather-shell-v66";
+const CACHE_NAME = "gather-shell-v67";
 const APP_BASE = new URL("./", self.registration.scope);
 const SHELL_URLS = [
   "./",
@@ -8,14 +8,14 @@ const SHELL_URLS = [
   "./app.css?v=20261113-controller-tab-icon-1",
   "./app.js?v=20261112-friends-fast-load-1",
   "./games.css?v=20261113-tag-style-uno-ludo-lobbies-3",
-  "./ludo.css?v=20261113-tag-style-uno-ludo-lobbies-3",
-  "./games.js?v=20261113-controller-tab-icon-1",
-  "./ludo.js?v=20261113-tag-style-uno-ludo-lobbies-3",
+  "./ludo.css?v=20261113-unified-waiting-rooms-1",
+  "./games.js?v=20261113-tag-live-lobbies-1",
+  "./ludo.js?v=20261113-unified-waiting-rooms-1",
   "./tag.css?v=20261112-game-invite-list-polish-1",
   "./tag-engine.js?v=20261112-tag-optimized-2",
-  "./tag.js?v=20261113-tag-style-uno-ludo-lobbies-3",
-  "./uno.css?v=20261113-tag-style-uno-ludo-lobbies-3",
-  "./uno.js?v=20261113-tag-style-uno-ludo-lobbies-3",
+  "./tag.js?v=20261113-unified-waiting-rooms-1",
+  "./uno.css?v=20261113-unified-waiting-rooms-1",
+  "./uno.js?v=20261113-unified-waiting-rooms-1",
   "./favicon.svg?v=20261111-1",
   "./manifest.webmanifest?v=20261111-pwa",
   "./icons/gather-180.png",
