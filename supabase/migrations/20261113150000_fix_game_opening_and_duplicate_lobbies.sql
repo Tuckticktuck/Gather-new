@@ -426,3 +426,69 @@ begin
 end
 $function$
 ;
+
+
+-- Standalone UNO lobbies have no conversation_id; authorize their joined host via the player roster.
+CREATE OR REPLACE FUNCTION public.gather_uno_start(p_game_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare g public.gather_multiplayer_games; p record; deck jsonb:='[]'::jsonb; hands jsonb:='{}'::jsonb; disc jsonb:='[]'::jsonb; order_ids uuid[]:='{}'; i int:=0; firstcard jsonb; current_color text; colors text[]:=array['red','blue','green','yellow']; c text; v int; k text; card jsonb;
+begin
+ select * into g from public.gather_multiplayer_games where id=p_game_id for update;
+ if g.id is null or g.game_type<>'uno' or g.status<>'active' then raise exception 'This UNO lobby cannot be started.'; end if;
+ if g.created_by<>auth.uid() and not exists(select 1 from private.gather_uno_rematch_offers where game_id=p_game_id and status='accepted' and auth.uid()=any(participants)) then raise exception 'Only the host can start UNO.'; end if;
+ if coalesce((g.state->>'started')::boolean,false) then raise exception 'This UNO game has already started.'; end if;
+ if g.conversation_id is not null then
+  if not private.is_conversation_member(g.conversation_id) or not private.can_send_message(g.conversation_id) then raise exception 'Game access is no longer available.'; end if;
+ else
+  if not exists(select 1 from public.gather_multiplayer_players where game_id=p_game_id and user_id=auth.uid() and status='joined') then
+   raise exception 'Only a joined player can start this standalone UNO lobby.';
+  end if;
+ end if;
+ if exists(select 1 from public.gather_multiplayer_players where game_id=p_game_id and status='joined' and not ready) then raise exception 'Everyone must be ready before starting.'; end if;
+ select count(*) into i from public.gather_multiplayer_players where game_id=p_game_id and status='joined';
+ if i<2 then raise exception 'At least two players are needed.'; end if;
+ if i>coalesce((g.settings->>'max_players')::int,10) then raise exception 'This lobby has too many players.'; end if;
+ for c in select unnest(colors) loop
+  for v in 0..12 loop
+   if v<=9 then
+    deck:=deck||jsonb_build_array(jsonb_build_object('id',gen_random_uuid(),'color',c,'value',v,'kind','number'));
+    if v>0 then deck:=deck||jsonb_build_array(jsonb_build_object('id',gen_random_uuid(),'color',c,'value',v,'kind','number')); end if;
+   elsif v<=11 then
+    k:=case when v=10 then 'skip' else 'reverse' end;
+    deck:=deck||jsonb_build_array(jsonb_build_object('id',gen_random_uuid(),'color',c,'value',k,'kind',k));
+    deck:=deck||jsonb_build_array(jsonb_build_object('id',gen_random_uuid(),'color',c,'value',k,'kind',k));
+   else
+    deck:=deck||jsonb_build_array(jsonb_build_object('id',gen_random_uuid(),'color',c,'value','draw2','kind','draw2'));
+    deck:=deck||jsonb_build_array(jsonb_build_object('id',gen_random_uuid(),'color',c,'value','draw2','kind','draw2'));
+   end if;
+  end loop;
+ end loop;
+ for i in 1..4 loop
+  deck:=deck||jsonb_build_array(jsonb_build_object('id',gen_random_uuid(),'color','wild','value','wild','kind','wild'));
+  deck:=deck||jsonb_build_array(jsonb_build_object('id',gen_random_uuid(),'color','wild','value','wild4','kind','wild4'));
+ end loop;
+ select coalesce(array_agg(user_id order by joined_at,user_id),'{}') into order_ids from public.gather_multiplayer_players where game_id=p_game_id and status='joined';
+ for i in 1..array_length(order_ids,1) loop hands:=hands||jsonb_build_object(order_ids[i]::text,'[]'::jsonb); end loop;
+ select coalesce(jsonb_agg(x order by random()),'[]'::jsonb) into deck from jsonb_array_elements(deck) x;
+ for i in 1..7 loop
+  for v in 1..array_length(order_ids,1) loop
+   card:=deck->0; deck:=deck-0;
+   hands:=jsonb_set(hands,array[order_ids[v]::text],coalesce(hands->order_ids[v]::text,'[]'::jsonb)||jsonb_build_array(card),true);
+  end loop;
+ end loop;
+ select x into firstcard from jsonb_array_elements(deck) x where x->>'kind'='number' limit 1;
+ if firstcard is null then raise exception 'Could not prepare the UNO deck.'; end if;
+ select coalesce(jsonb_agg(x),'[]'::jsonb) into disc from jsonb_array_elements(deck) x where x->>'id'=firstcard->>'id';
+ select coalesce(jsonb_agg(x),'[]'::jsonb) into deck from jsonb_array_elements(deck) x where x->>'id'<>firstcard->>'id';
+ current_color:=firstcard->>'color';
+ insert into private.gather_uno_private_states(game_id,payload) values(p_game_id,jsonb_build_object('started',true,'deck',deck,'discard',disc,'hands',hands,'order',to_jsonb(order_ids),'turn_index',0,'direction',1,'current_color',current_color,'turn_user_id',order_ids[1],'winner_id',null,'uno_called',jsonb_build_object(),'done',jsonb_build_object(),'finished',false))
+ on conflict(game_id) do update set payload=excluded.payload,updated_at=now();
+ update public.gather_multiplayer_games set state=jsonb_build_object('version',1,'started',true,'top_card',firstcard,'current_color',current_color,'direction',1,'turn_user_id',order_ids[1],'deck_count',jsonb_array_length(deck),'players',jsonb_build_array(),'done',jsonb_build_object(),'finished',false),revision=revision+1,updated_at=now() where id=p_game_id;
+ return public.gather_uno_get_state(p_game_id);
+end
+$function$
+;
