@@ -179,7 +179,7 @@
       const overlay = node("div", "overlay games-overlay");
       overlay.id = "games-create-overlay";
       overlay.hidden = true;
-      overlay.innerHTML = '<section class="modal games-create-modal" role="dialog" aria-modal="true" aria-labelledby="games-create-title"><button id="games-create-close" class="close" type="button" aria-label="Close">×</button><p class="eyebrow">NEW MATCH</p><h2 id="games-create-title">Invite someone to play</h2><p class="muted tiny">Choose a conversation, a game and one opponent. In a group chat, everyone else can watch the match.</p><form id="games-create-form"><label>Choose a chat<select id="games-conversation" required></select><small class="games-picker-note">Chats are grouped by type. Choose a person from that chat in the next field.</small></label><label>Game<select id="games-type" required><option value="chess">Chess</option><option value="checkers">Checkers</option><option value="tic_tac_toe">Tic-Tac-Toe</option><option value="connect_four">Connect Four</option><option value="battleship">Battleship</option><option value="ludo">Ludo</option></select></label><label>Person to invite<select id="games-opponent" required></select></label><p id="games-spectator-note" class="games-spectator-note"></p><p id="games-create-status" class="status" role="status"></p><div class="games-form-actions"><button id="games-create-cancel" class="secondary-action" type="button">Cancel</button><button id="games-create-submit" class="primary" type="submit">Send invitation</button></div></form></section>';
+      overlay.innerHTML = '<section class="modal games-create-modal" role="dialog" aria-modal="true" aria-labelledby="games-create-title"><button id="games-create-close" class="close" type="button" aria-label="Close">×</button><p class="eyebrow">NEW MATCH</p><h2 id="games-create-title">Invite someone to play</h2><p class="muted tiny">Choose a conversation, a game and one opponent. In a group chat, everyone else can watch the match.</p><form id="games-create-form"><label>Choose a chat<select id="games-conversation" required></select><small class="games-picker-note">Chats are grouped by type. Choose a person from that chat in the next field.</small></label><label>Game<select id="games-type" required><option value="chess">Chess</option><option value="checkers">Checkers</option><option value="tic_tac_toe">Tic-Tac-Toe</option><option value="connect_four">Connect Four</option><option value="battleship">Battleship</option></select></label><label>Person to invite<select id="games-opponent" required></select></label><p id="games-spectator-note" class="games-spectator-note"></p><p id="games-create-status" class="status" role="status"></p><div class="games-form-actions"><button id="games-create-cancel" class="secondary-action" type="button">Cancel</button><button id="games-create-submit" class="primary" type="submit">Send invitation</button></div></form></section>';
       document.body.append(overlay);
       $("games-create-close").addEventListener("click", closeCreateModal);
       $("games-create-cancel").addEventListener("click", closeCreateModal);
@@ -311,7 +311,7 @@
     if (!overlay) {
       overlay = node("div", "overlay games-overlay");
       overlay.id = "games-multiplayer-chooser";
-      overlay.innerHTML = '<section class="modal games-create-modal games-type-chooser-modal" role="dialog" aria-modal="true" aria-labelledby="games-multiplayer-title"><button id="games-multiplayer-close" class="close" type="button" aria-label="Close">×</button><p class="eyebrow">MULTIPLAYER</p><h2 id="games-multiplayer-title">Choose a game</h2><p class="muted tiny">Pick a game for your group.</p><div class="games-type-chooser-options"><button id="games-multiplayer-tag" class="games-type-choice" type="button"><span class="games-type-choice-icon" aria-hidden="true">●</span><span><strong>Tag Arena</strong><small>Move around the arena and tag other players.</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button><button id="games-multiplayer-uno" class="games-type-choice" type="button"><span class="games-type-choice-icon" aria-hidden="true">▦</span><span><strong>UNO</strong><small>Play cards with your group.</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button></div></section>';
+      overlay.innerHTML = '<section class="modal games-create-modal games-type-chooser-modal" role="dialog" aria-modal="true" aria-labelledby="games-multiplayer-title"><button id="games-multiplayer-close" class="close" type="button" aria-label="Close">×</button><p class="eyebrow">MULTIPLAYER</p><h2 id="games-multiplayer-title">Choose a game</h2><p class="muted tiny">Pick a game for your group.</p><div class="games-type-chooser-options"><button id="games-multiplayer-tag" class="games-type-choice" type="button"><span class="games-type-choice-icon" aria-hidden="true">●</span><span><strong>Tag Arena</strong><small>Move around the arena and tag other players.</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button><button id="games-multiplayer-uno" class="games-type-choice" type="button"><span class="games-type-choice-icon" aria-hidden="true">▦</span><span><strong>UNO</strong><small>Play cards with your group.</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button><button id="games-multiplayer-ludo" class="games-type-choice" type="button"><span class="games-type-choice-icon" aria-hidden="true">◉</span><span><strong>Ludo</strong><small>Race four tokens with 2–4 players.</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button></div></section>';
       document.body.append(overlay);
       $("games-multiplayer-close").addEventListener("click", () => { overlay.hidden = true; });
       overlay.addEventListener("click", event => { if (event.target === overlay) overlay.hidden = true; });
@@ -319,6 +319,10 @@
       $("games-multiplayer-uno").addEventListener("click", () => {
         overlay.hidden = true;
         window.GatherUno?.open?.();
+      });
+      $("games-multiplayer-ludo").addEventListener("click", () => {
+        overlay.hidden = true;
+        window.GatherLudo?.open?.();
       });
     }
     overlay.hidden = false;
@@ -439,13 +443,15 @@
       return;
     }
     games = result.data || [];
-    const [unoInvites, tagInvites] = await Promise.all([
+    const [unoInvites, tagInvites, ludoInvites] = await Promise.all([
       ctx.db.from("gather_multiplayer_players").select("game_id,user_id,status,joined_at,gather_multiplayer_games!inner(id,conversation_id,game_type,status,created_by,join_mode,settings,created_at)").eq("user_id", userId()).eq("status", "invited").eq("gather_multiplayer_games.game_type", "uno").eq("gather_multiplayer_games.status", "active"),
-      ctx.db.from("gather_tag_players").select("lobby_id,user_id,status,joined_at,gather_tag_lobbies!inner(id,conversation_id,created_by,status,mode,join_mode,max_players,created_at)").eq("user_id", userId()).eq("status", "invited").in("gather_tag_lobbies.status", ["lobby", "active"])
+      ctx.db.from("gather_tag_players").select("lobby_id,user_id,status,joined_at,gather_tag_lobbies!inner(id,conversation_id,created_by,status,mode,join_mode,max_players,created_at)").eq("user_id", userId()).eq("status", "invited").in("gather_tag_lobbies.status", ["lobby", "active"]),
+      ctx.db.from("gather_multiplayer_players").select("game_id,user_id,status,joined_at,gather_multiplayer_games!inner(id,conversation_id,game_type,status,created_by,join_mode,settings,created_at,state)").eq("user_id", userId()).eq("status", "invited").eq("gather_multiplayer_games.game_type", "ludo").eq("gather_multiplayer_games.status", "active")
     ]);
     externalInvitations = [];
     if (!unoInvites.error) (unoInvites.data || []).forEach(row => { const game=row.gather_multiplayer_games; if(game) externalInvitations.push({kind:"uno",id:game.id,conversation_id:game.conversation_id,created_by:game.created_by,created_at:game.created_at,join_mode:game.join_mode,settings:game.settings}); });
     if (!tagInvites.error) (tagInvites.data || []).forEach(row => { const lobby=row.gather_tag_lobbies; if(lobby) externalInvitations.push({kind:"tag",id:lobby.id,conversation_id:lobby.conversation_id,created_by:lobby.created_by,created_at:lobby.created_at,join_mode:lobby.join_mode,mode:lobby.mode,max_players:lobby.max_players,status:lobby.status}); });
+    if (!ludoInvites.error) (ludoInvites.data || []).forEach(row => { const game=row.gather_multiplayer_games; if(game) externalInvitations.push({kind:"ludo",id:game.id,conversation_id:game.conversation_id,created_by:game.created_by,created_at:game.created_at,join_mode:game.join_mode,settings:game.settings,state:game.state}); });
     renderAll();
     if (typeof ctx.onGamesUpdated === "function") ctx.onGamesUpdated();
   }
@@ -563,14 +569,32 @@
     if(!all.length){list.append(node("p","games-empty muted","You’re all caught up. New game invitations from any conversation will appear here."));return;}
     all.forEach(invite=>{
       if(invite.kind==="classic"){const card=makeGameCard(invite.game,true);card.classList.add("games-invitation-card");list.append(card);return;}
-      const uno=invite.kind==="uno",card=node("article","games-card games-invitation-card"),top=node("div","games-card-top"),identity=node("div","games-card-identity"),copy=node("div","games-card-copy");
-      identity.append(node("span","games-card-mark",uno?"🃏":"●"));
-      copy.append(node("strong","",uno?"UNO invitation":"Tag invitation"),node("small","muted",memberName(invite.created_by)+" invited you"));
+      const uno=invite.kind==="uno",ludo=invite.kind==="ludo",tag=invite.kind==="tag";
+      const card=node("article","games-card games-invitation-card"),top=node("div","games-card-top"),identity=node("div","games-card-identity"),copy=node("div","games-card-copy");
+      identity.append(node("span","games-card-mark",uno?"▦":ludo?"●":"●"));
+      copy.append(node("strong","",uno?"UNO invitation":ludo?"Ludo invitation":"Tag invitation"),node("small","muted",memberName(invite.created_by)+" invited you"));
       identity.append(copy);top.append(identity,node("span","games-status-pill status-pending","Your invitation"));card.append(top);
       card.append(node("p","games-card-conversation muted tiny",conversationName(invite.conversation_id)));
-      card.append(node("p","games-card-detail muted tiny",uno?((invite.join_mode==="open"?"Open":"Invite-only")+" lobby · "+(invite.settings?.max_players||10)+" player limit"):((invite.mode||"classic").replace(/_/g," ")+" · "+(invite.join_mode==="open"?"Open":"Invite-only")+" lobby")));
+      const limit=invite.settings?.max_players||(ludo?4:10);
+      const detail=uno||ludo
+        ? ((invite.join_mode==="open"?"Open":"Invite-only")+" lobby · Up to "+limit+" players")
+        : ((invite.mode||"classic").replace(/_/g," ")+" · "+(invite.join_mode==="open"?"Open":"Invite-only")+" lobby");
+      card.append(node("p","games-card-detail muted tiny",detail));
       const actions=node("div","games-card-actions");
-      actions.append(button(uno?"Join UNO":"Join Tag","primary games-card-primary",async()=>{if(uno)await window.GatherUno?.openInvitation?.(invite.id);else await window.GatherTag?.openInvitation?.(invite.id);await refreshGames(false);}));actions.append(button("Decline","outline",async()=>{const result=await ctx.db.rpc(uno?"gather_uno_decline":"gather_tag_decline",uno?{p_game_id:invite.id}:{p_lobby_id:invite.id});if(result.error){toast(result.error.message||"Could not decline invitation.");return;}toast("Invitation declined.");await refreshGames(false);}));
+      const joinLabel=uno?"Join UNO":ludo?"Join Ludo":"Join Tag";
+      actions.append(button(joinLabel,"primary games-card-primary",async()=>{
+        if(uno) await window.GatherUno?.openInvitation?.(invite.id);
+        else if(ludo) await window.GatherLudo?.openInvitation?.(invite.id);
+        else await window.GatherTag?.openInvitation?.(invite.id);
+        await refreshGames(false);
+      }));
+      actions.append(button("Decline","outline",async()=>{
+        const rpc=uno?"gather_uno_decline":ludo?"gather_ludo_decline":"gather_tag_decline";
+        const args=uno||ludo?{p_game_id:invite.id}:{p_lobby_id:invite.id};
+        const result=await ctx.db.rpc(rpc,args);
+        if(result.error){toast(result.error.message||"Could not decline invitation.");return;}
+        toast("Invitation declined.");await refreshGames(false);
+      }));
       card.append(actions);list.append(card);
     });
   }
