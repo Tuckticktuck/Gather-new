@@ -212,16 +212,6 @@
     $("ludo-overlay").hidden = false;
     activeGameId = id;
     await loadGame();
-    if (!activeGame) return;
-    const me = currentPlayer();
-    if (!activeGame.state?.started && (me?.status === "invited" || (activeGame.join_mode === "open" && !me))) {
-      const next = availableColors(uid())[0];
-      if (!next) {
-        toast("All four Ludo colors are already taken.");
-        return;
-      }
-      await joinGame(next.hex);
-    }
   }
 
   function close() {
@@ -304,13 +294,8 @@
         activeGame = game;
         await loadGame();
         if (!activeGame) return;
-        const me = currentPlayer();
-        if (me?.status === "invited") {
-          const first = availableColors(uid())[0];
-          if (first) await joinGame(first.hex);
-        } else if (game.join_mode === "open" && !me && !started) {
-          renderJoinPrompt();
-        }
+        // Keep color selection in the lobby panel for invitees and open-lobby joiners.
+        // renderGamePanel() presents the join prompt when this member has not joined yet.
       });
       card.append(info, action);
       list.append(card);
