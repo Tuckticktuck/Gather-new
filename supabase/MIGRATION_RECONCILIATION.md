@@ -6,8 +6,8 @@ Supabase project: `xrwldphmeafiakittcof`
 
 ## Observed state
 
-- Applied Supabase migration records: **137**
-- SQL migration files in the repository: **100**
+- Applied Supabase migration records: **138**
+- SQL migration files in the repository: **101**
 - Applied migration names with a same-named repository source file: **94**
 - Applied migration records whose names have no matching source file in the current branch: **43**
 - Repository migration files whose names have no matching applied migration record: **6**
@@ -83,6 +83,8 @@ These may have been applied through direct SQL, superseded by another migration,
   - Revokes direct API execution of the trigger-only `gather_game_chat_cleanup` function while preserving trigger execution.
 - `index_application_foreign_keys`
   - Adds indexes for nine application foreign-key lookup columns.
+- `harden_turn_based_game_results`
+  - Prevents the player whose turn it is from declaring the opponent the winner in a turn-based move RPC.
 
 ## Safe reconciliation policy
 
