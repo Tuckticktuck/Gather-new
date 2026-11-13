@@ -42,6 +42,19 @@ for (const file of ["manifest.webmanifest", "tsconfig.tag.json"]) {
   JSON.parse(readFileSync(join(root, file), "utf8"));
 }
 
+const party = readFileSync(join(root, "party.js"), "utf8");
+const picker = readFileSync(join(root, "game-people-picker.js"), "utf8");
+const partyMigration = readFileSync(join(root, "supabase/migrations/20261113235904_harden_party_voting_and_game_chat_cleanup.sql"), "utf8");
+const gameMoveMigration = readFileSync(join(root, "supabase/migrations/20261113235906_harden_turn_based_game_results.sql"), "utf8");
+assert.match(party, /poll\\.my_vote !== null && poll\\.my_vote !== undefined/, "Party vote selection must distinguish null from option zero");
+assert.match(party, /chat\\.kind !== "direct"/, "Two-player Quick Play must require a direct conversation");
+assert.match(party, /chat\\.members\\.length !== 2/, "Two-player Quick Play must require exactly two conversation members");
+assert.match(party, /verifyPartyLobbyRoster/, "Quick Play must verify the reused lobby roster");
+assert.match(picker, /selected\\.size >= selectionLimit/, "The people picker must enforce its selection limit");
+assert.match(partyMigration, /m\\.role='leader'/, "Party vote creation must require the leader role in SQL");
+assert.match(partyMigration, /revoke execute on function public\\.gather_game_chat_cleanup\\(\\)/i, "Trigger-only cleanup RPC must not be directly executable");
+assert.match(gameMoveMigration, /v_winner <> v_uid/, "A turn-based player must not declare the opponent the winner");
+
 const cssFiles = localAssets.filter(ref => /\.css(?:[?#]|$)/i.test(ref));
 for (const ref of cssFiles) {
   const url = new URL(ref, base);
