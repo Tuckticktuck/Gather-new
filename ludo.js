@@ -454,11 +454,7 @@
     top.append(heading, el("span", "ludo-player-count", joinedPlayers(players).length + "/" + maxPlayers(game) + " players"));
     root.append(top);
 
-    const actionBar = el("div", "ludo-actions tag-actions");
-    actionBar.append(btn("Back to lobbies", "secondary-action", async () => {
-      activeGameId = null; activeGame = null; players = [];
-      await refresh();
-    }));
+    const actionBar = el("div", "ludo-actions tag-actions tag-lobby-actions");
     if (game.status === "active" && joined && started) {
       actionBar.append(btn("End match", "outline", async () => {
         if (!window.confirm("End this Ludo match for everyone?")) return;
@@ -480,6 +476,15 @@
     }
 
     if (!started) {
+      if (joined) {
+        const colorPanel = el("section", "tag-customize ludo-lobby-feature");
+        colorPanel.append(el("strong", "", "Your circle"));
+        const swatch = el("span", "ludo-player-swatch tag-player-swatch");
+        swatch.style.background = me.color || "#38bdf8";
+        swatch.style.width = "48px"; swatch.style.height = "48px";
+        colorPanel.append(swatch, el("span", "muted tiny", "Your selected color for this match."));
+        root.append(colorPanel);
+      }
       renderPlayers(root);
       if (!joined) renderJoinPrompt(root);
       else {
@@ -517,11 +522,14 @@
           } catch (error) { toast(error?.message || "The lobby could not be cancelled."); }
         }));
       }
-      root.append(el("p", "muted tiny ludo-lobby-hint", "At least two players are needed. The host can start once everyone who joined is ready."));
+      root.append(actionBar);
+      root.append(el("p", "muted tiny ludo-lobby-hint tag-lobby-hint", "The host can start once at least two players have joined and everyone is ready."));
+      root.append(btn("Back to Games", "outline tag-back", async () => { activeGameId = null; activeGame = null; players = []; await refresh(); }));
       return;
     }
 
     renderPlayers(root);
+    root.append(actionBar);
     renderBoard(root, joined);
   }
 
