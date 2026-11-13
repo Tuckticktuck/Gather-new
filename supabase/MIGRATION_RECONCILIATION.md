@@ -8,10 +8,10 @@ Supabase project: `xrwldphmeafiakittcof`
 
 - Applied Supabase migration records: **138**
 - SQL migration files in the repository: **101**
-- Applied migration names with a same-named repository source file: **94**
+- Applied migration names with a same-named repository source file: **95**
 - Applied migration records whose names have no matching source file in the current branch: **43**
 - Repository migration files whose names have no matching applied migration record: **6**
-- Among the 94 name matches, **31** use a repository filename timestamp that differs from the applied database version.
+- Among the 95 name matches, **33** use a repository filename timestamp that differs from the applied database version.
 
 The timestamp differences are not proof that a migration is unapplied. The matching migration name is a stronger clue, but the source SQL still needs to be compared with the live definitions before changing filenames or history.
 
