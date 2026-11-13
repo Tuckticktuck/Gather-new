@@ -1930,3 +1930,65 @@
     max-width:16px!important;
   }
 }
+
+
+/* Final track-token geometry: fixed equal dimensions prevent oval shapes in board cells. */
+.ludo-overlay:has(.ludo-board) .ludo-track-cell .ludo-occupants > .ludo-token-dot,
+.ludo-overlay:has(.ludo-board) .ludo-home-lane .ludo-occupants > .ludo-token-dot {
+  display:grid!important;
+  place-items:center;
+  box-sizing:border-box;
+  flex:none!important;
+  width:clamp(12px,1.55vw,19px)!important;
+  height:clamp(12px,1.55vw,19px)!important;
+  min-width:0!important;
+  min-height:0!important;
+  max-width:none!important;
+  max-height:none!important;
+  aspect-ratio:1/1;
+  padding:0!important;
+  margin:0!important;
+  border-radius:50%!important;
+  line-height:1!important;
+  font-size:clamp(6px,.62vw,9px)!important;
+  font-weight:950;
+  border:1.5px solid #fff!important;
+  box-shadow:0 1px 5px #000b,0 0 0 1px #10151dcc,inset 0 1.5px 2px #ffffff9c,inset 0 -2px 3px #0004!important;
+  text-shadow:0 1px 2px #0009;
+  transform:none!important;
+}
+.ludo-overlay:has(.ludo-board) .ludo-track-cell .ludo-occupants > .ludo-token-dot:only-child,
+.ludo-overlay:has(.ludo-board) .ludo-home-lane .ludo-occupants > .ludo-token-dot:only-child {
+  grid-column:1/-1;
+  width:clamp(16px,1.9vw,22px)!important;
+  height:clamp(16px,1.9vw,22px)!important;
+  font-size:clamp(7px,.72vw,10px)!important;
+}
+@media(max-width:700px) {
+  .ludo-overlay:has(.ludo-board) .ludo-track-cell .ludo-occupants > .ludo-token-dot,
+  .ludo-overlay:has(.ludo-board) .ludo-home-lane .ludo-occupants > .ludo-token-dot {
+    width:clamp(11px,3.6vw,16px)!important;
+    height:clamp(11px,3.6vw,16px)!important;
+    font-size:clamp(5px,1.7vw,7px)!important;
+    border-width:1px!important;
+  }
+  .ludo-overlay:has(.ludo-board) .ludo-track-cell .ludo-occupants > .ludo-token-dot:only-child,
+  .ludo-overlay:has(.ludo-board) .ludo-home-lane .ludo-occupants > .ludo-token-dot:only-child {
+    width:clamp(14px,4.4vw,19px)!important;
+    height:clamp(14px,4.4vw,19px)!important;
+    font-size:clamp(6px,1.9vw,8px)!important;
+  }
+}
+@media(max-width:380px) {
+  .ludo-overlay:has(.ludo-board) .ludo-track-cell .ludo-occupants > .ludo-token-dot,
+  .ludo-overlay:has(.ludo-board) .ludo-home-lane .ludo-occupants > .ludo-token-dot {
+    width:11px!important;
+    height:11px!important;
+    font-size:5px!important;
+  }
+  .ludo-overlay:has(.ludo-board) .ludo-track-cell .ludo-occupants > .ludo-token-dot:only-child,
+  .ludo-overlay:has(.ludo-board) .ludo-home-lane .ludo-occupants > .ludo-token-dot:only-child {
+    width:14px!important;
+    height:14px!important;
+  }
+}
