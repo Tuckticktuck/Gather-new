@@ -260,6 +260,11 @@
   }
   function setActiveChat(chat) {
     activeChat = chat || null;
+    // The app can render its initial home screen before this module mounts.
+    // Reconcile visibility here as well, so the switcher is not left hidden
+    // from its initial mount state after sign-in.
+    const switcher = $("workspace-switcher");
+    if (switcher) switcher.hidden = !!activeChat;
     const launch = $("chat-games-open");
     if (launch) launch.hidden = !activeChat;
     renderChatTray();
