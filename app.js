@@ -2842,7 +2842,7 @@ function renderActive(){
   const c=S.chats.find(x=>x.id===S.active);
   window.GatherGames?.setActiveChat(c||null);
   const gamesOpen=!!$("games-workspace")&&!$("games-workspace").hidden&&!c;
-  const switcher=$("workspace-switcher");if(switcher)switcher.hidden=!!c||(!gamesOpen&&$("empty")?.hidden);
+  const switcher=$("workspace-switcher");if(switcher)switcher.hidden=!!c;
   $("message-create-poll").hidden=c?.kind!=="group";
   renderUndoSend();
   $("layout").classList.toggle("direct-chat",c?.kind==="direct");
