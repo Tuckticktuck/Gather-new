@@ -287,6 +287,12 @@
     else if(activeLobby.mode==="team_tag")root.append(el("p","muted tiny","Work with your team to tag the opposing team."));
     else root.append(el("p","muted tiny","One player is It. Tagging passes It to the next player."));
 
+    if(activeLobby.status==="active"){
+      const clock=el("div","tag-round-clock");clock.id="tag-round-clock";
+      clock.innerHTML='<span class="tag-clock-icon" aria-hidden="true"></span><span class="tag-clock-label">TIME LEFT</span><strong id="tag-round-countdown">—:—</strong>';
+      root.append(clock);updateRoundClock();
+      if(!roundTimer)roundTimer=setInterval(updateRoundClock,1000);
+    }
     if(activeLobby.status==="completed"){
       joystick={x:0,y:0};root.append(el("p","tag-complete","Round complete."));return;
     }
