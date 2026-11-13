@@ -227,3 +227,65 @@
 .ludo-modal .ludo-player-swatch,.ludo-modal .ludo-player-row .tag-player-swatch{box-sizing:border-box;width:23px!important;height:23px!important;min-width:23px;min-height:23px;flex:0 0 23px;aspect-ratio:1/1;border-radius:50%!important;}
 .ludo-modal .ludo-token-dot{box-sizing:border-box;aspect-ratio:1/1;border-radius:50%!important;flex-shrink:0;}
 .ludo-modal .ludo-lobby-feature .ludo-player-swatch{width:48px!important;height:48px!important;min-width:48px;min-height:48px;flex:0 0 48px;aspect-ratio:1/1;}
+
+
+/* Ludo board geometry and match controls: keep every grid space square. */
+.ludo-modal #ludo-content{position:relative;min-width:0}
+.ludo-modal .ludo-board{
+  box-sizing:border-box;
+  width:min(100%,680px);
+  height:auto;
+  aspect-ratio:1 / 1;
+  grid-template-columns:repeat(15,minmax(0,1fr));
+  grid-template-rows:repeat(15,minmax(0,1fr));
+  align-content:stretch;
+  justify-content:stretch;
+}
+.ludo-modal .ludo-board>.ludo-track-cell,
+.ludo-modal .ludo-board>.ludo-home-lane{
+  box-sizing:border-box;
+  min-width:0;
+  min-height:0;
+  aspect-ratio:1 / 1;
+}
+.ludo-modal .ludo-board>.ludo-base,
+.ludo-modal .ludo-board>.ludo-center{box-sizing:border-box;min-width:0;min-height:0}
+.ludo-modal .ludo-game-heading{padding-right:clamp(112px,18vw,158px)}
+.ludo-modal .game-chat-dock{
+  position:absolute;
+  top:0;
+  right:0;
+  left:auto;
+  z-index:20;
+  pointer-events:auto;
+}
+.ludo-modal .game-chat-toggle{
+  min-height:40px;
+  padding:9px 12px;
+  border-radius:12px;
+  white-space:nowrap;
+}
+.ludo-modal .game-chat-panel{top:48px;right:0;left:auto}
+.ludo-modal .ludo-end-actions{
+  display:flex;
+  justify-content:flex-end;
+  width:min(100%,680px);
+  margin:12px auto 0;
+  padding-top:10px;
+  border-top:1px solid #ffffff18;
+}
+.ludo-modal .ludo-end-actions button{
+  width:auto;
+  min-width:140px;
+  min-height:44px;
+  padding:10px 16px;
+  border-radius:12px;
+  font-size:12px;
+  font-weight:800;
+}
+@media(max-width:600px){
+  .ludo-modal .ludo-game-heading{padding-right:104px}
+  .ludo-modal .game-chat-toggle{min-height:38px;padding:8px 9px;font-size:11px}
+  .ludo-modal .game-chat-panel{width:min(310px,calc(100vw - 52px))}
+  .ludo-modal .ludo-end-actions button{min-width:128px;min-height:42px}
+}
