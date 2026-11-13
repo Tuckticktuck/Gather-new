@@ -1863,6 +1863,32 @@ function setNotificationView(view){
   renderNotifications();
 }
 function renderGameNotificationCards(list){
+  list.append(el("h3","notification-section-heading","Live games"));
+  const liveClassic=window.GatherGames?.getLiveGames?.()||[];
+  liveClassic.forEach(game=>{
+    const card=el("article","notification-center-item notification-game-item");
+    const icon=el("span","notification-center-icon","🎮");
+    const copy=el("span","notification-center-copy");
+    const names={chess:"Chess",checkers:"Checkers",tic_tac_toe:"Tic-Tac-Toe",connect_four:"Connect Four",battleship:"Battleship"};
+    const opponentId=game.player_one_id===S.user?.id?game.player_two_id:game.player_one_id;
+    const opponent=S.profiles[opponentId]?.display_name||S.profiles[opponentId]?.username||"Your opponent";
+    copy.append(el("strong","",names[game.game_type]||"Game"),el("small","", "In progress · "+opponent),el("time","",dateLabel(game.updated_at||game.created_at)));
+    card.append(icon,copy);
+    const actions=el("span","notification-game-actions");
+    const open=el("button","primary","Open");open.type="button";open.addEventListener("click",()=>{$("notifications-modal").hidden=true;window.GatherGames?.openInvitation?.(game.id);});
+    actions.append(open);card.append(actions);list.append(card);
+  });
+  const liveUno=window.GatherUno?.getLiveGames?.()||[];
+  liveUno.forEach(game=>{
+    const card=el("article","notification-center-item notification-game-item");
+    const icon=el("span","notification-center-icon","UNO");
+    const copy=el("span","notification-center-copy");
+    copy.append(el("strong","","UNO"),el("small","","In progress · "+(game.settings?.title||"UNO match")),el("time","",dateLabel(game.updated_at||game.created_at)));
+    card.append(icon,copy);
+    const actions=el("span","notification-game-actions");
+    const open=el("button","primary","Open");open.type="button";open.addEventListener("click",()=>{$("notifications-modal").hidden=true;window.GatherUno?.openGame?.(game.id);});
+    actions.append(open);card.append(actions);list.append(card);
+  });
   const unoInvites=S.notifications.filter(item=>item.kind==="uno_invite"&&!item.read_at&&item.body);
   unoInvites.forEach(item=>{
     const card=el("article","notification-center-item notification-game-item unread");
@@ -1891,6 +1917,7 @@ function renderGameNotificationCards(list){
     const decline=el("button","outline","Decline");decline.type="button";decline.addEventListener("click",async()=>{decline.disabled=true;await window.GatherGames?.respondToInvitation?.(game.id,false);renderNotifications();});
     actions.append(view,accept,decline);card.append(actions);list.append(card);
   });
+  if(unoInvites.length||liveClassic.length||liveUno.length)list.append(el("h3","notification-section-heading","Invitations"));
   const rematchOffers=new Map();
   S.notifications.filter(item=>item.kind==="uno_rematch"&&!item.read_at).forEach(item=>{if(item.body)rematchOffers.set(item.body,item);});
   rematchOffers.forEach((item,offerId)=>{
@@ -1907,7 +1934,7 @@ function renderGameNotificationCards(list){
     decline.addEventListener("click",async()=>{decline.disabled=true;accept.disabled=true;await window.GatherUno?.respondToRematch?.(offerId,false);await loadNotifications();});
     actions.append(accept,decline);card.append(actions);list.append(card);
   });
-  return unoInvites.length+invitations.length+rematchOffers.size;
+  return liveClassic.length+liveUno.length+unoInvites.length+invitations.length+rematchOffers.size;
 }
 function renderNotifications(){
   const list=$("notifications-list");
@@ -1924,7 +1951,7 @@ function renderNotifications(){
       admin:"There are no Gather Admin announcements in your notifications yet.",
       messages:"No recent message notifications. Messages in the conversation you're currently viewing stay out of this list.",
       other:"There are no other updates right now.",
-      games:"No incoming game invitations. New invitations will appear here automatically."
+      games:"No live games or invitations right now. Your active matches and new invitations will appear here."
     };
     list.append(el("p","muted tiny",emptyText[S.notificationView]||emptyText.all));
   }else{
