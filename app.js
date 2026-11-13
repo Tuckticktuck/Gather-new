@@ -1889,17 +1889,17 @@ function renderGameNotificationCards(list){
     const open=el("button","primary","Open");open.type="button";open.addEventListener("click",()=>{$("notifications-modal").hidden=true;window.GatherUno?.openGame?.(game.id);});
     actions.append(open);card.append(actions);list.append(card);
   });
-  const unoInvites=S.notifications.filter(item=>item.kind==="uno_invite"&&!item.read_at&&item.body);
-  unoInvites.forEach(item=>{
+  const unoInvites=window.GatherUno?.getInvitations?.()||[];
+  unoInvites.forEach(game=>{
     const card=el("article","notification-center-item notification-game-item unread");
     const icon=el("span","notification-center-icon","UNO");
     const copy=el("span","notification-center-copy");
-    const sender=S.profiles[item.actor_id]?.display_name||S.profiles[item.actor_id]?.username||"A Gather member";
-    copy.append(el("strong","","UNO lobby invitation"),el("small","",sender+" invited you to an UNO lobby."),el("time","",dateLabel(item.created_at)));
+    const sender=S.profiles[game.created_by]?.display_name||S.profiles[game.created_by]?.username||"A Gather member";
+    copy.append(el("strong","","UNO lobby invitation"),el("small","",sender+" invited you to an UNO lobby."),el("time","",dateLabel(game.created_at)));
     card.append(icon,copy);
     const actions=el("span","notification-game-actions");
     const join=el("button","primary","Join");join.type="button";
-    join.addEventListener("click",async()=>{join.disabled=true;await markNotificationRead(item.id);$("notifications-modal").hidden=true;await window.GatherUno?.openInvitation?.(item.body);await loadNotifications();});
+    join.addEventListener("click",async()=>{join.disabled=true;$("notifications-modal").hidden=true;await window.GatherUno?.openInvitation?.(game.id);await loadNotifications();});
     actions.append(join);card.append(actions);list.append(card);
   });
   const invitations=window.GatherGames?.getPendingInvitations?.()||[];
@@ -1917,7 +1917,7 @@ function renderGameNotificationCards(list){
     const decline=el("button","outline","Decline");decline.type="button";decline.addEventListener("click",async()=>{decline.disabled=true;await window.GatherGames?.respondToInvitation?.(game.id,false);renderNotifications();});
     actions.append(view,accept,decline);card.append(actions);list.append(card);
   });
-  if(unoInvites.length||liveClassic.length||liveUno.length)list.append(el("h3","notification-section-heading","Invitations"));
+  if(unoInvites.length||invitations.length||rematchOffers.size)list.append(el("h3","notification-section-heading","Invitations"));
   const rematchOffers=new Map();
   S.notifications.filter(item=>item.kind==="uno_rematch"&&!item.read_at).forEach(item=>{if(item.body)rematchOffers.set(item.body,item);});
   rematchOffers.forEach((item,offerId)=>{
