@@ -32,6 +32,7 @@
   let players = [];
   let games = [];
   let membershipRows = [];
+  let gameMenuOpen = false;
 
   const $ = id => document.getElementById(id);
   const el = (tag, cls, text) => {
@@ -80,11 +81,25 @@
     const overlay = el("div", "overlay ludo-overlay");
     overlay.id = "ludo-overlay";
     overlay.hidden = true;
-    overlay.innerHTML = '<section class="modal ludo-modal tag-modal" role="dialog" aria-modal="true" aria-labelledby="ludo-dialog-title"><button id="ludo-close" class="close" type="button" aria-label="Close">×</button><div id="ludo-content"></div></section>';
+    overlay.innerHTML = '<section class="modal ludo-modal tag-modal" role="dialog" aria-modal="true" aria-labelledby="ludo-dialog-title"><button id="ludo-close" class="close" type="button" aria-label="Close Ludo">×</button><div id="ludo-game-menu" class="ludo-game-menu" hidden aria-label="Ludo match menu"></div><div id="ludo-content"></div></section>';
     document.body.append(overlay);
-    $("ludo-close").addEventListener("click", close);
+    $("ludo-close").addEventListener("click", () => {
+      if (isLiveMatchView()) toggleGameMenu();
+      else close();
+    });
     overlay.addEventListener("click", event => {
-      if (event.target === overlay) close();
+      if (event.target === overlay) {
+        if (gameMenuOpen) closeGameMenu();
+        else close();
+      }
+    });
+    overlay.addEventListener("keydown", event => {
+      if (event.key === "Escape" && gameMenuOpen) {
+        event.preventDefault();
+        event.stopPropagation();
+        closeGameMenu();
+        $("ludo-close")?.focus();
+      }
     });
   }
 
@@ -236,12 +251,167 @@
   }
 
   function close() {
+    gameMenuOpen = false;
+    const menu = $("ludo-game-menu");
+    if (menu) menu.hidden = true;
     panelOpen = false;
     panelView = "list";
     $("ludo-overlay").hidden = true;
     activeGameId = null;
     activeGame = null;
     players = [];
+    syncGameMenuTrigger();
+  }
+
+
+  function isLiveMatchView() {
+    return panelOpen && panelView === "game" &&
+      activeGame?.status === "active" && !!activeGame?.state?.started;
+  }
+
+  function syncGameMenuTrigger() {
+    const trigger = $("ludo-close");
+    const menu = $("ludo-game-menu");
+    if (!trigger) return;
+
+    if (!isLiveMatchView()) {
+      gameMenuOpen = false;
+      if (menu) {
+        menu.hidden = true;
+        menu.replaceChildren();
+      }
+      trigger.textContent = "×";
+      trigger.classList.remove("ludo-menu-trigger");
+      trigger.setAttribute("aria-label", "Close Ludo");
+      trigger.setAttribute("aria-expanded", "false");
+      trigger.title = "Close";
+      return;
+    }
+
+    trigger.classList.add("ludo-menu-trigger");
+    trigger.textContent = gameMenuOpen ? "×" : "☰";
+    trigger.setAttribute("aria-label", gameMenuOpen ? "Close match menu" : "Open match menu");
+    trigger.setAttribute("aria-expanded", String(gameMenuOpen));
+    trigger.title = gameMenuOpen ? "Close menu" : "Match menu";
+  }
+
+  function closeGameMenu() {
+    gameMenuOpen = false;
+    const menu = $("ludo-game-menu");
+    if (menu) menu.hidden = true;
+    syncGameMenuTrigger();
+  }
+
+  function addGameMenuAction(menu, label, description, symbol, variant, handler, disabled = false) {
+    const item = el("button", "ludo-menu-action" + (variant ? " " + variant : ""));
+    item.type = "button";
+    item.disabled = !!disabled;
+
+    const icon = el("span", "ludo-menu-icon", symbol);
+    icon.setAttribute("aria-hidden", "true");
+    const copy = el("span", "ludo-menu-copy");
+    copy.append(el("strong", "", label), el("small", "", description));
+    item.append(icon, copy);
+    item.addEventListener("click", handler);
+    menu.append(item);
+    return item;
+  }
+
+  function renderGameMenu() {
+    const menu = $("ludo-game-menu");
+    if (!menu || !isLiveMatchView()) return;
+
+    menu.replaceChildren();
+    const header = el("div", "ludo-menu-heading");
+    header.append(el("span", "eyebrow", "MATCH MENU"), el("strong", "", "Ludo options"));
+    menu.append(header);
+
+    addGameMenuAction(
+      menu, "Game chat", "Open the temporary match conversation", "▤", "",
+      () => {
+        closeGameMenu();
+        const chatToggle = $("ludo-content")?.querySelector(".game-chat-toggle");
+        if (!chatToggle) {
+          toast("Game chat is unavailable right now.");
+          return;
+        }
+        if (chatToggle.getAttribute("aria-expanded") !== "true") chatToggle.click();
+      },
+      !isJoined()
+    );
+
+    if (isHost()) {
+      addGameMenuAction(
+        menu, "End match", "Finish this match for everyone", "■", "danger",
+        async () => {
+          if (busy || !activeGame) return;
+          if (!window.confirm("End this Ludo match for everyone?")) return;
+          closeGameMenu();
+          await callAction("end");
+        },
+        busy
+      );
+    }
+
+    const membership = currentPlayer();
+    const canLeave = membership && ["joined", "invited"].includes(membership.status);
+    addGameMenuAction(
+      menu, "Leave lobby", "Leave the match and remove your player slot", "↗", "danger",
+      async () => {
+        if (busy || !canLeave || !activeGame) return;
+        if (!window.confirm("Leave this Ludo lobby? You will no longer be part of this match.")) return;
+
+        const gameId = activeGame.id;
+        busy = true;
+        try {
+          const result = await ctx.db.rpc("gather_ludo_leave", { p_game_id: gameId });
+          if (result.error) throw result.error;
+          closeGameMenu();
+          activeGameId = null;
+          activeGame = null;
+          players = [];
+          panelView = "list";
+          toast("You left the Ludo lobby.");
+          await refresh();
+        } catch (error) {
+          toast(error?.message || "You could not leave this Ludo lobby.");
+        } finally {
+          busy = false;
+        }
+      },
+      !canLeave || busy
+    );
+
+    addGameMenuAction(
+      menu, "Exit game", "Return to Ludo games and stay in this lobby", "↩", "",
+      async () => {
+        if (busy) return;
+        closeGameMenu();
+        activeGameId = null;
+        activeGame = null;
+        players = [];
+        panelView = "list";
+        await refresh();
+      },
+      busy
+    );
+
+    menu.hidden = false;
+    syncGameMenuTrigger();
+  }
+
+  function toggleGameMenu() {
+    if (!isLiveMatchView()) {
+      close();
+      return;
+    }
+    if (gameMenuOpen) {
+      closeGameMenu();
+      return;
+    }
+    gameMenuOpen = true;
+    renderGameMenu();
+    syncGameMenuTrigger();
   }
 
   function setStatus(message, isError) {
@@ -284,6 +454,7 @@
 
   function renderLobbyList() {
     panelView = "list";
+    syncGameMenuTrigger();
     const root = $("ludo-content");
     if (!root) return;
     root.replaceChildren();
@@ -350,6 +521,7 @@
 
   function renderCreate() {
     panelView = "create";
+    syncGameMenuTrigger();
     const root=$("ludo-content");root.replaceChildren();root.append(el("p","eyebrow","NEW LUDO LOBBY"));
     const title=el("h2","ludo-title","Set up your lobby");title.id="ludo-dialog-title";
     root.append(title,el("p","muted tiny ludo-intro","Choose friends to invite. Game invitations do not create a group conversation."));
@@ -372,6 +544,8 @@
     const root = $("ludo-content");
     if (!root || !activeGame) return;
     root.replaceChildren();
+    syncGameMenuTrigger();
+    if (gameMenuOpen) renderGameMenu();
     const game = activeGame;
     const started = !!game.state?.started;
     const me = currentPlayer();
@@ -467,14 +641,6 @@
 
     renderPlayers(root, true);
     renderBoard(root, joined);
-    if (game.status === "active" && joined && started) {
-      const endActions = el("div", "ludo-end-actions");
-      endActions.append(btn("End match", "outline", async () => {
-        if (!window.confirm("End this Ludo match for everyone?")) return;
-        await callAction("end");
-      }));
-      root.append(endActions);
-    }
   }
 
   function renderPlayers(root, compactMatch = false) {
@@ -572,6 +738,8 @@
     const turnId = state.turn_user_id;
     const myTurn = canPlay && turnId === uid() && game.status === "active";
     const dice = state.dice === null || state.dice === undefined ? null : Number(state.dice);
+    const lastRoll = state.last_roll === null || state.last_roll === undefined ? null : Number(state.last_roll);
+    const displayDice = dice !== null ? dice : lastRoll;
     const board = el("div", "ludo-board");
     board.setAttribute("aria-label", "Ludo board with four colored home areas and a shared track.");
 
@@ -649,11 +817,19 @@
     const tokenControls = el("section", "ludo-controls");
     const diceCard = el("div", "ludo-dice-card");
     diceCard.setAttribute("aria-label", "Current dice roll");
-    const diceValue = el("strong", "ludo-dice-value", dice === null ? "—" : String(dice));
-    diceValue.setAttribute("aria-label", dice === null ? "No dice roll yet" : "Dice rolled " + dice);
-    diceCard.append(diceValue);
-    const roll = btn(myTurn && dice === null ? "Roll" : dice === null ? "Waiting" : "Rolled", "primary ludo-roll", () => callAction("roll"));
+    const diceFace = el("div", "ludo-dice-face");
+    const diceLabel = el("span", "ludo-dice-label",
+      dice !== null ? "ROLL RESULT" : displayDice !== null ? "LAST ROLL" : myTurn ? "YOUR TURN" : "WAITING");
+    const diceValue = el("strong", "ludo-dice-value", displayDice === null ? "—" : String(displayDice));
+    diceValue.id = "ludo-dice-value";
+    diceValue.setAttribute("aria-live", "polite");
+    diceValue.setAttribute("aria-label", displayDice === null ? "No dice roll yet" : (dice !== null ? "Dice rolled " : "Last roll was ") + displayDice);
+    diceFace.append(diceLabel, diceValue);
+    diceCard.append(diceFace);
+    const roll = btn(myTurn && dice === null ? "Roll dice" : dice === null ? "Waiting" : "Choose token",
+      "primary ludo-roll", () => callAction("roll"));
     roll.disabled = !myTurn || dice !== null;
+    roll.title = myTurn && dice === null ? "Roll the dice" : "Wait for your turn or move a token";
     diceCard.append(roll);
     tokenControls.append(diceCard);
 
@@ -698,20 +874,42 @@
   async function callAction(action, tokenIndex) {
     if (busy || !activeGame) return;
     busy = true;
+    const gameId = activeGame.id;
+    const diceValue = action === "roll" ? $("ludo-dice-value") : null;
+    const rollButton = action === "roll" ? $("ludo-content")?.querySelector(".ludo-roll") : null;
+    if (diceValue) diceValue.classList.add("is-rolling");
+    if (rollButton) {
+      rollButton.disabled = true;
+      rollButton.classList.add("is-pending");
+      rollButton.textContent = "Rolling…";
+    }
     try {
-      const result = await ctx.db.rpc("gather_ludo_multiplayer_action", {
-        p_game_id: activeGame.id,
+      const request = ctx.db.rpc("gather_ludo_multiplayer_action", {
+        p_game_id: gameId,
         p_action: action,
         p_token_index: tokenIndex === undefined ? null : tokenIndex
       });
+      const [result] = await Promise.all([
+        request,
+        action === "roll" ? new Promise(resolve => window.setTimeout(resolve, 560)) : Promise.resolve()
+      ]);
+      if (activeGameId !== gameId) return;
       if (result.error) throw result.error;
       activeGame = result.data;
-      await loadPlayers(activeGame.id);
+      await loadPlayers(gameId);
+      if (activeGameId !== gameId) return;
       renderGamePanel();
+      if (action === "roll" && activeGame?.state?.dice !== null && activeGame?.state?.dice !== undefined) {
+        const landedDie = $("ludo-dice-value");
+        landedDie?.classList.add("is-result");
+        window.setTimeout(() => landedDie?.classList.remove("is-result"), 820);
+      }
     } catch (error) {
       toast(error?.message || "That Ludo action could not be completed.");
-      await loadGame();
-    } finally { busy = false; }
+      if (activeGameId === gameId) await loadGame();
+    } finally {
+      busy = false;
+    }
   }
 
   function shutdown() {
