@@ -487,7 +487,7 @@
       renderPlayers(root);
       if (!joined) renderJoinPrompt(root);
       else {
-        const ready = btn(me.ready ? "Not ready" : "Ready", me.ready ? "outline" : "primary", async () => {
+        const ready = btn(me.ready ? "Not ready" : "Ready", me.ready ? "secondary-action" : "primary", async () => {
           try {
             const result = await ctx.db.rpc("gather_ludo_ready", { p_game_id: game.id, p_ready: !me.ready });
             if (result.error) throw result.error;
