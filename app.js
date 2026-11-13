@@ -1226,8 +1226,18 @@ async function loadFriends(){
     console.warn("Favorite friends could not be loaded:",favoritesResult.error.message);
     S.favoriteFriendIds=new Set();
   }else S.favoriteFriendIds=new Set((favoritesResult.data||[]).map(x=>x.friend_id));
-  S.friends=friendsResult.data||[];
   S.friendRequests=requestsResult.data||[];
+  // The accepted request is a durable fallback for older/incomplete friendship rows.
+  // Keep the canonical friendship table first, then merge accepted pairs in either direction.
+  const friendMap=new Map((friendsResult.data||[]).map(row=>[row.friend_id,row]));
+  for(const request of S.friendRequests){
+    if(request.status!=="accepted")continue;
+    const friendId=request.sender_id===uid?request.recipient_id:request.recipient_id===uid?request.sender_id:null;
+    if(friendId&&friendId!==uid&&!friendMap.has(friendId)){
+      friendMap.set(friendId,{friend_id:friendId,created_at:request.responded_at||request.created_at||new Date().toISOString()});
+    }
+  }
+  S.friends=[...friendMap.values()].sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
   const ids=[...new Set([
     ...S.friends.map(x=>x.friend_id),
     ...S.friendRequests.flatMap(x=>[x.sender_id,x.recipient_id].filter(id=>id!==uid))
@@ -2811,7 +2821,13 @@ async function toggleArchiveConversation(){
 async function selectFolder(folder){
   if(!["friends","nonfriends","blocked","deleted","archived"].includes(folder))return;
   if(folder!=="deleted")S.deletedConversationId=null;
-  S.folder=folder;renderChats();
+  S.folder=folder;
+  if(folder==="friends"||folder==="nonfriends"){
+    await loadFriends();
+    renderChats();
+    return;
+  }
+  renderChats();
   if(folder==="blocked")await loadBlocked();
   if(folder==="deleted")await loadDeletedMessages();
 }
