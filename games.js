@@ -16,6 +16,7 @@
   let ctx = null;
   let games = [];
   let externalInvitations = [];
+  let externalLiveGames = [];
   let activeChat = null;
   let activeGameId = null;
   let activeGame = null;
@@ -134,7 +135,7 @@
       const hub = node("section", "games-workspace");
       hub.id = "games-workspace";
       hub.hidden = true;
-      hub.innerHTML = '<header class="games-hub-header"><div><p class="eyebrow">PLAY TOGETHER</p><h1>Gather Games</h1><p class="muted games-hub-subtitle">Your game conversations, invitations and matches — all in one place.</p></div><button id="games-new" class="primary games-new-button" type="button">＋ New game</button></header><section class="games-invitations-panel" aria-labelledby="games-invitations-title"><header class="games-invitations-head"><div><h2 id="games-invitations-title">Invitations</h2><p class="muted tiny">All game invites from your conversations and multiplayer lobbies.</p></div><span id="games-invitations-count" class="games-status-section-count">0</span></header><div id="games-invitations-list" class="games-invitations-list"><p class="games-empty muted">Loading invitations…</p></div></section><section class="games-inbox-layout"><aside class="games-inbox-sidebar"><div class="games-inbox-sidebar-head"><h2>Game conversations</h2><p class="muted tiny">People and groups you have played with.</p></div><label class="games-search-wrap"><span class="sr-only">Search game conversations</span><input id="games-search" type="search" autocomplete="off" placeholder="Search people or groups…"></label><div id="games-list" class="games-conversation-list"></div></aside><section class="games-conversation-detail"><header class="games-detail-header"><div><p class="eyebrow">GAME HISTORY</p><h2 id="games-conversation-title">Choose a conversation</h2><p id="games-conversation-subtitle" class="muted tiny">Open a game conversation to see its history.</p></div><button id="games-refresh" class="outline" type="button">Refresh</button></header><p id="games-hub-status" class="status" role="status"></p><div id="games-conversation-games" class="games-list"></div></section></section>';
+      hub.innerHTML = '<header class="games-hub-header"><div><p class="eyebrow">PLAY TOGETHER</p><h1>Gather Games</h1><p class="muted games-hub-subtitle">Your game conversations, invitations and matches — all in one place.</p></div><button id="games-new" class="primary games-new-button" type="button">＋ New game</button></header><section class="games-invitations-panel games-live-panel" aria-labelledby="games-invitations-title"><header class="games-invitations-head"><div><h2 id="games-invitations-title">Live games</h2><p class="muted tiny">Your current matches and invitations, together in one place.</p></div><span id="games-invitations-count" class="games-status-section-count">0</span></header><section class="games-live-subsection" aria-labelledby="games-live-current-title"><header class="games-live-subhead"><h3 id="games-live-current-title">Currently playing</h3><span id="games-current-count" class="games-status-section-count">0</span></header><div id="games-current-list" class="games-invitations-list"><p class="games-empty muted">Loading live games…</p></div></section><section class="games-live-subsection" aria-labelledby="games-live-invites-title"><header class="games-live-subhead"><h3 id="games-live-invites-title">Invitations</h3><span id="games-invites-count" class="games-status-section-count">0</span></header><div id="games-invitations-list" class="games-invitations-list"><p class="games-empty muted">Loading invitations…</p></div></section></section><section class="games-inbox-layout"><aside class="games-inbox-sidebar"><div class="games-inbox-sidebar-head"><h2>Game conversations</h2><p class="muted tiny">People and groups you have played with.</p></div><label class="games-search-wrap"><span class="sr-only">Search game conversations</span><input id="games-search" type="search" autocomplete="off" placeholder="Search people or groups…"></label><div id="games-list" class="games-conversation-list"></div></aside><section class="games-conversation-detail"><header class="games-detail-header"><div><p class="eyebrow">GAME HISTORY</p><h2 id="games-conversation-title">Choose a conversation</h2><p id="games-conversation-subtitle" class="muted tiny">Open a game conversation to see its history.</p></div><button id="games-refresh" class="outline" type="button">Refresh</button></header><p id="games-hub-status" class="status" role="status"></p><div id="games-conversation-games" class="games-list"></div></section></section>';
       const chat = $("chat");
       main.insertBefore(hub, chat || null);
       $("games-new").addEventListener("click", () => openGameTypeChooser());
@@ -448,15 +449,22 @@
       return;
     }
     games = result.data || [];
-    const [unoInvites, tagInvites, ludoInvites] = await Promise.all([
-      ctx.db.from("gather_multiplayer_players").select("game_id,user_id,status,joined_at,gather_multiplayer_games!inner(id,conversation_id,game_type,status,created_by,join_mode,settings,created_at)").eq("user_id", userId()).eq("status", "invited").eq("gather_multiplayer_games.game_type", "uno").eq("gather_multiplayer_games.status", "active"),
-      ctx.db.from("gather_tag_players").select("lobby_id,user_id,status,joined_at,gather_tag_lobbies!inner(id,conversation_id,created_by,status,mode,join_mode,max_players,created_at)").eq("user_id", userId()).eq("status", "invited").in("gather_tag_lobbies.status", ["lobby", "active"]),
-      ctx.db.from("gather_multiplayer_players").select("game_id,user_id,status,joined_at,gather_multiplayer_games!inner(id,conversation_id,game_type,status,created_by,join_mode,settings,created_at,state)").eq("user_id", userId()).eq("status", "invited").eq("gather_multiplayer_games.game_type", "ludo").eq("gather_multiplayer_games.status", "active")
+    const [unoInvites, tagInvites, ludoInvites, unoJoined, ludoJoined, tagJoined] = await Promise.all([
+      ctx.db.from("gather_multiplayer_players").select("game_id,user_id,status,joined_at,gather_multiplayer_games!inner(id,conversation_id,game_type,status,created_by,join_mode,settings,created_at,updated_at)").eq("user_id", userId()).eq("status", "invited").eq("gather_multiplayer_games.game_type", "uno").eq("gather_multiplayer_games.status", "active"),
+      ctx.db.from("gather_tag_players").select("lobby_id,user_id,status,joined_at,gather_tag_lobbies!inner(id,conversation_id,created_by,status,mode,join_mode,max_players,created_at,updated_at)").eq("user_id", userId()).eq("status", "invited").in("gather_tag_lobbies.status", ["lobby", "active"]),
+      ctx.db.from("gather_multiplayer_players").select("game_id,user_id,status,joined_at,gather_multiplayer_games!inner(id,conversation_id,game_type,status,created_by,join_mode,settings,created_at,updated_at,state)").eq("user_id", userId()).eq("status", "invited").eq("gather_multiplayer_games.game_type", "ludo").eq("gather_multiplayer_games.status", "active"),
+      ctx.db.from("gather_multiplayer_players").select("game_id,gather_multiplayer_games!inner(id,conversation_id,game_type,status,created_by,join_mode,settings,created_at,updated_at)").eq("user_id", userId()).eq("status", "joined").eq("gather_multiplayer_games.game_type", "uno").eq("gather_multiplayer_games.status", "active"),
+      ctx.db.from("gather_multiplayer_players").select("game_id,gather_multiplayer_games!inner(id,conversation_id,game_type,status,created_by,join_mode,settings,created_at,updated_at,state)").eq("user_id", userId()).eq("status", "joined").eq("gather_multiplayer_games.game_type", "ludo").eq("gather_multiplayer_games.status", "active"),
+      ctx.db.from("gather_tag_players").select("lobby_id,gather_tag_lobbies!inner(id,conversation_id,created_by,status,mode,join_mode,max_players,created_at,updated_at)").eq("user_id", userId()).eq("status", "joined").eq("gather_tag_lobbies.status", "active")
     ]);
     externalInvitations = [];
     if (!unoInvites.error) (unoInvites.data || []).forEach(row => { const game=row.gather_multiplayer_games; if(game) externalInvitations.push({kind:"uno",id:game.id,conversation_id:game.conversation_id,created_by:game.created_by,created_at:game.created_at,join_mode:game.join_mode,settings:game.settings}); });
     if (!tagInvites.error) (tagInvites.data || []).forEach(row => { const lobby=row.gather_tag_lobbies; if(lobby) externalInvitations.push({kind:"tag",id:lobby.id,conversation_id:lobby.conversation_id,created_by:lobby.created_by,created_at:lobby.created_at,join_mode:lobby.join_mode,mode:lobby.mode,max_players:lobby.max_players,status:lobby.status}); });
     if (!ludoInvites.error) (ludoInvites.data || []).forEach(row => { const game=row.gather_multiplayer_games; if(game) externalInvitations.push({kind:"ludo",id:game.id,conversation_id:game.conversation_id,created_by:game.created_by,created_at:game.created_at,join_mode:game.join_mode,settings:game.settings,state:game.state}); });
+    externalLiveGames = [];
+    if (!unoJoined.error) (unoJoined.data || []).forEach(row => { const game=row.gather_multiplayer_games; if(game) externalLiveGames.push({kind:"uno",game}); });
+    if (!ludoJoined.error) (ludoJoined.data || []).forEach(row => { const game=row.gather_multiplayer_games; if(game) externalLiveGames.push({kind:"ludo",game}); });
+    if (!tagJoined.error) (tagJoined.data || []).forEach(row => { const lobby=row.gather_tag_lobbies; if(lobby) externalLiveGames.push({kind:"tag",game:lobby}); });
     renderAll();
     if (typeof ctx.onGamesUpdated === "function") ctx.onGamesUpdated();
   }
@@ -566,41 +574,61 @@
   }
 
   function renderCentralInvitations() {
-    const list=$("games-invitations-list"), count=$("games-invitations-count");
-    if(!list)return;
-    list.replaceChildren();
-    const all=[...getPendingInvitations().map(game=>({kind:"classic",game})),...externalInvitations].sort((a,b)=>new Date(a.game?.created_at||a.created_at)-new Date(b.game?.created_at||b.created_at)).reverse();
-    if(count)count.textContent=String(all.length);
-    if(!all.length){list.append(node("p","games-empty muted","You’re all caught up. New game invitations from any conversation will appear here."));return;}
-    all.forEach(invite=>{
-      if(invite.kind==="classic"){const card=makeGameCard(invite.game,true);card.classList.add("games-invitation-card");list.append(card);return;}
-      const uno=invite.kind==="uno",ludo=invite.kind==="ludo",tag=invite.kind==="tag";
-      const card=node("article","games-card games-invitation-card"),top=node("div","games-card-top"),identity=node("div","games-card-identity"),copy=node("div","games-card-copy");
-      identity.append(node("span","games-card-mark",uno?"▦":ludo?"●":"●"));
-      copy.append(node("strong","",uno?"UNO invitation":ludo?"Ludo invitation":"Tag invitation"),node("small","muted",memberName(invite.created_by)+" invited you"));
-      identity.append(copy);top.append(identity,node("span","games-status-pill status-pending","Your invitation"));card.append(top);
-      card.append(node("p","games-card-conversation muted tiny",conversationName(invite.conversation_id)));
-      const limit=invite.settings?.max_players||(ludo?4:10);
-      const detail=uno||ludo
-        ? ((invite.join_mode==="open"?"Open":"Invite-only")+" lobby · Up to "+limit+" players")
-        : ((invite.mode||"classic").replace(/_/g," ")+" · "+(invite.join_mode==="open"?"Open":"Invite-only")+" lobby");
-      card.append(node("p","games-card-detail muted tiny",detail));
+    const liveList=$("games-current-list"), inviteList=$("games-invitations-list");
+    const total=$("games-invitations-count"), liveCount=$("games-current-count"), inviteCount=$("games-invites-count");
+    if(!liveList||!inviteList)return;
+    liveList.replaceChildren();inviteList.replaceChildren();
+    const classicLive=getLiveGames().map(game=>({kind:"classic",game}));
+    const liveExternal=externalLiveGames.map(item=>({kind:item.kind,game:item.game}));
+    const allLive=[...classicLive,...liveExternal].sort((a,b)=>new Date(b.game?.updated_at||b.game?.created_at)-new Date(a.game?.updated_at||a.game?.created_at));
+    const classicInvites=getPendingInvitations().map(game=>({kind:"classic",game}));
+    const allInvites=[...classicInvites,...externalInvitations.map(item=>({kind:item.kind,game:item}))].sort((a,b)=>new Date(b.game?.created_at)-new Date(a.game?.created_at));
+    if(liveCount)liveCount.textContent=String(allLive.length);
+    if(inviteCount)inviteCount.textContent=String(allInvites.length);
+    if(total)total.textContent=String(allLive.length+allInvites.length);
+    if(!allLive.length)liveList.append(node("p","games-empty muted","No games in progress. Matches you join will appear here."));
+    allLive.forEach(({kind,game})=>{
+      const card=node("article","games-card games-invitation-card games-live-card"),top=node("div","games-card-top"),identity=node("div","games-card-identity"),copy=node("div","games-card-copy");
+      const title=kind==="classic"?gameName(game.game_type):kind==="uno"?"UNO":kind==="ludo"?"Ludo":"Tag";
+      identity.append(node("span","games-card-mark",kind==="uno"?"▦":kind==="ludo"?"◉":kind==="tag"?"●":"♟"));
+      const other=kind==="classic"?playerNames(game):memberName(game.created_by);
+      copy.append(node("strong","",title),node("small","muted",other+" · "+conversationName(game.conversation_id)));
+      identity.append(copy);top.append(identity,node("span","games-status-pill status-active","Live"));card.append(top);
       const actions=node("div","games-card-actions");
-      const joinLabel=uno?"Join UNO":ludo?"Join Ludo":"Join Tag";
-      actions.append(button(joinLabel,"primary games-card-primary",async()=>{
-        if(uno) await window.GatherUno?.openInvitation?.(invite.id);
-        else if(ludo) await window.GatherLudo?.openInvitation?.(invite.id);
-        else await window.GatherTag?.openInvitation?.(invite.id);
+      actions.append(button("Open game","primary games-card-primary",()=>{
+        if(kind==="classic")openGame(game);
+        else if(kind==="uno")window.GatherUno?.openGame?.(game.id);
+        else if(kind==="ludo")window.GatherLudo?.openGame?.(game.id);
+        else window.GatherTag?.openGame?.(game.id);
+      }));
+      card.append(actions);liveList.append(card);
+    });
+    if(!allInvites.length)inviteList.append(node("p","games-empty muted","No invitations waiting. New game invitations will appear here."));
+    allInvites.forEach(({kind,game})=>{
+      if(kind==="classic"){const card=makeGameCard(game,true);card.classList.add("games-invitation-card");inviteList.append(card);return;}
+      const uno=kind==="uno",ludo=kind==="ludo",tag=kind==="tag";
+      const card=node("article","games-card games-invitation-card"),top=node("div","games-card-top"),identity=node("div","games-card-identity"),copy=node("div","games-card-copy");
+      identity.append(node("span","games-card-mark",uno?"▦":ludo?"◉":"●"));
+      copy.append(node("strong","",uno?"UNO invitation":ludo?"Ludo invitation":"Tag invitation"),node("small","muted",memberName(game.created_by)+" invited you"));
+      identity.append(copy);top.append(identity,node("span","games-status-pill status-pending","Your invitation"));card.append(top);
+      card.append(node("p","games-card-conversation muted tiny",conversationName(game.conversation_id)));
+      const limit=game.settings?.max_players||game.max_players||(ludo?4:10);
+      card.append(node("p","games-card-detail muted tiny",uno||ludo?((game.join_mode==="open"?"Open":"Invite-only")+" lobby · Up to "+limit+" players"):(String(game.mode||"classic").replace(/_/g," ")+" · "+(game.join_mode==="open"?"Open":"Invite-only")+" lobby")));
+      const actions=node("div","games-card-actions");
+      actions.append(button(uno?"Join UNO":ludo?"Join Ludo":"Join Tag","primary games-card-primary",async()=>{
+        if(uno)await window.GatherUno?.openInvitation?.(game.id);
+        else if(ludo)await window.GatherLudo?.openInvitation?.(game.id);
+        else await window.GatherTag?.openInvitation?.(game.id);
         await refreshGames(false);
       }));
       actions.append(button("Decline","outline",async()=>{
         const rpc=uno?"gather_uno_decline":ludo?"gather_ludo_decline":"gather_tag_decline";
-        const args=uno||ludo?{p_game_id:invite.id}:{p_lobby_id:invite.id};
+        const args=uno||ludo?{p_game_id:game.id}:{p_lobby_id:game.id};
         const result=await ctx.db.rpc(rpc,args);
         if(result.error){toast(result.error.message||"Could not decline invitation.");return;}
         toast("Invitation declined.");await refreshGames(false);
       }));
-      card.append(actions);list.append(card);
+      card.append(actions);inviteList.append(card);
     });
   }
 
