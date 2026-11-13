@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  let ctx=null, lobbies=[], activeLobbyId=null, activeLobby=null, players=[], channel=null, refreshTimer=null, syncTimer=null;
+  let ctx=null, lobbies=[], activeLobbyId=null, activeLobby=null, players=[], channel=null, refreshTimer=null, syncTimer=null, roundTimer=null, finishRequested=false;
   let busy=false, joystick={x:0,y:0}, movePending=false, moveQueued=null, panelOpen=false, predictedPosition=null, lastSyncedPosition=null, keyboardKeys=new Set(), keyboardBound=false, arenaEngine=null;
   const $=id=>document.getElementById(id);
   const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=String(text);return n;};
@@ -83,12 +83,12 @@
     if(!ctx||!uid())return;
     const ids=[...new Set(chats().map(c=>c.id).filter(Boolean))];
     if(!ids.length){lobbies=[];renderPanel();return;}
-    const r=await ctx.db.from("gather_tag_lobbies").select("id,conversation_id,created_by,status,mode,join_mode,max_players,created_at,updated_at").in("conversation_id",ids).in("status",["lobby","active"]).order("updated_at",{ascending:false}).limit(40);
+    const r=await ctx.db.from("gather_tag_lobbies").select("id,conversation_id,created_by,status,mode,join_mode,max_players,round_seconds,started_at,ends_at,winner_user_id,winning_team,created_at,updated_at").in("conversation_id",ids).in("status",["lobby","active"]).order("updated_at",{ascending:false}).limit(40);
     if(r.error){if(panelOpen)status("Could not load Tag lobbies: "+r.error.message);return;}
     lobbies=r.data||[];
     if(activeLobbyId){
       const previousStatus=activeLobby?.status;
-      const current=await ctx.db.from("gather_tag_lobbies").select("id,conversation_id,created_by,status,mode,join_mode,max_players,created_at,updated_at").eq("id",activeLobbyId).maybeSingle();
+      const current=await ctx.db.from("gather_tag_lobbies").select("id,conversation_id,created_by,status,mode,join_mode,max_players,round_seconds,started_at,ends_at,winner_user_id,winning_team,created_at,updated_at").eq("id",activeLobbyId).maybeSingle();
       if(!current.error&&current.data)activeLobby=current.data;
       await loadPlayers(activeLobbyId);
       if(previousStatus==="active"&&activeLobby?.status==="active"&&$("tag-arena"))renderArenaPositions();
@@ -102,10 +102,10 @@
     if(!r.error)players=r.data||[];
   }
   function openPanel(){panelOpen=true;$("tag-overlay").hidden=false;renderPanel();void refresh();}
-  async function openInvitation(id){if(!ctx||!uid())return;mount();panelOpen=true;$("tag-overlay").hidden=false;const r=await ctx.db.from("gather_tag_lobbies").select("id,conversation_id,created_by,status,mode,join_mode,max_players,created_at,updated_at").eq("id",id).maybeSingle();if(r.error||!r.data){toast(r.error?.message||"That Tag invitation is no longer available.");return;}activeLobbyId=id;activeLobby=r.data;await joinLobby(r.data);}
+  async function openInvitation(id){if(!ctx||!uid())return;mount();panelOpen=true;$("tag-overlay").hidden=false;const r=await ctx.db.from("gather_tag_lobbies").select("id,conversation_id,created_by,status,mode,join_mode,max_players,round_seconds,started_at,ends_at,winner_user_id,winning_team,created_at,updated_at").eq("id",id).maybeSingle();if(r.error||!r.data){toast(r.error?.message||"That Tag invitation is no longer available.");return;}activeLobbyId=id;activeLobby=r.data;await joinLobby(r.data);}
   async function openGame(id){
     if(!ctx||!uid())return;mount();panelOpen=true;$("tag-overlay").hidden=false;
-    const r=await ctx.db.from("gather_tag_lobbies").select("id,conversation_id,created_by,status,mode,join_mode,max_players,created_at,updated_at").eq("id",id).in("status",["lobby","active"]).maybeSingle();
+    const r=await ctx.db.from("gather_tag_lobbies").select("id,conversation_id,created_by,status,mode,join_mode,max_players,round_seconds,started_at,ends_at,winner_user_id,winning_team,created_at,updated_at").eq("id",id).in("status",["lobby","active"]).maybeSingle();
     if(r.error||!r.data){toast(r.error?.message||"That Tag lobby is no longer available.");return;}
     activeLobbyId=id;activeLobby=r.data;await loadPlayers(id);renderPanel();
   }
@@ -218,6 +218,13 @@
       modeSelect.addEventListener("change",async()=>{modeSelect.disabled=true;try{const r=await ctx.db.rpc("gather_tag_set_mode",{p_lobby_id:activeLobbyId,p_mode:modeSelect.value});if(r.error)throw r.error;activeLobby=r.data||{...activeLobby,mode:modeSelect.value};toast("Game mode updated.");renderPanel();}catch(error){toast(error?.message||"Could not change the game mode.");modeSelect.value=activeLobby.mode;modeSelect.disabled=false;}});
       modeWrap.append(modeSelect,el("small","muted tiny","The host can change this before starting the next round."));root.append(modeWrap);
     }
+    if(activeLobby.status==="lobby"&&activeLobby.created_by===uid()){
+      const timeField=el("label","tag-round-setting");
+      timeField.append(el("strong","","Round time limit"));
+      const duration=el("input","tag-round-duration");duration.type="number";duration.min="1";duration.max="120";duration.step="1";duration.inputMode="numeric";duration.value=String(Math.round((Number(activeLobby.round_seconds)||300)/60));duration.setAttribute("aria-label","Round time limit in minutes");
+      timeField.append(duration,el("small","muted tiny","Set a custom duration in minutes. You can change it before every round."));
+      root.append(timeField);
+    }
     const customization=el("div","tag-customize");
     customization.append(el("strong","","Your circle"));
     const color=el("input","");color.type="color";color.value=me.color;color.setAttribute("aria-label","Choose your circle color");color.disabled=activeLobby.status!=="lobby";
@@ -234,9 +241,9 @@
         const start=btn("Start match","primary",async()=>{
           if(busy)return;busy=true;start.disabled=true;status("Starting match…");
           try{
-            const r=await ctx.db.rpc("gather_tag_start",{p_lobby_id:activeLobbyId});
+            const minutes=Number(root.querySelector(".tag-round-duration")?.value||5);if(!Number.isInteger(minutes)||minutes<1||minutes>120){status("Choose a round length between 1 and 120 minutes.");start.disabled=false;return;}const r=await ctx.db.rpc("gather_tag_start_round",{p_lobby_id:activeLobbyId,p_duration_seconds:minutes*60});
             if(r.error){status(r.error.message);toast(r.error.message);start.disabled=false;return;}
-            const latest=await ctx.db.from("gather_tag_lobbies").select("id,conversation_id,created_by,status,mode,join_mode,max_players,created_at,updated_at").eq("id",activeLobbyId).single();
+            const latest=await ctx.db.from("gather_tag_lobbies").select("id,conversation_id,created_by,status,mode,join_mode,max_players,round_seconds,started_at,ends_at,winner_user_id,winning_team,created_at,updated_at").eq("id",activeLobbyId).single();
             if(latest.error){status("Start was requested, but the match status could not be refreshed: "+latest.error.message);start.disabled=false;return;}
             activeLobby=latest.data;
             await loadPlayers(activeLobbyId);
@@ -262,7 +269,7 @@
   }
   function stopArenaEngine(){
     if(arenaEngine){arenaEngine.destroy();arenaEngine=null;}
-    clearInterval(syncTimer);syncTimer=null;
+    clearInterval(syncTimer);syncTimer=null;clearInterval(roundTimer);roundTimer=null;finishRequested=false;
   }
   function renderArena(root){
     const arena=el("canvas","tag-arena");arena.id="tag-arena";
@@ -332,6 +339,20 @@
     }
     if(!syncTimer)syncTimer=setInterval(sendMove,300);
   }
+  function updateRoundClock(){
+    const output=$("tag-round-countdown");if(!output||!activeLobby?.ends_at)return;
+    const remaining=Math.max(0,Math.ceil((new Date(activeLobby.ends_at).getTime()-Date.now())/1000));
+    output.textContent=String(Math.floor(remaining/60)).padStart(2,"0")+":"+String(remaining%60).padStart(2,"0");
+    const clock=$("tag-round-clock");if(clock)clock.classList.toggle("is-urgent",remaining<=30);
+    if(remaining===0&&!finishRequested&&activeLobby.status==="active"){
+      finishRequested=true;
+      void ctx.db.rpc("gather_tag_finish_expired",{p_lobby_id:activeLobbyId}).then(async r=>{
+        if(r.error){finishRequested=false;return;}
+        const latest=await ctx.db.from("gather_tag_lobbies").select("id,conversation_id,created_by,status,mode,join_mode,max_players,round_seconds,started_at,ends_at,winner_user_id,winning_team,created_at,updated_at").eq("id",activeLobbyId).single();
+        if(!latest.error){activeLobby=latest.data;await loadPlayers(activeLobbyId);renderPanel();}
+      });
+    }
+  }
   async function sendMove(){
     if(!activeLobbyId||movePending||document.hidden||activeLobby?.status!=="active")return;
     const me=players.find(p=>p.user_id===uid()&&p.status==="joined");if(!me)return;
@@ -365,7 +386,7 @@
   function shutdown(){
     clearTimeout(refreshTimer);stopArenaEngine();predictedPosition=null;
     if(channel){ctx?.db?.removeChannel?.(channel);channel=null;}
-    ctx=null;panelOpen=false;keyboardKeys.clear();joystick={x:0,y:0};activeLobbyId=null;activeLobby=null;players=[];lobbies=[];
+    ctx=null;panelOpen=false;keyboardKeys.clear();joystick={x:0,y:0};clearInterval(roundTimer);roundTimer=null;activeLobbyId=null;activeLobby=null;players=[];lobbies=[];
     const overlay=$("tag-overlay");if(overlay)overlay.hidden=true;
   }
   window.GatherTag={init,shutdown,open:openPanel,openInvitation,openGame,refresh};
