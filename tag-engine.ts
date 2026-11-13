@@ -46,7 +46,7 @@
     private lastThemeRead = 0;
     private lastDraw = 0;
     private readonly labelCache = new Map<string, { text: string; width: number }>();
-    private readonly frameInterval = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? 50 : 33;
+    private readonly frameInterval = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ? 50 : 33;
 
     constructor(canvas: HTMLCanvasElement, options: EngineOptions) {
       const context = canvas.getContext("2d", { alpha: false });
