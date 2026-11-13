@@ -391,7 +391,7 @@
 
 /* Circular game markers, arrow-only card navigation, and a natural fanned UNO hand. */
 .uno-modal .uno-player-row .uno-player-dot{box-sizing:border-box;width:23px!important;height:23px!important;min-width:23px;min-height:23px;flex:0 0 23px;aspect-ratio:1/1;border-radius:50%!important;}
-.uno-modal .uno-card-center{box-sizing:border-box;width:58px;height:58px;min-width:58px;min-height:58px;aspect-ratio:1/1;border-radius:50%;}
+.uno-modal .uno-card-center{box-sizing:border-box;width:46px;height:46px;min-width:46px;min-height:46px;aspect-ratio:1/1;border-radius:50%;}
 .uno-modal .uno-hand-strip{display:flex;align-items:flex-end;gap:0;overflow-x:hidden;overflow-y:hidden;min-height:166px;padding:24px 32px 18px;scrollbar-width:none;scroll-behavior:smooth;touch-action:pan-y;user-select:none;-webkit-user-select:none;cursor:default;}
 .uno-modal .uno-hand-strip::-webkit-scrollbar{display:none;}
 .uno-modal .uno-hand-strip .uno-card{flex:0 0 auto;margin-left:-27px;transform:translateY(var(--fan-lift,0px)) rotate(var(--fan-angle,0deg));transform-origin:50% 100%;transition:transform .18s ease,box-shadow .18s ease;}
@@ -402,4 +402,4 @@
 .uno-modal .uno-opponent-hand{position:relative;display:flex;align-items:center;flex:0 0 64px;width:64px;height:40px;margin-left:auto;}
 .uno-modal .uno-card-back{position:absolute;top:5px;width:18px;height:29px;border:1.5px solid #f6f3eb;border-radius:4px;background:repeating-linear-gradient(45deg,#244b78 0 3px,#18375d 3px 6px);box-shadow:0 2px 4px #0005;}
 .uno-modal .uno-card-count{position:absolute;right:0;bottom:0;z-index:8;display:grid;place-items:center;min-width:21px;height:21px;padding:0 5px;border:1px solid #ffffffa8;border-radius:999px;background:var(--accent);color:#fff;font-size:10px;font-weight:900;box-shadow:0 2px 5px #0004;}
-@media(max-width:520px){.uno-modal .uno-card-center{width:49px;height:49px;min-width:49px;min-height:49px;}.uno-modal .uno-hand-strip{min-height:145px;padding:21px 25px 16px;}.uno-modal .uno-hand-strip .uno-card{margin-left:-25px;}.uno-modal .uno-hand-strip .uno-card:first-child{margin-left:0;}.uno-modal .uno-player-row .uno-player-dot{width:20px!important;height:20px!important;min-width:20px;min-height:20px;flex-basis:20px;}}
+@media(max-width:520px){.uno-modal .uno-card-center{width:42px;height:42px;min-width:42px;min-height:42px;}.uno-modal .uno-hand-strip{min-height:145px;padding:21px 25px 16px;}.uno-modal .uno-hand-strip .uno-card{margin-left:-25px;}.uno-modal .uno-hand-strip .uno-card:first-child{margin-left:0;}.uno-modal .uno-player-row .uno-player-dot{width:20px!important;height:20px!important;min-width:20px;min-height:20px;flex-basis:20px;}}
