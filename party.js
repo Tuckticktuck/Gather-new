@@ -214,9 +214,12 @@
 
   function findSharedChat(memberIds) {
     if (!memberIds?.length) return null;
+    const expected = [...new Set(memberIds.filter(Boolean))];
+    if (expected.length !== 2) return null;
     return chats().find(chat => {
-      const ids = new Set((chat.members || []).map(m => m.user_id));
-      return memberIds.every(id => ids.has(id));
+      if (chat.kind !== "direct" || !Array.isArray(chat.members) || chat.members.length !== 2) return false;
+      const ids = new Set(chat.members.map(member => member.user_id).filter(Boolean));
+      return ids.size === 2 && expected.every(id => ids.has(id));
     }) || null;
   }
 
@@ -234,7 +237,9 @@
     (poll.options || []).forEach((type, index) => {
       if (!GAME_LABELS[type]) return;
       const count = Number(counts.find(item => Number(item.option_index) === index)?.count || 0);
-      const option = btn("", "games-party-vote-option" + (Number(poll.my_vote) === index ? " is-selected" : ""),
+      const hasVoted = poll.my_vote !== null && poll.my_vote !== undefined;
+      const isSelected = hasVoted && Number(poll.my_vote) === index;
+      const option = btn("", "games-party-vote-option" + (isSelected ? " is-selected" : ""),
         () => vote(party, poll, index));
       const name = el("span", "games-party-vote-name");
       name.append(el("span", "games-party-vote-mark", GAME_MARKS[type] || "•"),
@@ -246,7 +251,7 @@
       track.append(fill);
       option.append(name, amount, track);
       option.disabled = poll.status !== "open" || party.my_status !== "joined";
-      option.setAttribute("aria-pressed", Number(poll.my_vote) === index ? "true" : "false");
+      option.setAttribute("aria-pressed", isSelected ? "true" : "false");
       section.append(option);
     });
     if (poll.status === "open") {
