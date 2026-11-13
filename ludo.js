@@ -461,7 +461,6 @@
         await callAction("end");
       }));
     }
-    root.append(actionBar);
 
     if (game.status === "cancelled") {
       root.append(el("p", "ludo-empty muted", "This Ludo lobby was cancelled."));
