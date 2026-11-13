@@ -1,19 +1,21 @@
 "use strict";
 
-const CACHE_NAME = "gather-shell-v50";
+const CACHE_NAME = "gather-shell-v51";
 const APP_BASE = new URL("./", self.registration.scope);
 const SHELL_URLS = [
   "./",
   "./index.html",
   "./app.css?v=20261112-home-contained-switcher-1",
-  "./app.js?v=20261112-uno-notifications-1",
-  "./games.css?v=20261112-ludo-v1",
-  "./games.js?v=20261112-ludo-v1",
+  "./app.js?v=20261112-ludo-multiplayer-uno-draw-1",
+  "./games.css?v=20261112-ludo-multiplayer-uno-draw-1",
+  "./ludo.css?v=20261112-ludo-multiplayer-uno-draw-1",
+  "./games.js?v=20261112-ludo-multiplayer-uno-draw-1",
+  "./ludo.js?v=20261112-ludo-multiplayer-uno-draw-1",
   "./tag.css?v=20261112-game-invite-list-polish-1",
   "./tag-engine.js?v=20261112-tag-optimized-2",
   "./tag.js?v=20261112-game-invite-list-polish-1",
-  "./uno.css?v=20261112-game-invite-list-polish-1",
-  "./uno.js?v=20261112-game-invite-list-polish-1",
+  "./uno.css?v=20261112-ludo-multiplayer-uno-draw-1",
+  "./uno.js?v=20261112-ludo-multiplayer-uno-draw-1",
   "./favicon.svg?v=20261111-1",
   "./manifest.webmanifest?v=20261111-pwa",
   "./icons/gather-180.png",
@@ -26,7 +28,9 @@ const STATIC_PATHS = new Set([
   "./app.css",
   "./app.js",
   "./games.css",
+  "./ludo.css",
   "./games.js",
+  "./ludo.js",
   "./tag.css",
   "./tag-engine.js",
   "./tag.js",
