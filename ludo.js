@@ -124,33 +124,46 @@
 
   async function refresh() {
     if (!ctx || !uid()) return;
-    const ids = [...new Set(chats().map(chat => chat.id).filter(Boolean))];
-    if (!ids.length) {
-      games = [];
-      membershipRows = [];
-      if (panelOpen && !activeGameId) renderLobbyList();
+    // Game-only lobbies have conversation_id = null. Always load the current
+    // member's own game memberships first, then add discoverable legacy chat lobbies.
+    const mine = await ctx.db.from("gather_multiplayer_players")
+      .select("game_id,user_id,status,color,ready,joined_at")
+      .eq("user_id", uid())
+      .in("status", ["joined", "invited"]);
+    if (mine.error) {
+      if (panelOpen) setStatus("Your Ludo games could not be loaded: " + mine.error.message, true);
       return;
     }
-    const result = await ctx.db.from("gather_multiplayer_games")
-      .select("id,conversation_id,game_type,status,created_by,join_mode,settings,state,revision,created_at,updated_at")
-      .eq("game_type", "ludo")
-      .in("conversation_id", ids)
-      .in("status", ["active", "completed"])
-      .order("updated_at", { ascending: false })
-      .limit(60);
-    if (result.error) {
-      if (panelOpen) setStatus("Ludo lobbies could not be loaded: " + result.error.message, true);
+    const ownGameIds = [...new Set((mine.data || []).map(row => row.game_id).filter(Boolean))];
+    const conversationIds = [...new Set(chats().map(chat => chat.id).filter(Boolean))];
+    const queries = [];
+    if (ownGameIds.length) {
+      queries.push(ctx.db.from("gather_multiplayer_games")
+        .select("id,conversation_id,game_type,status,created_by,join_mode,settings,state,revision,created_at,updated_at")
+        .eq("game_type", "ludo").in("id", ownGameIds));
+    }
+    if (conversationIds.length) {
+      queries.push(ctx.db.from("gather_multiplayer_games")
+        .select("id,conversation_id,game_type,status,created_by,join_mode,settings,state,revision,created_at,updated_at")
+        .eq("game_type", "ludo").in("conversation_id", conversationIds)
+        .in("status", ["active", "completed"]).order("updated_at", { ascending: false }).limit(60));
+    }
+    const results = await Promise.all(queries);
+    const failed = results.find(result => result.error);
+    if (failed) {
+      if (panelOpen) setStatus("Ludo lobbies could not be loaded: " + failed.error.message, true);
       return;
     }
-    games = result.data || [];
+    const byId = new Map();
+    results.forEach(result => (result.data || []).forEach(game => byId.set(game.id, game)));
+    games = [...byId.values()].sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at));
     const gameIds = games.map(game => game.id);
     if (gameIds.length) {
       const members = await ctx.db.from("gather_multiplayer_players")
-        .select("game_id,user_id,status,color,ready,joined_at")
-        .in("game_id", gameIds);
-      membershipRows = members.error ? [] : (members.data || []);
+        .select("game_id,user_id,status,color,ready,joined_at").in("game_id", gameIds);
+      membershipRows = members.error ? (mine.data || []) : (members.data || []);
     } else {
-      membershipRows = [];
+      membershipRows = mine.data || [];
     }
     if (activeGameId) {
       await loadGame();
@@ -278,9 +291,11 @@
     const list = el("div", "ludo-lobby-list");
     const available = new Set(eligibleChats().map(chat => chat.id));
     const shown = games.filter(game => {
-      if (!available.has(game.conversation_id) || game.status !== "active") return false;
-      if (game.join_mode === "open" || game.created_by === uid()) return true;
-      return membershipRows.some(player => player.game_id === game.id && player.user_id === uid() && ["joined", "invited"].includes(player.status));
+      if (game.status !== "active") return false;
+      const mine = membershipRows.some(player => player.game_id === game.id && player.user_id === uid() && ["joined", "invited"].includes(player.status));
+      if (mine) return true;
+      if (!available.has(game.conversation_id)) return false;
+      return game.join_mode === "open" || game.created_by === uid();
     });
     if (!shown.length) list.append(el("p", "ludo-empty muted tiny", "No active Ludo lobbies in your conversations yet."));
     shown.forEach(game => {
