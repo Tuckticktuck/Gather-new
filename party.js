@@ -139,7 +139,7 @@
     form.addEventListener("submit", async event => {
       event.preventDefault();
       if (busy) return;
-      if (!selected.length) {
+      if (!selected.length && mode !== "create") {
         status.textContent = "Choose at least one person.";
         return;
       }
@@ -365,6 +365,11 @@
         gameId = response.data?.id || response.data?.[0]?.id;
         if (gameId) window.GatherGames?.openInvitation?.(gameId);
       } else if (type === "uno") {
+        const existing = await ctx.db.from("gather_multiplayer_games")
+          .select("id").eq("created_by", uid()).eq("game_type", "uno").eq("status", "active")
+          .limit(1).maybeSingle();
+        if (existing.error) throw existing.error;
+        if (existing.data?.id) throw new Error("You already have an open UNO lobby. Finish or close it before starting another Quick Play match.");
         const response = await ctx.db.rpc("gather_uno_create", {
           p_conversation_id: null,
           p_join_mode: "invite",
@@ -375,6 +380,11 @@
         gameId = response.data?.id;
         if (gameId) window.GatherUno?.openInvitation?.(gameId);
       } else if (type === "ludo") {
+        const existing = await ctx.db.from("gather_multiplayer_games")
+          .select("id").eq("created_by", uid()).eq("game_type", "ludo").eq("status", "active")
+          .limit(1).maybeSingle();
+        if (existing.error) throw existing.error;
+        if (existing.data?.id) throw new Error("You already have an open Ludo lobby. Finish or close it before starting another Quick Play match.");
         const response = await ctx.db.rpc("gather_ludo_create", {
           p_conversation_id: null,
           p_join_mode: "invite",
@@ -386,6 +396,11 @@
         gameId = response.data?.id;
         if (gameId) window.GatherLudo?.openInvitation?.(gameId);
       } else if (type === "tag") {
+        const existing = await ctx.db.from("gather_tag_lobbies")
+          .select("id").eq("created_by", uid()).in("status", ["lobby", "active"])
+          .limit(1).maybeSingle();
+        if (existing.error) throw existing.error;
+        if (existing.data?.id) throw new Error("You already have an open Tag lobby. Finish or close it before starting another Quick Play match.");
         const response = await ctx.db.rpc("gather_tag_create", {
           p_conversation_id: null,
           p_mode: "classic",
@@ -396,7 +411,7 @@
         });
         if (response.error) throw response.error;
         gameId = response.data?.id;
-        if (gameId) window.GatherTag?.openInvitation?.(gameId);
+        if (gameId) window.GatherTag?.openGame?.(gameId);
       }
       if (!gameId) throw new Error("The game lobby was created but could not be opened. Refresh the Games tab and check your invitations.");
       toast("Quick Play started " + GAME_LABELS[type] + " for your party.");
