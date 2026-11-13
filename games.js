@@ -102,7 +102,7 @@
       const switcher = node("nav", "workspace-switcher");
       switcher.id = "workspace-switcher";
       switcher.setAttribute("aria-label", "Gather sections");
-      switcher.innerHTML = '<button id="workspace-messages-tab" class="workspace-switch-tab active" type="button" aria-pressed="true"><span class="workspace-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H5l-1-4.2A7.5 7.5 0 1 1 20 11.5Z"></path></svg></span> Messages</button><button id="workspace-games-tab" class="workspace-switch-tab" type="button" aria-pressed="false"><span aria-hidden="true">♟</span> Games</button>';
+      switcher.innerHTML = '<button id="workspace-messages-tab" class="workspace-switch-tab active" type="button" aria-pressed="true"><span class="workspace-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H5l-1-4.2A7.5 7.5 0 1 1 20 11.5Z"></path></svg></span> Messages</button><button id="workspace-games-tab" class="workspace-switch-tab" type="button" aria-pressed="false"><span class="workspace-game-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M7.2 8.2h9.6a3.8 3.8 0 0 1 3.7 3l1 4.3a2.2 2.2 0 0 1-3.6 2.1l-2.5-2.1H8.6l-2.5 2.1a2.2 2.2 0 0 1-3.6-2.1l1-4.3a3.8 3.8 0 0 1 3.7-3Z"></path><path d="M8 10.8v4M6 12.8h4M16.2 11.7h.01M18.2 14h.01"></path></svg></span> Games</button>';
       const home = $("empty");
       switcher.hidden = true;
       main.appendChild(switcher);
