@@ -330,7 +330,7 @@
       message.textContent = "Creating lobby…";
       try {
         const r = await ctx.db.rpc("gather_snake_create", {
-          p_invited_user_ids: selected.slice(),
+          p_invited_user_ids: joinMode.value === "invite" ? selected.slice() : [],
           p_join_mode: joinMode.value,
           p_settings: {
             arena: arena.value,
@@ -372,6 +372,9 @@
     root.replaceChildren();
     const state = activeGame.state || {};
     if (state.phase === "active") return renderArena(root);
+    stopTickDriver();
+    if (resizeObserver) resizeObserver.disconnect();
+    resizeObserver = null;
     root.classList.remove("snake-in-match");
     const host = activeGame.created_by === uid();
     const me = activePlayers.find(p => p.user_id === uid());
