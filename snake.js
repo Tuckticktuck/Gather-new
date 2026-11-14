@@ -8,6 +8,7 @@
   let activePlayers = [];
   let myInvites = [];
   let myGames = [];
+  let openLobbies = [];
   let panelOpen = false;
   let busy = false;
   let tickTimer = null;
@@ -81,14 +82,18 @@
 
   async function refresh() {
     if (!ctx || !uid()) return;
-    const mine = await ctx.db.from("gather_multiplayer_players")
-      .select("game_id,user_id,status,ready,color,joined_at")
-      .eq("user_id", uid())
-      .in("status", ["joined", "invited"]);
+    const [mine, open] = await Promise.all([
+      ctx.db.from("gather_multiplayer_players")
+        .select("game_id,user_id,status,ready,color,joined_at")
+        .eq("user_id", uid())
+        .in("status", ["joined", "invited"]),
+      ctx.db.rpc("gather_snake_open_lobbies")
+    ]);
     if (mine.error) {
       if (panelOpen) setStatus("Could not load Snake Arena lobbies: " + mine.error.message);
       return;
     }
+    openLobbies = open.error ? [] : (open.data || []);
     const rows = mine.data || [];
     const ids = [...new Set(rows.map(row => row.game_id).filter(Boolean))];
     myInvites = rows.filter(row => row.status === "invited");
@@ -260,6 +265,19 @@
       root.append(card);
     });
 
+    if (openLobbies.length) {
+      root.append(el("h3", "tag-section-title", "Open lobbies from friends"));
+      openLobbies.forEach(lobby => {
+        const card = el("article", "tag-lobby-card");
+        const info = el("div", "tag-lobby-info");
+        info.append(el("strong", "", "Snake Arena · " + playerName(lobby.created_by)));
+        info.append(el("span", "muted tiny", (lobby.settings?.arena || "standard") + " arena · " +
+          lobby.joined_count + "/" + (lobby.settings?.max_players || 8) + " players"));
+        card.append(info, btn("Join", "primary", () => openInvitation(lobby.id)));
+        root.append(card);
+      });
+    }
+
     const status = el("p", "status tag-status", "");
     status.id = "snake-status";
     root.append(status);
@@ -305,6 +323,9 @@
       field("Round length (seconds)", duration), field("Player limit", capacity));
 
     const joinMode = select([["invite","Invite only"],["open","Open · accepted friends"]], "invite");
+    joinMode.addEventListener("change", () => {
+      peopleField.hidden = joinMode.value === "open";
+    });
     form.append(field("Joining", joinMode));
     const message = el("p", "status", "");
     message.id = "snake-status";
@@ -673,6 +694,7 @@
     activePlayers = [];
     myInvites = [];
     myGames = [];
+    openLobbies = [];
     if (resizeObserver) resizeObserver.disconnect();
     resizeObserver = null;
     if ($("snake-overlay")) $("snake-overlay").hidden = true;
