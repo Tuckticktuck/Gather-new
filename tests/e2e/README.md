@@ -28,6 +28,7 @@ The test suite must refuse to run against production user accounts. Use a dedica
 |---|---|---|---|
 | Create | Creates invite-only match | Sees invite | Exactly one match record |
 | Join | Watches roster | Accepts/joins invite | One joined roster row per account |
+| Spectate | Admits an invited/friend observer | Watches without joining | Observer is read-only and excluded from player count/readiness |
 | Ready | Sets ready | Sets ready | State reflects both ready flags |
 | Start | Starts match | Observes canonical active state | Only host can start |
 | Mutation | Sends valid action | Sends valid action | Server validates each accepted action |
@@ -41,7 +42,10 @@ The test suite must refuse to run against production user accounts. Use a dedica
 
 - Unauthenticated action.
 - Invited-but-not-joined action.
-- Spectator mutation.
+- Spectator movement, ready, host-control, tick-driving, or temporary-chat mutation.
+- Non-invited user attempting to spectate an invite-only lobby.
+- Non-friend attempting to spectate an open lobby.
+- Spectator attempting to count toward the configured player limit.
 - Non-host settings/start/cancel action.
 - Stale revision and duplicate action.
 - Oversized or malformed payload.
