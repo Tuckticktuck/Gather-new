@@ -27,6 +27,7 @@ Do not treat a same-named game in two families as the same runtime. In particula
 | `games.js` | Legacy Ludo (alternate multiplayer module) | Client code contains `gather_ludo_multiplayer_action` path in multiplayer module; verify which UI path is mounted before changing | Shared multiplayer |
 | `uno.js` | UNO lobby and match | `gather_uno_create/join/ready/start/get_state/action/leave/end/decline/done/request_rematch/respond_rematch`; reads shared game/player rows; Realtime subscriptions | Shared multiplayer + private UNO state |
 | `ludo.js` | Standalone multiplayer Ludo | `gather_ludo_create/join/ready/start/multiplayer_action/leave/cancel/decline`; reads shared game/player rows; Realtime subscriptions | Shared multiplayer |
+| `snake.js` | Snake Arena | `gather_snake_create/join/decline/ready/set_settings/start/leave/end/rematch`; `gather-snake-action` Edge Function for direction input and authoritative tick | Shared multiplayer + private input table |
 | `tag.js` | Tag lobby and round | `gather_tag_create/join/ready/set_mode/customize/start_round/return_lobby/leave/decline/finish_expired/move`; reads Tag lobby/player rows; Realtime subscriptions | Dedicated Tag |
 | `game-chat.js` | Temporary in-game chat | `gather_game_chat_list`, `gather_game_chat_send` | Shared chat table + per-family authorization |
 | `party.js` / `game-people-picker.js` | Party and invitation selection | Party-specific RPC/table access; must retain existing membership and eligibility checks | Party + invitation layer |
@@ -113,3 +114,18 @@ Live inspection shows the relevant public RPCs are executable by `authenticated`
 - Legacy Ludo's server-side action function and multiplayer Ludo's action function are both server-computed and use row locks, but operate on different tables and player/color/turn models.
 - UNO stores private hands and deck in a private state table and publishes only public top-card, turn, and card-count data in the shared match row. This confirms the intended private/public split for new hidden-information games.
 - Tag movement checks maximum displacement per request but does not apply elapsed-time speed limits or a continuous server tick. It is unsuitable as a trusted Snake movement loop.
+
+
+## Phase 1 addition — Snake Arena
+
+- Persistence family: public.gather_multiplayer_games / public.gather_multiplayer_players, game_type='snake_arena', plus private.gather_snake_inputs. Snake does not use the legacy two-player gather_games table.
+- Lobby lifecycle: gather_snake_create, gather_snake_join, gather_snake_decline, gather_snake_ready, gather_snake_set_settings, gather_snake_start, gather_snake_leave, gather_snake_end, and host-only gather_snake_rematch.
+- Open lobby discovery: gather_snake_open_lobbies is a SECURITY DEFINER read RPC that returns only open waiting rooms created by accepted friends, not a broad table listing. The existing roster-table RLS policy remains unchanged.
+- Action authority: clients call the JWT-verified gather-snake-action Edge Function with either a direction input or a request to advance one due tick. The function validates the Supabase user session and derives the caller identity itself.
+- Private inputs: private.gather_snake_inputs stores one pending direction per joined player. RLS is enabled and all client roles have table access revoked. Direction write/snapshot/tick-commit RPCs are granted only to service_role.
+- Authoritative rules: snake-engine.mjs calculates each movement step, body and wall collisions, simultaneous head collisions/swaps, obstacle collisions, food growth, score, round timeout, and winner. The client does not submit positions, scores, results or replacement state.
+- Concurrency/timing: the database tick commit locks the game row, compares the current revision and original state, requires the server-controlled tick interval to have elapsed, increments the tick sequence, and stamps lastTickAt with the database clock. Concurrent stale tick submissions are rejected.
+- Tick driver limitation: the MVP uses a host-browser tick driver with failover to another joined player's browser when the host has stopped advancing ticks. The trusted rule computation and commit are server-side, but the tick prompt itself is client-triggered. This is not a persistent dedicated simulation process; measure real latency before treating Snake as a high-scale competitive real-time game.
+- Temporary chat: the private game chat list/send helpers now recognize snake_arena; existing game-chat cleanup trigger still removes temporary messages when the match is completed/cancelled.
+- Frontend: snake.js and snake.css provide lobby settings, invite/open joining, readiness, fullscreen Canvas board, keyboard/touch direction controls, player scores, recap, rematch, and temporary chat. The Games hub, central notifications, Party Quick Play, app module lifecycle, and service-worker shell include Snake.
+- Tests: deterministic engine tests are in tests/snake-engine.test.mjs; they cover tick timing, direction rules, growth, wall/obstacle/self/player/head-swap collisions, timeout scoring, and finished-state immutability. These are automated unit tests, not an authenticated multi-account browser test.
