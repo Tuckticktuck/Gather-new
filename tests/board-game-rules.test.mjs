@@ -54,9 +54,9 @@ test("Connect Four drops into the lowest free cell of the selected column", () =
 test("Connect Four detects a horizontal win and rejects floating discs", () => {
   const board = emptyConnectBoard();
   board[36] = "R"; board[37] = "R"; board[38] = "R";
-  board[40] = "Y"; board[41] = "Y";
+  board[39] = "Y"; board[40] = "Y"; board[41] = "Y";
   const result = applyBoardGameMove(game("connect_four", {
-    board, turn: "red", moves: 5
+    board, turn: "red", moves: 6
   }), p1, { type: "drop", column: 0 });
   assert.equal(result.result, "player_one_won");
   const floating = emptyConnectBoard();
