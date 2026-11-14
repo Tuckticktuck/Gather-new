@@ -1,5 +1,5 @@
 (()=>{"use strict";
-let ctx=null,channel=null,activeGameId=null,state=null,games=[],myGames=[],busy=false,playersPanelOpen=false,selectedCardId=null,handScrollPosition=0,lastCardCounts=new Map(),lastCountGameId=null,refreshTimer=null,channelConnected=false,lifecycleListenersBound=false;
+let ctx=null,channel=null,activeGameId=null,state=null,games=[],myGames=[],busy=false,playersPanelOpen=false,selectedCardId=null,handScrollPosition=0,lastCardCounts=new Map(),lastCountGameId=null,avatarCache=new Map(),refreshTimer=null,channelConnected=false,lifecycleListenersBound=false;
 const $=id=>document.getElementById(id),el=(t,c="",v="")=>{const n=document.createElement(t);if(c)n.className=c;if(v)n.textContent=v;return n;};
 const uid=()=>ctx?.user?.()?.id||null,chats=()=>ctx?.chats?.()||[],toast=m=>ctx?.toast?.(m),profile=id=>ctx?.profiles?.()?.[id]||{},name=id=>profile(id).display_name||profile(id).username||"Gather member";
 const call=async(n,a)=>{const r=await ctx.db.rpc(n,a);if(r.error)throw r.error;return r.data;};
@@ -31,7 +31,7 @@ root.append(form);window.GatherPeoplePicker?.create({db:ctx.db,button:choose,sum
 async function enter(id){if(busy)return;busy=true;try{await call("gather_uno_join",{p_game_id:id,p_color:"#40826D"});await ctx.db.from("notifications").update({read_at:new Date().toISOString()}).eq("recipient_id",uid()).eq("kind","uno_invite").eq("body",id).is("read_at",null);activeGameId=id;selectedCardId=null;await loadGame();await refresh();}catch(e){toast(e.message||"Could not join UNO.");}finally{busy=false;}}
 async function watchGame(id){if(busy)return;busy=true;try{await call("gather_uno_spectate",{p_game_id:id});activeGameId=id;selectedCardId=null;await loadGame();await refresh();}catch(e){toast(e.message||"Could not watch this UNO match.");}finally{busy=false;}}
 async function stopWatching(){if(!activeGameId)return;const id=activeGameId;try{await call("gather_uno_stop_spectating",{p_game_id:id});activeGameId=null;state=null;selectedCardId=null;await refresh();toast("You stopped watching the UNO match.");}catch(e){toast(e.message||"Could not stop spectating.");}}
-async function loadGame(){if(!activeGameId)return;const gameId=activeGameId;try{const next=await call("gather_uno_get_state",{p_game_id:gameId});if(activeGameId!==gameId)return;state=next;if(selectedCardId&&!next.hand?.some(card=>card.id===selectedCardId))selectedCardId=null;renderGame();}catch(e){if(activeGameId===gameId)toast(e.message||"Could not load UNO.");}}
+async function loadGame(){if(!activeGameId)return;const gameId=activeGameId;try{const next=await call("gather_uno_get_state",{p_game_id:gameId});if(activeGameId!==gameId)return;state=next;void loadPlayerAvatars(next.players||[],gameId);if(selectedCardId&&!next.hand?.some(card=>card.id===selectedCardId))selectedCardId=null;renderGame();}catch(e){if(activeGameId===gameId)toast(e.message||"Could not load UNO.");}}
 function pubWinner(v){return !!(v?.public_state?.winner_id||v?.game?.state?.winner_id);}
 function playerPrefs(){
   try{return JSON.parse(localStorage.getItem("gather-uno-preferences:"+uid())||"{}");}catch(_){return {};}
@@ -47,12 +47,35 @@ function applyPlayerPrefs(){
   modal.style.setProperty("--uno-glow",accent+"33");
   modal.classList.toggle("uno-effects-off",prefs.effects===false);
 }
+function avatarInitial(userId){return String(name(userId)||"P").trim().slice(0,1).toUpperCase();}
+function avatarNode(userId,kind="uno-seat-avatar"){
+  const node=el("span",kind,avatarInitial(userId));node.dataset.avatarId=userId;
+  const image=avatarCache.get(userId);
+  if(image){const img=el("img");img.src=image;img.alt="";node.replaceChildren(img);node.classList.add("has-picture");}
+  return node;
+}
+function paintAvatarNode(node,userId){
+  if(!node)return;node.dataset.avatarId=userId;
+  const image=avatarCache.get(userId);
+  if(image){const img=el("img");img.src=image;img.alt="";node.replaceChildren(img);node.classList.add("has-picture");}
+  else{node.classList.remove("has-picture");node.textContent=avatarInitial(userId);}
+}
+async function loadPlayerAvatars(players,gameId){
+  const ids=[...new Set((players||[]).map(p=>p.user_id).filter(Boolean))],missing=ids.filter(id=>!avatarCache.has(id));
+  if(!missing.length||!ctx?.db)return;
+  const result=await ctx.db.from("profile_avatars").select("user_id,image_data").in("user_id",missing);
+  if(result.error)return;
+  missing.forEach(id=>avatarCache.set(id,null));
+  (result.data||[]).forEach(row=>avatarCache.set(row.user_id,row.image_data));
+  if(activeGameId!==gameId)return;
+  $("uno-content")?.querySelectorAll("[data-avatar-id]").forEach(node=>paintAvatarNode(node,node.dataset.avatarId));
+}
 function showPlayerProfile(player){
   const root=$("uno-content");if(!root||!player)return;
   root.querySelector(".uno-profile-popover")?.remove();
   const info=profile(player.user_id)||{},panel=el("aside","uno-profile-popover");
   panel.setAttribute("role","dialog");panel.setAttribute("aria-label","Player profile");
-  const head=el("div","uno-profile-head"),avatar=el("span","uno-profile-avatar",String(name(player.user_id)||"P").trim().slice(0,1).toUpperCase());
+  const head=el("div","uno-profile-head"),avatar=avatarNode(player.user_id,"uno-profile-avatar");
   const title=el("div","uno-profile-title");title.append(el("strong","",name(player.user_id)),el("small","muted",player.user_id===uid()?"Your player profile":"UNO player"));
   const closeButton=el("button","uno-profile-close","×");closeButton.type="button";closeButton.setAttribute("aria-label","Close profile");
   head.append(avatar,title,closeButton);panel.append(head);
@@ -101,7 +124,7 @@ function renderGame(){
   top.append(heading);
   const headerActions=el("div","uno-header-actions");
   const playerToggle=el("button","uno-player-toggle","Players · "+joined.length+"/"+(g.settings?.max_players||10));
-  playerToggle.type="button";playerToggle.hidden=!started||finished;playerToggle.setAttribute("aria-expanded",String(playersPanelOpen));
+  playerToggle.type="button";playerToggle.hidden=!started||finished||spectating;playerToggle.setAttribute("aria-expanded",String(playersPanelOpen));
   headerActions.append(playerToggle);
   const settingsButton=el("button","uno-settings-toggle","⚙");settingsButton.type="button";settingsButton.setAttribute("aria-label","Open UNO appearance settings");settingsButton.title="Appearance settings";
   settingsButton.onclick=()=>renderSettingsPanel(root);headerActions.append(settingsButton);
@@ -151,7 +174,7 @@ function renderGame(){
       const seat=el("button","uno-seat"+(p.user_id===pub.turn_user_id?" is-turn":""));seat.type="button";
       const angle=(joined.length===1?0:-150+(300*index/Math.max(1,joined.length-1)))*Math.PI/180;
       seat.style.left=(50+36*Math.sin(angle))+"%";seat.style.top=(44-27*Math.cos(angle))+"%";
-      seat.append(el("span","uno-seat-avatar",String(name(p.user_id)||"P").trim().slice(0,1).toUpperCase()));
+      seat.append(avatarNode(p.user_id));
       const copy=el("span","uno-seat-copy");copy.append(el("strong","",name(p.user_id)),el("small","",String(Math.max(0,Number(p.card_count)||0))+" cards"));seat.append(copy);
       if(p.user_id===pub.turn_user_id)seat.append(el("span","uno-seat-turn","TURN"));
       seat.onclick=()=>showPlayerProfile(p);ring.append(seat);
@@ -232,7 +255,7 @@ function renderGame(){
     seat.type="button";seat.dataset.userId=p.user_id;seat.setAttribute("aria-label",name(p.user_id)+", "+count+" cards");
     const angle=(opponents.length===1?0:-150+(300*index/Math.max(1,opponents.length-1)))*Math.PI/180;
     seat.style.left=(50+36*Math.sin(angle))+"%";seat.style.top=(44-27*Math.cos(angle))+"%";
-    const avatar=el("span","uno-seat-avatar",String(name(p.user_id)||"P").trim().slice(0,1).toUpperCase());
+    const avatar=avatarNode(p.user_id);
     const copy=el("span","uno-seat-copy");copy.append(el("strong","",name(p.user_id)),el("small","",String(Math.max(0,Number(p.card_count)||0))+" cards"));
     seat.append(avatar,copy);if(p.user_id===pub.turn_user_id)seat.append(el("span","uno-seat-turn","TURN"));if(delta)seat.append(el("span","uno-card-change",(delta>0?"+":"")+delta));
     seat.onclick=()=>showPlayerProfile(p);seatRing.append(seat);
@@ -241,7 +264,7 @@ function renderGame(){
   if(me){
     const ownCount=hand.length,previous=lastCardCounts.get(me.user_id),delta=previous===undefined?0:ownCount-previous;lastCardCounts.set(me.user_id,ownCount);
     const own=el("button","uno-seat uno-seat-you"+(myTurn?" is-turn":"")+(delta?" has-card-change":""));own.type="button";own.style.left="50%";own.style.top="88%";
-    own.append(el("span","uno-seat-avatar",String(name(uid())||"Y").trim().slice(0,1).toUpperCase()));
+    own.append(avatarNode(uid()));
     const ownCopy=el("span","uno-seat-copy");ownCopy.append(el("strong","","You"),el("small","",hand.length+" cards"));own.append(ownCopy);if(delta)own.append(el("span","uno-card-change",(delta>0?"+":"")+delta));
     own.onclick=()=>showPlayerProfile(me);seatRing.append(own);
   }
