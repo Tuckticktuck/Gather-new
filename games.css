@@ -935,3 +935,12 @@
 .uno-in-match .game-chat-toggle:active{transform:scale(.96)}
 .uno-in-match .game-chat-toggle.active{background:color-mix(in srgb,var(--accent,#65a58d) 18%,var(--panel-strong,#292536));border-color:var(--accent,#65a58d);color:var(--accent-text,#fff)}
 .uno-in-match .game-chat-toggle svg{display:block;width:20px;height:20px}
+
+/* Always-visible compact card totals; full player roster remains in its drawer. */
+.uno-in-match .uno-card-count-strip{display:flex;flex:0 0 auto;align-items:stretch;gap:7px;width:100%;overflow-x:auto;padding:2px 1px 5px;scrollbar-width:thin}
+.uno-in-match .uno-card-count-player{display:flex;flex:0 0 auto;align-items:center;gap:5px;min-height:30px;padding:5px 9px;border:1px solid var(--border,rgba(255,255,255,.14));border-radius:10px;background:color-mix(in srgb,var(--panel-strong,#292536) 92%,transparent);color:var(--text,#f4f2fa);font-size:11px;white-space:nowrap}
+.uno-in-match .uno-card-count-player.is-turn{border-color:var(--accent,#65a58d);background:color-mix(in srgb,var(--accent,#65a58d) 15%,var(--panel-strong,#292536))}
+.uno-in-match .uno-card-count-name{max-width:110px;overflow:hidden;text-overflow:ellipsis}
+.uno-in-match .uno-card-count-value{display:grid;place-items:center;min-width:21px;height:21px;padding:0 5px;border-radius:7px;background:var(--accent,#40826d);color:white;font-size:11px;font-weight:900}
+.uno-in-match .uno-card-count-label{color:var(--muted,#aaa);font-size:10px}
+@media(max-width:600px){.uno-in-match .uno-card-count-player{min-height:28px;padding:4px 7px;font-size:10px}.uno-in-match .uno-card-count-name{max-width:88px}}
