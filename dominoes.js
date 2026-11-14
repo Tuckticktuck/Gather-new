@@ -103,7 +103,49 @@ function boneyard(root){const s=state(),box=el("section","dominoes-boneyard"),st
 function hand(root){const h=snapshot.your_hand||[],sec=el("section","dominoes-hand-section"),head=el("div","dominoes-hand-heading");head.append(el("strong","",isSpectator()?"Spectator view":"Your hand"),el("small","muted",isSpectator()?"Private tiles hidden":h.length+" tiles"));sec.append(head);if(!isJoined()){sec.append(el("p","dominoes-empty","Spectators never receive player hands."));root.append(sec);return;}const strip=el("div","dominoes-hand");handOrder.map(id=>h.find(t=>t.id===id)).filter(Boolean).forEach(t=>{const c=btn("","dominoes-hand-tile"+(playable(t)?" is-playable":"")+(selectedTile===t.id?" is-selected":""),()=>{if(Date.now()<suppressTileClickUntil)return;selectedTile=selectedTile===t.id?null:t.id;sound("tile");renderGame();});c.draggable=false;c.append(tileNode(t));c.setAttribute("aria-label","Tile "+t.a+" and "+t.b);c.dataset.tileId=t.id;let pointerStart=null;c.addEventListener("pointerdown",e=>{if(e.pointerType==="mouse"&&e.button!==0)return;pointerStart={id:e.pointerId,x:e.clientX,y:e.clientY,dragging:false};try{c.setPointerCapture(e.pointerId);}catch{};});c.addEventListener("pointermove",e=>{if(!pointerStart||pointerStart.id!==e.pointerId)return;if(!pointerStart.dragging&&Math.hypot(e.clientX-pointerStart.x,e.clientY-pointerStart.y)>8){pointerStart.dragging=true;c.classList.add("is-dragging");}if(pointerStart.dragging)e.preventDefault();});c.addEventListener("pointerup",e=>{if(!pointerStart||pointerStart.id!==e.pointerId)return;const drag=pointerStart.dragging;pointerStart=null;c.classList.remove("is-dragging");if(!drag)return;suppressTileClickUntil=Date.now()+500;const target=document.elementFromPoint(e.clientX,e.clientY),endTarget=target?.closest?.(".dominoes-end-target"),handTarget=target?.closest?.(".dominoes-hand-tile");if(endTarget&&!endTarget.disabled){const side=endTarget.classList.contains("is-start")?"start":endTarget.classList.contains("left")?"left":"right";selectedTile=t.id;void place(side);return;}if(handTarget&&handTarget!==c){const from=handOrder.indexOf(t.id),to=handOrder.indexOf(handTarget.dataset.tileId);if(from>=0&&to>=0){handOrder.splice(from,1);handOrder.splice(to,0,t.id);renderGame();return;}}selectedTile=t.id;sound("tile");renderGame();});c.addEventListener("pointercancel",()=>{pointerStart=null;c.classList.remove("is-dragging");});strip.append(c);});sec.append(strip,el("small","dominoes-hand-help muted","Tap a glowing tile, then choose a board end. Drag to rearrange your hand."));root.append(sec);}
 async function place(end){if(!selectedTile){toast("Select a tile first.");return;}const t=(snapshot.your_hand||[]).find(x=>x.id===selectedTile);if(!t||!fits(t,end)){toast("That tile does not match this end.");return;}const id=selectedTile;selectedTile=null;await action("play",id,end);}
 async function action(kind,tileId=null,end=null){if(busy||!gameId)return;busy=true;const id=gameId;try{const r=await ctx.db.rpc("gather_dominoes_action",{p_game_id:id,p_action:kind,p_tile_id:tileId,p_end:end});if(r.error)throw r.error;sound(kind==="play"?"tile":kind==="draw"?"draw":"turn");await loadGame();}catch(e){toast(e.message||"That move could not be made.");await loadGame();}finally{busy=false;}}
-async function drawUntilPlayable(){if(busy||!gameId)return;busy=true;const id=gameId;try{for(let n=0;n<28&&gameId===id;n++){const r=await ctx.db.rpc("gather_dominoes_action",{p_game_id:id,p_action:"draw",p_tile_id:null,p_end:null});if(r.error)throw r.error;const s=await ctx.db.rpc("gather_dominoes_get_state",{p_game_id:id});if(s.error)throw s.error;snapshot=s.data;if(state().turn_user_id!==uid()||state().phase!=="playing"||(snapshot.your_hand||[]).some(t=>playable(t))||!Number(state().boneyard_count))break;}sound("draw");renderGame();}catch(e){toast(e.message||"The boneyard could not be drawn.");await loadGame();}finally{busy=false;}}
+async function drawUntilPlayable(){
+  if(busy||!gameId)return;
+  if(!isJoined()||currentTurn()!==uid()){toast("You can only draw on your turn.");return;}
+  if((snapshot?.your_hand||[]).some(t=>playable(t))){toast("You already have a playable tile.");return;}
+  busy=true;
+  const id=gameId;
+  let draws=0;
+  try{
+    while(gameId===id&&draws<28){
+      const before=state();
+      if(before.phase!=="playing"||before.turn_user_id!==uid())break;
+      if(Number(before.boneyard_count||0)<=0)break;
+      const drawResult=await ctx.db.rpc("gather_dominoes_action",{
+        p_game_id:id,p_action:"draw",p_tile_id:null,p_end:null
+      });
+      if(drawResult.error)throw drawResult.error;
+      draws++;
+      const stateResult=await ctx.db.rpc("gather_dominoes_get_state",{p_game_id:id});
+      if(stateResult.error)throw stateResult.error;
+      if(gameId!==id)return;
+      if(!stateResult.data?.game?.state||!Array.isArray(stateResult.data.your_hand)){
+        throw new Error("The updated hand could not be loaded. Please try again.");
+      }
+      snapshot=stateResult.data;
+      const after=state();
+      if(after.phase!=="playing"||after.turn_user_id!==uid())break;
+      if((snapshot.your_hand||[]).some(t=>playable(t,after)))break;
+      if(Number(after.boneyard_count||0)<=0)break;
+    }
+    if(gameId===id){
+      sound("draw");
+      renderGame();
+      const handNow=snapshot?.your_hand||[];
+      if(handNow.some(t=>playable(t)))toast(draws===1?"You drew a playable tile.":"You drew until you had a playable tile.");
+      else if(draws>0)toast("The boneyard is empty. Your turn will pass.");
+      else toast("There are no tiles left to draw.");
+    }
+  }catch(e){
+    toast(e?.message||"The boneyard could not be drawn.");
+    if(gameId===id)await loadGame();
+  }finally{busy=false;}
+}
+
 function history(root){const d=el("details","dominoes-history"),moves=state().move_history||[];d.append(el("summary","","Move history · "+moves.length));const list=el("ol","dominoes-history-list");moves.slice(-30).forEach(x=>list.append(el("li","",x.action==="play"?name(x.player_id)+" played "+x.tile+" on "+x.end+".":x.action==="draw"?name(x.player_id)+" drew a tile.":name(x.player_id)+" passed.")));d.append(list);root.append(d);}
 function recap(root){const s=state(),r=s.last_round||{},p=el("section","dominoes-recap");p.append(el("p","eyebrow","ROUND "+(r.round||s.round)+" COMPLETE"),el("h3","dominoes-victory-title",r.winner_team?r.winner_team.replace("_"," ").toUpperCase()+" wins":r.winner_id?name(r.winner_id)+" wins":"Round tied"),el("p","dominoes-round-points","+"+(r.points||0)+" points"));scoreboard(p);const h=el("div","dominoes-round-history");h.append(el("strong","","Round history"));(s.round_history||[]).slice(-6).forEach(x=>h.append(el("p","muted","Round "+x.round+" · "+(x.winner_team||name(x.winner_id)||"Tie")+" · "+x.points+" points")));p.append(h);root.append(p);const a=el("div","dominoes-actions");a.append(btn("Continue","primary",()=>rpc("gather_dominoes_continue_round",{p_game_id:game().id})));if(isHost())a.append(btn("End match","secondary-action",end));root.append(a);}
 function finished(root){const s=state(),p=el("section","dominoes-finished");p.append(el("div","dominoes-trophy","✦"),el("p","eyebrow","MATCH COMPLETE"),el("h3","dominoes-victory-title",s.winner_team?s.winner_team.replace("_"," ").toUpperCase()+" wins!":s.winner_id?name(s.winner_id)+" wins!":"Match ended"),el("p","muted","Final scoreboard"));scoreboard(p);root.append(p);const a=el("div","dominoes-actions");if(isHost())a.append(btn("Rematch","primary",rematch));a.append(btn("Return to Games","outline",close));root.append(a);const historyBox=el("details","dominoes-history");historyBox.append(el("summary","","Full match history"));const rounds=el("section","dominoes-round-history");rounds.append(el("strong","","Round results"));(s.round_history||[]).forEach(x=>rounds.append(el("p","", "Round "+x.round+" · "+(x.winner_team||name(x.winner_id)||"Tie")+" · "+x.points+" points")));historyBox.append(rounds);const moves=el("ol","dominoes-history-list");(s.move_history||[]).slice(-100).forEach(x=>moves.append(el("li","",x.action==="play"?name(x.player_id)+" played "+x.tile+" on "+x.end+".":x.action==="draw"?name(x.player_id)+" drew a tile.":name(x.player_id)+" passed.")));historyBox.append(el("strong","","Move history"),moves);root.append(historyBox);const h=el("details","dominoes-history");h.append(el("summary","","Achievements"));const labels={first_match:"First match",first_win:"First win",ten_matches:"10 matches",ten_wins:"10 wins",century_points:"100 points earned",team_victory:"Team victory"};void ctx.db.from("gather_dominoes_achievements").select("achievement_key").eq("user_id",uid()).then(r=>(r.data||[]).forEach(x=>h.append(el("p","",labels[x.achievement_key]||x.achievement_key))));root.append(h);if(lastWinSound!==game().id){lastWinSound=game().id;sound("win");}}
