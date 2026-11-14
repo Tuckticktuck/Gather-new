@@ -111,10 +111,10 @@ assert.match(ludoClient, /table: "gather_multiplayer_games"/, "Ludo must receive
 assert.match(ludoClient, /visibilitychange", refreshOnReturn/, "Ludo must catch up after a suspended tab resumes");
 assert.doesNotMatch(ludoClient, /syncTimer|setInterval/, "Ludo must not poll on a timer");
 assert.doesNotMatch(partyClient, /setInterval/, "Party list must not poll on a timer");
-assert.match(unoClient, /table:\\s*"gather_multiplayer_games"/, "UNO must receive game changes through Realtime");
+assert.match(unoClient, /table:\s*"gather_multiplayer_games"/, "UNO must receive game changes through Realtime");
 assert.match(unoClient, /visibilitychange",refreshOnReturn/, "UNO must catch up after a suspended tab resumes");
 assert.doesNotMatch(unoClient, /setInterval/, "UNO must not poll on a timer");
-assert.match(unoClient, /if\\(activeGameId!==gameId\\)return/, "UNO must ignore stale responses from a previously opened lobby");
+assert.match(unoClient, /if\(activeGameId!==gameId\)return/, "UNO must ignore stale responses from a previously opened lobby");
 assert.match(unoClient, /playerToggle.hidden=!started/, "UNO player controls must not show an inactive Players button in the waiting room");
 assert.ok(html.includes("uno.js?v=20261114-uno-event-driven-1") && serviceWorker.includes("./uno.js?v=20261114-uno-event-driven-1"), "UNO event-driven changes must invalidate the cached client asset");
 assert.match(retiredSnakeFunction, /status: 410/, "Retired Snake endpoint must return Gone");
