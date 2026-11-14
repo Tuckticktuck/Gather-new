@@ -110,6 +110,10 @@ assert.match(snakeSpectatorMigration, /gather_snake_spectate/, "Snake spectator 
 assert.match(snakeSpectatorMigration, /status = 'joined'/, "Snake spectators must not be counted as active players");
 assert.ok(snakeClient.includes('rpc("gather_snake_spectate"'), "Snake UI must offer a read-only spectator path");
 assert.ok(snakeClient.includes('membership?.status === "joined"'), "Only joined players may use the Snake tick driver and game chat");
+assert.match(snakeClient, /document\.addEventListener\("visibilitychange", handleVisibilityChange\)/, "Snake must refresh after returning to a backgrounded tab");
+assert.match(snakeClient, /window\.addEventListener\("online", handleOnline\)/, "Snake must refresh after network connectivity returns");
+assert.match(snakeClient, /\.subscribe\(status => \{[\s\S]*?status === "SUBSCRIBED"[\s\S]*?refreshOnResume\(\)/, "Snake must refresh after its Realtime channel reconnects");
+assert.match(snakeClient, /function unbindLifecycleEvents\([\s\S]*?removeEventListener\("visibilitychange", handleVisibilityChange\)[\s\S]*?removeEventListener\("online", handleOnline\)/, "Snake must clean up its reconnect listeners on shutdown");
 assert.ok(snakeClient.includes("You are observing this match"), "Spectators must see a read-only control state");
 assert.match(snakeSpectatorDiscoveryMigration, /gather_snake_open_lobbies/, "Friends must be able to discover full lobbies to spectate");
 assert.ok(snakeSpectatorLeaveMigration.includes("v_member.status='spectating'"), "Spectators must be able to leave without changing a finished match");
