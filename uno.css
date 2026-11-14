@@ -615,3 +615,15 @@
  .uno-in-match .uno-hand-strip{min-height:116px;max-height:20vh}
 }
 @media(prefers-reduced-motion:reduce){.uno-seat.is-turn{animation:none!important}}
+
+/* Apply per-account personal accent to the table and profile surfaces. */
+.uno-modal .uno-seat{border-color:color-mix(in srgb,var(--uno-neon) 28%,transparent)}
+.uno-modal .uno-seat.is-turn{border-color:var(--uno-neon);box-shadow:0 0 0 2px color-mix(in srgb,var(--uno-neon) 20%,transparent),0 0 23px var(--uno-glow)}
+.uno-modal .uno-in-match .uno-table{border-color:color-mix(in srgb,var(--uno-neon) 70%,white);box-shadow:inset 0 0 0 7px color-mix(in srgb,var(--uno-neon) 8%,transparent),inset 0 0 48px rgba(0,0,0,.42),0 0 32px var(--uno-glow)}
+.uno-modal .uno-profile-popover,.uno-modal .uno-settings-panel{border-color:color-mix(in srgb,var(--uno-neon) 54%,transparent)}
+.uno-modal .uno-selection-preview{border-color:color-mix(in srgb,var(--uno-neon) 40%,transparent);box-shadow:0 0 18px var(--uno-glow)}
+.uno-modal .uno-seat.is-turn{animation:uno-seat-pulse 2.2s ease-in-out infinite}
+.uno-modal .uno-settings-panel{animation:uno-panel-enter .2s ease-out both}
+.uno-modal .uno-profile-popover{animation:uno-panel-enter .16s ease-out both}
+@keyframes uno-panel-enter{from{opacity:0;transform:translateY(-6px) translateX(8px)}to{opacity:1;transform:translateY(0) translateX(0)}}
+.uno-modal.uno-effects-off .uno-settings-panel,.uno-modal.uno-effects-off .uno-profile-popover{animation:none}
