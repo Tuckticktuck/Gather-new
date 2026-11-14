@@ -3761,3 +3761,18 @@ html[data-theme="light"] .offline-status{color:#59421d;background:#fff4d8;border
 @media(prefers-reduced-motion:reduce){
   .message-reaction-quick{transition:none}
 }
+
+
+/* Inline message editing stays inside the original message bubble. */
+.message-inline-editor{display:grid;gap:9px;min-width:min(100%,320px);width:min(100%,560px)}
+.message-inline-edit-field{
+  box-sizing:border-box;width:100%;min-height:68px;max-height:220px;
+  padding:10px 11px;border:1px solid var(--accent-outline);
+  border-radius:11px;color:var(--text);background:var(--accent-input);
+  font:inherit;font-size:calc(12px * var(--font-scale,1));line-height:1.5;
+  resize:vertical;outline:none;
+}
+.message-inline-edit-field:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-surface)}
+.message-inline-edit-actions{display:flex;justify-content:flex-end;gap:8px}
+.message-inline-edit-actions button{min-height:32px;padding:6px 12px;font-size:calc(10px * var(--font-scale,1))}
+@media(max-width:520px){.message-inline-editor{width:min(100%,calc(100vw - 90px))}.message-inline-edit-field{max-height:180px}}
