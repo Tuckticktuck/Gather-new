@@ -566,11 +566,31 @@
       root.append(el("p", "ludo-empty muted", "This Ludo lobby was cancelled."));
       return;
     }
+    const closeLobby = () => btn("Close lobby", "secondary-action tag-end", async () => {
+      if (busy || !activeGame || activeGame.id !== game.id) return;
+      if (!window.confirm("Close this Ludo lobby for everyone? The match will end and all invited and joined players will be removed.")) return;
+      busy = true;
+      try {
+        const result = await ctx.db.rpc("gather_ludo_cancel", { p_game_id: game.id });
+        if (result.error) throw result.error;
+        activeGame = { ...activeGame, status: "cancelled" };
+        players = players.map(player => ({ ...player, status: "left", ready: false }));
+        toast("Ludo lobby closed.");
+        renderGamePanel();
+        await refresh();
+      } catch (error) {
+        toast(error?.message || "The Ludo lobby could not be closed.");
+      } finally {
+        busy = false;
+      }
+    });
+
     if (game.status === "completed" || game.state?.winner_id) {
       const winner = game.state?.winner_id;
       root.append(el("section", "ludo-finished-panel", winner ? name(winner) + " wins!" : "Ludo match ended"));
       if (started) renderBoard(root, false);
       root.append(btn("Create another Ludo game", "primary", () => renderCreate()));
+      if (isHost()) root.append(closeLobby());
       return;
     }
 
@@ -623,12 +643,14 @@
           }
         });
         start.disabled = !canStart;
-        actionBar.append(start, btn("Cancel lobby", "outline", async () => {
-          if (!window.confirm("Cancel this Ludo lobby?")) return;
+        actionBar.append(start, btn("Close lobby", "secondary-action tag-end", async () => {
+          if (!window.confirm("Close this Ludo lobby for everyone?")) return;
           try {
             const result = await ctx.db.rpc("gather_ludo_cancel", { p_game_id: game.id });
             if (result.error) throw result.error;
             activeGame = { ...activeGame, status: "cancelled" };
+            players = players.map(player => ({ ...player, status: "left", ready: false }));
+            toast("Ludo lobby closed.");
             renderGamePanel();
           } catch (error) { toast(error?.message || "The lobby could not be cancelled."); }
         }));
@@ -641,6 +663,7 @@
 
     renderPlayers(root, true);
     renderBoard(root, joined);
+    if (isHost()) root.append(closeLobby());
   }
 
   function renderPlayers(root, compactMatch = false) {
