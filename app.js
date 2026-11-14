@@ -3310,7 +3310,6 @@ function renderMessageSkeletons(){
     const row=el("div","message-skeleton-row"+(index%2?" is-mine":""));
     const bubble=el("div","message-skeleton-bubble");bubble.style.width=width;
     bubble.append(el("span","message-skeleton-line"),el("span","message-skeleton-line short"));
-    if(senderAvatar)row.append(senderAvatar);
     row.append(bubble);list.append(row);
   });
 }
@@ -3906,6 +3905,7 @@ function renderMessages(preserveScroll=false){
       bubble.append(pick);
       row.classList.toggle("selected",S.selectedMessageIds.has(m.id));
     }
+    if(senderAvatar)row.append(senderAvatar);
     row.append(bubble);list.append(row);
     if(!S.selectingMessages){
       let holdTimer=null;
