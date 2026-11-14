@@ -64,9 +64,18 @@ The following is the required application contract. It does not imply that all e
 - [x] Live shared schema, relevant SELECT policies, multiplayer create/join/update functions, Realtime publication membership, and chat cleanup trigger inspected.
 - [x] Existing turn-based state-trust weakness explicitly isolated and documented.
 - [ ] Map every existing multiplayer RPC caller and lifecycle transition before changing shared RPC behavior.
-- [ ] Add deterministic pure-rule test harness to CI.
+- [x] Add deterministic pure-rule test harness to CI (Node built-in test runner; 9 contract tests).
 - [ ] Add authenticated two-account E2E harness and test matrix; execute it before Phase 0 is marked complete.
 - [ ] Decide and document a supported trusted runtime for Snake before implementing its tick loop.
-- [ ] Run Supabase advisors and regression tests after any database change.
+- [x] Run Supabase security and performance advisors as a baseline (no database changes made in this Phase 0 slice).
 
 No database schema or production RPC was modified as part of this contract document.
+
+
+## Phase 0 advisor baseline (2026-11-14)
+
+- Security advisor reports 46 existing `SECURITY DEFINER` functions callable by authenticated users. These include the established game RPC families and other app operations. This is not automatically a defect for every function; each function must be checked for caller identity, authorization, search path, and intended exposure. No blanket revoke was applied.
+- Security advisor reports 9 RLS-enabled tables without policies (informational). The list includes private/feature tables and public chat/party tables; access grants and intended RPC-only access must be reviewed per table before changing policies.
+- Auth advisor reports leaked-password protection is disabled; this is a project Auth setting and is outside the game-schema changes in this phase.
+- Performance advisor reports 22 unused indexes (informational). No index was removed; workload observation is required before pruning.
+- No database DDL, RLS policy, grant, or RPC was modified in this Phase 0 slice.
