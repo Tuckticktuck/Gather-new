@@ -74,8 +74,8 @@ No database schema or production RPC was modified as part of this contract docum
 
 ## Supabase advisor/security review (2026-11-14, refreshed after Phase 1 migrations)
 
-- Security advisor most recently reports 56 `SECURITY DEFINER` functions callable by authenticated users and 10 RLS-enabled tables without policies. These are project-wide findings, not proof each object is vulnerable: game RPCs were checked individually for caller authorization and empty search paths, and the private Snake/UNO state tables have no direct client SELECT grants. No blanket revoke or unrelated policy change was applied.
+- Security advisor most recently reports 56 `SECURITY DEFINER` functions callable by authenticated users and 11 RLS-enabled tables without policies. These are project-wide findings, not proof each object is vulnerable: game RPCs were checked individually for caller authorization and empty search paths, and the private Snake input, UNO private-state, and UNO rematch-offer tables have no direct client SELECT grants. No blanket revoke or unrelated policy change was applied.
 - Auth advisor reports leaked-password protection is disabled; this is a project Auth setting and is outside the game-schema changes in this phase.
 - Performance advisor originally reported 22 unused indexes; the Phase 1 pass added the missing user_id foreign-key index to private.gather_snake_inputs, after which the unindexed-FK finding cleared. The new index appears unused while that private input table is empty; do not remove it because it covers the FK cascade/lookups.
-- Auth advisor continues to report leaked-password protection disabled. This is a project Auth setting requiring separate configuration review.
+- Auth advisor continues to report leaked-password protection disabled. This is a project Auth setting requiring separate configuration review ([Supabase guidance](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection)).
 - This contract document initially made no database changes. Subsequent game implementation phases added game-specific migrations and RPCs documented in the inventory and release plan.
