@@ -844,7 +844,7 @@
   window.GatherSnake = {
     init, shutdown, open, openGame, openInvitation,
     refresh,
-    getLiveGames: () => myGames.filter(item => item.player.status === "joined" && item.game?.status === "active").map(item => item.game),
+    getLiveGames: () => myGames.filter(item => ["joined", "spectating"].includes(item.player.status) && item.game?.status === "active").map(item => item.game),
     getInvitations: () => myGames.filter(item => item.player.status === "invited" && item.game?.status === "active").map(item => item.game)
   };
 })();
