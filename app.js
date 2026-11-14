@@ -1119,7 +1119,7 @@ async function signedIn(user,retry=false){
     window.GatherParty?.init({db,user:()=>S.user,chats:()=>S.chats,profiles:()=>S.profiles,toast});
     window.GatherUno?.init({db,user:()=>S.user,chats:()=>S.chats,profiles:()=>S.profiles,toast,onGamesUpdated:()=>{renderNotificationBadge();if(S.notificationView==="games"||S.notificationView==="all")renderNotifications();}});
     window.GatherLudo?.init({db,user:()=>S.user,chats:()=>S.chats,profiles:()=>S.profiles,toast,onGamesUpdated:()=>{renderNotificationBadge();if(S.notificationView==="games"||S.notificationView==="all")renderNotifications();}});
-    window.GatherDominoes?.init({db,user:()=>S.user,chats:()=>S.chats,profiles:()=>S.profiles,toast,onGamesUpdated:()=>{renderNotificationBadge();if(S.notificationView==="games"||S.notificationView==="all")renderNotifications();}});
+    window.GatherDominoes?.init({db,user:()=>S.user,chats:()=>S.chats,profiles:()=>S.profiles,toast,onGamesUpdated:()=>{window.GatherGames?.refreshLiveCards?.();renderNotificationBadge();if(S.notificationView==="games"||S.notificationView==="all")renderNotifications();}});
     subscribeMessages();
     // Start friend data immediately after chats are ready, in parallel with secondary home data.
     const friendsLoad=loadFriends();
