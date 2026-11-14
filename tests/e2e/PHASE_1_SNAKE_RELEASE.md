@@ -40,6 +40,8 @@ Record the commit SHA, Supabase migration version, browser/device, test account 
 - [ ] A non-friend cannot spectate an open lobby.
 - [ ] A blocked account cannot spectate.
 - [ ] A user already joined as a player cannot also join as spectator.
+- [ ] Before the lobby starts, a spectator can switch to Join as player only when a player seat is available; readiness is then required normally.
+- [ ] After the match starts, a spectator cannot promote themselves to a player.
 - [ ] Observer can leave a running or finished match; leaving as spectator does not alter winner, scores, or player roster outcome.
 - [ ] Spectated matches appear in the Snake panel and live-game notification surface; opening one restores spectator mode.
 
@@ -62,6 +64,8 @@ Run a complete match with Host and Player; repeat with additional players up to 
 
 - [ ] Reload both player clients while in the lobby; each restores the canonical roster, readiness, and settings.
 - [ ] Reload both clients during a live round; each restores the same canonical public state and revision.
+- [ ] Put the tab in the background and return; verify Snake reloads current canonical state and resumes only for joined players.
+- [ ] Disconnect and restore network connectivity; verify the client refreshes after the browser's online event and Realtime re-subscription without duplicating a tick.
 - [ ] Simulate a dropped request and retry; no duplicate movement, score, finish, or lobby appears.
 - [ ] Put the host tab in the background or close it; confirm another joined player can take over tick prompting and state continues or recovers cleanly.
 - [ ] Host leaves the lobby before start; lobby is cancelled safely.
@@ -85,6 +89,7 @@ This is a separate regression because the reported issue was missing recap actio
 - [ ] Decline returns the match to the completed state when all players are done; requester sees the result.
 - [ ] Accept from all participants starts a fresh match with a fresh deal and reset game state.
 - [ ] Ensure a rematch request cannot be duplicated or submitted by a non-player.
+- [ ] Attempt direct PostgREST access to private UNO rematch-offer rows as anon/authenticated; it must be denied while the authorized rematch RPC flow continues to work.
 - [ ] Test both conversation-linked and standalone UNO lobbies.
 
 ## 6. Hub, notification, party, and chat integration
