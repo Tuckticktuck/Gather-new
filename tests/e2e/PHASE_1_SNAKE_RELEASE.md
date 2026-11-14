@@ -89,6 +89,9 @@ This is a separate regression because the reported issue was missing recap actio
 - [ ] Decline returns the match to the completed state when all players are done; requester sees the result.
 - [ ] Accept from all participants starts a fresh match with a fresh deal and reset game state.
 - [ ] Ensure a rematch request cannot be duplicated or submitted by a non-player.
+- [ ] If a player leaves after the game finishes while a rematch is pending, confirm the recap stays finished, the pending offer is cancelled, request notifications are closed, and remaining players receive a cancellation result.
+- [ ] Confirm a player who has left cannot accept a pending rematch and that the server checks every original participant is still joined before a new deal starts.
+- [ ] Confirm a finished match does not return to an in-progress turn after someone leaves during recap.
 - [ ] Attempt direct PostgREST access to private UNO rematch-offer rows as anon/authenticated; it must be denied while the authorized rematch RPC flow continues to work.
 - [ ] Test both conversation-linked and standalone UNO lobbies.
 
