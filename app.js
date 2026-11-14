@@ -1170,10 +1170,11 @@ async function loadChats(){
   if(!ids.length){S.chats=[];S.profiles={};await loadUnreadCounts();renderChats();renderActive();return await loadRequests();}
   const [members,msgs,groupPics]=await Promise.all([
     db.from("conversation_members").select("conversation_id,user_id,role").in("conversation_id",ids),
-    db.from("messages").select("id,conversation_id,sender_id,body,created_at,edited_at,attachment_path,forwarded_from_id,is_admin_message").in("conversation_id",ids).order("created_at",{ascending:false}).limit(1000),
+    db.rpc("get_latest_conversation_messages",{p_conversation_ids:ids}),
     db.from("group_avatars").select("conversation_id,image_data").in("conversation_id",ids)
   ]);
   if(members.error){S.loadError="Chat members could not be loaded: "+members.error.message;toast(S.loadError);return false;}
+  if(msgs.error){S.loadError="Latest chat messages could not be loaded: "+msgs.error.message;toast(S.loadError);return false;}
   const userIds=[...new Set(members.data.map(x=>x.user_id))];
   const p=await fetchProfileRecords(userIds);
   if(p.error){S.loadError="Member profiles could not be loaded: "+p.error.message;toast(S.loadError);return false;}
@@ -1184,8 +1185,8 @@ async function loadChats(){
   else (groupPics.data||[]).forEach(x=>groupAvatarByChat[x.conversation_id]=x.image_data);
   const byChat={},last={},hasMessages={};members.data.forEach(x=>(byChat[x.conversation_id]??=[]).push(x));
   (msgs.data||[]).forEach(x=>{
-    hasMessages[x.conversation_id]=true;
-    if(!S.deletedMessageIds.has(x.id)&&!last[x.conversation_id])last[x.conversation_id]=x;
+    if(x.has_messages)hasMessages[x.conversation_id]=true;
+    if(x.id&&!S.deletedMessageIds.has(x.id))last[x.conversation_id]=x;
   });
   S.chats=rows.map(x=>({...x.conversations,avatar_data:groupAvatarByChat[x.conversation_id]||null,members:byChat[x.conversation_id]||[],last:last[x.conversation_id]||null,hasMessages:!!hasMessages[x.conversation_id]}))
     .sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at));
