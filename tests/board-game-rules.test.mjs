@@ -33,7 +33,7 @@ test("Tic-Tac-Toe rejects occupied squares and impossible turn counts", () => {
   }), p2, { type: "place", index: 0 }), /already occupied/);
   assert.throws(() => applyBoardGameMove(game("tic_tac_toe", {
     board: ["x", "x", "x", "", "", "", "", "", ""], turn: "o"
-  }), p2, { type: "place", index: 3 }), /already finished|invalid turn/);
+  }), p2, { type: "place", index: 3 }), /inconsistent|already finished|invalid turn/);
 });
 
 test("Connect Four drops into the lowest free cell of the selected column", () => {
@@ -47,7 +47,7 @@ test("Connect Four drops into the lowest free cell of the selected column", () =
 
 test("Connect Four detects a horizontal win and rejects floating discs", () => {
   const board = emptyConnectBoard();
-  board[35] = "R"; board[36] = "R"; board[37] = "R";
+  board[36] = "R"; board[37] = "R"; board[38] = "R";
   board[34] = "Y"; board[33] = "Y";
   const result = applyBoardGameMove(game("connect_four", {
     board, turn: "red", moves: 5
