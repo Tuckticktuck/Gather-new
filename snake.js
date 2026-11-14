@@ -39,6 +39,7 @@
     return p?.display_name?.trim() || p?.username?.trim() || "Gather member";
   };
   const toast = message => ctx?.toast?.(message);
+  const notifyUpdate = () => { if (typeof ctx?.onGamesUpdated === "function") ctx.onGamesUpdated(); };
   const settingsDefaults = () => ({ arena: "standard", obstacles: "standard", speed: "standard", round_seconds: 180, max_players: 8 });
   const statusText = state => {
     if (!state) return "Waiting room";
@@ -100,6 +101,7 @@
     if (!ids.length) {
       myGames = [];
       renderPanel();
+      notifyUpdate();
       return;
     }
     const games = await ctx.db.from("gather_multiplayer_games")
@@ -128,6 +130,7 @@
       }
     }
     render();
+    notifyUpdate();
   }
 
   async function loadPlayers(id) {
