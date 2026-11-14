@@ -596,16 +596,17 @@
     if(!allLive.length)liveList.append(node("p","games-empty muted","No games in progress. Matches you join will appear here."));
     allLive.forEach(({kind,game})=>{
       const card=node("article","games-card games-invitation-card games-live-card"),top=node("div","games-card-top"),identity=node("div","games-card-identity"),copy=node("div","games-card-copy");
-      const title=kind==="classic"?gameName(game.game_type):kind==="uno"?"UNO":kind==="ludo"?"Ludo":"Tag";
-      identity.append(node("span","games-card-mark",kind==="uno"?"▦":kind==="ludo"?"◉":kind==="tag"?"●":"♟"));
+      const title=kind==="classic"?gameName(game.game_type):kind==="uno"?"UNO":kind==="ludo"?"Ludo":kind==="snake_arena"?"Snake Arena":"Tag";
+      identity.append(node("span","games-card-mark",kind==="uno"?"▦":kind==="ludo"?"◉":kind==="snake_arena"?"〰":kind==="tag"?"●":"♟"));
       const other=kind==="classic"?playerNames(game):memberName(game.created_by);
       copy.append(node("strong","",title),node("small","muted",other+" · "+conversationName(game.conversation_id)));
-      identity.append(copy);top.append(identity,node("span","games-status-pill "+(kind==="tag"&&game.status==="lobby"?"status-pending":"status-active"),kind==="tag"&&game.status==="lobby"?"Waiting room":"Live"));card.append(top);
+      identity.append(copy);top.append(identity,node("span","games-status-pill "+((kind==="tag"&&game.status==="lobby")||(kind==="snake_arena"&&game.state?.phase==="lobby")?"status-pending":"status-active"),((kind==="tag"&&game.status==="lobby")||(kind==="snake_arena"&&game.state?.phase==="lobby"))?"Waiting room":"Live"));card.append(top);
       const actions=node("div","games-card-actions");
-      actions.append(button(kind==="tag"&&game.status==="lobby"?"Open lobby":"Open game","primary games-card-primary",()=>{
+      actions.append(button(((kind==="tag"&&game.status==="lobby")||(kind==="snake_arena"&&game.state?.phase==="lobby"))?"Open lobby":"Open game","primary games-card-primary",()=>{
         if(kind==="classic")openGame(game);
         else if(kind==="uno")window.GatherUno?.openGame?.(game.id);
         else if(kind==="ludo")window.GatherLudo?.openGame?.(game.id);
+        else if(kind==="snake_arena")window.GatherSnake?.openGame?.(game.id);
         else window.GatherTag?.openGame?.(game.id);
       }));
       card.append(actions);liveList.append(card);
@@ -613,24 +614,30 @@
     if(!allInvites.length)inviteList.append(node("p","games-empty muted","No invitations waiting. New game invitations will appear here."));
     allInvites.forEach(({kind,game})=>{
       if(kind==="classic"){const card=makeGameCard(game,true);card.classList.add("games-invitation-card");inviteList.append(card);return;}
-      const uno=kind==="uno",ludo=kind==="ludo",tag=kind==="tag";
+      const uno=kind==="uno",ludo=kind==="ludo",snake=kind==="snake_arena",tag=kind==="tag";
       const card=node("article","games-card games-invitation-card"),top=node("div","games-card-top"),identity=node("div","games-card-identity"),copy=node("div","games-card-copy");
-      identity.append(node("span","games-card-mark",uno?"▦":ludo?"◉":"●"));
-      copy.append(node("strong","",uno?"UNO invitation":ludo?"Ludo invitation":"Tag invitation"),node("small","muted",memberName(game.created_by)+" invited you"));
+      identity.append(node("span","games-card-mark",uno?"▦":ludo?"◉":snake?"〰":"●"));
+      copy.append(node("strong","",uno?"UNO invitation":ludo?"Ludo invitation":snake?"Snake Arena invitation":"Tag invitation"),node("small","muted",memberName(game.created_by)+" invited you"));
       identity.append(copy);top.append(identity,node("span","games-status-pill status-pending","Your invitation"));card.append(top);
       card.append(node("p","games-card-conversation muted tiny",conversationName(game.conversation_id)));
-      const limit=game.settings?.max_players||game.max_players||(ludo?4:10);
-      card.append(node("p","games-card-detail muted tiny",uno||ludo?((game.join_mode==="open"?"Open":"Invite-only")+" lobby · Up to "+limit+" players"):(String(game.mode||"classic").replace(/_/g," ")+" · "+(game.join_mode==="open"?"Open":"Invite-only")+" lobby")));
+      const limit=game.settings?.max_players||game.max_players||(ludo?4:snake?8:10);
+      const detail=snake
+        ? ((game.join_mode==="open"?"Open":"Invite-only")+" lobby · "+(game.settings?.arena||"standard")+" arena · "+limit+" max players")
+        : uno||ludo
+          ? ((game.join_mode==="open"?"Open":"Invite-only")+" lobby · Up to "+limit+" players")
+          : (String(game.mode||"classic").replace(/_/g," ")+" · "+(game.join_mode==="open"?"Open":"Invite-only")+" lobby");
+      card.append(node("p","games-card-detail muted tiny",detail));
       const actions=node("div","games-card-actions");
-      actions.append(button(uno?"Join UNO":ludo?"Join Ludo":"Join Tag","primary games-card-primary",async()=>{
+      actions.append(button(uno?"Join UNO":ludo?"Join Ludo":snake?"Join Snake Arena":"Join Tag","primary games-card-primary",async()=>{
         if(uno)await window.GatherUno?.openInvitation?.(game.id);
         else if(ludo)await window.GatherLudo?.openInvitation?.(game.id);
+        else if(snake)await window.GatherSnake?.openInvitation?.(game.id);
         else await window.GatherTag?.openInvitation?.(game.id);
         await refreshGames(false);
       }));
       actions.append(button("Decline","outline",async()=>{
-        const rpc=uno?"gather_uno_decline":ludo?"gather_ludo_decline":"gather_tag_decline";
-        const args=uno||ludo?{p_game_id:game.id}:{p_lobby_id:game.id};
+        const rpc=uno?"gather_uno_decline":ludo?"gather_ludo_decline":snake?"gather_snake_decline":"gather_tag_decline";
+        const args=uno||ludo||snake?{p_game_id:game.id}:{p_lobby_id:game.id};
         const result=await ctx.db.rpc(rpc,args);
         if(result.error){toast(result.error.message||"Could not decline invitation.");return;}
         toast("Invitation declined.");await refreshGames(false);
