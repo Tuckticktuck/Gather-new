@@ -29,6 +29,8 @@ jobs:
           node-version: 22
       - name: Build Tag Canvas engine
         run: npx --yes --package typescript@5.9.3 tsc --project tsconfig.tag.json
+      - name: Run deterministic multiplayer contract tests
+        run: node --test tests/*.test.mjs
       - name: Validate all JavaScript
         run: find . -type f -name '*.js' -not -path './node_modules/*' -print0 | xargs -0 -n1 node --check
       - name: Validate site assets, HTML IDs, CSS structure, and service-worker cache
