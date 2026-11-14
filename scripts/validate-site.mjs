@@ -90,6 +90,8 @@ const snakeLifecycleMigration = readFileSync(join(root, "supabase/migrations/202
 const snakeDeclineMigration = readFileSync(join(root, "supabase/migrations/20261114023244_add_snake_arena_invitation_decline.sql"), "utf8");
 const snakeSpectatorMigration = readFileSync(join(root, "supabase/migrations/20261114125425_add_read_only_snake_spectator_membership.sql"), "utf8");
 const snakeSpectatorDiscoveryMigration = readFileSync(join(root, "supabase/migrations/20261114125529_show_full_snake_lobbies_to_spectators.sql"), "utf8");
+const snakeSpectatorLeaveMigration = readFileSync(join(root, "supabase/migrations/20261114125905_allow_spectators_to_leave_finished_snake_matches.sql"), "utf8");
+const snakeSpectatorHardeningMigration = readFileSync(join(root, "supabase/migrations/20261114130015_harden_snake_spectator_invitation_checks.sql"), "utf8");
 assert.ok(snakeClient.includes('functions.invoke("gather-snake-action"'), "Snake controls must call the JWT-verified action endpoint");
 assert.match(snakeClient, /gather_snake_start/, "Snake lobby must use the server-side start RPC");
 assert.match(snakeClient, /action:\s*"tick"/, "Snake client must request ticks from the authoritative server endpoint");
@@ -107,6 +109,8 @@ assert.ok(snakeClient.includes('rpc("gather_snake_spectate"'), "Snake UI must of
 assert.ok(snakeClient.includes('membership?.status === "joined"'), "Only joined players may use the Snake tick driver and game chat");
 assert.ok(snakeClient.includes("You are observing this match"), "Spectators must see a read-only control state");
 assert.match(snakeSpectatorDiscoveryMigration, /gather_snake_open_lobbies/, "Friends must be able to discover full lobbies to spectate");
+assert.ok(snakeSpectatorLeaveMigration.includes("v_member.status='spectating'"), "Spectators must be able to leave without changing a finished match");
+assert.ok(snakeSpectatorHardeningMigration.includes("coalesce(v_member.status='invited',false)"), "Missing invitations must fail closed when requesting spectator access");
 assert.ok(snakeCss.includes(".snake-spectator-banner"), "Snake spectator mode must have a clear visual indicator");
 assert.ok(snakeCss.includes(".snake-modal:has(.snake-in-match)"), "Snake gameplay must have responsive full-screen styling");
 
