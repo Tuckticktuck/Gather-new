@@ -127,6 +127,8 @@ export function advanceSnakeState(sourceState, inputs = {}, nowMs = Date.now(), 
   const proposalValues = [...proposals.values()];
   const obstacles = state.obstacles || [];
 
+  // Resolve wall, obstacle, and self-collisions before considering other snakes'
+  // tails. A snake that is already doomed does not vacate any body segment.
   for (const proposal of proposalValues) {
     const { snake, head, growing } = proposal;
     if (head.x < 0 || head.x >= state.width || head.y < 0 || head.y >= state.height ||
@@ -137,18 +139,9 @@ export function advanceSnakeState(sourceState, inputs = {}, nowMs = Date.now(), 
 
     const selfBody = growing ? snake.segments : snake.segments.slice(0, -1);
     if (selfBody.some(point => samePoint(point, head))) proposal.dead = true;
-
-    for (const other of state.snakes) {
-      if (other.user_id === snake.user_id || !Array.isArray(other.segments)) continue;
-      const otherProposal = proposals.get(other.user_id);
-      const otherWillGrow = !!otherProposal?.growing;
-      const otherBody = other.alive && otherProposal && !otherWillGrow
-        ? other.segments.slice(0, -1)
-        : other.segments;
-      if (otherBody.some(point => samePoint(point, head))) proposal.dead = true;
-    }
   }
 
+  // Resolve simultaneous head-on and head-swap collisions as one event.
   for (let i = 0; i < proposalValues.length; i++) {
     for (let j = i + 1; j < proposalValues.length; j++) {
       const a = proposalValues[i];
@@ -158,6 +151,29 @@ export function advanceSnakeState(sourceState, inputs = {}, nowMs = Date.now(), 
       if (samePoint(a.head, b.head) || (samePoint(a.head, bOld) && samePoint(b.head, aOld))) {
         a.dead = true;
         b.dead = true;
+      }
+    }
+  }
+
+  // A tail vacates its square only if its owner survives this tick. Iterate to a
+  // stable result because one body collision can eliminate a snake whose tail
+  // another proposal had previously treated as moving away.
+  let collisionChanges = true;
+  while (collisionChanges) {
+    collisionChanges = false;
+    for (const proposal of proposalValues) {
+      if (proposal.dead) continue;
+      for (const other of state.snakes) {
+        if (other.user_id === proposal.snake.user_id || !Array.isArray(other.segments)) continue;
+        const otherProposal = proposals.get(other.user_id);
+        const otherTailVacates = !!(other.alive && otherProposal &&
+          !otherProposal.dead && !otherProposal.growing);
+        const otherBody = otherTailVacates ? other.segments.slice(0, -1) : other.segments;
+        if (otherBody.some(point => samePoint(point, proposal.head))) {
+          proposal.dead = true;
+          collisionChanges = true;
+          break;
+        }
       }
     }
   }
