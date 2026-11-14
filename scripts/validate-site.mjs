@@ -93,6 +93,8 @@ assert.ok(unoMatchLock >= 0 && unoOfferLock > unoMatchLock, "UNO rematch respons
 assert.match(unoRecapLeaveMigration, /status='joined'[\s\S]*joined_count<>cardinality\(o\.participants\)/i, "UNO rematch start must revalidate that all original participants are still joined");
 
 const partyClient = readFileSync(join(root, "party.js"), "utf8");
+assert.ok(partyClient.includes("members.length > 10") && partyClient.includes("p_max_players: members.length"), "UNO Quick Play must enforce the 10-player maximum");
+assert.ok(unoClient.includes("joined.some(p=>!p.ready)") && unoClient.includes("start.disabled"), "UNO start must remain disabled until every joined player, including the host, is ready");
 const appClient = readFileSync(join(root, "app.js"), "utf8");
 const ludoClient = readFileSync(join(root, "ludo.js"), "utf8");
 const ludoCloseMigration = readFileSync(join(root, "supabase/migrations/20261114160000_allow_ludo_host_to_close_any_lobby.sql"), "utf8");
@@ -116,7 +118,16 @@ assert.match(unoClient, /visibilitychange",refreshOnReturn/, "UNO must catch up 
 assert.doesNotMatch(unoClient, /setInterval/, "UNO must not poll on a timer");
 assert.match(unoClient, /if\(activeGameId!==gameId\)return/, "UNO must ignore stale responses from a previously opened lobby");
 assert.match(unoClient, /playerToggle.hidden=!started/, "UNO player controls must not show an inactive Players button in the waiting room");
-assert.ok(html.includes("uno.js?v=20261114-uno-event-driven-1") && serviceWorker.includes("./uno.js?v=20261114-uno-event-driven-1"), "UNO event-driven changes must invalidate the cached client asset");
+assert.ok(html.includes("uno.js?v=20261114-account-themes-1") && serviceWorker.includes("./uno.js?v=20261114-account-themes-1"), "UNO arcade UI changes must invalidate the cached client asset");
+assert.ok(html.includes("uno.css?v=20261114-account-themes-1") && serviceWorker.includes("./uno.css?v=20261114-account-themes-1"), "UNO arcade theme changes must invalidate the cached stylesheet");
+assert.ok(unoClient.includes("uno-seat-ring") && unoClient.includes("uno-direction-ring"), "UNO must render player seats and a direction indicator around the table");
+assert.ok(unoClient.includes("selectedCardId") && unoClient.includes("uno-selection-preview"), "UNO must provide a selected-card preview");
+assert.ok(unoClient.includes('addEventListener("drop"') && unoClient.includes("playSelected"), "UNO must support drag-and-drop and tap-to-discard interactions");
+assert.ok(unoClient.includes("function showPlayerProfile") && unoClient.includes("function renderSettingsPanel"), "UNO must provide player profiles and personal appearance settings");
+assert.ok(unoClient.includes("gather_uno_preferences") && unoClient.includes("auth.updateUser"), "UNO personal appearance preferences must sync through the signed-in account");
+assert.ok(unoClient.includes("tableTheme") && unoClient.includes("cardBack"), "UNO personal settings must include table and card-back customization");
+assert.ok(unoCss.includes('data-table-theme="violet"') && unoCss.includes('data-card-back="aurora"'), "UNO must provide the selectable table and card-back themes");
+
 assert.match(retiredSnakeFunction, /status: 410/, "Retired Snake endpoint must return Gone");
 assert.match(retiredGamesMigration, /REVOKE ALL PRIVILEGES ON FUNCTION/i, "Retired Tag/Snake RPCs must no longer be callable by client roles");
 assert.match(retiredGamesMigration, /gather_tag_|gather_snake_/, "Retirement migration must cover both game RPC families");
