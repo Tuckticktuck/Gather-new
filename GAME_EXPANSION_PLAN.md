@@ -1,6 +1,6 @@
 # Gather Arcade Expansion — Implementation Plan
 
-Status: Phase 1 code, Supabase release review, automated CI, and GitHub Pages deployment pass on commit 9e5c216c4df2cb4e01fe765b139c9f0877ab8052; authenticated multi-account, reconnect, latency, and physical-device release verification remain outstanding
+Status: Phase 1 code, Supabase release review, automated CI, and GitHub Pages deployment pass on commit 758c21d639880b418dd4c64685016466e6a72e3d; authenticated multi-account, reconnect, latency, and physical-device release verification remain outstanding
 Repository: `Tuckticktuck/Gather-new`
 Supabase project: `xrwldphmeafiakittcof`
 Hosting: GitHub Pages
@@ -229,15 +229,19 @@ For each migration:
 - [x] Shared multiplayer lobby, invite-only/open join, ready checks, host settings, bounded player count, invitation decline, leave/end, recap, and rematch.
 - [x] Read-only spectator access for invitees and accepted friends in open lobbies, including full lobbies; spectators do not consume player slots and cannot move, drive ticks, use temporary game chat, or use host controls.
 - [x] Spectators can leave, see spectated matches in the Snake panel and live-game notification surface, and are excluded from player readiness/counts.
+- [x] A spectator can convert to a player before the lobby starts when capacity is available; server-side join rules still enforce invitations/friend status and capacity.
 - [x] Friend-scoped open-lobby discovery without weakening participant-table RLS.
 - [x] Fullscreen arena, keyboard/WASD/touch directional controls, scoreboard, temporary game chat for joined players, result panel, and rematch.
 - [x] Game Hub, central game notifications, and Party Quick Play integration.
 - [x] Regression assertions for UNO recap rendering, done confirmation, rematch request, accept/decline handlers, and completed-lobby return.
 - [x] Added the user_id foreign-key index for private.gather_snake_inputs; the migration is applied in Supabase and its source is committed as 20261114130744_index_snake_input_user_references.sql.
+- [x] Snake refreshes canonical state when a tab becomes visible, the browser returns online, or Supabase Realtime resubscribes; lifecycle listeners are removed on shutdown.
+- [x] Invalidated the service-worker cache (gather-shell-v83), changed the Snake script URL version, and added a regression assertion so clients receive the reconnect fix.
 - [x] Confirmed deployed gather-snake-action (version 1) and gather-board-game-action (version 2) are ACTIVE, require JWT verification, and match their committed source files byte-for-byte.
-- [x] Confirmed the Snake tick/input/snapshot and board-game commit RPCs are service_role-only; client-facing game RPCs are authenticated-only (not anonymous). Snake/UNO private state tables deny direct client SELECT.
+- [x] Confirmed the Snake tick/input/snapshot and board-game commit RPCs are service_role-only; client-facing game RPCs are authenticated-only (not anonymous). Snake input, UNO private state, and UNO rematch-offer tables deny direct client SELECT; the rematch-offer table has RLS enabled and no client policies.
+- [x] Confirmed UNO rematch-offer data is accessed through the joined-player-authorized rematch RPC flow rather than direct table access.
 
-**Latest automated release verification (2026-11-14):** GitHub Actions run [43598219331](https://github.com/Tuckticktuck/Gather-new/actions/runs/43598219331) passed TypeScript compilation, the deterministic Node test suite, JavaScript syntax validation, the site asset/HTML ID/CSS/service-worker validator, and the deploy job on commit 9e5c216c4df2cb4e01fe765b139c9f0877ab8052. The separate GitHub Pages deployment run [43598218550](https://github.com/Tuckticktuck/Gather-new/actions/runs/43598218550) also passed on that same commit.
+**Latest automated release verification (2026-11-14):** GitHub Actions run [43599156146](https://github.com/Tuckticktuck/Gather-new/actions/runs/43599156146) passed TypeScript compilation, the deterministic Node test suite, JavaScript syntax validation, the site asset/HTML ID/CSS/service-worker validator, and the deploy job on commit 758c21d639880b418dd4c64685016466e6a72e3d. The separate GitHub Pages deployment run [43599155869](https://github.com/Tuckticktuck/Gather-new/actions/runs/43599155869) also passed on that same commit.
 
 **Remaining release gates (not simulated or claimed as passed):** tests/e2e/README.md and tests/e2e/PHASE_1_SNAKE_RELEASE.md are test plans/checklists, not an executable authenticated browser suite. No dedicated E2E test users, disposable test project, or browser automation runner are provisioned in this repository. The live project must not be used for destructive multi-account lifecycle tests.
 - [ ] Run the Phase 1 E2E checklist using two player accounts and a third observer account, in a dedicated test environment.
@@ -249,7 +253,7 @@ For each migration:
 
 **Runtime limitation:** the game rules, tick timing, collision handling, and score calculation are server-authoritative inside the Edge Function, but the next tick is prompted by a joined player's browser. This is a first playable server-authoritative design, not a continuously running dedicated simulation process. Real multi-device latency/failover measurements are required before calling it production-hardened.
 
-**Other Supabase advisory note:** the Phase 1-specific unindexed foreign-key warning was fixed. The latest advisor still reports project-wide SECURITY DEFINER and RLS-without-policy warnings; relevant Snake/UNO/board-game functions and private-state grants were inspected individually. It also reports Auth leaked-password protection disabled; this is a project-wide Auth setting outside this game migration pass and remains a separate security-hardening item. No blanket function revokes or unrelated RLS changes were made.
+**Other Supabase advisory note:** the Phase 1-specific unindexed foreign-key warning was fixed. The latest advisor still reports project-wide SECURITY DEFINER and RLS-without-policy warnings; relevant Snake/UNO/board-game functions and private-state grants were inspected individually. It also reports Auth leaked-password protection disabled; this is a project-wide Auth setting outside this game migration pass and remains a separate security-hardening item ([Supabase guidance](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection)). No blanket function revokes or unrelated RLS changes were made.
 
 **Exit gate:** two or more authenticated players complete repeated matches without divergent canonical state or client-controlled scoring, with a separate observer proving read-only access and the required device/reconnect checks passing. CI and static inspection alone do not satisfy this gate.
 
