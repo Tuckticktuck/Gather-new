@@ -723,6 +723,7 @@ function showAuth() {
   window.GatherTag?.shutdown();
   window.GatherUno?.shutdown();
   window.GatherLudo?.shutdown();
+  window.GatherSnake?.shutdown();
   saveActiveChatDraft();clearUnreadDividerState();
   closeTypingChannel();
   stopOnlinePresence();
@@ -1119,6 +1120,7 @@ async function signedIn(user,retry=false){
     window.GatherTag?.init({db,user:()=>S.user,chats:()=>S.chats,profiles:()=>S.profiles,toast});
     window.GatherUno?.init({db,user:()=>S.user,chats:()=>S.chats,profiles:()=>S.profiles,toast});
     window.GatherLudo?.init({db,user:()=>S.user,chats:()=>S.chats,profiles:()=>S.profiles,toast});
+    window.GatherSnake?.init({db,user:()=>S.user,chats:()=>S.chats,profiles:()=>S.profiles,toast});
     subscribeMessages();
     // Start friend data immediately after chats are ready, in parallel with secondary home data.
     const friendsLoad=loadFriends();
@@ -1844,7 +1846,8 @@ function notificationUnreadCount(){
   const gameInvites=window.GatherGames?.getPendingInvitations?.().length||0;
   const unoRematches=new Set(S.notifications.filter(item=>item.kind==="uno_rematch"&&!item.read_at).map(item=>item.body)).size;
   const unoInvites=S.notifications.filter(item=>item.kind==="uno_invite"&&!item.read_at).length;
-  return notificationUnread+gameInvites+unoRematches+unoInvites;
+  const snakeInvites=window.GatherSnake?.getInvitations?.().length||0;
+  return notificationUnread+gameInvites+unoRematches+unoInvites+snakeInvites;
 }
 function renderNotificationBadge(){
   const badge=$("notification-badge");if(!badge)return;
@@ -1906,6 +1909,32 @@ function renderGameNotificationCards(list){
     const open=el("button","primary","Open");open.type="button";open.addEventListener("click",()=>{$("notifications-modal").hidden=true;window.GatherUno?.openGame?.(game.id);});
     actions.append(open);card.append(actions);list.append(card);
   });
+  const liveSnake=window.GatherSnake?.getLiveGames?.()||[];
+  liveSnake.forEach(game=>{
+    const card=el("article","notification-center-item notification-game-item");
+    const icon=el("span","notification-center-icon","〰");
+    const copy=el("span","notification-center-copy");
+    const label=game.state?.phase==="lobby"?"Waiting room":"In progress";
+    copy.append(el("strong","","Snake Arena"),el("small","",label+" · "+(game.settings?.arena||"standard")+" arena"),el("time","",dateLabel(game.updated_at||game.created_at)));
+    card.append(icon,copy);
+    const actions=el("span","notification-game-actions");
+    const open=el("button","primary","Open");open.type="button";
+    open.addEventListener("click",()=>{$("notifications-modal").hidden=true;window.GatherSnake?.openGame?.(game.id);});
+    actions.append(open);card.append(actions);list.append(card);
+  });
+  const snakeInvites=window.GatherSnake?.getInvitations?.()||[];
+  snakeInvites.forEach(game=>{
+    const card=el("article","notification-center-item notification-game-item unread");
+    const icon=el("span","notification-center-icon","〰");
+    const copy=el("span","notification-center-copy");
+    const sender=S.profiles[game.created_by]?.display_name||S.profiles[game.created_by]?.username||"A Gather member";
+    copy.append(el("strong","","Snake Arena invitation"),el("small","",sender+" invited you to a Snake Arena lobby."),el("time","",dateLabel(game.created_at)));
+    card.append(icon,copy);
+    const actions=el("span","notification-game-actions");
+    const join=el("button","primary","Join");join.type="button";
+    join.addEventListener("click",async()=>{join.disabled=true;$("notifications-modal").hidden=true;await window.GatherSnake?.openInvitation?.(game.id);await loadNotifications();});
+    actions.append(join);card.append(actions);list.append(card);
+  });
   const unoInvites=window.GatherUno?.getInvitations?.()||[];
   unoInvites.forEach(game=>{
     const card=el("article","notification-center-item notification-game-item unread");
@@ -1936,7 +1965,7 @@ function renderGameNotificationCards(list){
   });
   const rematchOffers=new Map();
   S.notifications.filter(item=>item.kind==="uno_rematch"&&!item.read_at).forEach(item=>{if(item.body)rematchOffers.set(item.body,item);});
-  if(unoInvites.length||invitations.length||rematchOffers.size)list.append(el("h3","notification-section-heading","Invitations"));
+  if(unoInvites.length||snakeInvites.length||invitations.length||rematchOffers.size)list.append(el("h3","notification-section-heading","Invitations"));
   rematchOffers.forEach((item,offerId)=>{
     const card=el("article","notification-center-item notification-game-item unread");
     const icon=el("span","notification-center-icon","🃏");
@@ -1951,7 +1980,7 @@ function renderGameNotificationCards(list){
     decline.addEventListener("click",async()=>{decline.disabled=true;accept.disabled=true;await window.GatherUno?.respondToRematch?.(offerId,false);await loadNotifications();});
     actions.append(accept,decline);card.append(actions);list.append(card);
   });
-  return liveClassic.length+liveUno.length+unoInvites.length+invitations.length+rematchOffers.size;
+  return liveClassic.length+liveUno.length+liveSnake.length+unoInvites.length+snakeInvites.length+invitations.length+rematchOffers.size;
 }
 function renderNotifications(){
   const list=$("notifications-list");
