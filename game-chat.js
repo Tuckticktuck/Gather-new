@@ -6,10 +6,10 @@
     const key=String(type)+":"+String(id);
     // Game screens are rebuilt during state refreshes. Reuse the same chat dock
     // so an open panel, loaded messages, and its polling loop survive rerenders.
-    if(activeKey===key&&activeWrap){if(activeWrap.parentNode!==root)root.prepend(activeWrap);return;}
+    if(activeKey===key&&activeWrap){if(!root.contains(activeWrap))root.prepend(activeWrap);return;}
     if(activeCleanup){activeCleanup();activeCleanup=null;}
     const wrap=document.createElement("div");wrap.className="game-chat-dock";
-    const toggle=document.createElement("button");toggle.type="button";toggle.className="game-chat-toggle";toggle.textContent="☰  Game chat";toggle.setAttribute("aria-expanded","false");
+    const toggle=document.createElement("button");toggle.type="button";toggle.className="game-chat-toggle";toggle.textContent="💬";toggle.setAttribute("aria-label","Open game chat");toggle.title="Game chat";toggle.setAttribute("aria-expanded","false");
     const panel=document.createElement("section");panel.className="game-chat-panel";panel.hidden=true;panel.setAttribute("aria-label","Temporary game chat");
     const head=document.createElement("header");head.className="game-chat-head";
     const title=document.createElement("strong");title.textContent="Game chat";
