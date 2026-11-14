@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { advanceSnakeState, canQueueSnakeDirection } from "../snake-engine.mjs";
+import { advanceSnakeState, canQueueSnakeDirection } from "../supabase/functions/gather-snake-action/snake-engine.mjs";
 
 function makeState(overrides = {}) {
   return {
