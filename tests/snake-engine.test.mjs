@@ -106,7 +106,7 @@ test("the server timer ends a round and picks the highest score", () => {
 test("a snake colliding with its own body is eliminated", () => {
   const source = makeState({
     snakes: [
-      { user_id: "a", direction: "down", alive: true, score: 0, segments: [{x:4,y:4},{x:4,y:3},{x:3,y:3},{x:3,y:4}] },
+      { user_id: "a", direction: "left", alive: true, score: 0, segments: [{x:4,y:4},{x:4,y:3},{x:3,y:3},{x:3,y:4}] },
       { user_id: "b", direction: "left", alive: true, score: 0, segments: [{x:10,y:5},{x:11,y:5}] }
     ]
   });
