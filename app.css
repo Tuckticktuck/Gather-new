@@ -3936,3 +3936,12 @@ html[data-theme="light"] .offline-status{color:#59421d;background:#fff4d8;border
 @media(prefers-reduced-motion:reduce){
   .message-quick-react,.notifications-list .notification-center-item{transition:none}
 }
+
+/* Use the visual viewport height when the iOS keyboard resizes the visible area. */
+@media(max-width:720px){
+  .layout{height:calc(var(--gather-visual-viewport-height,100dvh) - 60px);min-height:0}
+  .layout.show-chat .main{height:100%;min-height:0}
+  .layout.show-chat .chat{height:100%;min-height:0}
+  .layout.show-chat .messages{min-height:0;overscroll-behavior:contain}
+  .layout.show-chat .composer{flex:none}
+}
