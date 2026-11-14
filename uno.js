@@ -10,11 +10,11 @@ const conversationTitle=c=>c.kind==="group"?(c.title||c.name||"Group chat"):name
 const byName=(a,b)=>a.localeCompare(b,undefined,{sensitivity:"base"});
 function appendChatOptions(select,list){[{label:"Private chats",items:list.filter(c=>c.kind!=="group")},{label:"Group chats",items:list.filter(c=>c.kind==="group")}].forEach(section=>{if(!section.items.length)return;const group=el("optgroup");group.label=section.label;section.items.slice().sort((a,b)=>byName(conversationTitle(a),conversationTitle(b))).forEach(c=>{const o=el("option","",conversationTitle(c));o.value=c.id;group.append(o);});select.append(group);});}
 function sortedPeople(c){return(c?.members||[]).filter(m=>m.user_id!==uid()).slice().sort((a,b)=>byName(name(a.user_id),name(b.user_id)));}
-async function refresh(){if(!ctx||!uid())return;const [r,mine]=await Promise.all([ctx.db.from("gather_multiplayer_games").select("*").eq("game_type","uno").eq("status","active").order("created_at",{ascending:false}).limit(60),ctx.db.from("gather_multiplayer_players").select("game_id,status,ready,joined_at").eq("user_id",uid()).in("status",["joined","invited"])]);if(r.error){toast("UNO lobbies could not be loaded: "+r.error.message);return;}if(mine.error){toast("Your UNO games could not be loaded: "+mine.error.message);return;}games=r.data||[];myGames=(mine.data||[]).map(p=>({player:p,game:games.find(g=>g.id===p.game_id)})).filter(x=>x.game);if(typeof ctx.onGamesUpdated==="function")ctx.onGamesUpdated();if(activeGameId)await loadGame();else if(!$("uno-overlay")?.hidden)renderLobby();}
+async function refresh(){if(!ctx||!uid())return;const [r,mine]=await Promise.all([ctx.db.from("gather_multiplayer_games").select("*").eq("game_type","uno").eq("status","active").order("created_at",{ascending:false}).limit(60),ctx.db.from("gather_multiplayer_players").select("game_id,status,ready,joined_at").eq("user_id",uid()).in("status",["joined","invited","spectating"])]);if(r.error){toast("UNO lobbies could not be loaded: "+r.error.message);return;}if(mine.error){toast("Your UNO games could not be loaded: "+mine.error.message);return;}games=r.data||[];myGames=(mine.data||[]).map(p=>({player:p,game:games.find(g=>g.id===p.game_id)})).filter(x=>x.game);if(typeof ctx.onGamesUpdated==="function")ctx.onGamesUpdated();if(activeGameId)await loadGame();else if(!$("uno-overlay")?.hidden)renderLobby();}
 function open(){if(!ctx||!uid()){toast("Sign in to play UNO.");return;}mount();$("uno-overlay").hidden=false;activeGameId=null;state=null;playersPanelOpen=false;selectedCardId=null;handScrollPosition=0;renderLobby();void refresh();}
 async function openInvitation(id){open();await enter(id);}
 async function openGame(id){if(!ctx||!uid()){toast("Sign in to play UNO.");return;}mount();$("uno-overlay").hidden=false;activeGameId=id;state=null;playersPanelOpen=false;selectedCardId=null;handScrollPosition=0;const root=$("uno-content");root.classList.remove("uno-in-match");root.replaceChildren(el("p","uno-empty muted tiny","Loading UNO game…"));await loadGame();}
-function renderLobby(){const root=$("uno-content");root.classList.remove("uno-in-match");root.replaceChildren();const head=el("div","uno-lobby-heading");head.append(el("p","muted tiny","Create a match or join an open game with people in your conversations."));const create=el("button","primary","＋ Create UNO lobby");create.onclick=renderCreate;head.append(create);root.append(head);root.append(el("h3","uno-section-title","Current games"));const mine=el("div","uno-lobby-list");if(!myGames.length)mine.append(el("p","uno-empty muted tiny","You have no current UNO invitations or games. New invitations and games you join will stay listed here."));myGames.forEach(entry=>{const g=entry.game,p=entry.player,chat=eligible().find(c=>c.id===g.conversation_id),card=el("article","uno-lobby-card"),info=el("div","uno-lobby-info"),started=!!g.state?.started;const status=p.status==="invited"?"Invitation waiting":started?"In progress":"Lobby open";info.append(el("strong","",g.settings?.title||"UNO match"),el("small","muted",status+" · "+(chat?conversationTitle(chat):"Conversation")+" · "+(g.settings?.max_players||10)+" players max"));const button=el("button",p.status==="invited"?"primary":"outline",p.status==="invited"?"Accept invitation":"Open game");button.onclick=()=>enter(g.id);card.append(info,button);mine.append(card);});root.append(mine);root.append(el("h3","uno-section-title","Other active lobbies"));const list=el("div","uno-lobby-list");const available=eligible();const shown=games.filter(g=>available.some(c=>c.id===g.conversation_id)&&!myGames.some(x=>x.game.id===g.id));if(!shown.length)list.append(el("p","uno-empty muted tiny","No other active UNO lobbies are available in your conversations."));shown.forEach(g=>{const c=available.find(x=>x.id===g.conversation_id),card=el("article","uno-lobby-card"),info=el("div","uno-lobby-info"),inProgress=!!g.state?.started;info.append(el("strong","",g.settings?.title||"UNO match"),el("small","muted",(c?.kind==="group"?"Group":"Conversation")+" · "+(g.join_mode==="open"?"Open":"Invite-only")+" · "+(g.settings?.max_players||10)+" players max"+(inProgress?" · In progress":"")));const b=el("button","outline",inProgress?"Join & get 7 cards":g.join_mode==="open"?"Join":"View");b.onclick=()=>enter(g.id);card.append(info,b);list.append(card);});root.append(list);}
+function renderLobby(){const root=$("uno-content");root.classList.remove("uno-in-match");root.replaceChildren();const head=el("div","uno-lobby-heading");head.append(el("p","muted tiny","Create a match or join an open game with people in your conversations."));const create=el("button","primary","＋ Create UNO lobby");create.onclick=renderCreate;head.append(create);root.append(head);root.append(el("h3","uno-section-title","Current games"));const mine=el("div","uno-lobby-list");if(!myGames.length)mine.append(el("p","uno-empty muted tiny","You have no current UNO invitations or games. New invitations and games you join will stay listed here."));myGames.forEach(entry=>{const g=entry.game,p=entry.player,chat=eligible().find(c=>c.id===g.conversation_id),card=el("article","uno-lobby-card"),info=el("div","uno-lobby-info"),started=!!g.state?.started;const status=p.status==="spectating"?"Watching":p.status==="invited"?"Invitation waiting":started?"In progress":"Lobby open";info.append(el("strong","",g.settings?.title||"UNO match"),el("small","muted",status+" · "+(chat?conversationTitle(chat):"Conversation")+" · "+(g.settings?.max_players||10)+" players max"));const controls=el("div","uno-lobby-card-actions");if(p.status==="spectating"){const watch=el("button","primary","Continue watching");watch.onclick=()=>watchGame(g.id);controls.append(watch);const join=el("button","outline","Join as player");join.onclick=()=>enter(g.id);controls.append(join);}else if(p.status==="invited"&&started){const join=el("button","primary","Join & get 7 cards");join.onclick=()=>enter(g.id);const watch=el("button","outline","Watch instead");watch.onclick=()=>watchGame(g.id);controls.append(join,watch);}else{const button=el("button",p.status==="invited"?"primary":"outline",p.status==="invited"?"Accept invitation":"Open game");button.onclick=()=>enter(g.id);controls.append(button);}card.append(info,controls);mine.append(card);});root.append(mine);root.append(el("h3","uno-section-title","Other active lobbies"));const list=el("div","uno-lobby-list");const available=eligible();const shown=games.filter(g=>available.some(c=>c.id===g.conversation_id)&&!myGames.some(x=>x.game.id===g.id));if(!shown.length)list.append(el("p","uno-empty muted tiny","No other active UNO lobbies are available in your conversations."));shown.forEach(g=>{const c=available.find(x=>x.id===g.conversation_id),card=el("article","uno-lobby-card"),info=el("div","uno-lobby-info"),inProgress=!!g.state?.started;info.append(el("strong","",g.settings?.title||"UNO match"),el("small","muted",(c?.kind==="group"?"Group":"Conversation")+" · "+(g.join_mode==="open"?"Open":"Invite-only")+" · "+(g.settings?.max_players||10)+" players max"+(inProgress?" · In progress":"")));const b=el("button","outline",inProgress?"Join & get 7 cards":g.join_mode==="open"?"Join":"View");b.onclick=()=>enter(g.id);card.append(info,b);list.append(card);});root.append(list);}
 function field(label,control){const w=el("label","uno-field");w.append(el("span","",label),control);return w;}
 function renderCreate(){
 const root=$("uno-content");root.replaceChildren();const title=el("h2","uno-title","Set up your lobby");title.id="uno-dialog-title";
@@ -28,7 +28,9 @@ const actions=el("div","uno-actions tag-actions"),back=el("button","secondary-ac
 form.onsubmit=async e=>{e.preventDefault();if(busy)return;if(!selected.length){toast("Choose at least one person to invite.");return;}if(selected.length+1>Number(max.value)){toast("The player limit must include you and every invited player.");return;}busy=true;submit.disabled=true;try{const g=await call("gather_uno_create",{p_conversation_id:null,p_join_mode:"invite",p_invited_user_ids:selected.slice(),p_max_players:Number(max.value)});await call("gather_uno_ready",{p_game_id:g.id,p_ready:false});activeGameId=g.id;selectedCardId=null;await loadGame();}catch(err){toast(err.message||"Could not create lobby.");}finally{busy=false;submit.disabled=false;}};
 root.append(form);window.GatherPeoplePicker?.create({db:ctx.db,button:choose,summary,onChange:ids=>selected.splice(0,selected.length,...ids)});
 }
-async function enter(id){if(busy)return;busy=true;try{await call("gather_uno_join",{p_game_id:id,p_color:"#40826D"});await ctx.db.from("notifications").update({read_at:new Date().toISOString()}).eq("recipient_id",uid()).eq("kind","uno_invite").eq("body",id).is("read_at",null);activeGameId=id;await loadGame();await refresh();}catch(e){toast(e.message||"Could not join UNO.");}finally{busy=false;}}
+async function enter(id){if(busy)return;busy=true;try{await call("gather_uno_join",{p_game_id:id,p_color:"#40826D"});await ctx.db.from("notifications").update({read_at:new Date().toISOString()}).eq("recipient_id",uid()).eq("kind","uno_invite").eq("body",id).is("read_at",null);activeGameId=id;selectedCardId=null;await loadGame();await refresh();}catch(e){toast(e.message||"Could not join UNO.");}finally{busy=false;}}
+async function watchGame(id){if(busy)return;busy=true;try{await call("gather_uno_spectate",{p_game_id:id});activeGameId=id;selectedCardId=null;await loadGame();await refresh();}catch(e){toast(e.message||"Could not watch this UNO match.");}finally{busy=false;}}
+async function stopWatching(){if(!activeGameId)return;const id=activeGameId;try{await call("gather_uno_stop_spectating",{p_game_id:id});activeGameId=null;state=null;selectedCardId=null;await refresh();toast("You stopped watching the UNO match.");}catch(e){toast(e.message||"Could not stop spectating.");}}
 async function loadGame(){if(!activeGameId)return;const gameId=activeGameId;try{const next=await call("gather_uno_get_state",{p_game_id:gameId});if(activeGameId!==gameId)return;state=next;if(selectedCardId&&!next.hand?.some(card=>card.id===selectedCardId))selectedCardId=null;renderGame();}catch(e){if(activeGameId===gameId)toast(e.message||"Could not load UNO.");}}
 function pubWinner(v){return !!(v?.public_state?.winner_id||v?.game?.state?.winner_id);}
 function playerPrefs(){
@@ -86,7 +88,7 @@ function renderSettingsPanel(root){
 }
 function renderGame(){
   const root=$("uno-content");root.replaceChildren();
-  const g=state.game,players=(state.players||[]).filter(p=>p.status==="joined"||p.status==="invited"),joined=players.filter(p=>p.status==="joined");
+  const g=state.game,players=(state.players||[]).filter(p=>p.status==="joined"||p.status==="invited"),joined=players.filter(p=>p.status==="joined"),spectating=!!state.spectating;
   const started=!!state.started,host=g.created_by===uid(),pub=state.public_state||g.state||{};
   const finished=!!(pub.finished||pub.winner_id||g.status==="completed");
   if(lastCountGameId!==g.id){lastCountGameId=g.id;lastCardCounts.clear();}
@@ -141,25 +143,54 @@ function renderGame(){
     root.append(roster,actions,el("p","uno-lobby-wait tag-lobby-hint muted tiny","The host can start when at least two players have joined and everyone is ready."));
     const back=el("button","outline tag-back","Back to UNO");back.onclick=async()=>{activeGameId=null;state=null;await refresh();};root.append(back);return;
   }
+  if(spectating&&!finished){
+    const board=el("section","uno-board");
+    board.append(el("div","uno-turn-banner","SPECTATING · "+(pub.turn_user_id?name(pub.turn_user_id)+" is playing":"The match is waiting")));
+    const table=el("div","uno-table"),ring=el("div","uno-seat-ring");ring.setAttribute("aria-label","Players in the match");
+    joined.forEach((p,index)=>{
+      const seat=el("button","uno-seat"+(p.user_id===pub.turn_user_id?" is-turn":""));seat.type="button";
+      const angle=(joined.length===1?0:-150+(300*index/Math.max(1,joined.length-1)))*Math.PI/180;
+      seat.style.left=(50+36*Math.sin(angle))+"%";seat.style.top=(44-27*Math.cos(angle))+"%";
+      seat.append(el("span","uno-seat-avatar",String(name(p.user_id)||"P").trim().slice(0,1).toUpperCase()));
+      const copy=el("span","uno-seat-copy");copy.append(el("strong","",name(p.user_id)),el("small","",String(Math.max(0,Number(p.card_count)||0))+" cards"));seat.append(copy);
+      if(p.user_id===pub.turn_user_id)seat.append(el("span","uno-seat-turn","TURN"));
+      seat.onclick=()=>showPlayerProfile(p);ring.append(seat);
+    });
+    const piles=el("div","uno-piles"),draw=el("div","uno-deck is-inactive","DRAW");
+    const discard=el("div","uno-discard");discard.append(cardNode(pub.top_card,true));
+    piles.append(draw,discard,el("span","uno-current-color "+(pub.current_color||"wild"),"COLOR · "+String(pub.current_color||"wild").toUpperCase()));
+    table.append(ring,piles);board.append(table,el("p","muted tiny","You are watching this match. Spectators cannot draw, play cards, call UNO, or use the temporary player chat."));
+    const controls=el("div","uno-spectator-actions"),join=el("button","primary","Join as player"),stop=el("button","outline","Stop watching");
+    join.type="button";join.onclick=()=>enter(activeGameId);stop.type="button";stop.onclick=()=>stopWatching();
+    controls.append(join,stop);root.append(board,controls);
+    const roster=el("div","uno-roster tag-roster");roster.append(el("h3","tag-section-title","Players · "+joined.length+"/"+(g.settings?.max_players||10)));
+    joined.forEach(p=>{const row=el("button","uno-player-row");row.type="button";row.append(el("span","uno-player-dot"));const copy=el("span","tag-player-copy");copy.append(el("strong","",name(p.user_id)),el("small","muted tiny",String(p.card_count||0)+" cards"));row.append(copy);row.onclick=()=>showPlayerProfile(p);roster.append(row);});
+    root.append(roster);return;
+  }
   if(finished){
     const winner=pub.winner_id,scoreboard=el("section","uno-results-scoreboard uno-finished-panel"),finish=scoreboard;
     const hero=el("div","uno-results-hero");hero.append(el("div","uno-results-trophy","✦"),el("p","eyebrow","ROUND COMPLETE"),
       el("h3","",winner?name(winner)+" wins!":"Match finished"),
       el("p","muted tiny","The round has ended. Review the standings before returning to the lobby."));
     scoreboard.append(hero);
+    const scores=pub.match_scores||{},roundPoints=Math.max(0,Number(pub.round_points)||0);
     const ordered=joined.slice().sort((a,b)=>{
       if(a.user_id===winner)return -1;if(b.user_id===winner)return 1;
-      return (Number(a.card_count)||0)-(Number(b.card_count)||0);
+      const scoreDiff=(Number(scores[b.user_id])||0)-(Number(scores[a.user_id])||0);
+      return scoreDiff||((Number(a.card_count)||0)-(Number(b.card_count)||0));
     });
     const list=el("div","uno-results-list");
     ordered.forEach((p,index)=>{
+      const total=Math.max(0,Number(scores[p.user_id])||0),remaining=Math.max(0,Number(p.card_count)||0);
       const row=el("div","uno-results-row"+(p.user_id===winner?" is-winner":""));
       row.append(el("span","uno-result-rank",String(index+1).padStart(2,"0")),
         el("span","uno-result-player",name(p.user_id)+(p.user_id===uid()?" (you)":"")),
-        el("strong","uno-result-cards",p.user_id===winner?"Winner":String(Math.max(0,Number(p.card_count)||0))+" cards left"));
+        el("small","uno-result-cards",p.user_id===winner?"Winner · +"+roundPoints+" this round":remaining+" cards left"),
+        el("strong","uno-result-score",total+" pts"));
       list.append(row);
     });
     scoreboard.append(el("h4","","Round standings"),list);
+    scoreboard.append(el("p","uno-results-points","Points awarded to the winner this round: "+roundPoints));
     root.append(scoreboard);
     const doneMap=pub.done||{},doneCount=joined.filter(p=>doneMap[p.user_id]).length,alreadyDone=!!doneMap[uid()];
     const completion=el("div","uno-results-completion");
@@ -168,14 +199,22 @@ function renderGame(){
     joined.forEach(p=>completion.append(el("div","uno-done-player",(doneMap[p.user_id]?"✓ ":"○ ")+name(p.user_id)+(p.user_id===uid()?" (you)":""))));
     scoreboard.append(completion);
     if(state.rematch_pending)scoreboard.append(el("p","uno-rematch-wait","A rematch request is pending. Check your Gather notifications to accept or decline."));
-    if(g.status==="completed"){
+    if(spectating){
+      const stop=el("button","outline","Stop watching");stop.onclick=()=>stopWatching();actions.append(stop);
+    }else if(g.status==="completed"){
       const back=el("button","outline","Back to UNO");back.onclick=async()=>{activeGameId=null;state=null;selectedCardId=null;await refresh();};actions.append(back);
+      if(host){
+        const hostRematch=el("button","primary","Start rematch now");hostRematch.onclick=async()=>{hostRematch.disabled=true;try{state=await call("gather_uno_host_rematch",{p_game_id:activeGameId});selectedCardId=null;renderGame();}catch(e){toast(e.message||"Could not start host rematch.");hostRematch.disabled=false;}};actions.append(hostRematch);
+      }
     }else{
       const done=el("button",alreadyDone?"outline":"primary",alreadyDone?"You are done":"I am done");
       done.disabled=alreadyDone;done.onclick=async()=>{done.disabled=true;try{await call("gather_uno_done",{p_game_id:activeGameId});await loadGame();await refresh();}catch(e){toast(e.message||"Could not confirm.");done.disabled=false;}};
       const rematch=el("button","outline",state.rematch_pending?"Rematch requested":"Request rematch");
       rematch.disabled=!!state.rematch_pending;rematch.onclick=async()=>{rematch.disabled=true;try{await call("gather_uno_request_rematch",{p_game_id:activeGameId});toast("Rematch request sent.");await loadGame();await refresh();}catch(e){toast(e.message||"Could not request a rematch.");rematch.disabled=!!state.rematch_pending;}};
       actions.append(done,rematch);
+      if(host){
+        const hostRematch=el("button","outline","Start rematch now");hostRematch.onclick=async()=>{hostRematch.disabled=true;try{state=await call("gather_uno_host_rematch",{p_game_id:activeGameId});selectedCardId=null;renderGame();}catch(e){toast(e.message||"Could not start host rematch.");hostRematch.disabled=false;}};actions.append(hostRematch);
+      }
     }
     finish.append(actions);root.append(finish);return;
   }
