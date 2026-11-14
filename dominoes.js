@@ -46,7 +46,59 @@ function seats(root){const s=state(),box=el("section","dominoes-seats");(s.seat_
 function tileNode(t){const node=el("span","dominoes-tile"+(t.a===t.b?" is-double":""));node.setAttribute("aria-label",t.a+" and "+t.b);[Number(t.a),Number(t.b)].forEach(v=>{const half=el("span","dominoes-half"),spots={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]}[v]||[];for(let i=0;i<9;i++){const pip=el("i","dominoes-pip"+(spots.includes(i)?" is-on":""));pip.style.gridArea=(Math.floor(i/3)+1)+" / "+(i%3+1);if(prefs.pip==="star"&&spots.includes(i)){pip.textContent="✦";pip.classList.add("is-star");}half.append(pip);}node.append(half);});return node;}
 function playable(t,s=state()){if(!(s.chain||[]).length)return true;return [s.left_end,s.right_end].some(v=>Number(t.a)===Number(v)||Number(t.b)===Number(v));}
 function fits(t,end,s=state()){if(!(s.chain||[]).length)return end==="start";const n=Number(end==="left"?s.left_end:s.right_end);return Number(t.a)===n||Number(t.b)===n;}
-function board(root){const s=state(),wrap=el("section","dominoes-table");wrap.append(el("div","dominoes-table-label","TABLE · ROUND "+s.round));const ends=el("div","dominoes-board-ends");const addDrop=(target,side)=>{target.addEventListener("dragover",event=>{event.preventDefault();target.classList.add("is-drop-target");});target.addEventListener("dragleave",()=>target.classList.remove("is-drop-target"));target.addEventListener("drop",event=>{event.preventDefault();target.classList.remove("is-drop-target");const tileId=event.dataTransfer?.getData("text/domino-tile");if(tileId){selectedTile=tileId;void place(side);}});};if(!(s.chain||[]).length){const first=btn("Place first tile","dominoes-end-target is-start",()=>place("start"));addDrop(first,"start");ends.append(first);}else{const chosen=(snapshot.your_hand||[]).find(t=>t.id===selectedTile),leftOK=!!chosen&&fits(chosen,"left"),rightOK=!!chosen&&fits(chosen,"right");const l=btn("← "+s.left_end,"dominoes-end-target left"+(leftOK?" is-highlighted":""),()=>place("left")),r=btn(s.right_end+" →","dominoes-end-target right"+(rightOK?" is-highlighted":""),()=>place("right"));l.disabled=!!chosen&&!leftOK;r.disabled=!!chosen&&!rightOK;addDrop(l,"left");addDrop(r,"right");ends.append(l,r);}const chain=el("div","dominoes-chain");(s.chain||[]).forEach((t,i)=>{const x=el("div","dominoes-board-tile");x.append(tileNode({a:t.left,b:t.right}));x.title="Tile "+(i+1);chain.append(x);});if(!(s.chain||[]).length)chain.append(el("p","dominoes-empty","The first tile starts the chain."));wrap.append(ends,chain);if(selectedTile){const chosen=(snapshot.your_hand||[]).find(t=>t.id===selectedTile),preview=el("div","dominoes-preview");preview.append(el("span","","Preview · "+(chosen?chosen.a+" | "+chosen.b+" · choose a glowing end":"selected tile")));if(chosen)preview.append(tileNode(chosen));wrap.append(preview);}root.append(wrap);}
+function board(root){
+  const s=state(),wrap=el("section","dominoes-table");
+  wrap.append(el("div","dominoes-table-label","TABLE · ROUND "+s.round));
+  const ends=el("div","dominoes-board-ends");
+  const addDrop=(target,side)=>{
+    target.addEventListener("dragover",event=>{event.preventDefault();target.classList.add("is-drop-target");});
+    target.addEventListener("dragleave",()=>target.classList.remove("is-drop-target"));
+    target.addEventListener("drop",event=>{
+      event.preventDefault();target.classList.remove("is-drop-target");
+      const tileId=event.dataTransfer?.getData("text/domino-tile");
+      if(tileId){selectedTile=tileId;void place(side);}
+    });
+  };
+  if(!(s.chain||[]).length){
+    const first=btn("Place first tile","dominoes-end-target is-start",()=>place("start"));
+    addDrop(first,"start");ends.append(first);
+  }else{
+    const chosen=(snapshot.your_hand||[]).find(t=>t.id===selectedTile),leftOK=!!chosen&&fits(chosen,"left"),rightOK=!!chosen&&fits(chosen,"right");
+    const l=btn("← "+s.left_end,"dominoes-end-target left"+(leftOK?" is-highlighted":""),()=>place("left"));
+    const r=btn(s.right_end+" →","dominoes-end-target right"+(rightOK?" is-highlighted":""),()=>place("right"));
+    l.disabled=!!chosen&&!leftOK;r.disabled=!!chosen&&!rightOK;addDrop(l,"left");addDrop(r,"right");ends.append(l,r);
+  }
+  const viewport=el("div","dominoes-board-viewport");
+  viewport.setAttribute("role","region");viewport.setAttribute("aria-label","Scrollable Dominoes playing board");viewport.tabIndex=0;
+  const chain=el("div","dominoes-chain"),tiles=s.chain||[];
+  let row=0,col=0,dir=1,inRow=0,turnNext=false,maxRow=0;
+  const positions=[];
+  tiles.forEach((tile,index)=>{
+    if(turnNext){
+      positions.push({tile,index,col,row,vertical:true});maxRow=Math.max(maxRow,row);
+      row++;dir*=-1;col+=dir;inRow=0;turnNext=false;
+    }else{
+      positions.push({tile,index,col,row,vertical:false});maxRow=Math.max(maxRow,row);
+      inRow++;if(inRow>=8)turnNext=true;else col+=dir;
+    }
+  });
+  chain.style.width=(8*78+70)+"px";chain.style.height=((maxRow+1)*84+34)+"px";
+  positions.forEach(({tile,index,col,row,vertical})=>{
+    const item=el("div","dominoes-board-tile"+(vertical?" is-turn-tile":""));
+    item.append(tileNode({a:tile.left,b:tile.right}));item.title="Tile "+(index+1);
+    item.style.left=(col*78+(vertical?18:0))+"px";
+    item.style.top=(row*84+(vertical?24:0))+"px";chain.append(item);
+  });
+  if(!tiles.length)chain.append(el("p","dominoes-empty","The first tile starts the chain."));
+  viewport.append(chain);
+  wrap.append(ends,el("p","dominoes-board-help","Follow the chain as it winds across the table. Scroll or swipe in either direction to explore the full board."),viewport);
+  if(selectedTile){
+    const chosen=(snapshot.your_hand||[]).find(t=>t.id===selectedTile),preview=el("div","dominoes-preview");
+    preview.append(el("span","","Preview · "+(chosen?chosen.a+" | "+chosen.b+" · choose a glowing end":"selected tile")));
+    if(chosen)preview.append(tileNode(chosen));wrap.append(preview);
+  }
+  root.append(wrap);
+}
 function boneyard(root){const s=state(),box=el("section","dominoes-boneyard"),stack=el("div","dominoes-boneyard-stack");for(let i=0;i<Math.min(4,Number(s.boneyard_count)||0);i++)stack.append(el("span","dominoes-boneyard-tile"));const copy=el("div","dominoes-boneyard-copy");copy.append(el("strong","","Boneyard"),el("small","muted",(s.boneyard_count||0)+" tiles remaining"));box.append(stack,copy);const hand=snapshot.your_hand||[],can=isJoined()&&currentTurn()===uid(),has=hand.some(t=>playable(t,s)),draw=btn("Draw until playable","primary dominoes-draw",drawUntilPlayable);draw.disabled=!can||has||Number(s.boneyard_count||0)===0;box.append(draw);if(can&&!has&&!Number(s.boneyard_count||0))box.append(btn("Pass turn","outline",()=>action("pass")));root.append(box);}
 function hand(root){const h=snapshot.your_hand||[],sec=el("section","dominoes-hand-section"),head=el("div","dominoes-hand-heading");head.append(el("strong","",isSpectator()?"Spectator view":"Your hand"),el("small","muted",isSpectator()?"Private tiles hidden":h.length+" tiles"));sec.append(head);if(!isJoined()){sec.append(el("p","dominoes-empty","Spectators never receive player hands."));root.append(sec);return;}const strip=el("div","dominoes-hand");handOrder.map(id=>h.find(t=>t.id===id)).filter(Boolean).forEach(t=>{const c=btn("","dominoes-hand-tile"+(playable(t)?" is-playable":"")+(selectedTile===t.id?" is-selected":""),()=>{if(Date.now()<suppressTileClickUntil)return;selectedTile=selectedTile===t.id?null:t.id;sound("tile");renderGame();});c.draggable=false;c.append(tileNode(t));c.setAttribute("aria-label","Tile "+t.a+" and "+t.b);c.dataset.tileId=t.id;let pointerStart=null;c.addEventListener("pointerdown",e=>{if(e.pointerType==="mouse"&&e.button!==0)return;pointerStart={id:e.pointerId,x:e.clientX,y:e.clientY,dragging:false};try{c.setPointerCapture(e.pointerId);}catch{};});c.addEventListener("pointermove",e=>{if(!pointerStart||pointerStart.id!==e.pointerId)return;if(!pointerStart.dragging&&Math.hypot(e.clientX-pointerStart.x,e.clientY-pointerStart.y)>8){pointerStart.dragging=true;c.classList.add("is-dragging");}if(pointerStart.dragging)e.preventDefault();});c.addEventListener("pointerup",e=>{if(!pointerStart||pointerStart.id!==e.pointerId)return;const drag=pointerStart.dragging;pointerStart=null;c.classList.remove("is-dragging");if(!drag)return;suppressTileClickUntil=Date.now()+500;const target=document.elementFromPoint(e.clientX,e.clientY),endTarget=target?.closest?.(".dominoes-end-target"),handTarget=target?.closest?.(".dominoes-hand-tile");if(endTarget&&!endTarget.disabled){const side=endTarget.classList.contains("is-start")?"start":endTarget.classList.contains("left")?"left":"right";selectedTile=t.id;void place(side);return;}if(handTarget&&handTarget!==c){const from=handOrder.indexOf(t.id),to=handOrder.indexOf(handTarget.dataset.tileId);if(from>=0&&to>=0){handOrder.splice(from,1);handOrder.splice(to,0,t.id);renderGame();return;}}selectedTile=t.id;sound("tile");renderGame();});c.addEventListener("pointercancel",()=>{pointerStart=null;c.classList.remove("is-dragging");});strip.append(c);});sec.append(strip,el("small","dominoes-hand-help muted","Tap a glowing tile, then choose a board end. Drag to rearrange your hand."));root.append(sec);}
 async function place(end){if(!selectedTile){toast("Select a tile first.");return;}const t=(snapshot.your_hand||[]).find(x=>x.id===selectedTile);if(!t||!fits(t,end)){toast("That tile does not match this end.");return;}const id=selectedTile;selectedTile=null;await action("play",id,end);}
