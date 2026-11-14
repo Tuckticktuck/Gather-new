@@ -1115,7 +1115,7 @@ async function signedIn(user,retry=false){
     if(!loaded)throw new Error(S.loadError||"Please check your connection and try again.");
     window.GatherGames?.init({db,user:()=>S.user,chats:()=>S.chats,activeChatId:()=>S.active,profiles:()=>S.profiles,toast,onGamesUpdated:()=>{renderNotificationBadge();if(S.notificationView==="games"||S.notificationView==="all")renderNotifications();}});
     window.GatherParty?.init({db,user:()=>S.user,chats:()=>S.chats,profiles:()=>S.profiles,toast});
-    window.GatherUno?.init({db,user:()=>S.user,chats:()=>S.chats,profiles:()=>S.profiles,toast});
+    window.GatherUno?.init({db,user:()=>S.user,chats:()=>S.chats,profiles:()=>S.profiles,toast,onGamesUpdated:()=>{renderNotificationBadge();if(S.notificationView==="games"||S.notificationView==="all")renderNotifications();}});
     window.GatherLudo?.init({db,user:()=>S.user,chats:()=>S.chats,profiles:()=>S.profiles,toast,onGamesUpdated:()=>{renderNotificationBadge();if(S.notificationView==="games"||S.notificationView==="all")renderNotifications();}});
     subscribeMessages();
     // Start friend data immediately after chats are ready, in parallel with secondary home data.
