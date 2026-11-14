@@ -130,8 +130,8 @@ assert.match(unoClient, /visibilitychange",refreshOnReturn/, "UNO must catch up 
 assert.doesNotMatch(unoClient, /setInterval/, "UNO must not poll on a timer");
 assert.match(unoClient, /if\(activeGameId!==gameId\)return/, "UNO must ignore stale responses from a previously opened lobby");
 assert.match(unoClient, /playerToggle.hidden=!started/, "UNO player controls must not show an inactive Players button in the waiting room");
-assert.ok(html.includes("uno.js?v=20261114-mobile-cleanup-1") && serviceWorker.includes("./uno.js?v=20261114-mobile-cleanup-1"), "UNO arcade UI changes must invalidate the cached client asset");
-assert.ok(html.includes("uno.css?v=20261114-mobile-cleanup-1") && serviceWorker.includes("./uno.css?v=20261114-mobile-cleanup-1"), "UNO arcade theme changes must invalidate the cached stylesheet");
+assert.ok(html.includes("uno.js?v=20261114-adaptive-table-1") && serviceWorker.includes("./uno.js?v=20261114-adaptive-table-1"), "UNO arcade UI changes must invalidate the cached client asset");
+assert.ok(html.includes("uno.css?v=20261114-adaptive-table-1") && serviceWorker.includes("./uno.css?v=20261114-adaptive-table-1"), "UNO arcade theme changes must invalidate the cached stylesheet");
 assert.ok(unoClient.includes("uno-seat-ring") && unoClient.includes("uno-direction-ring"), "UNO must render player seats and a direction indicator around the table");
 assert.ok(unoClient.includes("selectedCardId") && unoClient.includes("uno-selection-preview"), "UNO must provide a selected-card preview");
 assert.ok(unoClient.includes('addEventListener("drop"') && unoClient.includes("playSelected"), "UNO must support drag-and-drop and tap-to-discard interactions");
@@ -143,6 +143,9 @@ assert.ok(unoClient.includes('own.style.top="91%"') && unoClient.includes('Strin
 assert.ok(unoCss.includes(".uno-direction-ring:before{display:none}") && unoCss.includes(".uno-seat-turn{display:none}"), "UNO mobile table must remove overlapping decorative rings and redundant turn labels");
 assert.ok(unoCss.includes("touch-action:pan-x") && unoCss.includes("margin-left:-8px"), "UNO mobile hand must remain swipeable with readable card spacing");
 assert.ok(unoCss.includes("max-height:285px") && unoCss.includes("top:43%"), "UNO mobile playfield must stay bounded with clear center-pile spacing");
+assert.ok(unoCss.includes("height:min(94dvh,1000px)") && unoCss.includes("flex:1 1 auto;flex-direction:column"), "UNO match must size its shell to the viewport and allocate remaining height through flex layout");
+assert.ok(unoCss.includes("flex:1 1 0;min-width:0;min-height:clamp(210px,26vh,420px)") && unoCss.includes("height:clamp(112px,17vh,168px)"), "UNO table must expand into the space left after a reserved, responsive hand area");
+assert.ok(unoCss.includes("orientation:landscape") && unoCss.includes("flex:0 1 38%"), "UNO match must provide a side-by-side table and hand layout on short landscape screens");
 
 assert.match(retiredSnakeFunction, /status: 410/, "Retired Snake endpoint must return Gone");
 assert.match(retiredGamesMigration, /REVOKE ALL PRIVILEGES ON FUNCTION/i, "Retired Tag/Snake RPCs must no longer be callable by client roles");
