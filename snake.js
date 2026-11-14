@@ -87,7 +87,7 @@
       ctx.db.from("gather_multiplayer_players")
         .select("game_id,user_id,status,ready,color,joined_at")
         .eq("user_id", uid())
-        .in("status", ["joined", "invited"]),
+        .in("status", ["joined", "invited", "spectating"]),
       ctx.db.rpc("gather_snake_open_lobbies")
     ]);
     if (mine.error) {
@@ -187,6 +187,43 @@
     await loadGame();
   }
 
+  async function watchLobby(id) {
+    if (!ctx || !uid() || busy) return;
+    busy = true;
+    mount();
+    $("snake-overlay").hidden = false;
+    panelOpen = true;
+    try {
+      const result = await ctx.db.rpc("gather_snake_spectate", { p_game_id: id });
+      if (result.error) throw result.error;
+      activeGameId = id;
+      await loadGame();
+      await refresh();
+    } catch (error) {
+      toast(error?.message || "Could not open spectator view.");
+      await refresh();
+      renderPanel();
+    } finally {
+      busy = false;
+    }
+  }
+
+  async function stopWatching(id) {
+    const result = await ctx.db.rpc("gather_snake_leave", { p_game_id: id });
+    if (result.error) {
+      toast(result.error.message || "Could not stop watching.");
+      return;
+    }
+    if (activeGameId === id) {
+      activeGameId = null;
+      activeGame = null;
+      activePlayers = [];
+      stopTickDriver();
+    }
+    await refresh();
+    renderPanel();
+  }
+
   async function openGame(id) {
     if (!ctx || !uid()) return;
     mount();
@@ -197,8 +234,8 @@
       .eq("game_id", id)
       .eq("user_id", uid())
       .maybeSingle();
-    if (check.error || !check.data || !["joined", "invited"].includes(check.data.status)) {
-      toast("You are not a participant in this Snake Arena lobby.");
+    if (check.error || !check.data || !["joined", "invited", "spectating"].includes(check.data.status)) {
+      toast("You are not a participant or spectator in this Snake Arena lobby.");
       return;
     }
     if (check.data.status === "invited") return openInvitation(id);
@@ -248,8 +285,13 @@
       root.append(el("h3", "tag-section-title", "Invitations"));
       invites.forEach(item => {
         const card = el("article", "tag-lobby-card");
-        card.append(el("div", "tag-lobby-info", "Snake Arena · " + playerName(item.game.created_by) + " invited you"));
-        card.append(btn("Join", "primary", () => openInvitation(item.game.id)));
+        const info = el("div", "tag-lobby-info");
+        info.append(el("strong", "", "Snake Arena · " + playerName(item.game.created_by) + " invited you"));
+        info.append(el("span", "muted tiny", statusText(item.game.state) + " · choose whether to play or watch"));
+        const actions = el("div", "snake-lobby-actions");
+        actions.append(btn("Join to play", "primary", () => openInvitation(item.game.id)));
+        actions.append(btn("Watch only", "outline", () => watchLobby(item.game.id)));
+        card.append(info, actions);
         root.append(card);
       });
     }
@@ -268,15 +310,36 @@
       root.append(card);
     });
 
+    const watching = myGames.filter(item => item.player.status === "spectating");
+    if (watching.length) {
+      root.append(el("h3", "tag-section-title", "Watching"));
+      watching.forEach(item => {
+        const card = el("article", "tag-lobby-card");
+        const info = el("div", "tag-lobby-info");
+        info.append(el("strong", "", "Snake Arena · " + playerName(item.game.created_by)));
+        info.append(el("span", "muted tiny", statusText(item.game.state) + " · read-only spectator"));
+        const actions = el("div", "snake-lobby-actions");
+        actions.append(btn(item.game.state?.phase === "finished" ? "View recap" : "Watch match", "outline", () => openGame(item.game.id)));
+        actions.append(btn("Stop watching", "secondary-action", () => stopWatching(item.game.id)));
+        card.append(info, actions);
+        root.append(card);
+      });
+    }
+
     if (openLobbies.length) {
       root.append(el("h3", "tag-section-title", "Open lobbies from friends"));
       openLobbies.forEach(lobby => {
         const card = el("article", "tag-lobby-card");
         const info = el("div", "tag-lobby-info");
+        const full = Number(lobby.joined_count || 0) >= Number(lobby.settings?.max_players || 8);
         info.append(el("strong", "", "Snake Arena · " + playerName(lobby.created_by)));
         info.append(el("span", "muted tiny", (lobby.settings?.arena || "standard") + " arena · " +
-          lobby.joined_count + "/" + (lobby.settings?.max_players || 8) + " players"));
-        card.append(info, btn("Join", "primary", () => openInvitation(lobby.id)));
+          lobby.joined_count + "/" + (lobby.settings?.max_players || 8) + " players" + (full ? " · Full" : "")));
+        const actions = el("div", "snake-lobby-actions");
+        const join = btn("Join to play", full ? "outline" : "primary", () => openInvitation(lobby.id));
+        join.disabled = full;
+        actions.append(join, btn("Watch only", "outline", () => watchLobby(lobby.id)));
+        card.append(info, actions);
         root.append(card);
       });
     }
@@ -415,13 +478,23 @@
       dot.style.background = p.color || "var(--accent)";
       const copy = el("div", "tag-player-copy");
       copy.append(el("strong", "", playerName(p.user_id) + (p.user_id === uid() ? " (you)" : "")),
-        el("small", "muted tiny", p.status === "invited" ? "Invited" : p.ready ? "Ready" : "Not ready"));
+        el("small", "muted tiny", p.status === "spectating" ? "Spectating · read-only" : p.status === "invited" ? "Invited" : p.ready ? "Ready" : "Not ready"));
       row.append(dot, copy);
       if (p.user_id === activeGame.created_by) row.append(el("span", "tag-host-mark", "HOST"));
       roster.append(row);
     });
     root.append(el("h3", "tag-section-title", "Players · " + activePlayers.filter(p => p.status === "joined").length +
       "/" + (activeGame.settings?.max_players || 8)), roster);
+    const spectators = activePlayers.filter(p => p.status === "spectating");
+    if (spectators.length) {
+      const spectatorRoster = el("div", "tag-roster snake-spectator-roster");
+      spectators.forEach(p => spectatorRoster.append(el("span", "muted tiny snake-spectator-name", playerName(p.user_id) +
+        (p.user_id === uid() ? " (you)" : ""))));
+      root.append(el("h3", "tag-section-title", "Spectators · " + spectators.length), spectatorRoster);
+    }
+    if (me?.status === "spectating" && state.phase === "lobby") {
+      root.append(el("p", "snake-spectator-banner", "You are watching in read-only mode. You do not count toward the player limit or ready check."));
+    }
 
     if (state.phase === "finished") {
       const recap = el("section", "snake-recap");
@@ -534,6 +607,8 @@
   function renderArena(root) {
     root.classList.add("snake-in-match");
     const state = activeGame.state || {};
+    const membership = activePlayers.find(p => p.user_id === uid());
+    const isSpectating = membership?.status === "spectating";
     const head = el("header", "snake-game-header");
     const title = el("div", "snake-game-title");
     title.append(el("p", "eyebrow", "SNAKE ARENA · LIVE MATCH"), el("h2", "", "Survive the arena"),
@@ -546,6 +621,13 @@
     closeButton.setAttribute("aria-label", "Exit match view");
     head.append(title, closeButton);
     root.append(head);
+    if (isSpectating) {
+      root.append(el("p", "snake-spectator-banner", "Spectator mode · read-only. You cannot move, change settings, end the match, or use player-only game chat."));
+    }
+    const watchers = activePlayers.filter(p => p.status === "spectating");
+    if (watchers.length) {
+      root.append(el("p", "muted tiny snake-watcher-count", "Watching · " + watchers.length));
+    }
 
     const scoreboard = el("div", "snake-scoreboard");
     activePlayers.filter(p => p.status === "joined").forEach(player => {
@@ -570,7 +652,7 @@
     root.append(canvasWrap);
     drawArena(canvas, state);
 
-    if (window.GatherGameChat?.attach) {
+    if (membership?.status === "joined" && window.GatherGameChat?.attach) {
       window.GatherGameChat.attach(root, ctx.db, "snake_arena", activeGameId, uid(), playerName);
     }
 
@@ -584,6 +666,8 @@
         pad.append(control);
       });
       controls.append(pad, el("p", "muted tiny", "Use arrow keys or WASD. On mobile, tap a direction."));
+    } else if (isSpectating) {
+      controls.append(el("p", "muted tiny snake-out", "You are observing this match. Your account has no player controls."));
     } else {
       controls.append(el("p", "muted tiny snake-out", "Your snake has been eliminated. You can watch until the round ends."));
     }
@@ -598,8 +682,12 @@
     if (resizeObserver) resizeObserver.disconnect();
     resizeObserver = new ResizeObserver(() => drawArena(canvas, activeGame?.state || state));
     resizeObserver.observe(canvasWrap);
-    bindArenaKeys();
-    startTickDriver();
+    if (membership?.status === "joined") {
+      bindArenaKeys();
+      startTickDriver();
+    } else {
+      stopTickDriver();
+    }
   }
 
   function drawArena(canvas, state) {
@@ -664,7 +752,8 @@
   }
 
   async function sendDirection(direction) {
-    if (!activeGameId || inputInFlight) return;
+    if (!activeGameId || inputInFlight ||
+        activePlayers.find(player => player.user_id === uid())?.status !== "joined") return;
     const now = Date.now();
     if (now - lastDirectionSentAt < 65) return;
     lastDirectionSentAt = now;
@@ -694,7 +783,8 @@
 
   function startTickDriver() {
     stopTickDriver();
-    if (!activeGameId || activeGame?.state?.phase !== "active") return;
+    if (!activeGameId || activeGame?.state?.phase !== "active" ||
+        activePlayers.find(player => player.user_id === uid())?.status !== "joined") return;
     tickTimer = window.setInterval(async () => {
       if (!activeGameId || !activeGame || activeGame.state?.phase !== "active" ||
           document.hidden || tickInFlight) return;
