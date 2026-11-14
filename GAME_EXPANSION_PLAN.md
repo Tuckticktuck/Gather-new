@@ -1,6 +1,6 @@
 # Gather Arcade Expansion — Implementation Plan
 
-Status: Phase 1 implementation, Supabase security/RPC review, deterministic CI, static validation, and GitHub Pages deployment pass on commit 339ed7c4fa4f26cfb61cc72bbcda92ee070e6b19; authenticated multi-account, reconnect, latency, and physical-device release verification remain outstanding
+Status: Phase 1 implementation, Supabase security/RPC review, deterministic CI, static validation, and GitHub Pages deployment pass; authenticated multi-account, reconnect, latency, and physical-device release verification remain outstanding
 Repository: `Tuckticktuck/Gather-new`
 Supabase project: `xrwldphmeafiakittcof`
 Hosting: GitHub Pages
@@ -240,13 +240,15 @@ For each migration:
 - [x] Confirmed deployed gather-snake-action (version 1) and gather-board-game-action (version 2) are ACTIVE, require JWT verification, and match their committed source files byte-for-byte.
 - [x] Confirmed the Snake tick/input/snapshot and board-game commit RPCs are service_role-only; client-facing game RPCs are authenticated-only (not anonymous). Snake input, UNO private state, and UNO rematch-offer tables deny direct client SELECT; the rematch-offer table has RLS enabled and no client policies.
 - [x] Confirmed UNO rematch-offer data is accessed through the joined-player-authorized rematch RPC flow rather than direct table access.
+- [x] Preserved finished UNO recap state when a participant leaves; pending rematch offers involving that participant are cancelled and participants notified.
+- [x] UNO rematch responses use a consistent game-before-offer lock order and verify all original players are still joined before starting a fresh deal.
 
 **Latest automated release verification (2026-11-14):** GitHub Actions run [43599491964](https://github.com/Tuckticktuck/Gather-new/actions/runs/43599491964) passed TypeScript compilation, all 28 deterministic tests, JavaScript syntax validation, static site validation, and the GitHub Pages deploy job on commit 339ed7c4fa4f26cfb61cc72bbcda92ee070e6b19. GitHub Pages deployment run [43599491622](https://github.com/Tuckticktuck/Gather-new/actions/runs/43599491622) also succeeded on that same commit.
 
 **Remaining release gates (not simulated or claimed as passed):** tests/e2e/README.md and tests/e2e/PHASE_1_SNAKE_RELEASE.md are test plans/checklists, not an executable authenticated browser suite. No dedicated E2E test users, disposable test project, or browser automation runner are provisioned in this repository. The live project must not be used for destructive multi-account lifecycle tests.
 - [ ] Run the Phase 1 E2E checklist using two player accounts and a third observer account, in a dedicated test environment.
 - [ ] Verify complete create/invite/join/ready/start/play/finish/leave/rematch cycles, including host departure, capacity, invitation decline, spectator restrictions, stale revisions, duplicate actions, and chat cleanup.
-- [ ] Re-run the UNO recap test with two signed-in players: both see I am done and Request rematch; confirm done/decline/accept flows and ensure no duplicate lobby or stale recap.
+- [ ] Re-run the UNO recap test with two signed-in players: both see I am done and Request rematch; confirm done/decline/accept flows, player-leave-during-recap cancellation, and ensure no duplicate lobby or stale recap.
 - [ ] Test reconnect, simultaneous inputs, latency, dropped requests, background-tab suspension, and host tick-driver handoff.
 - [ ] Validate iPhone Safari, Chromebook Chrome, and desktop layouts/accessibility; check touch controls, keyboard controls, fullscreen exit, safe-area spacing, and no clipping.
 - [ ] Decide whether the current client-prompted Edge Function tick cadence is adequate based on measured results; replace it only if the measured latency/background-tab behavior requires a persistent trusted simulation runtime.
