@@ -623,10 +623,17 @@
     inviteList.replaceChildren();
     const classicLive = getLiveGames().map(game => ({ kind: "classic", game }));
     const liveExternal = externalLiveGames.map(item => ({ kind: item.kind, game: item.game }));
-    const allLive = [...classicLive, ...liveExternal]
+    const dominoesLive = (window.GatherDominoes?.getLiveGames?.() || []).map(game => ({ kind: "dominoes", game }));
+    const allLiveById = new Map();
+    [...classicLive, ...liveExternal, ...dominoesLive].forEach(item => allLiveById.set(item.game.id, item));
+    const allLive = [...allLiveById.values()]
       .sort((a,b) => new Date(b.game?.updated_at || b.game?.created_at) - new Date(a.game?.updated_at || a.game?.created_at));
     const classicInvites = getPendingInvitations().map(game => ({ kind: "classic", game }));
-    const allInvites = [...classicInvites, ...externalInvitations.map(item => ({ kind: item.kind, game: item }))]
+    const dominoesInvites = (window.GatherDominoes?.getInvitations?.() || []).map(game => ({ kind: "dominoes", game }));
+    const allInvitesById = new Map();
+    [...classicInvites, ...externalInvitations.map(item => ({ kind: item.kind, game: item })), ...dominoesInvites]
+      .forEach(item => allInvitesById.set(item.game.id, item));
+    const allInvites = [...allInvitesById.values()]
       .sort((a,b) => new Date(b.game?.created_at) - new Date(a.game?.created_at));
 
     if (liveCount) liveCount.textContent = String(allLive.length);
@@ -638,8 +645,8 @@
       const card=node("article","games-card games-invitation-card games-live-card");
       const top=node("div","games-card-top"), identity=node("div","games-card-identity"), copy=node("div","games-card-copy");
       const classic=kind==="classic";
-      const title=classic?gameName(game.game_type):kind==="uno"?"UNO":"Ludo";
-      identity.append(node("span","games-card-mark",classic?"♟":kind==="uno"?"▦":"◉"));
+      const title=classic?gameName(game.game_type):kind==="uno"?"UNO":kind==="ludo"?"Ludo":"Dominoes";
+      identity.append(node("span","games-card-mark",classic?"♟":kind==="uno"?"▦":kind==="ludo"?"◉":"▰"));
       const other=classic?playerNames(game):memberName(game.created_by);
       copy.append(node("strong","",title),node("small","muted",other+" · "+conversationName(game.conversation_id)));
       identity.append(copy);
@@ -649,7 +656,8 @@
       actions.append(button("Open game","primary games-card-primary",()=>{
         if(classic)openGame(game);
         else if(kind==="uno")window.GatherUno?.openGame?.(game.id);
-        else window.GatherLudo?.openGame?.(game.id);
+        else if(kind==="ludo")window.GatherLudo?.openGame?.(game.id);
+        else window.GatherDominoes?.openGame?.(game.id);
       }));
       card.append(actions);liveList.append(card);
     });
@@ -660,6 +668,28 @@
         const card=makeGameCard(game,true);
         card.classList.add("games-invitation-card");
         inviteList.append(card);
+        return;
+      }
+      if(kind==="dominoes"){
+        const card=node("article","games-card games-invitation-card");
+        const top=node("div","games-card-top"),identity=node("div","games-card-identity"),copy=node("div","games-card-copy");
+        identity.append(node("span","games-card-mark","▰"));
+        copy.append(node("strong","","Dominoes invitation"),node("small","muted",memberName(game.created_by)+" invited you"));
+        identity.append(copy);
+        top.append(identity,node("span","games-status-pill status-pending","Your invitation"));
+        card.append(top,node("p","games-card-conversation muted tiny",conversationName(game.conversation_id)));
+        card.append(node("p","games-card-detail muted tiny","Join this table to receive your tiles when the host starts."));
+        const actions=node("div","games-card-actions");
+        actions.append(button("View invitation","primary games-card-primary",async()=>{
+          window.GatherDominoes?.openInvitation?.(game.id);
+          await refreshLiveCards();
+        }));
+        actions.append(button("Decline","outline",async()=>{
+          const result=await ctx.db.rpc("gather_dominoes_leave",{p_game_id:game.id});
+          if(result.error){toast(result.error.message||"Could not decline the invitation.");return;}
+          await refreshLiveCards();
+        }));
+        card.append(actions);inviteList.append(card);
         return;
       }
       const isUno=kind==="uno";
@@ -1744,6 +1774,7 @@
     openInvitation,
     getPendingInvitations,
     getLiveGames,
+    refreshLiveCards: renderCentralInvitations,
     respondToInvitation,
     refresh: () => refreshGames(true),
     shutdown
