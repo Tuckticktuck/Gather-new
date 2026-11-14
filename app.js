@@ -2102,37 +2102,32 @@ function subscribeNotifications(){
     .subscribe();
 }
 async function markNotificationRead(id){
-  const at=new Date().toISOString();
-  const result=await db.from("notifications").update({read_at:at}).eq("id",id).eq("recipient_id",S.user.id);
-  if(result.error){console.warn("Notification could not be marked read:",result.error.message);return false;}
-  const item=S.notifications.find(x=>x.id===id);if(item)item.read_at=at;
+  const result=await db.from("notifications").delete().eq("id",id).eq("recipient_id",S.user.id);
+  if(result.error){console.warn("Notification could not be dismissed:",result.error.message);return false;}
+  S.notifications=S.notifications.filter(item=>item.id!==id);
   renderNotifications();return true;
 }
 async function markAnnouncementNotificationsRead(announcementId){
   if(!S.user||!announcementId)return true;
   const at=new Date().toISOString();
-  const result=await db.from("notifications").update({read_at:at})
+  const result=await db.from("notifications").delete()
     .eq("recipient_id",S.user.id)
     .eq("kind","announcement")
-    .eq("announcement_id",announcementId)
-    .is("read_at",null);
+    .eq("announcement_id",announcementId);
   if(result.error){
     console.warn("Announcement notifications could not be marked read:",result.error.message);
     return false;
   }
-  S.notifications.forEach(item=>{
-    if(item.kind==="announcement"&&item.announcement_id===announcementId&&!item.read_at)item.read_at=at;
-  });
+  S.notifications=S.notifications.filter(item=>!(item.kind==="announcement"&&item.announcement_id===announcementId));
   renderNotifications();
   return true;
 }
 async function markAllNotificationsRead(){
   if(!S.user)return;
   const button=$("notifications-mark-all");button.disabled=true;
-  const result=await db.from("notifications").update({read_at:new Date().toISOString()}).eq("recipient_id",S.user.id).is("read_at",null);
-  if(result.error){toast("Notifications could not be marked read: "+result.error.message);button.disabled=false;return;}
-  S.notifications.forEach(item=>{if(!item.read_at)item.read_at=new Date().toISOString();});
-  renderNotifications();toast("All notifications marked as read.");
+  const result=await db.from("notifications").delete().eq("recipient_id",S.user.id);
+  if(result.error){toast("Notifications could not be cleared: "+result.error.message);button.disabled=false;return;}
+  S.notifications=[];renderNotifications();toast("Notifications cleared.");
 }
 function openNotifications(){
   $("notifications-modal").hidden=false;
@@ -2143,9 +2138,9 @@ async function markNotificationGroupRead(items){
   const unread=(items||[]).filter(item=>item?.id&&!item.read_at);
   if(!unread.length)return true;
   const ids=unread.map(item=>item.id),at=new Date().toISOString();
-  const result=await db.from("notifications").update({read_at:at}).eq("recipient_id",S.user.id).in("id",ids);
-  if(result.error){console.warn("Grouped message notifications could not be marked read:",result.error.message);return false;}
-  S.notifications.forEach(item=>{if(ids.includes(item.id))item.read_at=at;});
+  const result=await db.from("notifications").delete().eq("recipient_id",S.user.id).in("id",ids);
+  if(result.error){console.warn("Grouped message notifications could not be dismissed:",result.error.message);return false;}
+  S.notifications=S.notifications.filter(item=>!ids.includes(item.id));
   renderNotifications();
   return true;
 }
@@ -3433,7 +3428,6 @@ async function loadMessageReactions(conversationId,messageIds,merge=false){
 function renderMessageReactionArea(message){
   const reactions=S.messageReactions[message.id]||[];
   const pickerOpen=!S.selectingMessages&&S.openReactionPickerMessageId===message.id;
-  if(!reactions.length&&!pickerOpen)return null;
   const area=el("div","message-reaction-area");
   if(reactions.length){
     const groups=new Map();
@@ -3460,6 +3454,15 @@ function renderMessageReactionArea(message){
     });
     area.append(badges);
   }
+  const quick=el("button","message-reaction-quick","＋");
+  quick.type="button";quick.setAttribute("aria-label","Add a reaction");
+  quick.addEventListener("click",event=>{
+    event.stopPropagation();
+    S.openMessageMenuId=null;
+    S.openReactionPickerMessageId=S.openReactionPickerMessageId===message.id?null:message.id;
+    renderMessages(true);
+  });
+  area.append(quick);
   if(pickerOpen){
     const picker=el("div","message-reaction-picker");
     picker.setAttribute("role","group");
@@ -3770,24 +3773,42 @@ function renderMessages(preserveScroll=false){
     const samePrevious=S.messages[index-1]?.sender_id===m.sender_id;
     const sameNext=S.messages[index+1]?.sender_id===m.sender_id;
     const grouping=samePrevious?(sameNext?" group-middle":" group-last"):(sameNext?" group-first":"");
+    const previousMessage=S.messages[index-1];
+    if(previousMessage){
+      const gapMs=new Date(m.created_at).getTime()-new Date(previousMessage.created_at).getTime();
+      if(Number.isFinite(gapMs)&&gapMs>=60*60*1000){
+        const currentDate=new Date(m.created_at),previousDate=new Date(previousMessage.created_at);
+        const sameDay=currentDate.toDateString()===previousDate.toDateString();
+        const stamp=currentDate.toLocaleString([],sameDay?{hour:"numeric",minute:"2-digit"}:{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
+        list.append(el("div","message-time-separator",stamp));
+      }
+    }
     if(S.unreadDividerMessageId===m.id)list.append(el("div","new-messages-divider","New messages"));
     const row=el("div","message"+(mine?" mine":"")+grouping+(samePrevious?" group-continued":""));
     row.dataset.messageId=m.id;
     if(!suppressEntryAnimation&&!existingMessageIds.has(String(m.id)))row.classList.add("gather-message-enter");
     const bubble=el("div","bubble"),meta=el("div","meta");
-    if(showSenderNames){
-      if(!samePrevious){
-        if(mine)meta.append(el("strong","","You"));
-        else {
-          const author=el("button","message-profile-link",p?.display_name||"Member");
-          author.type="button";
-          author.addEventListener("click",()=>openPublicProfile(m.sender_id));
-          meta.append(author);
-        }
-      }else meta.classList.add("meta-continued");
-    }
+    if(showSenderNames&&!samePrevious){
+      const authorName=mine?"You":(p?.display_name||"Member");
+      const authorAvatar=avatar(authorName,p?.avatar_data||null);
+      authorAvatar.classList.add("message-group-avatar");
+      if(!mine){
+        authorAvatar.setAttribute("role","button");
+        authorAvatar.setAttribute("tabindex","0");
+        authorAvatar.setAttribute("aria-label","View "+authorName+"'s profile");
+        authorAvatar.addEventListener("click",()=>openPublicProfile(m.sender_id));
+        authorAvatar.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();openPublicProfile(m.sender_id);}});
+      }
+      meta.append(authorAvatar);
+      if(mine)meta.append(el("strong","","You"));
+      else {
+        const author=el("button","message-profile-link",authorName);
+        author.type="button";
+        author.addEventListener("click",()=>openPublicProfile(m.sender_id));
+        meta.append(author);
+      }
+    }else if(showSenderNames&&samePrevious)meta.classList.add("meta-continued");
     if(m.is_admin_message)meta.append(el("small","message-admin-label","Gather Admin"));
-    meta.append(el("time","",new Date(m.created_at).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})));
     if(m.forwarded_from_id)meta.append(el("small","message-forwarded-label","Forwarded"));
     if(m.edited_at)meta.append(el("small","message-edited-label","edited"));
     if(!S.selectingMessages){
@@ -3913,6 +3934,23 @@ function renderMessages(preserveScroll=false){
       row.classList.toggle("selected",S.selectedMessageIds.has(m.id));
     }
     row.append(bubble);list.append(row);
+    if(!S.selectingMessages){
+      let holdTimer=null;
+      const clearHold=()=>{if(holdTimer){clearTimeout(holdTimer);holdTimer=null;}};
+      row.addEventListener("pointerdown",event=>{
+        if(event.pointerType==="mouse"||event.target.closest("button,a,input,textarea"))return;
+        clearHold();
+        holdTimer=setTimeout(()=>{
+          S.openReactionPickerMessageId=null;S.openMessageMenuId=m.id;renderMessages(true);
+        },520);
+      },{passive:true});
+      ["pointerup","pointercancel","pointerleave"].forEach(type=>row.addEventListener(type,clearHold,{passive:true}));
+      row.addEventListener("contextmenu",event=>{
+        if(event.target.closest("button,a,input,textarea"))return;
+        event.preventDefault();
+        S.openReactionPickerMessageId=null;S.openMessageMenuId=m.id;renderMessages(true);
+      });
+    }
   });
   if(S.initialChatScrollLockId===S.active){
     // Keep the view anchored to the latest message while message content
