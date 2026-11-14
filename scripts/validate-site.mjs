@@ -67,6 +67,17 @@ assert.match(boardGameFunction, /gather_board_game_commit_move/, "The endpoint m
 assert.match(boardGameRules, /Captures must be taken when available/, "Checkers must enforce mandatory captures");
 assert.match(boardGameMigration, /revoke execute on function public\.gather_game_move/i, "The legacy client-submitted state RPC must be disabled");
 
+const unoClient = readFileSync(join(root, "uno.js"), "utf8");
+const unoCss = readFileSync(join(root, "uno.css"), "utf8");
+const unoRematchMigration = readFileSync(join(root, "supabase/migrations/20261114021319_fix_uno_recap_actions_and_standalone_rematch.sql"), "utf8");
+assert.ok(unoClient.includes("finish.append(actions)"), "UNO recap must render its action buttons");
+assert.ok(unoClient.includes('alreadyDone?"You are done":"I am done"'), "UNO recap must show the player's done state");
+assert.ok(unoClient.includes('state.rematch_pending?"Rematch requested":"Request rematch"'), "UNO recap must show rematch availability");
+assert.ok(unoClient.includes('if(g.status==="completed")'), "UNO recap must provide a way back after the lobby closes");
+assert.ok(unoCss.includes(".uno-finished-panel>.uno-actions"), "UNO recap actions must have dedicated responsive styling");
+assert.ok(unoRematchMigration.includes("g.conversation_id is not null"), "UNO rematch access must support both conversation-linked and standalone lobbies");
+assert.ok(unoRematchMigration.includes("status = 'joined'"), "UNO rematch requests must require active match membership");
+
 const cssFiles = localAssets.filter(ref => /\.css(?:[?#]|$)/i.test(ref));
 for (const ref of cssFiles) {
   const url = new URL(ref, base);
