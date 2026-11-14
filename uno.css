@@ -650,3 +650,11 @@
 @keyframes uno-results-arrive{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
 @media(max-width:600px){.uno-direction-ring{inset:22% 13%}.uno-direction-ring small{bottom:5%;font-size:7px}}
 @media(prefers-reduced-motion:reduce){.uno-turn-message,.uno-in-match .uno-discard-target>.uno-card,.uno-in-match .uno-card-drawn,.uno-results-hero{animation:none!important}}
+
+/* Small seat-level feedback makes draws, plays, and penalties legible at a glance. */
+.uno-seat{overflow:visible}
+.uno-seat.has-card-change{animation:uno-seat-card-change .52s ease-out both}
+.uno-card-change{position:absolute;right:-5px;top:-10px;z-index:5;display:grid;place-items:center;min-width:25px;height:22px;padding:0 5px;border:1px solid rgba(200,255,220,.8);border-radius:999px;background:#0e6a43;color:#dfffea;font-size:10px;font-weight:950;box-shadow:0 3px 12px #0008,0 0 15px rgba(105,255,167,.32);animation:uno-count-float .7s ease-out both}
+@keyframes uno-count-float{0%{opacity:0;transform:translateY(9px) scale(.75)}25%{opacity:1;transform:translateY(0) scale(1.08)}100%{opacity:0;transform:translateY(-10px) scale(.92)}}
+@keyframes uno-seat-card-change{0%,100%{filter:none}35%{filter:brightness(1.35) drop-shadow(0 0 11px var(--uno-glow))}}
+@media(prefers-reduced-motion:reduce){.uno-seat.has-card-change,.uno-card-change{animation:none!important}.uno-card-change{opacity:1}}
