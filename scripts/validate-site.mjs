@@ -118,8 +118,8 @@ assert.match(unoClient, /visibilitychange",refreshOnReturn/, "UNO must catch up 
 assert.doesNotMatch(unoClient, /setInterval/, "UNO must not poll on a timer");
 assert.match(unoClient, /if\(activeGameId!==gameId\)return/, "UNO must ignore stale responses from a previously opened lobby");
 assert.match(unoClient, /playerToggle.hidden=!started/, "UNO player controls must not show an inactive Players button in the waiting room");
-assert.ok(html.includes("uno.js?v=20261114-arcade-ui-4") && serviceWorker.includes("./uno.js?v=20261114-arcade-ui-3"), "UNO arcade UI changes must invalidate the cached client asset");
-assert.ok(html.includes("uno.css?v=20261114-neon-arcade-3") && serviceWorker.includes("./uno.css?v=20261114-neon-arcade-2"), "UNO arcade theme changes must invalidate the cached stylesheet");
+assert.ok(html.includes("uno.js?v=20261114-arcade-ui-4") && serviceWorker.includes("./uno.js?v=20261114-arcade-ui-4"), "UNO arcade UI changes must invalidate the cached client asset");
+assert.ok(html.includes("uno.css?v=20261114-neon-arcade-3") && serviceWorker.includes("./uno.css?v=20261114-neon-arcade-3"), "UNO arcade theme changes must invalidate the cached stylesheet");
 assert.ok(unoClient.includes("uno-seat-ring") && unoClient.includes("uno-direction-ring"), "UNO must render player seats and a direction indicator around the table");
 assert.ok(unoClient.includes("selectedCardId") && unoClient.includes("uno-selection-preview"), "UNO must provide a selected-card preview");
 assert.ok(unoClient.includes('addEventListener("drop"') && unoClient.includes("playSelected"), "UNO must support drag-and-drop and tap-to-discard interactions");
