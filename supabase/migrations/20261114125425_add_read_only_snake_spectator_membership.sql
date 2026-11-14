@@ -127,20 +127,13 @@ BEGIN
   IF v_game.id IS NULL OR v_game.status<>'active' THEN
     RAISE EXCEPTION 'This Snake Arena lobby is already closed.';
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM public.gather_multiplayer_players
-    WHERE game_id=p_game_id AND user_id=auth.uid() AND status IN ('joined','spectating')) THEN
-    RAISE EXCEPTION 'You are not a joined player or spectator in this Snake Arena match.';
-  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM public.gather_multiplayer_players
+     WHERE game_id=p_game_id AND user_id=auth.uid() AND status='joined'
+  ) THEN RAISE EXCEPTION 'You are not a joined player in this Snake Arena lobby.'; END IF;
   UPDATE public.gather_multiplayer_players
      SET status='left',ready=false,updated_at=now()
    WHERE game_id=p_game_id AND user_id=auth.uid();
-  IF EXISTS (SELECT 1 FROM public.gather_multiplayer_players
-    WHERE game_id=p_game_id AND user_id=auth.uid() AND status='left')
-     AND NOT EXISTS (SELECT 1 FROM jsonb_array_elements(coalesce(v_game.state->'snakes','[]'::jsonb)) s(value)
-                      WHERE s.value->>'user_id'=auth.uid()::text) THEN
-    UPDATE public.gather_multiplayer_games SET revision=revision+1,updated_at=now() WHERE id=p_game_id;
-    RETURN true;
-  END IF;
   DELETE FROM private.gather_snake_inputs WHERE game_id=p_game_id AND user_id=auth.uid();
   IF v_game.state->>'phase'='lobby' THEN
     IF v_game.created_by=auth.uid() THEN
