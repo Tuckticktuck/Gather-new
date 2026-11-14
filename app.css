@@ -3724,3 +3724,40 @@ html[data-theme="light"] .offline-status{color:#59421d;background:#fff4d8;border
 .workspace-switch-tab .workspace-game-icon{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;color:var(--accent)}
 .workspace-switch-tab .workspace-game-icon svg{display:block;width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .workspace-switch-tab.active .workspace-game-icon{color:var(--accent-text)}
+
+
+/* Messaging refinement: centered timeline separators, compact group identity,
+   and an unobtrusive quick-reaction affordance. */
+.message-time-separator{
+  display:flex;align-items:center;justify-content:center;gap:12px;
+  width:100%;margin:17px 0 13px;color:var(--muted);
+  font-size:calc(10px * var(--font-scale,1));font-weight:650;
+  letter-spacing:.02em;text-align:center;
+}
+.message-time-separator::before,.message-time-separator::after{
+  content:"";width:min(12%,64px);height:1px;background:var(--line);opacity:.8;
+}
+.message-group-avatar{
+  flex:none;width:25px;height:25px;border-radius:50%;
+  align-self:center;overflow:hidden;font-size:calc(9px * var(--font-scale,1));
+}
+.message-group-avatar img{width:100%;height:100%;object-fit:cover}
+.message-group-avatar[role="button"]{cursor:pointer}
+.message-group-avatar[role="button"]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.message-reaction-area{position:relative;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.message-reaction-quick{
+  display:inline-grid;place-items:center;width:25px;height:25px;
+  border:1px solid var(--accent-outline-soft);border-radius:50%;
+  color:var(--muted);background:var(--accent-panel-raised);
+  font-size:15px;line-height:1;opacity:0;transform:scale(.94);
+  transition:opacity .14s ease,transform .14s ease,border-color .14s ease,color .14s ease;
+}
+.message:hover .message-reaction-quick,.message-reaction-quick:focus-visible,
+.message-reaction-quick:focus{opacity:1;transform:scale(1)}
+.message-reaction-quick:hover{color:var(--accent-text);border-color:var(--accent-outline)}
+@media(hover:none),(max-width:720px){
+  .message-reaction-quick{opacity:.82;transform:none}
+}
+@media(prefers-reduced-motion:reduce){
+  .message-reaction-quick{transition:none}
+}
