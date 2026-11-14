@@ -93,3 +93,15 @@
 .dominoes-hand-tile.is-dragging{position:relative;z-index:8;transform:scale(1.06) translateY(-5px);border-color:var(--domino-accent);box-shadow:0 12px 28px rgba(0,0,0,.32),0 0 0 2px color-mix(in srgb,var(--domino-accent) 45%,transparent);opacity:.88}
 .dominoes-end-target.is-drop-target{transform:scale(1.04);transition:transform .12s ease}
 @media(hover:none){.dominoes-hand-tile{cursor:grab}.dominoes-hand-tile:active{cursor:grabbing}}
+
+/* Traditional continuous Dominoes chain: a large, pannable tabletop map. */
+.dominoes-table{overflow:visible}
+.dominoes-board-help{margin:8px 2px 10px;color:var(--muted);font-size:.72rem;line-height:1.45;text-align:center}
+.dominoes-board-viewport{position:relative;width:100%;max-height:min(58vh,560px);min-height:220px;overflow:auto;overscroll-behavior:contain;touch-action:pan-x pan-y;-webkit-overflow-scrolling:touch;border:1px solid color-mix(in srgb,var(--domino-accent) 22%,transparent);border-radius:14px;background-color:#071b1d;background-image:radial-gradient(color-mix(in srgb,var(--domino-accent) 18%,transparent) .8px,transparent .8px);background-size:22px 22px;scrollbar-width:thin;scrollbar-color:var(--domino-accent) rgba(255,255,255,.08)}
+.dominoes-board-viewport:focus-visible{outline:2px solid var(--domino-accent);outline-offset:2px}
+.dominoes-chain{position:relative;display:block;max-width:none;min-width:100%;min-height:0;margin:0;align-content:initial}
+.dominoes-board-tile{position:absolute;left:0;top:0;width:70px;height:34px;padding:0;background:transparent;box-shadow:none}
+.dominoes-board-tile .dominoes-tile{width:70px;height:34px}
+.dominoes-board-tile.is-turn-tile .dominoes-tile{transform:rotate(90deg)}
+.dominoes-board-viewport .dominoes-empty{position:sticky;left:12px;top:12px;width:max-content}
+@media(max-width:720px){.dominoes-board-viewport{max-height:52vh;min-height:200px}.dominoes-board-help{text-align:left}}
