@@ -3890,8 +3890,8 @@ function renderMessages(preserveScroll=false){
       bubble.append(pick);
       row.classList.toggle("selected",S.selectedMessageIds.has(m.id));
     }
-    row.append(bubble);
     if(senderAvatar)row.append(senderAvatar);
+    row.append(bubble);
     list.append(row);
     if(!S.selectingMessages){
       let holdTimer=null;
