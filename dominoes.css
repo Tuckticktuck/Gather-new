@@ -85,3 +85,11 @@
 .dominoes-seats{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:auto auto auto;align-items:center}
 .dominoes-seats .dominoes-seat[data-seat="0"]{grid-area:1/2}.dominoes-seats .dominoes-seat[data-seat="1"]{grid-area:2/3}.dominoes-seats .dominoes-seat[data-seat="2"]{grid-area:3/2}.dominoes-seats .dominoes-seat[data-seat="3"]{grid-area:2/1}
 .dominoes-end-target{display:inline-flex;align-items:center;justify-content:center;gap:7px;flex-wrap:wrap}
+
+
+/* Pointer-based tile dragging works on touchscreens as well as mouse devices. */
+.dominoes-hand{touch-action:pan-y;overscroll-behavior-x:contain}
+.dominoes-hand-tile{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.dominoes-hand-tile.is-dragging{position:relative;z-index:8;transform:scale(1.06) translateY(-5px);border-color:var(--domino-accent);box-shadow:0 12px 28px rgba(0,0,0,.32),0 0 0 2px color-mix(in srgb,var(--domino-accent) 45%,transparent);opacity:.88}
+.dominoes-end-target.is-drop-target{transform:scale(1.04);transition:transform .12s ease}
+@media(hover:none){.dominoes-hand-tile{cursor:grab}.dominoes-hand-tile:active{cursor:grabbing}}
