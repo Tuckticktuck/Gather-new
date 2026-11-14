@@ -181,7 +181,9 @@ Deno.serve(async (request: Request) => {
     if (game.game_type === "chess") {
       transition = validateAndApplyChessMove(game, actorId, body.action);
     } else {
-      transition = applyBoardGameMove(game, actorId, body.action);
+      const boardTransition = applyBoardGameMove(game, actorId, body.action);
+      if (!boardTransition) throw new Error("That move is not valid.");
+      transition = boardTransition;
     }
   } catch (error) {
     return jsonResponse({ error: error instanceof Error ? error.message : "That move is not valid." }, 400);
