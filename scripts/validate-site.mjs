@@ -58,7 +58,7 @@ assert.match(gameMoveMigration, /v_winner <> v_uid/, "A turn-based player must n
 
 const boardGameFunction = readFileSync(join(root, "supabase/functions/gather-board-game-action/index.ts"), "utf8");
 const boardGameRules = readFileSync(join(root, "supabase/functions/gather-board-game-action/board-rules.mjs"), "utf8");
-const boardGameMigration = readFileSync(join(root, "supabase/migrations/20261114120000_authoritative_board_game_moves.sql"), "utf8");
+const boardGameMigration = readFileSync(join(root, "supabase/migrations/20261114015809_authoritative_board_game_moves.sql"), "utf8");
 const gamesClient = readFileSync(join(root, "games.js"), "utf8");
 assert.match(gamesClient, /functions\.invoke\("gather-board-game-action"/, "Board-game clients must submit move intents to the Edge Function");
 assert.doesNotMatch(gamesClient, /rpc\("gather_game_move"/, "Board-game clients must not submit full client-authored states");
