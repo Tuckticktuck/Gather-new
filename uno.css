@@ -457,3 +457,9 @@
 .uno-modal .uno-in-match>.uno-actions{display:flex;grid-template-columns:none}
 .uno-modal .uno-in-match>.uno-actions button{width:auto;min-height:36px;padding:7px 12px;font-size:11px}
 @media(max-width:600px){.uno-modal:has(.uno-in-match){height:calc(100dvh - 12px)}}
+
+
+.uno-finished-panel>.uno-actions{width:min(100%,440px);justify-content:center;gap:10px;margin:8px 0 2px}
+.uno-finished-panel>.uno-actions button{flex:1 1 160px;min-height:44px;white-space:normal}
+.uno-finished-panel>.uno-actions button:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+@media(max-width:520px){.uno-finished-panel>.uno-actions{display:grid;grid-template-columns:1fr;width:100%}.uno-finished-panel>.uno-actions button{width:100%;min-height:46px}}
