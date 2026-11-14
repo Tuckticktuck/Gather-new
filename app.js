@@ -3310,6 +3310,7 @@ function renderMessageSkeletons(){
     const row=el("div","message-skeleton-row"+(index%2?" is-mine":""));
     const bubble=el("div","message-skeleton-bubble");bubble.style.width=width;
     bubble.append(el("span","message-skeleton-line"),el("span","message-skeleton-line short"));
+    if(senderAvatar)row.append(senderAvatar);
     row.append(bubble);list.append(row);
   });
 }
@@ -3428,15 +3429,6 @@ function renderMessageReactionArea(message){
     });
     area.append(badges);
   }
-  const quick=el("button","message-reaction-quick","＋");
-  quick.type="button";quick.setAttribute("aria-label","Add a reaction");
-  quick.addEventListener("click",event=>{
-    event.stopPropagation();
-    S.openMessageMenuId=null;
-    S.openReactionPickerMessageId=S.openReactionPickerMessageId===message.id?null:message.id;
-    renderMessages(true);
-  });
-  area.append(quick);
   if(pickerOpen){
     const picker=el("div","message-reaction-picker");
     picker.setAttribute("role","group");
@@ -3765,52 +3757,21 @@ function renderMessages(preserveScroll=false){
     row.dataset.messageId=m.id;
     if(!suppressEntryAnimation&&!existingMessageIds.has(String(m.id)))row.classList.add("gather-message-enter");
     const bubble=el("div","bubble"),meta=el("div","meta");
-    if(showSenderNames&&senderChanged){
-      const authorName=mine?"You":(p?.display_name||"Member");
-      const authorAvatar=avatar(authorName,p?.avatar_data||null);
-      authorAvatar.classList.add("message-group-avatar");
-      if(!mine){
-        authorAvatar.setAttribute("role","button");
-        authorAvatar.setAttribute("tabindex","0");
-        authorAvatar.setAttribute("aria-label","View "+authorName+"'s profile");
-        authorAvatar.addEventListener("click",()=>openPublicProfile(m.sender_id));
-        authorAvatar.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();openPublicProfile(m.sender_id);}});
-      }
-      meta.append(authorAvatar);
-      if(mine)meta.append(el("strong","","You"));
-      else {
-        const author=el("button","message-profile-link",authorName);
-        author.type="button";
-        author.addEventListener("click",()=>openPublicProfile(m.sender_id));
-        meta.append(author);
-      }
-    }else if(showSenderNames&&samePrevious)meta.classList.add("meta-continued");
+    const showSenderAvatar=showSenderNames&&!mine&&!samePrevious;
+    let senderAvatar=null;
+    if(showSenderAvatar){
+      senderAvatar=avatar(p?.display_name||"Member",p?.avatar_data||null);
+      senderAvatar.classList.add("message-group-avatar");
+      senderAvatar.setAttribute("role","button");
+      senderAvatar.setAttribute("tabindex","0");
+      senderAvatar.setAttribute("aria-label","View sender profile");
+      senderAvatar.addEventListener("click",()=>openPublicProfile(m.sender_id));
+      senderAvatar.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();openPublicProfile(m.sender_id);}});
+    }
     if(m.is_admin_message)meta.append(el("small","message-admin-label","Gather Admin"));
     if(m.forwarded_from_id)meta.append(el("small","message-forwarded-label","Forwarded"));
     if(m.edited_at)meta.append(el("small","message-edited-label","edited"));
     if(!S.selectingMessages){
-      const quickReact=el("button","message-quick-react","＋");
-      quickReact.type="button";quickReact.setAttribute("aria-label","Add reaction");quickReact.title="Add reaction";
-      quickReact.addEventListener("click",event=>{
-        event.stopPropagation();
-        S.openReactionPickerMessageId=S.openReactionPickerMessageId===m.id?null:m.id;
-        S.openMessageMenuId=null;
-        renderMessages(true);
-      });
-      meta.append(quickReact);
-      const menuWrap=el("div","message-menu-wrap");
-      const trigger=el("button","message-action-trigger","⋯");
-      trigger.type="button";
-      trigger.setAttribute("aria-label","Message actions");
-      trigger.setAttribute("aria-haspopup","menu");
-      trigger.setAttribute("aria-expanded",String(S.openMessageMenuId===m.id));
-      trigger.addEventListener("click",event=>{
-        event.stopPropagation();
-        S.openReactionPickerMessageId=null;
-        S.openReactionPickerMessageId=null;
-        S.openMessageMenuId=S.openMessageMenuId===m.id?null:m.id;
-        renderMessages(true);
-      });
       const menu=el("div","message-action-menu");
       menu.hidden=S.openMessageMenuId!==m.id;
       menu.setAttribute("role","menu");
@@ -3827,7 +3788,7 @@ function renderMessages(preserveScroll=false){
         menu.append(action);
       };
       addAction("Reply",()=>beginReply(m));
-      addAction(S.openReactionPickerMessageId===m.id?"Close reaction picker":"React",()=>{S.openReactionPickerMessageId=S.openReactionPickerMessageId===m.id?null:m.id;renderMessages(true);});
+      addAction("Add reaction",()=>{S.openReactionPickerMessageId=m.id;renderMessages(true);});
       if(mine&&m.body&&!m.is_admin_message&&S.messageRestrictionLoaded&&!activeMessageRestriction())addAction("Edit",()=>editOwnMessage(m));
       if(m.edited_at)addAction("View edit history",()=>openMessageEditHistory(m));
       if(mine&&m._undoExpiresAt>Date.now())addAction("Undo send",()=>undoSendMessage(m));
@@ -3836,16 +3797,14 @@ function renderMessages(preserveScroll=false){
       addAction(S.pinnedMessages.some(x=>x.message_id===m.id)?"Unpin message":"Pin message",()=>togglePinnedMessage(m));
       addAction(S.savedMessageIds.has(m.id)?"Remove saved message":"Save message",()=>toggleSavedMessage(m));
       if(!mine&&m.sender_id)addAction("Report",()=>openReport(m.sender_id,m.id));
-      menuWrap.append(trigger,menu);
-      meta.append(menuWrap);
       if(!menu.hidden){
         menu.dataset.floatingMenu="true";
-        menu._anchorTrigger=trigger;
+        menu._anchorTrigger=bubble;
         document.body.append(menu);
-        requestAnimationFrame(()=>positionMessageActionMenu(menu,trigger));
+        requestAnimationFrame(()=>positionMessageActionMenu(menu,bubble));
       }
     }
-    bubble.append(meta);
+    if(meta.childElementCount)bubble.append(meta);
     if(m.reply_to_id){
       const quote=el("div","reply-preview"),target=m.reply_preview;
       const quoteName=target?.is_admin_message?"Gather Admin":(target?.sender_id?(target.sender_id===S.user.id?"You":(S.profiles[target.sender_id]?.display_name||"Member")):"Reply");
