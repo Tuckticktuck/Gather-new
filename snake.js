@@ -12,8 +12,10 @@
   let panelOpen = false;
   let busy = false;
   let tickTimer = null;
-  let refreshTimer = null;
   let resizeObserver = null;
+  let lifecycleEventsBound = false;
+  let realtimeEverSubscribed = false;
+  let resumeRefreshInFlight = false;
   let tickInFlight = false;
   let inputInFlight = false;
   let lastDirectionSentAt = 0;
@@ -59,10 +61,45 @@
     overlay.addEventListener("click", e => { if (e.target === overlay) close(); });
   }
 
+  async function refreshOnResume() {
+    if (!ctx || !uid() || document.hidden || resumeRefreshInFlight) return;
+    resumeRefreshInFlight = true;
+    try {
+      await refresh();
+    } catch (error) {
+      if (panelOpen) setStatus(error?.message || "Could not refresh Snake Arena after reconnecting.");
+    } finally {
+      resumeRefreshInFlight = false;
+    }
+  }
+
+  function handleVisibilityChange() {
+    if (!document.hidden) void refreshOnResume();
+  }
+
+  function handleOnline() {
+    void refreshOnResume();
+  }
+
+  function bindLifecycleEvents() {
+    if (lifecycleEventsBound) return;
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("online", handleOnline);
+    lifecycleEventsBound = true;
+  }
+
+  function unbindLifecycleEvents() {
+    if (!lifecycleEventsBound) return;
+    document.removeEventListener("visibilitychange", handleVisibilityChange);
+    window.removeEventListener("online", handleOnline);
+    lifecycleEventsBound = false;
+  }
+
   async function init(options) {
     ctx = options;
     cachedProfiles = profiles();
     mount();
+    bindLifecycleEvents();
     if (!channel) {
       channel = ctx.db.channel("gather-snake-" + (uid() || "member"))
         .on("postgres_changes", { event: "*", schema: "public", table: "gather_multiplayer_games" }, payload => {
@@ -76,7 +113,12 @@
           if (activeGameId && row?.game_id === activeGameId) void loadPlayers(activeGameId).then(render);
           else void refresh();
         })
-        .subscribe();
+        .subscribe(status => {
+          if (status === "SUBSCRIBED") {
+            if (realtimeEverSubscribed) void refreshOnResume();
+            realtimeEverSubscribed = true;
+          }
+        });
     }
     await refresh();
   }
@@ -827,6 +869,8 @@
 
   function shutdown() {
     stopTickDriver();
+    unbindLifecycleEvents();
+    realtimeEverSubscribed = false;
     if (channel && ctx?.db) ctx.db.removeChannel(channel);
     channel = null;
     ctx = null;
