@@ -78,6 +78,9 @@ assert.match(unoHouseRulesMigration, /cards_drawn[\s\S]*Your turn was passed/i, 
 assert.match(unoHouseRulesMigration, /skipturn:=\(n=2\)/i, "UNO Reverse must only skip the next turn in a two-player game");
 assert.ok(unoClient.includes("gather_uno_set_house_rules") && unoClient.includes("uno-house-rules"), "UNO lobby must expose host controls for shared house rules");
 assert.ok(unoClient.includes("ruleSummary") && unoClient.includes("wild4_anytime"), "UNO lobby and active game must display the shared rule configuration");
+const unoHouseRulesFollowup = readFileSync(join(root, "supabase/migrations/20261114185000_uno_house_rules_late_join_and_ready_reset.sql"), "utf8");
+assert.match(unoHouseRulesFollowup, /starting_hand_size[\s\S]*for i in 1\.\./i, "Late-joining UNO players must receive the configured starting hand size");
+assert.match(unoHouseRulesFollowup, /SET ready = false[\s\S]*status = 'joined'/i, "Changing UNO house rules must clear existing ready confirmations");
 const unoRematchMigration = readFileSync(join(root, "supabase/migrations/20261114021319_fix_uno_recap_actions_and_standalone_rematch.sql"), "utf8");
 const unoRematchOfferRlsMigration = readFileSync(join(root, "supabase/migrations/20261114131141_secure_uno_rematch_offer_table.sql"), "utf8");
 const unoRecapLeaveMigration = readFileSync(join(root, "supabase/migrations/20261114133052_preserve_uno_recap_when_player_leaves.sql"), "utf8");
