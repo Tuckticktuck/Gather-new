@@ -619,6 +619,24 @@
       });
       actions.append(ready);
     }
+    if (me?.status === "spectating" && state.phase === "lobby") {
+      const joinedCount = activePlayers.filter(player => player.status === "joined").length;
+      const maxPlayers = Number(activeGame.settings?.max_players || 8);
+      const joinAsPlayer = btn(joinedCount >= maxPlayers ? "Lobby full" : "Join as player", "primary", async () => {
+        joinAsPlayer.disabled = true;
+        const color = await chooseColor(activeGameId);
+        const result = await ctx.db.rpc("gather_snake_join", { p_game_id: activeGameId, p_color: color });
+        if (result.error) {
+          toast(result.error.message || "Could not join as a player.");
+          joinAsPlayer.disabled = false;
+        } else {
+          toast("You joined Snake Arena as a player.");
+          await loadGame(false);
+        }
+      });
+      joinAsPlayer.disabled = joinedCount >= maxPlayers;
+      actions.append(joinAsPlayer);
+    }
     if (host) {
       const start = btn("Start match", "primary", async () => {
         start.disabled = true;
@@ -630,7 +648,7 @@
         activePlayers.some(p => p.status === "joined" && !p.ready);
       actions.append(start);
     }
-    actions.append(btn("Leave lobby", "outline", async () => {
+    actions.append(btn(me?.status === "spectating" ? "Stop watching" : "Leave lobby", "outline", async () => {
       const r = await ctx.db.rpc("gather_snake_leave", { p_game_id: activeGameId });
       if (r.error) toast(r.error.message);
       else { activeGameId = null; activeGame = null; stopTickDriver(); await refresh(); renderPanel(); }
