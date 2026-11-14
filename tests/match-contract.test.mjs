@@ -24,8 +24,8 @@ test("invited but not joined players cannot mutate", () => {
   assert.equal(authorizeMatchCommand({ ...base, memberStatus: "invited" }).reason, "not-joined");
 });
 
-test("spectators cannot mutate", () => {
-  assert.equal(authorizeMatchCommand({ ...base, memberStatus: "spectator" }).reason, "not-joined");
+test("spectating roster members cannot mutate", () => {
+  assert.equal(authorizeMatchCommand({ ...base, memberStatus: "spectating" }).reason, "not-joined");
 });
 
 test("host-only actions reject ordinary joined players", () => {
