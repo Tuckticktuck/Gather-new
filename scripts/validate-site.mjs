@@ -74,6 +74,9 @@ assert.ok(unoClient.includes("finish.append(actions)"), "UNO recap must render i
 assert.ok(unoClient.includes('alreadyDone?"You are done":"I am done"'), "UNO recap must show the player's done state");
 assert.ok(unoClient.includes('state.rematch_pending?"Rematch requested":"Request rematch"'), "UNO recap must show rematch availability");
 assert.ok(unoClient.includes('if(g.status==="completed")'), "UNO recap must provide a way back after the lobby closes");
+assert.ok(unoClient.includes('call("gather_uno_done"'), "UNO done button must persist the player's confirmation");
+assert.ok(unoClient.includes('call("gather_uno_request_rematch"'), "UNO rematch button must create a multiplayer rematch offer");
+assert.ok(unoClient.includes('call("gather_uno_respond_rematch"'), "UNO rematch notifications must support accept or decline responses");
 assert.ok(unoCss.includes(".uno-finished-panel>.uno-actions"), "UNO recap actions must have dedicated responsive styling");
 assert.ok(unoRematchMigration.includes("g.conversation_id is not null"), "UNO rematch access must support both conversation-linked and standalone lobbies");
 assert.ok(unoRematchMigration.includes("status = 'joined'"), "UNO rematch requests must require active match membership");
