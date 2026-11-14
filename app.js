@@ -3734,10 +3734,13 @@ function renderMessages(preserveScroll=false){
   }
   S.messages.forEach((m,index)=>{
     const mine=m.sender_id===S.user.id,p=S.profiles[m.sender_id];
-    const samePrevious=S.messages[index-1]?.sender_id===m.sender_id;
-    const sameNext=S.messages[index+1]?.sender_id===m.sender_id;
+    const previousMessage=S.messages[index-1],nextMessage=S.messages[index+1];
+    const gapFromPrevious=previousMessage?new Date(m.created_at).getTime()-new Date(previousMessage.created_at).getTime():0;
+    const gapToNext=nextMessage?new Date(nextMessage.created_at).getTime()-new Date(m.created_at).getTime():0;
+    const samePrevious=!!previousMessage&&previousMessage.sender_id===m.sender_id&&gapFromPrevious<60*60*1000;
+    const sameNext=!!nextMessage&&nextMessage.sender_id===m.sender_id&&gapToNext<60*60*1000;
+    const senderChanged=!!previousMessage&&previousMessage.sender_id!==m.sender_id;
     const grouping=samePrevious?(sameNext?" group-middle":" group-last"):(sameNext?" group-first":"");
-    const previousMessage=S.messages[index-1];
     if(previousMessage){
       const gapMs=new Date(m.created_at).getTime()-new Date(previousMessage.created_at).getTime();
       if(Number.isFinite(gapMs)&&gapMs>=60*60*1000){
@@ -3752,7 +3755,7 @@ function renderMessages(preserveScroll=false){
     row.dataset.messageId=m.id;
     if(!suppressEntryAnimation&&!existingMessageIds.has(String(m.id)))row.classList.add("gather-message-enter");
     const bubble=el("div","bubble"),meta=el("div","meta");
-    if(showSenderNames&&!samePrevious){
+    if(showSenderNames&&senderChanged){
       const authorName=mine?"You":(p?.display_name||"Member");
       const authorAvatar=avatar(authorName,p?.avatar_data||null);
       authorAvatar.classList.add("message-group-avatar");
@@ -3776,6 +3779,15 @@ function renderMessages(preserveScroll=false){
     if(m.forwarded_from_id)meta.append(el("small","message-forwarded-label","Forwarded"));
     if(m.edited_at)meta.append(el("small","message-edited-label","edited"));
     if(!S.selectingMessages){
+      const quickReact=el("button","message-quick-react","＋");
+      quickReact.type="button";quickReact.setAttribute("aria-label","Add reaction");quickReact.title="Add reaction";
+      quickReact.addEventListener("click",event=>{
+        event.stopPropagation();
+        S.openReactionPickerMessageId=S.openReactionPickerMessageId===m.id?null:m.id;
+        S.openMessageMenuId=null;
+        renderMessages(true);
+      });
+      meta.append(quickReact);
       const menuWrap=el("div","message-menu-wrap");
       const trigger=el("button","message-action-trigger","⋯");
       trigger.type="button";
