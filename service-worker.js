@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "gather-shell-v93";
+const CACHE_NAME = "gather-shell-v94";
 const APP_BASE = new URL("./", self.registration.scope);
 const SHELL_URLS = [
   "./",
@@ -10,12 +10,12 @@ const SHELL_URLS = [
   "./party.css?v=20261114-party-hub-2",
   "./ludo.css?v=20261113-ludo-menu-center-1",
   "./dominoes.css?v=20261114-dominoes-1",
-  "./uno.css?v=20261114-neon-arcade-3",
+  "./uno.css?v=20261114-account-themes-1",
   "./games.js?v=20261114-event-driven-games-1",
   "./game-people-picker.js?v=20261114-selection-limit-1",
   "./party.js?v=20261114-uno-ready-3",
   "./game-chat.js?v=20261114-gather-chat-icon-2",
-  "./uno.js?v=20261114-arcade-ui-4",
+  "./uno.js?v=20261114-account-themes-1",
   "./ludo.js?v=20261114-event-driven-ludo-1",
   "./dominoes.js?v=20261114-dominoes-1",
   "./app.js?v=20261114-retire-live-games-1",
