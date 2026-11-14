@@ -403,3 +403,49 @@
 .uno-modal .uno-card-back{position:absolute;top:5px;width:18px;height:29px;border:1.5px solid #f6f3eb;border-radius:4px;background:repeating-linear-gradient(45deg,#244b78 0 3px,#18375d 3px 6px);box-shadow:0 2px 4px #0005;}
 .uno-modal .uno-card-count{position:absolute;right:0;bottom:0;z-index:8;display:grid;place-items:center;min-width:21px;height:21px;padding:0 5px;border:1px solid #ffffffa8;border-radius:999px;background:var(--accent);color:#fff;font-size:10px;font-weight:900;box-shadow:0 2px 5px #0004;}
 @media(max-width:520px){.uno-modal .uno-card-center{width:42px;height:42px;min-width:42px;min-height:42px;}.uno-modal .uno-hand-strip{min-height:145px;padding:21px 25px 16px;}.uno-modal .uno-hand-strip .uno-card{margin-left:-25px;}.uno-modal .uno-hand-strip .uno-card:first-child{margin-left:0;}.uno-modal .uno-player-row .uno-player-dot{width:20px!important;height:20px!important;min-width:20px;min-height:20px;flex-basis:20px;}}
+
+
+/* Focused UNO match layout: board and hand own the viewport; roster is an optional drawer. */
+.uno-modal:has(.uno-in-match){width:min(900px,calc(100vw - 24px));max-height:min(94dvh,980px);padding:clamp(12px,2.2vw,22px);overflow:hidden}
+.uno-in-match{position:relative;display:flex;flex-direction:column;min-height:0;gap:8px}
+.uno-in-match .uno-game-top{align-items:center;gap:10px;margin:0;padding:2px 2px 9px;flex:0 0 auto}
+.uno-in-match .uno-game-heading{display:flex;align-items:center;gap:10px;min-width:0;flex-wrap:wrap}
+.uno-in-match .uno-game-heading .eyebrow{display:none}
+.uno-in-match .uno-game-heading .uno-title{margin:0;font-size:clamp(19px,3vw,27px)}
+.uno-in-match .uno-game-heading .uno-intro{display:none}
+.uno-in-match .uno-player-toggle{flex:0 0 auto;min-height:38px;padding:7px 12px;border:1px solid var(--accent-outline-soft);border-radius:12px;background:var(--accent-surface);color:var(--accent-text);font-size:12px;font-weight:800}
+.uno-in-match .uno-board{display:flex;flex:1 1 auto;flex-direction:column;min-height:0;overflow:hidden;margin:0;padding:clamp(9px,2vw,18px);gap:8px}
+.uno-in-match .uno-turn-banner{flex:0 0 auto;padding:9px 12px}
+.uno-in-match .uno-table{flex:1 1 180px;min-height:150px;margin:0}
+.uno-in-match .uno-hand-area{flex:0 0 auto;margin-top:2px}
+.uno-in-match .uno-hand-heading{font-size:13px;margin:0 0 2px}
+.uno-in-match .uno-hand-strip{min-height:clamp(125px,22vh,190px);max-height:25vh;align-items:flex-end;padding:18px 25px 14px;overflow-x:auto;overflow-y:hidden}
+.uno-in-match .uno-hand-strip .uno-card{margin-left:-24px}
+.uno-in-match .uno-hand-strip .uno-card:first-child{margin-left:0}
+.uno-in-match .uno-hand-controls{flex:0 0 auto;gap:7px}
+.uno-in-match .uno-hand-controls button{min-height:36px;padding:7px 11px}
+.uno-in-match>.uno-actions{flex:0 0 auto;display:flex;justify-content:flex-end;gap:8px;margin:0;padding:0;border:0}
+.uno-in-match>.uno-actions button{width:auto;min-height:36px;padding:7px 12px;font-size:11px}
+.uno-players-panel{position:absolute;z-index:30;top:56px;right:0;width:min(360px,calc(100% - 8px));max-height:min(65dvh,520px);overflow:auto;padding:14px;border:1px solid var(--accent-outline-soft);border-radius:18px;background:color-mix(in srgb,var(--panel) 96%,var(--accent));box-shadow:0 18px 50px #0008}
+.uno-players-panel[hidden]{display:none!important}
+.uno-players-panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.uno-players-panel-head strong{font-size:14px}
+.uno-players-close{width:32px;height:32px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--text);font-size:20px}
+.uno-players-panel .uno-roster{display:grid;grid-template-columns:minmax(0,1fr);gap:7px;margin:0;padding:0;border:0}
+.uno-players-panel .uno-roster .tag-section-title{margin:0 0 5px}
+.uno-players-panel .uno-player-row{min-height:52px;padding:9px 10px}
+@media(max-width:600px){
+ .uno-modal:has(.uno-in-match){width:calc(100vw - 12px);max-height:calc(100dvh - 12px);padding:12px 10px}
+ .uno-in-match{gap:6px}
+ .uno-in-match .uno-table{min-height:135px;flex-basis:140px;padding:9px}
+ .uno-in-match .uno-deck,.uno-in-match .uno-discard{width:68px;height:100px}
+ .uno-in-match .uno-hand-strip{min-height:clamp(112px,19vh,155px);max-height:22vh;padding:14px 22px 12px}
+ .uno-in-match .uno-hand-strip .uno-card{margin-left:-27px}
+ .uno-in-match .uno-hand-strip .uno-card:first-child{margin-left:0}
+ .uno-in-match .uno-hand-controls button{min-height:34px}
+ .uno-players-panel{top:48px;right:0;width:min(330px,calc(100% - 4px))}
+}
+@media(max-height:700px) and (max-width:600px){
+ .uno-in-match .uno-table{min-height:115px;flex-basis:120px}
+ .uno-in-match .uno-hand-strip{min-height:105px;max-height:19vh}
+}
