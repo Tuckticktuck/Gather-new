@@ -110,8 +110,11 @@ BEGIN
   -- Copy sanitized host options into each new private match and its public state.
   v_definition := pg_get_functiondef('public.gather_uno_start(uuid)'::regprocedure);
 
-  v_old := $old$card json;$old$;
-  v_new := $new$card json; v_house_rules jsonb; v_hand_size integer;$new$;
+  v_old := $old$begin
+ select * into g from public.gather_multiplayer_games where id=p_game_id for update;$old$;
+  v_new := $new$v_house_rules jsonb; v_hand_size integer;
+begin
+ select * into g from public.gather_multiplayer_games where id=p_game_id for update;$new$;
   IF position(v_old IN v_definition) = 0 THEN
     RAISE EXCEPTION 'Could not locate UNO start declarations.';
   END IF;
