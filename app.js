@@ -1961,7 +1961,7 @@ function renderGameNotificationCards(list){
   });
   const rematchOffers=new Map();
   S.notifications.filter(item=>item.kind==="uno_rematch"&&!item.read_at).forEach(item=>{if(item.body)rematchOffers.set(item.body,item);});
-  if(unoInvites.length||ludoInvites.length||invitations.length||rematchOffers.sizelist.append(el("h3","notification-section-heading","Invitations"));
+  if(unoInvites.length||ludoInvites.length||invitations.length||rematchOffers.size)list.append(el("h3","notification-section-heading","Invitations"));
   rematchOffers.forEach((item,offerId)=>{
     const card=el("article","notification-center-item notification-game-item unread");
     const icon=el("span","notification-center-icon","🃏");
