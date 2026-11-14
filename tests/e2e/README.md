@@ -1,4 +1,6 @@
-# Gather multiplayer two-account E2E matrix
+# Gather multiplayer E2E matrix
+
+For the detailed Snake Arena Phase 1 sequence, use [PHASE_1_SNAKE_RELEASE.md](./PHASE_1_SNAKE_RELEASE.md).
 
 Status: test plan only; no automated browser accounts or secrets have been provisioned.
 
