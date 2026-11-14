@@ -658,11 +658,10 @@ function chatHasUnread(chat){
 }
 async function markConversationNotificationsRead(chatId){
   if(!S.user||!chatId)return false;
-  const at=new Date().toISOString();
-  const result=await db.from("notifications").update({read_at:at})
-    .eq("recipient_id",S.user.id).eq("conversation_id",chatId).eq("kind","message").is("read_at",null);
-  if(result.error){console.warn("Notifications for the open conversation could not be marked read:",result.error.message);return false;}
-  S.notifications.forEach(item=>{if(item.kind==="message"&&item.conversation_id===chatId&&!item.read_at)item.read_at=at;});
+  const result=await db.from("notifications").delete()
+    .eq("recipient_id",S.user.id).eq("conversation_id",chatId).eq("kind","message");
+  if(result.error){console.warn("Notifications for the open conversation could not be dismissed:",result.error.message);return false;}
+  S.notifications=S.notifications.filter(item=>!(item.kind==="message"&&item.conversation_id===chatId));
   renderNotifications();
   return true;
 }
@@ -1949,13 +1948,13 @@ function renderGameNotificationCards(list){
     view.addEventListener("click",async()=>{
       $("notifications-modal").hidden=true;
       await window.GatherDominoes?.openInvitation?.(item.body,spectator);
-      await db.from("notifications").update({read_at:new Date().toISOString()}).eq("id",item.id);
+      await db.from("notifications").delete().eq("id",item.id).eq("recipient_id",S.user.id);
       await loadNotifications();
     });
     const dismiss=el("button","outline","Dismiss");dismiss.type="button";
     dismiss.addEventListener("click",async()=>{
       dismiss.disabled=true;
-      await db.from("notifications").update({read_at:new Date().toISOString()}).eq("id",item.id);
+      await db.from("notifications").delete().eq("id",item.id).eq("recipient_id",S.user.id);
       await loadNotifications();
     });
     actions.append(view,dismiss);card.append(actions);list.append(card);
@@ -2089,9 +2088,8 @@ function subscribeNotifications(){
       if(payload.new?.recipient_id!==S.user?.id)return;
       const activeConversationMessage=payload.new?.kind==="message"&&payload.new.conversation_id===S.active;
       if(activeConversationMessage){
-        const at=new Date().toISOString();
-        const updated=await db.from("notifications").update({read_at:at}).eq("id",payload.new.id).eq("recipient_id",uid);
-        if(updated.error)console.warn("Active-chat notification could not be marked read:",updated.error.message);
+        const dismissed=await db.from("notifications").delete().eq("id",payload.new.id).eq("recipient_id",uid);
+        if(dismissed.error)console.warn("Active-chat notification could not be dismissed:",dismissed.error.message);
       }
       await loadNotifications();
       const item=S.notifications.find(x=>x.id===payload.new.id);
