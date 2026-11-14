@@ -88,6 +88,8 @@ const snakeEngine = readFileSync(join(root, "supabase/functions/gather-snake-act
 const snakeFoundationMigration = readFileSync(join(root, "supabase/migrations/20261114022328_snake_arena_authoritative_multiplayer_foundation.sql"), "utf8");
 const snakeLifecycleMigration = readFileSync(join(root, "supabase/migrations/20261114022743_harden_snake_host_and_leave_lifecycle.sql"), "utf8");
 const snakeDeclineMigration = readFileSync(join(root, "supabase/migrations/20261114023244_add_snake_arena_invitation_decline.sql"), "utf8");
+const snakeSpectatorMigration = readFileSync(join(root, "supabase/migrations/20261114125425_add_read_only_snake_spectator_membership.sql"), "utf8");
+const snakeSpectatorDiscoveryMigration = readFileSync(join(root, "supabase/migrations/20261114125432_show_full_snake_lobbies_to_spectators.sql"), "utf8");
 assert.ok(snakeClient.includes('functions.invoke("gather-snake-action"'), "Snake controls must call the JWT-verified action endpoint");
 assert.match(snakeClient, /gather_snake_start/, "Snake lobby must use the server-side start RPC");
 assert.match(snakeClient, /action:\s*"tick"/, "Snake client must request ticks from the authoritative server endpoint");
@@ -98,6 +100,14 @@ assert.match(snakeEngine, /advanceSnakeState/, "Snake Edge Function must use the
 assert.match(snakeFoundationMigration, /gather_snake_record_input/, "Snake migration must define server-validated direction input");
 assert.match(snakeLifecycleMigration, /The host must still be in the lobby/, "Snake start must require the host to remain joined");
 assert.match(snakeDeclineMigration, /gather_snake_decline/, "Snake invitation decline RPC must exist");
+assert.match(snakeSpectatorMigration, /'spectating'::text/, "Snake roster must support a distinct spectator status");
+assert.match(snakeSpectatorMigration, /gather_snake_spectate/, "Snake spectator admission must be server-authorized");
+assert.match(snakeSpectatorMigration, /status = 'joined'/, "Snake spectators must not be counted as active players");
+assert.ok(snakeClient.includes('rpc("gather_snake_spectate"'), "Snake UI must offer a read-only spectator path");
+assert.ok(snakeClient.includes('membership?.status === "joined"'), "Only joined players may use the Snake tick driver and game chat");
+assert.ok(snakeClient.includes("You are observing this match"), "Spectators must see a read-only control state");
+assert.match(snakeSpectatorDiscoveryMigration, /gather_snake_open_lobbies/, "Friends must be able to discover full lobbies to spectate");
+assert.ok(snakeCss.includes(".snake-spectator-banner"), "Snake spectator mode must have a clear visual indicator");
 assert.ok(snakeCss.includes(".snake-modal:has(.snake-in-match)"), "Snake gameplay must have responsive full-screen styling");
 
 const cssFiles = localAssets.filter(ref => /\.css(?:[?#]|$)/i.test(ref));
