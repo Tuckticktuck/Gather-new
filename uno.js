@@ -29,7 +29,7 @@ form.onsubmit=async e=>{e.preventDefault();if(busy)return;if(!selected.length){t
 root.append(form);window.GatherPeoplePicker?.create({db:ctx.db,button:choose,summary,onChange:ids=>selected.splice(0,selected.length,...ids)});
 }
 async function enter(id){if(busy)return;busy=true;try{await call("gather_uno_join",{p_game_id:id,p_color:"#40826D"});await ctx.db.from("notifications").update({read_at:new Date().toISOString()}).eq("recipient_id",uid()).eq("kind","uno_invite").eq("body",id).is("read_at",null);activeGameId=id;await loadGame();await refresh();}catch(e){toast(e.message||"Could not join UNO.");}finally{busy=false;}}
-async function loadGame(){if(!activeGameId)return;const gameId=activeGameId;try{const next=await call("gather_uno_get_state",{p_game_id:gameId});if(activeGameId!==gameId)return;state=next;renderGame();}catch(e){if(activeGameId===gameId)toast(e.message||"Could not load UNO.");}}
+async function loadGame(){if(!activeGameId)return;const gameId=activeGameId;try{const next=await call("gather_uno_get_state",{p_game_id:gameId});if(activeGameId!==gameId)return;state=next;if(selectedCardId&&!next.hand?.some(card=>card.id===selectedCardId))selectedCardId=null;renderGame();}catch(e){if(activeGameId===gameId)toast(e.message||"Could not load UNO.");}}
 function pubWinner(v){return !!(v?.public_state?.winner_id||v?.game?.state?.winner_id);}
 function playerPrefs(){
   try{return JSON.parse(localStorage.getItem("gather-uno-preferences:"+uid())||"{}");}catch(_){return {};}
@@ -203,7 +203,10 @@ function renderGame(){
     const ownCopy=el("span","uno-seat-copy");ownCopy.append(el("strong","","You"),el("small","",hand.length+" cards"));own.append(ownCopy);
     own.onclick=()=>showPlayerProfile(me);seatRing.append(own);
   }
-  table.append(seatRing);
+  const direction=Number(pub.direction??1)<0?-1:1;
+  const directionRing=el("div","uno-direction-ring"+(direction<0?" is-reversed":""));
+  directionRing.append(el("span","uno-direction-symbol",direction<0?"↺":"↻"),el("small","",direction<0?"REVERSE":"CLOCKWISE"));
+  table.append(directionRing,seatRing);
   const piles=el("div","uno-piles"),drawCan= myTurn&&!drawPending;
   const draw=el(drawCan?"button":"div","uno-deck"+(drawCan?"":" is-inactive"),drawPending?"DRAWN":"DRAW");
   if(drawCan){draw.type="button";draw.setAttribute("aria-label","Draw a card");draw.onclick=()=>act("draw");}
