@@ -55,6 +55,18 @@ assert.match(partyMigration, /m\.role='leader'/, "Party vote creation must requi
 assert.match(partyMigration, /revoke execute on function public\.gather_game_chat_cleanup\(\)/i, "Trigger-only cleanup RPC must not be directly executable");
 assert.match(gameMoveMigration, /v_winner <> v_uid/, "A turn-based player must not declare the opponent the winner");
 
+
+const boardGameFunction = readFileSync(join(root, "supabase/functions/gather-board-game-action/index.ts"), "utf8");
+const boardGameRules = readFileSync(join(root, "supabase/functions/gather-board-game-action/board-rules.mjs"), "utf8");
+const boardGameMigration = readFileSync(join(root, "supabase/migrations/20261114120000_authoritative_board_game_moves.sql"), "utf8");
+const gamesClient = readFileSync(join(root, "games.js"), "utf8");
+assert.match(gamesClient, /functions\\.invoke\\("gather-board-game-action"/, "Board-game clients must submit move intents to the Edge Function");
+assert.doesNotMatch(gamesClient, /rpc\\("gather_game_move"/, "Board-game clients must not submit full client-authored states");
+assert.match(boardGameFunction, /auth\\.getUser\\(accessToken\\)/, "The board-game endpoint must validate the caller's Supabase session");
+assert.match(boardGameFunction, /gather_board_game_commit_move/, "The endpoint must commit through the restricted database RPC");
+assert.match(boardGameRules, /Captures must be taken when available/, "Checkers must enforce mandatory captures");
+assert.match(boardGameMigration, /revoke execute on function public\\.gather_game_move/i, "The legacy client-submitted state RPC must be disabled");
+
 const cssFiles = localAssets.filter(ref => /\.css(?:[?#]|$)/i.test(ref));
 for (const ref of cssFiles) {
   const url = new URL(ref, base);
