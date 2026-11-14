@@ -132,7 +132,7 @@ function renderGame(){
   const g=state.game,players=(state.players||[]).filter(p=>p.status==="joined"||p.status==="invited"),joined=players.filter(p=>p.status==="joined"),spectating=!!state.spectating;
   const started=!!state.started,host=g.created_by===uid(),pub=state.public_state||g.state||{};
   const rules={starting_hand_size:7,draw_until_playable:false,wild4_anytime:false,...(g.settings?.house_rules||pub.house_rules||{})};
-  const ruleSummary="Rules: "+rules.starting_hand_size+" starting cards · Draw until playable "+(rules.draw_until_playable?"on":"off")+" · Wild Draw Four anytime "+(rules.wild4_anytime?"on":"off");
+  const ruleSummary=rules.starting_hand_size+" cards · "+(rules.draw_until_playable?"Draw until playable":"Draw 1")+" · "+(rules.wild4_anytime?"Wild +4 unrestricted":"Wild +4 standard");
   const finished=!!(pub.finished||pub.winner_id||g.status==="completed");
   if(lastCountGameId!==g.id){lastCountGameId=g.id;lastCardCounts.clear();}
   root.classList.toggle("uno-in-match",started&&!finished);applyPlayerPrefs();
@@ -208,7 +208,7 @@ function renderGame(){
     joined.forEach((p,index)=>{
       const seat=el("button","uno-seat"+(p.user_id===pub.turn_user_id?" is-turn":""));seat.type="button";
       const angle=(joined.length===1?0:-150+(300*index/Math.max(1,joined.length-1)))*Math.PI/180;
-      seat.style.left=(50+36*Math.sin(angle))+"%";seat.style.top=(44-27*Math.cos(angle))+"%";
+      seat.style.left=(50+34*Math.sin(angle))+"%";seat.style.top=(38-25*Math.cos(angle))+"%";
       seat.append(avatarNode(p.user_id));
       const copy=el("span","uno-seat-copy");copy.append(el("strong","",name(p.user_id)),el("small","",String(Math.max(0,Number(p.card_count)||0))+" cards"));seat.append(copy);
       if(p.user_id===pub.turn_user_id)seat.append(el("span","uno-seat-turn","TURN"));
@@ -216,7 +216,7 @@ function renderGame(){
     });
     const piles=el("div","uno-piles"),draw=el("div","uno-deck is-inactive","DRAW");
     const discard=el("div","uno-discard");discard.append(cardNode(pub.top_card,true));
-    piles.append(draw,discard,el("span","uno-current-color "+(pub.current_color||"wild"),"COLOR · "+String(pub.current_color||"wild").toUpperCase()));
+    piles.append(draw,discard,el("span","uno-current-color "+(pub.current_color||"wild"),String(pub.current_color||"wild").toUpperCase()));
     table.append(ring,piles);board.append(table,el("p","muted tiny","You are watching this match. Spectators cannot draw, play cards, call UNO, or use the temporary player chat."));
     const controls=el("div","uno-spectator-actions"),join=el("button","primary","Join as player"),stop=el("button","outline","Stop watching");
     join.type="button";join.onclick=()=>enter(activeGameId);stop.type="button";stop.onclick=()=>stopWatching();
@@ -279,7 +279,7 @@ function renderGame(){
   const myTurn=pub.turn_user_id===uid(),drawPending=!!state.drawn_card_id&&myTurn,hand=sortHand(state.hand||[]);
   const board=el("section","uno-board");
   const banner=el("div","uno-turn-banner",drawPending?"You drew a card · Play it if legal or pass":myTurn?"Your turn":"Waiting for "+name(pub.turn_user_id));
-  board.append(banner,el("p","uno-rule-summary muted tiny",ruleSummary));
+  board.append(banner);
   if(pub.message)board.append(el("p","uno-turn-message muted tiny",pub.message));
   const table=el("div","uno-table");
   const seatRing=el("div","uno-seat-ring");seatRing.setAttribute("aria-label","Players around the UNO table");
@@ -289,7 +289,7 @@ function renderGame(){
     const seat=el("button","uno-seat"+(p.user_id===pub.turn_user_id?" is-turn":"")+(delta?" has-card-change":""));
     seat.type="button";seat.dataset.userId=p.user_id;seat.setAttribute("aria-label",name(p.user_id)+", "+count+" cards");
     const angle=(opponents.length===1?0:-150+(300*index/Math.max(1,opponents.length-1)))*Math.PI/180;
-    seat.style.left=(50+36*Math.sin(angle))+"%";seat.style.top=(44-27*Math.cos(angle))+"%";
+    seat.style.left=(50+34*Math.sin(angle))+"%";seat.style.top=(38-25*Math.cos(angle))+"%";
     const avatar=avatarNode(p.user_id);
     const copy=el("span","uno-seat-copy");copy.append(el("strong","",name(p.user_id)),el("small","",String(Math.max(0,Number(p.card_count)||0))+" cards"));
     seat.append(avatar,copy);if(p.user_id===pub.turn_user_id)seat.append(el("span","uno-seat-turn","TURN"));if(delta)seat.append(el("span","uno-card-change",(delta>0?"+":"")+delta));
@@ -298,14 +298,15 @@ function renderGame(){
   const me=joined.find(p=>p.user_id===uid());
   if(me){
     const ownCount=hand.length,previous=lastCardCounts.get(me.user_id),delta=previous===undefined?0:ownCount-previous;lastCardCounts.set(me.user_id,ownCount);
-    const own=el("button","uno-seat uno-seat-you"+(myTurn?" is-turn":"")+(delta?" has-card-change":""));own.type="button";own.style.left="50%";own.style.top="88%";
+    const own=el("button","uno-seat uno-seat-you"+(myTurn?" is-turn":"")+(delta?" has-card-change":""));own.type="button";own.style.left="50%";own.style.top="91%";
     own.append(avatarNode(uid()));
     const ownCopy=el("span","uno-seat-copy");ownCopy.append(el("strong","","You"),el("small","",hand.length+" cards"));own.append(ownCopy);if(delta)own.append(el("span","uno-card-change",(delta>0?"+":"")+delta));
     own.onclick=()=>showPlayerProfile(me);seatRing.append(own);
   }
   const direction=Number(pub.direction??1)<0?-1:1;
   const directionRing=el("div","uno-direction-ring"+(direction<0?" is-reversed":""));
-  directionRing.append(el("span","uno-direction-symbol",direction<0?"↺":"↻"),el("small","",direction<0?"REVERSE":"CLOCKWISE"));
+  directionRing.setAttribute("aria-label",direction<0?"Play direction reversed":"Clockwise play direction");
+  directionRing.append(el("span","uno-direction-symbol",direction<0?"↺":"↻"));
   table.append(directionRing,seatRing);
   const piles=el("div","uno-piles"),drawCan= myTurn&&!drawPending;
   const draw=el(drawCan?"button":"div","uno-deck"+(drawCan?"":" is-inactive"),drawPending?"DRAWN":"DRAW");
@@ -320,7 +321,7 @@ function renderGame(){
   disc.addEventListener("dragover",e=>{if(myTurn&&!drawPending){e.preventDefault();disc.classList.add("is-drop-target");}});
   disc.addEventListener("dragleave",()=>disc.classList.remove("is-drop-target"));
   disc.addEventListener("drop",e=>{e.preventDefault();disc.classList.remove("is-drop-target");const id=e.dataTransfer?.getData("text/plain");const card=hand.find(item=>item.id===id);if(card)void play(card);});
-  piles.append(disc,el("span","uno-current-color "+(pub.current_color||"wild"),"COLOR · "+String(pub.current_color||"wild").toUpperCase()));
+  piles.append(disc,el("span","uno-current-color "+(pub.current_color||"wild"),String(pub.current_color||"wild").toUpperCase()));
   table.append(piles);board.append(table);
   const area=el("div","uno-hand-area");
   area.append(el("div","uno-hand-heading","YOUR HAND · "+hand.length+" CARDS"));
