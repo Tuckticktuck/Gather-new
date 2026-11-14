@@ -1,6 +1,6 @@
 # Multiplayer Match Lifecycle Contract
 
-Status: Phase 0 engineering contract (design baseline; not yet wired into existing RPCs)
+Status: Operational multiplayer contract. Chess/Checkers/Tic-Tac-Toe/Connect Four use server-validated move intents, and Snake Arena uses a JWT-verified authoritative tick endpoint. Draw & Guess and Word Hunt remain future implementations.
 Scope: Snake Arena, Draw & Guess, Word Hunt, and compatibility boundaries for existing Gather multiplayer games.
 
 ## Current production baseline (verified against live Supabase)
@@ -50,13 +50,13 @@ The following is the required application contract. It does not imply that all e
 - New game modules must not call `gather_multiplayer_update_state` to submit complete game state.
 - Use per-game RPCs for action intent and server-side transitions. Each RPC locks or atomically compares the authoritative row/revision to avoid double actions and race conditions.
 - Realtime is a notification/replication transport, not an authorization or simulation engine.
-- High-frequency Snake movement requires a trusted server simulation design. GitHub Pages cannot host that runtime. No Netlify or Cloudflare is to be introduced.
+- Snake Arena currently runs authoritative rules and tick commits in the Supabase Edge Function; a joined player's browser prompts each tick because GitHub Pages is static. This avoids client-authored positions/scores but is not a persistent simulation loop. Measure latency/background-tab failover and decide whether a dedicated trusted runtime is required. No Netlify or Cloudflare is to be introduced.
 
 ## Legacy compatibility boundary
 
 - `gather_games` remains the separate two-player turn-based model. Do not repurpose it for variable-player arcade games.
-- `gather_game_move` currently prevents a player from declaring the opponent winner but still accepts a client-provided board state after basic shape, membership, turn, revision, and size checks. It does not replay/validate all legal moves or all win/draw conditions. This remains a separate high-priority integrity defect.
-- Do not tighten the generic legacy move RPC until Chess, Checkers, Tic-Tac-Toe, and Connect Four callers and their state formats have been mapped and game-specific validators are ready. A blanket change could break legitimate moves; leaving it as-is is not a claim that it is secure.
+- Chess, Checkers, Tic-Tac-Toe, and Connect Four now submit move intent through the JWT-verified gather-board-game-action Edge Function. It validates each move against stored state and commits through gather_board_game_commit_move, which is service-role-only. The former generic gather_game_move full-state entry point is no longer executable by anon or authenticated; it remains service-role-only and must not be used by clients.
+- Battleship and both Ludo paths continue to use their dedicated action validators. Do not route them through the generic board-game function.
 - UNO, Ludo, and Tag must remain regression-tested against the existing shared multiplayer tables and lifecycle RPCs.
 
 ## Phase 0 acceptance gates
@@ -66,16 +66,16 @@ The following is the required application contract. It does not imply that all e
 - [x] Map client callers and live RPC/helper transitions for legacy turn-based games, Battleship, both Ludo paths, UNO, Tag, shared multiplayer lifecycle, and temporary game chat (see `MULTIPLAYER_RPC_INVENTORY.md`).
 - [x] Add deterministic pure-rule test harness to CI (Node built-in test runner; 9 contract tests).
 - [ ] Add authenticated two-account E2E harness and test matrix; execute it before Phase 0 is marked complete.
-- [ ] Decide and document a supported trusted runtime for Snake before implementing its tick loop.
+- [x] Implement the initial trusted Snake rules/tick path in a JWT-verified Supabase Edge Function; [ ] measure tick latency and background-tab resilience before declaring the runtime production-hardened.
 - [x] Run Supabase security and performance advisors as a baseline (no database changes made in this Phase 0 slice).
 
 No database schema or production RPC was modified as part of this contract document.
 
 
-## Phase 0 advisor baseline (2026-11-14)
+## Supabase advisor/security review (2026-11-14, refreshed after Phase 1 migrations)
 
-- Security advisor reports 46 existing `SECURITY DEFINER` functions callable by authenticated users. These include the established game RPC families and other app operations. This is not automatically a defect for every function; each function must be checked for caller identity, authorization, search path, and intended exposure. No blanket revoke was applied.
-- Security advisor reports 9 RLS-enabled tables without policies (informational). The list includes private/feature tables and public chat/party tables; access grants and intended RPC-only access must be reviewed per table before changing policies.
+- Security advisor most recently reports 56 `SECURITY DEFINER` functions callable by authenticated users and 10 RLS-enabled tables without policies. These are project-wide findings, not proof each object is vulnerable: game RPCs were checked individually for caller authorization and empty search paths, and the private Snake/UNO state tables have no direct client SELECT grants. No blanket revoke or unrelated policy change was applied.
 - Auth advisor reports leaked-password protection is disabled; this is a project Auth setting and is outside the game-schema changes in this phase.
-- Performance advisor reports 22 unused indexes (informational). No index was removed; workload observation is required before pruning.
-- No database DDL, RLS policy, grant, or RPC was modified in this Phase 0 slice.
+- Performance advisor originally reported 22 unused indexes; the Phase 1 pass added the missing user_id foreign-key index to private.gather_snake_inputs, after which the unindexed-FK finding cleared. The new index appears unused while that private input table is empty; do not remove it because it covers the FK cascade/lookups.
+- Auth advisor continues to report leaked-password protection disabled. This is a project Auth setting requiring separate configuration review.
+- This contract document initially made no database changes. Subsequent game implementation phases added game-specific migrations and RPCs documented in the inventory and release plan.
