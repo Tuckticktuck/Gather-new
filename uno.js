@@ -216,7 +216,7 @@ function renderGame(){
     });
     const piles=el("div","uno-piles"),draw=el("div","uno-deck is-inactive","DRAW");
     const discard=el("div","uno-discard");discard.append(cardNode(pub.top_card,true));
-    piles.append(draw,discard,el("span","uno-current-color "+(pub.current_color||"wild"),"COLOR · "+String(pub.current_color||"wild").toUpperCase()));
+    piles.append(draw,discard,el("span","uno-current-color "+(pub.current_color||"wild"),String(pub.current_color||"wild").toUpperCase()));
     table.append(ring,piles);board.append(table,el("p","muted tiny","You are watching this match. Spectators cannot draw, play cards, call UNO, or use the temporary player chat."));
     const controls=el("div","uno-spectator-actions"),join=el("button","primary","Join as player"),stop=el("button","outline","Stop watching");
     join.type="button";join.onclick=()=>enter(activeGameId);stop.type="button";stop.onclick=()=>stopWatching();
@@ -289,7 +289,7 @@ function renderGame(){
     const seat=el("button","uno-seat"+(p.user_id===pub.turn_user_id?" is-turn":"")+(delta?" has-card-change":""));
     seat.type="button";seat.dataset.userId=p.user_id;seat.setAttribute("aria-label",name(p.user_id)+", "+count+" cards");
     const angle=(opponents.length===1?0:-150+(300*index/Math.max(1,opponents.length-1)))*Math.PI/180;
-    seat.style.left=(50+36*Math.sin(angle))+"%";seat.style.top=(44-27*Math.cos(angle))+"%";
+    seat.style.left=(50+34*Math.sin(angle))+"%";seat.style.top=(38-25*Math.cos(angle))+"%";
     const avatar=avatarNode(p.user_id);
     const copy=el("span","uno-seat-copy");copy.append(el("strong","",name(p.user_id)),el("small","",String(Math.max(0,Number(p.card_count)||0))+" cards"));
     seat.append(avatar,copy);if(p.user_id===pub.turn_user_id)seat.append(el("span","uno-seat-turn","TURN"));if(delta)seat.append(el("span","uno-card-change",(delta>0?"+":"")+delta));
