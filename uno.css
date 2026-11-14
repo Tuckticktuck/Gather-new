@@ -812,3 +812,74 @@
 @media(prefers-reduced-motion:reduce){
   .uno-in-match .uno-seat.is-turn{animation:none!important}
 }
+
+/* Adaptive UNO playfield: the table consumes the space left after the hand and controls. */
+.uno-modal:has(.uno-in-match){
+  display:flex;flex-direction:column;
+  width:min(1100px,calc(100vw - 24px));
+  height:min(94dvh,1000px);max-height:none;
+  min-height:0;overflow:hidden;
+  padding:clamp(12px,2vw,20px);
+}
+.uno-modal:has(.uno-in-match) #uno-content{
+  display:flex;flex:1 1 auto;flex-direction:column;
+  min-width:0;min-height:0;overflow:hidden;
+}
+.uno-modal .uno-in-match{
+  display:flex;flex:1 1 auto;flex-direction:column;
+  min-width:0;min-height:0;overflow:hidden;
+}
+.uno-in-match .uno-game-top{flex:0 0 auto}
+.uno-in-match .uno-board{
+  display:flex;flex:1 1 auto;flex-direction:column;
+  min-width:0;min-height:0;overflow:hidden;
+  margin-top:8px;padding:clamp(8px,1.4vw,14px);
+}
+.uno-in-match .uno-turn-banner{flex:0 0 auto}
+.uno-in-match .uno-turn-message{flex:0 0 auto}
+.uno-in-match .uno-table{
+  flex:1 1 0;min-width:0;min-height:clamp(210px,26vh,420px);
+  max-height:none;width:100%;margin:8px 0;
+  border-radius:clamp(20px,3vw,34px);
+}
+.uno-in-match .uno-hand-area{
+  flex:0 0 auto;min-width:0;min-height:0;margin-top:4px;
+}
+.uno-in-match .uno-hand-heading{margin-bottom:3px}
+.uno-in-match .uno-hand-strip{
+  height:clamp(112px,17vh,168px);min-height:0;max-height:22vh;
+  padding:8px 12px 10px;align-items:flex-end;
+}
+.uno-in-match .uno-hand-controls{flex:0 0 auto;min-height:34px}
+.uno-in-match .uno-seat-you{top:91%}
+@media(max-width:600px){
+  .uno-modal:has(.uno-in-match){
+    width:calc(100vw - 12px);height:calc(100dvh - 12px);
+    max-height:none;padding:10px 9px;border-radius:20px;
+  }
+  .uno-modal:has(.uno-in-match) #uno-content{min-height:0}
+  .uno-in-match .uno-board{padding:8px;gap:5px;margin-top:6px}
+  .uno-in-match .uno-table{
+    flex:1 1 0;min-height:clamp(205px,30vh,390px);
+    max-height:none;margin:6px 0;border-radius:22px;
+  }
+  .uno-in-match .uno-hand-area{margin-top:2px}
+  .uno-in-match .uno-hand-strip{
+    height:clamp(108px,16vh,150px);max-height:20vh;
+    padding:7px 10px 8px;
+  }
+}
+@media(max-height:680px) and (max-width:600px){
+  .uno-modal:has(.uno-in-match){height:calc(100dvh - 8px);padding:8px}
+  .uno-in-match .uno-table{min-height:175px}
+  .uno-in-match .uno-hand-strip{height:100px;max-height:17vh}
+  .uno-in-match .uno-turn-banner{padding:7px 9px}
+}
+@media(orientation:landscape) and (max-height:600px){
+  .uno-modal:has(.uno-in-match){width:calc(100vw - 16px);height:calc(100dvh - 10px);padding:8px 12px}
+  .uno-in-match .uno-board{flex-direction:row;flex-wrap:wrap;align-items:stretch}
+  .uno-in-match .uno-turn-banner{width:100%}
+  .uno-in-match .uno-table{flex:1 1 58%;min-height:0;height:auto;margin:0 8px 0 0}
+  .uno-in-match .uno-hand-area{flex:0 1 38%;display:flex;flex-direction:column;justify-content:center}
+  .uno-in-match .uno-hand-strip{height:min(28vh,150px);max-height:28vh}
+}
