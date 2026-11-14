@@ -449,3 +449,11 @@
  .uno-in-match .uno-table{min-height:115px;flex-basis:120px}
  .uno-in-match .uno-hand-strip{min-height:105px;max-height:19vh}
 }
+
+/* Give the match content a real bounded height so the hand and playfield share the viewport. */
+.uno-modal:has(.uno-in-match){display:flex;flex-direction:column;height:min(94dvh,900px)}
+.uno-modal:has(.uno-in-match)>.close{flex:0 0 auto}
+.uno-modal .uno-in-match{flex:1 1 auto;width:100%;height:100%;overflow:hidden}
+.uno-modal .uno-in-match>.uno-actions{display:flex;grid-template-columns:none}
+.uno-modal .uno-in-match>.uno-actions button{width:auto;min-height:36px;padding:7px 12px;font-size:11px}
+@media(max-width:600px){.uno-modal:has(.uno-in-match){height:calc(100dvh - 12px)}}
