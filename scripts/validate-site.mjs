@@ -136,6 +136,13 @@ assert.match(tagClient, /rpc\("gather_tag_cancel"/, "Tag must expose a host acti
 assert.match(tagCancelMigration, /v_lobby\.created_by <> v_uid/, "Only the Tag lobby host may cancel the lobby");
 assert.match(tagCancelMigration, /status = 'cancelled'/, "Tag lobby cancellation must close the lobby for all members");
 assert.ok(html.includes("tag.js?v=20261114-tag-lobby-cancel-1") && serviceWorker.includes("./tag.js?v=20261114-tag-lobby-cancel-1"), "Tag lobby cancellation must invalidate the cached client asset");
+const ludoClient = readFileSync(join(root, "ludo.js"), "utf8");
+const ludoCloseMigration = readFileSync(join(root, "supabase/migrations/20261114160000_allow_ludo_host_to_close_any_lobby.sql"), "utf8");
+assert.match(ludoClient, /rpc\("gather_ludo_cancel"/, "Ludo must expose a host action to close the entire lobby");
+assert.match(ludoClient, /if \(isHost\(\)\) root\.append\(closeLobby\(\)\)/, "Ludo host must be able to close an active match lobby");
+assert.match(ludoCloseMigration, /v_game\.created_by <> auth\.uid\(\)/, "Only the Ludo host may close the lobby");
+assert.match(ludoCloseMigration, /status = 'cancelled'/, "Ludo cancellation must close the lobby for all members");
+assert.ok(html.includes("ludo.js?v=20261114-ludo-close-lobby-1") && serviceWorker.includes("./ludo.js?v=20261114-ludo-close-lobby-1"), "Ludo lobby closure must invalidate the cached client asset");
 
 const cssFiles = localAssets.filter(ref => /\.css(?:[?#]|$)/i.test(ref));
 for (const ref of cssFiles) {
