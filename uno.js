@@ -141,7 +141,7 @@ function renderGame(){
     const back=el("button","outline tag-back","Back to UNO");back.onclick=async()=>{activeGameId=null;state=null;await refresh();};root.append(back);return;
   }
   if(finished){
-    const winner=pub.winner_id,scoreboard=el("section","uno-results-scoreboard");
+    const winner=pub.winner_id,scoreboard=el("section","uno-results-scoreboard uno-finished-panel"),finish=scoreboard;
     const hero=el("div","uno-results-hero");hero.append(el("div","uno-results-trophy","✦"),el("p","eyebrow","ROUND COMPLETE"),
       el("h3","",winner?name(winner)+" wins!":"Match finished"),
       el("p","muted tiny","The round has ended. Review the standings before returning to the lobby."));
@@ -167,16 +167,16 @@ function renderGame(){
     joined.forEach(p=>completion.append(el("div","uno-done-player",(doneMap[p.user_id]?"✓ ":"○ ")+name(p.user_id)+(p.user_id===uid()?" (you)":""))));
     scoreboard.append(completion);
     if(state.rematch_pending)scoreboard.append(el("p","uno-rematch-wait","A rematch request is pending. Check your Gather notifications to accept or decline."));
-    if(g.status!=="completed"){
-      const done=el("button",alreadyDone?"outline":"primary",alreadyDone?"You're done":"Done");
+    if(g.status==="completed"){
+      const back=el("button","outline","Back to UNO");back.onclick=async()=>{activeGameId=null;state=null;selectedCardId=null;await refresh();};actions.append(back);
+    }else{
+      const done=el("button",alreadyDone?"outline":"primary",alreadyDone?"You are done":"I am done");
       done.disabled=alreadyDone;done.onclick=async()=>{done.disabled=true;try{await call("gather_uno_done",{p_game_id:activeGameId});await loadGame();await refresh();}catch(e){toast(e.message||"Could not confirm.");done.disabled=false;}};
       const rematch=el("button","outline",state.rematch_pending?"Rematch requested":"Request rematch");
       rematch.disabled=!!state.rematch_pending;rematch.onclick=async()=>{rematch.disabled=true;try{await call("gather_uno_request_rematch",{p_game_id:activeGameId});toast("Rematch request sent.");await loadGame();await refresh();}catch(e){toast(e.message||"Could not request a rematch.");rematch.disabled=!!state.rematch_pending;}};
       actions.append(done,rematch);
-    }else{
-      const back=el("button","outline","Back to UNO");back.onclick=async()=>{activeGameId=null;state=null;selectedCardId=null;await refresh();};actions.append(back);
     }
-    root.append(actions);return;
+    finish.append(actions);root.append(finish);return;
   }
   const myTurn=pub.turn_user_id===uid(),drawPending=!!state.drawn_card_id&&myTurn,hand=sortHand(state.hand||[]);
   const board=el("section","uno-board");
