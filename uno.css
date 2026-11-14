@@ -698,3 +698,13 @@
  .uno-spectator-actions{display:grid;grid-template-columns:1fr 1fr}
  .uno-spectator-actions button{min-width:0;width:100%}
 }
+
+/* Account-level personal UNO table and card-back themes. */
+.uno-settings-select{min-width:142px;max-width:58%;padding:8px 10px;border:1px solid rgba(139,255,193,.3);border-radius:10px;background:#0b2417;color:#eafff3;font:inherit}
+.uno-modal[data-table-theme="midnight"] .uno-table{background:radial-gradient(ellipse at center,#26354b 0%,#172437 65%,#0d1724 100%)}
+.uno-modal[data-table-theme="violet"] .uno-table{background:radial-gradient(ellipse at center,#593b76 0%,#35214c 65%,#20142f 100%)}
+.uno-modal[data-table-theme="sunset"] .uno-table{background:radial-gradient(ellipse at center,#75412d 0%,#4a2926 65%,#271b20 100%)}
+.uno-modal[data-card-back="aurora"] .uno-deck{background:radial-gradient(ellipse at 25% 20%,#b8fff0 0 3%,transparent 24%),radial-gradient(ellipse at 80% 70%,#a78bfa 0 2%,transparent 27%),linear-gradient(135deg,#0b5a68,#25316d 55%,#4b286b);border-color:#c9fff3;box-shadow:0 0 16px #65e0b177,inset 0 0 0 4px #ffffff20}
+.uno-modal[data-card-back="grid"] .uno-deck{background-color:#09251a;background-image:linear-gradient(#4fffb455 1px,transparent 1px),linear-gradient(90deg,#4fffb455 1px,transparent 1px),radial-gradient(circle at center,#175c42,#09251a);background-size:12px 12px,12px 12px,100% 100%;border-color:#9bffce;box-shadow:0 0 15px #54ffb366}
+.uno-modal[data-card-back="classic"] .uno-deck{background:repeating-linear-gradient(45deg,#234a78 0 7px,#1b3c63 7px 14px)}
+@media(max-width:520px){.uno-settings-select{min-width:0;max-width:62%}}
