@@ -5898,14 +5898,23 @@ async function loadActiveSessions(){
   if(!result.data?.length)list.append(el("p","muted tiny","No active sessions were returned."));
 }
 function syncGatherVisualViewport(){
-  const height=window.visualViewport?.height;
+  const viewport=window.visualViewport;
+  const height=viewport?.height;
   if(Number.isFinite(height)&&height>0)document.documentElement.style.setProperty("--gather-visual-viewport-height",height+"px");
+  if(viewport&&Number.isFinite(viewport.offsetTop))document.documentElement.style.setProperty("--gather-visual-viewport-offset-top",viewport.offsetTop+"px");
 }
 function wire(){
   installModalBackButtons();
   syncGatherVisualViewport();
   window.addEventListener("resize",syncGatherVisualViewport);
   window.visualViewport?.addEventListener("resize",syncGatherVisualViewport);
+  document.addEventListener("focusin",event=>{
+    if(event.target?.id!=="message")return;
+    requestAnimationFrame(()=>{
+      window.scrollTo({top:0,left:0,behavior:"instant"});
+      syncGatherVisualViewport();
+    });
+  });
   // Capture the shared-media back action before other modal or delegated handlers.
   // This keeps the navigation working even if other composer/modal handlers stop bubbling.
   document.addEventListener("click",event=>{
