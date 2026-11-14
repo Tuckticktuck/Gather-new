@@ -89,7 +89,7 @@ const snakeFoundationMigration = readFileSync(join(root, "supabase/migrations/20
 const snakeLifecycleMigration = readFileSync(join(root, "supabase/migrations/20261114022743_harden_snake_host_and_leave_lifecycle.sql"), "utf8");
 const snakeDeclineMigration = readFileSync(join(root, "supabase/migrations/20261114023244_add_snake_arena_invitation_decline.sql"), "utf8");
 const snakeSpectatorMigration = readFileSync(join(root, "supabase/migrations/20261114125425_add_read_only_snake_spectator_membership.sql"), "utf8");
-const snakeSpectatorDiscoveryMigration = readFileSync(join(root, "supabase/migrations/20261114125432_show_full_snake_lobbies_to_spectators.sql"), "utf8");
+const snakeSpectatorDiscoveryMigration = readFileSync(join(root, "supabase/migrations/20261114125529_show_full_snake_lobbies_to_spectators.sql"), "utf8");
 assert.ok(snakeClient.includes('functions.invoke("gather-snake-action"'), "Snake controls must call the JWT-verified action endpoint");
 assert.match(snakeClient, /gather_snake_start/, "Snake lobby must use the server-side start RPC");
 assert.match(snakeClient, /action:\s*"tick"/, "Snake client must request ticks from the authoritative server endpoint");
