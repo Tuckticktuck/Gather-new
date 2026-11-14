@@ -3881,7 +3881,18 @@ function renderMessages(preserveScroll=false){
         if(image.complete)queueMicrotask(()=>scrollMessagesToLatest(S.active));
       }else bubble.append(el("p","message-image-unavailable","Image unavailable"));
     }
-    if(m.body&&!S.messagePolls[m.id]){
+    if(S.editingMessageId===m.id){
+      const editor=el("div","message-inline-editor");
+      const field=el("textarea","message-inline-edit-field");
+      field.rows=Math.min(6,Math.max(2,String(S.editDraft||"").split("\\n").length));
+      field.maxLength=4000;field.value=S.editDraft;
+      field.setAttribute("aria-label","Edit message");
+      field.addEventListener("input",()=>{S.editDraft=field.value;});
+      const controls=el("div","message-inline-edit-actions");
+      const cancel=el("button","outline","Cancel");cancel.type="button";cancel.addEventListener("click",cancelInlineMessageEdit);
+      const save=el("button","primary","Save");save.type="button";save.addEventListener("click",()=>saveInlineMessageEdit(m));
+      controls.append(cancel,save);editor.append(field,controls);bubble.append(editor);
+    }else if(m.body&&!S.messagePolls[m.id]){
       const bodyText=el("div","body-text");
       appendFormattedMessageText(bodyText,m.body);
       bubble.append(bodyText);
@@ -4465,16 +4476,23 @@ async function submitReport(event){
   $("report-modal").hidden=true;toast("Your report was submitted privately for review.");
   S.reportTargetUserId=null;S.reportTargetMessageId=null;
 }
-async function editOwnMessage(message){
+function editOwnMessage(message){
   if(!message||message.sender_id!==S.user?.id||!message.body)return;
-  const next=prompt("Edit your message (use **bold** and #italic#):",message.body);
-  if(next===null)return;
-  const body=next.trim();
+  S.editingMessageId=message.id;S.editDraft=message.body;S.openMessageMenuId=null;S.openReactionPickerMessageId=null;
+  renderMessages(true);
+  requestAnimationFrame(()=>{const field=document.querySelector('[data-message-id="'+message.id+'"] .message-inline-edit-field');if(field){field.focus();field.setSelectionRange(field.value.length,field.value.length);}});
+}
+function cancelInlineMessageEdit(){
+  S.editingMessageId=null;S.editDraft="";renderMessages(true);
+}
+async function saveInlineMessageEdit(message){
+  if(!message||S.editingMessageId!==message.id)return;
+  const body=String(S.editDraft||"").trim();
   if(!body||body.length>4000){toast("Messages must contain 1–4,000 characters.");return;}
-  if(body===message.body)return;
+  if(body===message.body){cancelInlineMessageEdit();return;}
   const result=await db.from("messages").update({body,edited_at:new Date().toISOString()}).eq("id",message.id).eq("sender_id",S.user.id).select("id,body,edited_at").maybeSingle();
   if(result.error||!result.data){toast("Message could not be edited: "+(result.error?.message||"Permission denied."));return;}
-  Object.assign(message,result.data);renderMessages(true);toast("Message updated.");
+  Object.assign(message,result.data);S.editingMessageId=null;S.editDraft="";renderMessages(true);toast("Message updated.");
 }
 async function adminApi(action,data={}){
   if(!isFeedbackAdmin(S.user))throw new Error("Admin Mode is not available for this account.");
