@@ -1,6 +1,6 @@
 # Gather Arcade Expansion — Implementation Plan
 
-Status: Phase 1 Snake Arena implementation underway; first playable architecture and clients are in the repository, with authenticated multi-account verification still outstanding
+Status: Phase 1 implementation and automated release checks pass; authenticated multi-account, reconnect, latency, and device verification remain outstanding
 Repository: `Tuckticktuck/Gather-new`
 Supabase project: `xrwldphmeafiakittcof`
 Hosting: GitHub Pages
@@ -221,13 +221,18 @@ For each migration:
 **Exit gate status:** code-level compatibility and automated regression checks pass. A real two-account regression of UNO, Ludo, Tag, and the board games is still pending.
 
 ### Phase 1 — Snake Arena
-<text>**Implementation status: first playable slice committed; release verification outstanding.**</text>
+<text>**Implementation status: code-complete first playable slice; automated release checks and GitHub Pages deployment passed on 2026-11-14. Authenticated release verification remains outstanding.**</text>
 - [x] Deterministic rules engine and automated tests.
 - [x] Server-authoritative direction/tick endpoint, server timing, row lock and revision/state compare-and-swap.
 - [x] Shared multiplayer lobby, invites, ready state, host settings, max-player validation, leave/end, recap and rematch.
 - [x] Friend-scoped open lobby discovery without weakening participant table RLS.
 - [x] Fullscreen arena, keyboard/touch directional controls, temporary game chat, result panel.
 - [x] Integrate Game Hub, central game notifications and Party Quick Play.
+- [x] Add regression assertions for UNO recap rendering, done confirmation, rematch creation, and accept/decline response handlers.
+
+**Latest automated verification (2026-11-14):** GitHub Actions run [43595618014](https://github.com/Tuckticktuck/Gather-new/actions/runs/43595618014) passed the TypeScript build, all 28 deterministic tests, JavaScript syntax validation, site asset/HTML/CSS/service-worker validation, and the deployment job. The separate Pages deployment workflow also passed. Supabase reports `gather-snake-action` active with JWT verification enabled; the Snake input, tick snapshot, and tick commit RPCs are service-role-only. UNO recap RPCs are present and require joined-player authorization. Private Snake and UNO state tables deny direct SELECT to `anon` and `authenticated`.
+
+**Release verification limitation:** `tests/e2e/README.md` is still a test plan, not an executable authenticated browser suite. The repository has no dedicated test users, test credentials, disposable E2E project, or browser automation environment. Do not run destructive lifecycle tests against the live user project or mark the multiplayer release gate complete without those prerequisites.
 - [ ] Verify two-to-eight accounts through complete create/invite/join/ready/start/play/end/rematch cycles.
 - [ ] Test reconnect, latency, dropped packets, background-tab suspension, host departure, and mobile/Chromebook visual layout.
 - [ ] Tune or replace the client-prompted tick driver based on observed latency.
