@@ -232,7 +232,29 @@
         start.disabled=players.filter(p=>p.status==="joined").length<2||players.some(p=>p.status==="joined"&&!p.ready);
         actions.append(start);
       }
-      actions.append(btn("Leave lobby","secondary-action",async()=>{await ctx.db.rpc("gather_tag_leave",{p_lobby_id:activeLobbyId});activeLobbyId=null;activeLobby=null;await refresh();}));
+      if(activeLobby.created_by===uid()){
+        actions.append(btn("Cancel lobby","secondary-action tag-end",async()=>{
+          if(busy)return;
+          if(!confirm("Close this Tag lobby for everyone? The current round will end and all invited and joined players will be removed."))return;
+          busy=true;
+          try{
+            const result=await ctx.db.rpc("gather_tag_cancel",{p_lobby_id:activeLobbyId});
+            if(result.error)throw result.error;
+            toast("Tag lobby closed.");
+            activeLobbyId=null;activeLobby=null;players=[];
+            await refresh();
+          }catch(error){toast(error?.message||"The Tag lobby could not be closed.");}
+          finally{busy=false;}
+        }));
+      }else{
+        actions.append(btn("Leave lobby","secondary-action",async()=>{
+          if(!confirm("Leave this Tag lobby?"))return;
+          const result=await ctx.db.rpc("gather_tag_leave",{p_lobby_id:activeLobbyId});
+          if(result.error){toast(result.error.message||"Could not leave the lobby.");return;}
+          activeLobbyId=null;activeLobby=null;players=[];
+          await refresh();
+        }));
+      }
       root.append(actions);
       root.append(el("p","muted tiny","The host can start once at least two players have joined and everyone is ready."));
     } else {
@@ -243,6 +265,21 @@
         if(activeLobby.created_by===uid())root.append(btn("Return to lobby · Set next round","primary tag-end",async()=>{const r=await ctx.db.rpc("gather_tag_return_lobby",{p_lobby_id:activeLobbyId});if(r.error){toast(r.error.message);return;}await refresh();}));
       }else if(activeLobby.created_by===uid()&&activeLobby.status==="active"){
         root.append(btn("End match","secondary-action tag-end",async()=>{if(!confirm("End this round and return everyone to the lobby?"))return;const r=await ctx.db.rpc("gather_tag_return_lobby",{p_lobby_id:activeLobbyId});if(r.error){toast(r.error.message);return;}await refresh();}));
+      }
+      if(activeLobby.created_by===uid()){
+        root.append(btn("Close lobby","secondary-action tag-end",async()=>{
+          if(busy)return;
+          if(!confirm("Close this Tag lobby for everyone? The current round will end and all invited and joined players will be removed."))return;
+          busy=true;
+          try{
+            const result=await ctx.db.rpc("gather_tag_cancel",{p_lobby_id:activeLobbyId});
+            if(result.error)throw result.error;
+            toast("Tag lobby closed.");
+            activeLobbyId=null;activeLobby=null;players=[];
+            await refresh();
+          }catch(error){toast(error?.message||"The Tag lobby could not be closed.");}
+          finally{busy=false;}
+        }));
       }
     }
     const back=btn("Back to Tag Arena","outline tag-back",()=>{activeLobbyId=null;activeLobby=null;players=[];renderPanel();});root.append(back);
