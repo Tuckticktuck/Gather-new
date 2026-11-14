@@ -18,10 +18,10 @@ Do not treat a same-named game in two families as the same runtime. In particula
 | Client module | Game / concern | RPCs or direct data access | Persistence family |
 |---|---|---|---|
 | `games.js` | Hub and invites | Reads `gather_games`; reads multiplayer/tag invitation and roster rows | All three |
-| `games.js` | Chess | `gather_game_create`, `gather_game_accept`, `gather_game_move`, `gather_game_end` | Legacy turn-based |
-| `games.js` | Checkers | `gather_game_create`, `gather_game_accept`, `gather_game_move`, `gather_game_end` | Legacy turn-based |
-| `games.js` | Tic-Tac-Toe | `gather_game_create`, `gather_game_accept`, `gather_game_move`, `gather_game_end` | Legacy turn-based |
-| `games.js` | Connect Four | `gather_game_create`, `gather_game_accept`, `gather_game_move`, `gather_game_end` | Legacy turn-based |
+| `games.js` | Chess | `gather_game_create`, `gather_game_accept`, `gather-board-game-action` Edge Function, `gather_game_end` | Legacy turn-based + server validator |
+| `games.js` | Checkers | `gather_game_create`, `gather_game_accept`, `gather-board-game-action` Edge Function, `gather_game_end` | Legacy turn-based + server validator |
+| `games.js` | Tic-Tac-Toe | `gather_game_create`, `gather_game_accept`, `gather-board-game-action` Edge Function, `gather_game_end` | Legacy turn-based + server validator |
+| `games.js` | Connect Four | `gather_game_create`, `gather_game_accept`, `gather-board-game-action` Edge Function, `gather_game_end` | Legacy turn-based + server validator |
 | `games.js` | Battleship | `gather_game_create`, `gather_game_battleship_private_state`, `gather_game_battleship_action` | Legacy game row + private fleet table |
 | `games.js` | Legacy Ludo | `gather_game_create`, `gather_ludo_action` | Legacy turn-based |
 | `games.js` | Legacy Ludo (alternate multiplayer module) | Client code contains `gather_ludo_multiplayer_action` path in multiplayer module; verify which UI path is mounted before changing | Shared multiplayer |
@@ -35,11 +35,14 @@ Do not treat a same-named game in two families as the same runtime. In particula
 
 ### Legacy two-player games
 
-- Chess, Checkers, Tic-Tac-Toe, and Connect Four compute the next board state in the browser and call `gather_game_move(game_id, expected_revision, state, next_turn_user_id, result)`.
-- Live RPC checks authentication, conversation access, active status, turn ownership, revision equality, JSON object/size, next-player identity, and basic result constraints.
-- It then persists the submitted state. It does **not** replay or validate each legal Chess/Checkers/Tic-Tac-Toe/Connect Four move, nor independently derive checkmate, win, or draw.
-- The existing winner guard prevents a player from declaring the opponent the winner, but does not make the board transition authoritative.
-- This is a confirmed trust boundary weakness. Do not use this generic RPC for any new game. Repair requires per-game server validators and coordinated client migration; do not make a blanket payload rejection.
+- Chess, Checkers, Tic-Tac-Toe, and Connect Four now send a **move intent** to the authenticated `gather-board-game-action` Edge Function; clients no longer submit a replacement board, turn, result, or winner.
+- The function verifies the caller's Supabase session, checks that the actor is one of the two players and owns the current turn, validates the move against the stored match, derives the next board/result server-side, and commits through `gather_board_game_commit_move`.
+- Chess replays the stored SAN history with `chess.js`, confirms it produces the stored FEN, applies one legal move, and derives mate/draw/next turn on the server.
+- Checkers validates legal diagonal movement, mandatory capture, promotion, multi-jump continuation, and win/no-legal-move outcomes.
+- Tic-Tac-Toe validates mark counts, current mark, empty-square placement, win, and draw. Connect Four validates board shape, tokens, gravity, current color, column capacity, win, and draw.
+- The commit RPC locks the match row and compares both the expected revision and original state to the state the Edge Function validated. It checks the conversation's current messaging permissions again before writing.
+- Execute on `gather_board_game_commit_move` is restricted to `service_role`; the former generic `gather_game_move` full-state endpoint has had execute revoked from `public`, `anon`, and `authenticated`.
+- Deterministic unit coverage is in `tests/board-game-rules.test.mjs`; CI runs it with the shared multiplayer contract tests. Full two-account browser/E2E verification remains a separate release gate.
 
 ### Battleship
 
@@ -95,7 +98,7 @@ Live inspection shows the relevant public RPCs are executable by `authenticated`
 - [ ] Map and test every host/participant/invitee/spectator path with two authenticated accounts.
 - [ ] Inspect the full private Tag movement implementation and all Tag SQL helper functions.
 - [ ] Inspect the full private multiplayer create/join/update/end helpers and exact roster status transitions.
-- [ ] Add deterministic rule tests for the actual game-specific validators, not only the shared contract gate.
+- [x] Add deterministic rule tests for Tic-Tac-Toe, Connect Four, and Checkers; Chess uses server-side SAN-history replay and legal-move validation and still needs authenticated integration coverage.
 - [ ] Build and run a dedicated two-account browser E2E environment.
 - [ ] Decide Snake's trusted simulation runtime without adding Netlify or Cloudflare.
 
