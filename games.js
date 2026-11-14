@@ -682,12 +682,12 @@
         const actions=node("div","games-card-actions");
         actions.append(button("View invitation","primary games-card-primary",async()=>{
           window.GatherDominoes?.openInvitation?.(game.id);
-          await refreshLiveCards();
+          renderCentralInvitations();
         }));
         actions.append(button("Decline","outline",async()=>{
           const result=await ctx.db.rpc("gather_dominoes_leave",{p_game_id:game.id});
           if(result.error){toast(result.error.message||"Could not decline the invitation.");return;}
-          await refreshLiveCards();
+          await window.GatherDominoes?.refresh?.();renderCentralInvitations();
         }));
         card.append(actions);inviteList.append(card);
         return;
