@@ -53,3 +53,11 @@
 .snake-settings-panel .snake-field{min-width:0}
 .snake-settings-panel .snake-field span{font-size:10px}
 .snake-settings-panel button{min-height:42px}
+
+.snake-lobby-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.snake-lobby-actions button{min-height:38px}
+.snake-spectator-roster{padding:2px 0}
+.snake-spectator-name{padding:6px 10px;border:1px solid var(--line);border-radius:999px}
+.snake-spectator-banner{margin:10px 0;padding:10px 13px;border:1px solid var(--accent-outline-soft);border-radius:12px;background:var(--accent-surface);color:var(--accent-text);font-size:12px;font-weight:700}
+.snake-watcher-count{margin:6px 0}
+@media(max-width:600px){.snake-lobby-actions{width:100%}.snake-lobby-actions button{flex:1 1 120px}}
