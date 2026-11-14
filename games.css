@@ -922,3 +922,16 @@
  .uno-in-match .game-chat-toggle{width:36px;height:36px}
  .uno-in-match .game-chat-panel{right:0;left:auto;width:min(310px,calc(100vw - 32px));}
 }
+
+/* Gather-native chat control: Lucide-like outlined message bubble. */
+.uno-in-match .game-chat-toggle{
+ box-sizing:border-box;width:40px;height:40px;min-width:40px;min-height:40px;
+ display:grid;place-items:center;padding:0;border:1px solid var(--border,rgba(255,255,255,.18));
+ border-radius:13px;background:var(--panel-strong,rgba(35,31,48,.94));
+ color:var(--text,#f4f2fa);box-shadow:0 4px 14px rgba(0,0,0,.16);
+ transition:background .16s ease,border-color .16s ease,transform .16s ease;
+}
+.uno-in-match .game-chat-toggle:hover{background:var(--surface,#292536);border-color:var(--accent,#65a58d)}
+.uno-in-match .game-chat-toggle:active{transform:scale(.96)}
+.uno-in-match .game-chat-toggle.active{background:color-mix(in srgb,var(--accent,#65a58d) 18%,var(--panel-strong,#292536));border-color:var(--accent,#65a58d);color:var(--accent-text,#fff)}
+.uno-in-match .game-chat-toggle svg{display:block;width:20px;height:20px}
