@@ -1,17 +1,17 @@
 # Supabase migration reconciliation
 
-Audit snapshot: 2026-11-13  
+Audit snapshot: 2026-11-14  
 Repository: `Tuckticktuck/Gather-new`  
 Supabase project: `xrwldphmeafiakittcof`
 
 ## Observed state
 
-- Applied Supabase migration records: **138**
-- SQL migration files in the repository: **101**
-- Applied migration names with a same-named repository source file: **95**
+- Applied Supabase migration records: **154**
+- SQL migration files in the repository: **117**
+- Applied migration names with a same-named repository source file: **111**
 - Applied migration records whose names have no matching source file in the current branch: **43**
 - Repository migration files whose names have no matching applied migration record: **6**
-- Among the 95 name matches, **33** use a repository filename timestamp that differs from the applied database version.
+- Among the 111 name matches, **34** use a repository filename timestamp that differs from the applied database version.
 
 The timestamp differences are not proof that a migration is unapplied. The matching migration name is a stronger clue, but the source SQL still needs to be compared with the live definitions before changing filenames or history.
 
