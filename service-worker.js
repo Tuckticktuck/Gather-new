@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "gather-shell-v74";
+const CACHE_NAME = "gather-shell-v75";
 const APP_BASE = new URL("./", self.registration.scope);
 const SHELL_URLS = [
   "./",
