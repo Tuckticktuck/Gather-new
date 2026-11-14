@@ -317,7 +317,7 @@
     if (!overlay) {
       overlay = node("div", "overlay games-overlay");
       overlay.id = "games-multiplayer-chooser";
-      overlay.innerHTML = '<section class="modal games-create-modal games-type-chooser-modal" role="dialog" aria-modal="true" aria-labelledby="games-multiplayer-title"><button id="games-multiplayer-close" class="close" type="button" aria-label="Close">×</button><p class="eyebrow">MULTIPLAYER</p><h2 id="games-multiplayer-title">Choose a game</h2><p class="muted tiny">Pick a game for your group.</p><div class="games-type-chooser-options"><button id="games-multiplayer-tag" class="games-type-choice" type="button"><span class="games-type-choice-icon" aria-hidden="true">●</span><span><strong>Tag Arena</strong><small>Move around the arena and tag other players.</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button><button id="games-multiplayer-uno" class="games-type-choice" type="button"><span class="games-type-choice-icon" aria-hidden="true">▦</span><span><strong>UNO</strong><small>Play cards with your group.</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button><button id="games-multiplayer-ludo" class="games-type-choice" type="button"><span class="games-type-choice-icon" aria-hidden="true">◉</span><span><strong>Ludo</strong><small>Race four tokens with 2–4 players.</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button></div></section>';
+      overlay.innerHTML = '<section class="modal games-create-modal games-type-chooser-modal" role="dialog" aria-modal="true" aria-labelledby="games-multiplayer-title"><button id="games-multiplayer-close" class="close" type="button" aria-label="Close">×</button><p class="eyebrow">MULTIPLAYER</p><h2 id="games-multiplayer-title">Choose a game</h2><p class="muted tiny">Pick a game for your group.</p><div class="games-type-chooser-options"><button id="games-multiplayer-tag" class="games-type-choice" type="button"><span class="games-type-choice-icon" aria-hidden="true">●</span><span><strong>Tag Arena</strong><small>Move around the arena and tag other players.</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button><button id="games-multiplayer-uno" class="games-type-choice" type="button"><span class="games-type-choice-icon" aria-hidden="true">▦</span><span><strong>UNO</strong><small>Play cards with your group.</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button><button id="games-multiplayer-ludo" class="games-type-choice" type="button"><span class="games-type-choice-icon" aria-hidden="true">◉</span><span><strong>Ludo</strong><small>Race four tokens with 2–4 players.</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button><button id="games-multiplayer-snake" class="games-type-choice" type="button"><span class="games-type-choice-icon" aria-hidden="true">〰</span><span><strong>Snake Arena</strong><small>Survive a live multiplayer arena with 2–8 players.</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button></div></section>';
       document.body.append(overlay);
       $("games-multiplayer-close").addEventListener("click", () => { overlay.hidden = true; });
       overlay.addEventListener("click", event => { if (event.target === overlay) overlay.hidden = true; });
@@ -329,6 +329,10 @@
       $("games-multiplayer-ludo").addEventListener("click", () => {
         overlay.hidden = true;
         window.GatherLudo?.open?.();
+      });
+      $("games-multiplayer-snake").addEventListener("click", () => {
+        overlay.hidden = true;
+        window.GatherSnake?.open?.();
       });
     }
     overlay.hidden = false;
@@ -448,22 +452,26 @@
     } else {
       games = [];
     }
-    const [unoInvites, tagInvites, ludoInvites, unoJoined, ludoJoined, tagJoined] = await Promise.all([
+    const [unoInvites, tagInvites, ludoInvites, snakeInvites, unoJoined, ludoJoined, tagJoined, snakeJoined] = await Promise.all([
       ctx.db.from("gather_multiplayer_players").select("game_id,user_id,status,joined_at,gather_multiplayer_games!inner(id,conversation_id,game_type,status,created_by,join_mode,settings,created_at,updated_at)").eq("user_id", userId()).eq("status", "invited").eq("gather_multiplayer_games.game_type", "uno").eq("gather_multiplayer_games.status", "active"),
       ctx.db.from("gather_tag_players").select("lobby_id,user_id,status,joined_at,gather_tag_lobbies!inner(id,conversation_id,created_by,status,mode,join_mode,max_players,created_at,updated_at)").eq("user_id", userId()).eq("status", "invited").in("gather_tag_lobbies.status", ["lobby", "active"]),
       ctx.db.from("gather_multiplayer_players").select("game_id,user_id,status,joined_at,gather_multiplayer_games!inner(id,conversation_id,game_type,status,created_by,join_mode,settings,created_at,updated_at,state)").eq("user_id", userId()).eq("status", "invited").eq("gather_multiplayer_games.game_type", "ludo").eq("gather_multiplayer_games.status", "active"),
+      ctx.db.from("gather_multiplayer_players").select("game_id,user_id,status,joined_at,gather_multiplayer_games!inner(id,conversation_id,game_type,status,created_by,join_mode,settings,created_at,updated_at,state)").eq("user_id", userId()).eq("status", "invited").eq("gather_multiplayer_games.game_type", "snake_arena").eq("gather_multiplayer_games.status", "active"),
       ctx.db.from("gather_multiplayer_players").select("game_id,gather_multiplayer_games!inner(id,conversation_id,game_type,status,created_by,join_mode,settings,created_at,updated_at)").eq("user_id", userId()).eq("status", "joined").eq("gather_multiplayer_games.game_type", "uno").eq("gather_multiplayer_games.status", "active"),
       ctx.db.from("gather_multiplayer_players").select("game_id,gather_multiplayer_games!inner(id,conversation_id,game_type,status,created_by,join_mode,settings,created_at,updated_at,state)").eq("user_id", userId()).eq("status", "joined").eq("gather_multiplayer_games.game_type", "ludo").eq("gather_multiplayer_games.status", "active"),
-      ctx.db.from("gather_tag_players").select("lobby_id,gather_tag_lobbies!inner(id,conversation_id,created_by,status,mode,join_mode,max_players,created_at,updated_at)").eq("user_id", userId()).eq("status", "joined").in("gather_tag_lobbies.status", ["lobby", "active"])
+      ctx.db.from("gather_tag_players").select("lobby_id,gather_tag_lobbies!inner(id,conversation_id,created_by,status,mode,join_mode,max_players,created_at,updated_at)").eq("user_id", userId()).eq("status", "joined").in("gather_tag_lobbies.status", ["lobby", "active"]),
+      ctx.db.from("gather_multiplayer_players").select("game_id,gather_multiplayer_games!inner(id,conversation_id,game_type,status,created_by,join_mode,settings,created_at,updated_at,state)").eq("user_id", userId()).eq("status", "joined").eq("gather_multiplayer_games.game_type", "snake_arena").eq("gather_multiplayer_games.status", "active")
     ]);
     externalInvitations = [];
     if (!unoInvites.error) (unoInvites.data || []).forEach(row => { const game=row.gather_multiplayer_games; if(game) externalInvitations.push({kind:"uno",id:game.id,conversation_id:game.conversation_id,created_by:game.created_by,created_at:game.created_at,join_mode:game.join_mode,settings:game.settings}); });
     if (!tagInvites.error) (tagInvites.data || []).forEach(row => { const lobby=row.gather_tag_lobbies; if(lobby) externalInvitations.push({kind:"tag",id:lobby.id,conversation_id:lobby.conversation_id,created_by:lobby.created_by,created_at:lobby.created_at,join_mode:lobby.join_mode,mode:lobby.mode,max_players:lobby.max_players,status:lobby.status}); });
     if (!ludoInvites.error) (ludoInvites.data || []).forEach(row => { const game=row.gather_multiplayer_games; if(game) externalInvitations.push({kind:"ludo",id:game.id,conversation_id:game.conversation_id,created_by:game.created_by,created_at:game.created_at,join_mode:game.join_mode,settings:game.settings,state:game.state}); });
+    if (!snakeInvites.error) (snakeInvites.data || []).forEach(row => { const game=row.gather_multiplayer_games; if(game) externalInvitations.push({kind:"snake_arena",id:game.id,conversation_id:game.conversation_id,created_by:game.created_by,created_at:game.created_at,join_mode:game.join_mode,settings:game.settings,state:game.state}); });
     externalLiveGames = [];
     if (!unoJoined.error) (unoJoined.data || []).forEach(row => { const game=row.gather_multiplayer_games; if(game) externalLiveGames.push({kind:"uno",game}); });
     if (!ludoJoined.error) (ludoJoined.data || []).forEach(row => { const game=row.gather_multiplayer_games; if(game) externalLiveGames.push({kind:"ludo",game}); });
     if (!tagJoined.error) (tagJoined.data || []).forEach(row => { const lobby=row.gather_tag_lobbies; if(lobby) externalLiveGames.push({kind:"tag",game:lobby}); });
+    if (!snakeJoined.error) (snakeJoined.data || []).forEach(row => { const game=row.gather_multiplayer_games; if(game) externalLiveGames.push({kind:"snake_arena",game}); });
     renderAll();
     if (typeof ctx.onGamesUpdated === "function") ctx.onGamesUpdated();
   }
