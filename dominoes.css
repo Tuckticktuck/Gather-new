@@ -80,3 +80,8 @@
 .dominoes-end-target.is-drop-target{border-style:solid;border-color:var(--domino-accent);background:color-mix(in srgb,var(--domino-accent) 18%,transparent);box-shadow:0 0 22px color-mix(in srgb,var(--domino-accent) 40%,transparent)}
 .dominoes-preview{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}.dominoes-preview .dominoes-tile{width:70px;height:34px}
 .dominoes-seats .dominoes-seat[data-seat="0"]{grid-column:1}.dominoes-seats .dominoes-seat[data-seat="1"]{grid-column:2}.dominoes-seats .dominoes-seat[data-seat="2"]{grid-column:3}.dominoes-seats .dominoes-seat[data-seat="3"]{grid-column:4}
+
+/* Four seats form a tabletop ring: the two team pairs sit across from one another. */
+.dominoes-seats{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:auto auto auto;align-items:center}
+.dominoes-seats .dominoes-seat[data-seat="0"]{grid-area:1/2}.dominoes-seats .dominoes-seat[data-seat="1"]{grid-area:2/3}.dominoes-seats .dominoes-seat[data-seat="2"]{grid-area:3/2}.dominoes-seats .dominoes-seat[data-seat="3"]{grid-area:2/1}
+.dominoes-end-target{display:inline-flex;align-items:center;justify-content:center;gap:7px;flex-wrap:wrap}
