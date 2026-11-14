@@ -59,4 +59,4 @@ The test suite must refuse to run against production user accounts. Use a dedica
 
 ## Release rule
 
-Phase 0 must not be marked complete until this matrix runs with two separate authenticated accounts against a dedicated test environment, and the existing UNO, Ludo, Tag, and turn-based games have passed their regression flows.
+Phase 1 must not be accepted until this matrix runs with two separate authenticated player accounts plus a third observer against a dedicated test environment, and the existing UNO, Ludo, Tag, Battleship, Chess, Checkers, Tic-Tac-Toe, and Connect Four games have passed their regression flows.
