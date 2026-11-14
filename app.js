@@ -3756,38 +3756,23 @@ function renderMessages(preserveScroll=false){
     row.dataset.messageId=m.id;
     if(!suppressEntryAnimation&&!existingMessageIds.has(String(m.id)))row.classList.add("gather-message-enter");
     const bubble=el("div","bubble"),meta=el("div","meta");
-    const showSenderHeader=showSenderNames&&senderChanged;
-    if(showSenderHeader){
-      const authorProfile=mine?S.profile:p;
-      const authorName=mine?"You":(p?.display_name?.trim()||p?.username||"Member");
-      const authorLine=el("span","message-sender-line");
-      const senderAvatar=avatar(authorName,authorProfile?.avatar_data||null);
+    const showSenderAvatar=showSenderNames&&!mine&&(!previousMessage||senderChanged||gapFromPrevious>=60*60*1000);
+    let senderAvatar=null;
+    if(showSenderAvatar){
+      senderAvatar=avatar(p?.display_name?.trim()||p?.username||"Member",p?.avatar_data||null);
       senderAvatar.classList.add("message-group-avatar");
-      if(!mine){
-        senderAvatar.setAttribute("role","button");
-        senderAvatar.setAttribute("tabindex","0");
-        senderAvatar.setAttribute("aria-label","View "+authorName+"'s profile");
-        senderAvatar.addEventListener("click",()=>openPublicProfile(m.sender_id));
-        senderAvatar.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();openPublicProfile(m.sender_id);}});
-      }
-      authorLine.append(senderAvatar,el("strong","message-group-name",authorName));
-      meta.append(authorLine);
+      senderAvatar.setAttribute("role","button");
+      senderAvatar.setAttribute("tabindex","0");
+      senderAvatar.setAttribute("aria-label","View sender profile");
+      senderAvatar.addEventListener("click",()=>openPublicProfile(m.sender_id));
+      senderAvatar.addEventListener("keydown",event=>{
+        if(event.key==="Enter"||event.key===" "){event.preventDefault();openPublicProfile(m.sender_id);}
+      });
     }
     if(m.is_admin_message)meta.append(el("small","message-admin-label","Gather Admin"));
     if(m.forwarded_from_id)meta.append(el("small","message-forwarded-label","Forwarded"));
     if(m.edited_at)meta.append(el("small","message-edited-label","edited"));
     if(!S.selectingMessages){
-      const quickReact=el("button","message-quick-react","＋");
-      quickReact.type="button";
-      quickReact.setAttribute("aria-label","Add reaction");
-      quickReact.title="Add reaction";
-      quickReact.addEventListener("click",event=>{
-        event.stopPropagation();
-        S.openReactionPickerMessageId=S.openReactionPickerMessageId===m.id?null:m.id;
-        S.openMessageMenuId=null;
-        renderMessages(true);
-      });
-      meta.append(quickReact);
       const menu=el("div","message-action-menu");
       menu.hidden=S.openMessageMenuId!==m.id;
       menu.setAttribute("role","menu");
@@ -3905,8 +3890,9 @@ function renderMessages(preserveScroll=false){
       bubble.append(pick);
       row.classList.toggle("selected",S.selectedMessageIds.has(m.id));
     }
+    row.append(bubble);
     if(senderAvatar)row.append(senderAvatar);
-    row.append(bubble);list.append(row);
+    list.append(row);
     if(!S.selectingMessages){
       let holdTimer=null;
       const clearHold=()=>{if(holdTimer){clearTimeout(holdTimer);holdTimer=null;}};
