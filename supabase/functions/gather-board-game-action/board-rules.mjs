@@ -34,7 +34,8 @@ function applyTicTacToe(game, actorId, action) {
   const oCount = board.filter(cell => cell === "o").length;
   if (xCount !== oCount && xCount !== oCount + 1) reject("This Tic-Tac-Toe board is inconsistent. Start a new match.");
   const expectedTurn = xCount === oCount ? "x" : "o";
-  if (state.turn !== expectedTurn || tttWinner(board) || (xCount + oCount === 9)) {
+  const existingWinners = winnerOnLine(board, TTT_LINES, ["x", "o"]);
+  if (state.turn !== expectedTurn || existingWinners.size > 0 || (xCount + oCount === 9)) {
     reject("This Tic-Tac-Toe match is already finished or has an invalid turn.");
   }
   const isPlayerOne = actorId === game.player_one_id;
