@@ -92,7 +92,6 @@ const unoOfferLock = unoRecapLeaveMigration.indexOf("SELECT * INTO o", unoRecapL
 assert.ok(unoMatchLock >= 0 && unoOfferLock > unoMatchLock, "UNO rematch response must lock match before offer to keep lifecycle lock order consistent");
 assert.match(unoRecapLeaveMigration, /status='joined'[\s\S]*joined_count<>cardinality\(o\.participants\)/i, "UNO rematch start must revalidate that all original participants are still joined");
 
-const gamesClient = readFileSync(join(root, "games.js"), "utf8");
 const partyClient = readFileSync(join(root, "party.js"), "utf8");
 const appClient = readFileSync(join(root, "app.js"), "utf8");
 const ludoClient = readFileSync(join(root, "ludo.js"), "utf8");
