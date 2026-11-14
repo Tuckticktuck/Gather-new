@@ -337,7 +337,7 @@
         message.textContent = "Choose at least one person to invite.";
         return;
       }
-      if (selected.length + 1 > Number(capacity.value)) {
+      if (joinMode.value === "invite" && selected.length + 1 > Number(capacity.value)) {
         message.textContent = "The player limit must include you and everyone invited.";
         return;
       }
@@ -430,7 +430,7 @@
       root.append(recap);
       const controls = el("div", "tag-actions");
       controls.append(btn("Back to Snake Arena", "outline", () => { activeGameId = null; activeGame = null; stopTickDriver(); renderPanel(); }));
-      if (host) controls.append(btn("Rematch", "primary", async e => {
+      if (host && activeGame.status === "completed") controls.append(btn("Rematch", "primary", async e => {
         if (busy) return;
         busy = true;
         try {
@@ -442,6 +442,54 @@
       }));
       root.append(controls);
       return;
+    }
+
+    if (state.phase === "lobby" && host) {
+      const settingsPanel = el("section", "snake-settings-panel");
+      settingsPanel.append(el("strong", "", "Lobby settings"));
+      const makeSetting = (labelText, values, current) => {
+        const label = el("label", "snake-field");
+        label.append(el("span", "muted tiny", labelText));
+        const control = el("select", "snake-select");
+        values.forEach(([value,caption]) => {
+          const option = el("option", "", caption);
+          option.value = value;
+          option.selected = String(value) === String(current);
+          control.append(option);
+        });
+        label.append(control);
+        settingsPanel.append(label);
+        return control;
+      };
+      const current = { ...settingsDefaults(), ...(activeGame.settings || {}) };
+      const arena = makeSetting("Arena size", [["small","Small"],["standard","Standard"],["large","Large"]], current.arena);
+      const obstacles = makeSetting("Obstacles", [["off","Off"],["standard","Standard"]], current.obstacles);
+      const speed = makeSetting("Speed", [["slow","Slow"],["standard","Standard"],["fast","Fast"]], current.speed);
+      const duration = makeSetting("Round duration", [["60","60 seconds"],["90","90 seconds"],["120","120 seconds"],["180","180 seconds"],["240","240 seconds"],["300","300 seconds"]], current.round_seconds);
+      const capacity = makeSetting("Player limit", Array.from({length:7},(_,index)=>[String(index+2),(index+2)+" players"]), current.max_players);
+      const save = btn("Save settings", "outline", async () => {
+        save.disabled = true;
+        const result = await ctx.db.rpc("gather_snake_set_settings", {
+          p_game_id: activeGameId,
+          p_settings: {
+            arena: arena.value,
+            obstacles: obstacles.value,
+            speed: speed.value,
+            round_seconds: Number(duration.value),
+            max_players: Number(capacity.value)
+          }
+        });
+        if (result.error) {
+          toast(result.error.message || "Could not update Snake Arena settings.");
+          save.disabled = false;
+        } else {
+          activeGame = result.data || activeGame;
+          toast("Snake Arena settings saved.");
+          await loadGame(false);
+        }
+      });
+      settingsPanel.append(save);
+      root.append(settingsPanel);
     }
 
     const actions = el("div", "tag-actions");
