@@ -189,8 +189,8 @@ function renderGame(){
   opponents.forEach((p,index)=>{
     const seat=el("button","uno-seat"+(p.user_id===pub.turn_user_id?" is-turn":""));
     seat.type="button";seat.dataset.userId=p.user_id;seat.setAttribute("aria-label",name(p.user_id)+", "+(p.card_count||0)+" cards");
-    const angle=(opponents.length===1?0:-76+(152*index/Math.max(1,opponents.length-1)))*Math.PI/180;
-    seat.style.left=(50+42*Math.sin(angle))+"%";seat.style.top=(43-27*Math.cos(angle))+"%";
+    const angle=(opponents.length===1?0:-150+(300*index/Math.max(1,opponents.length-1)))*Math.PI/180;
+    seat.style.left=(50+36*Math.sin(angle))+"%";seat.style.top=(44-27*Math.cos(angle))+"%";
     const avatar=el("span","uno-seat-avatar",String(name(p.user_id)||"P").trim().slice(0,1).toUpperCase());
     const copy=el("span","uno-seat-copy");copy.append(el("strong","",name(p.user_id)),el("small","",String(Math.max(0,Number(p.card_count)||0))+" cards"));
     seat.append(avatar,copy);if(p.user_id===pub.turn_user_id)seat.append(el("span","uno-seat-turn","TURN"));
