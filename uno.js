@@ -1,5 +1,5 @@
 (()=>{"use strict";
-let ctx=null,channel=null,activeGameId=null,state=null,games=[],myGames=[],busy=false,playersPanelOpen=false,selectedCardId=null,handScrollPosition=0,refreshTimer=null,channelConnected=false,lifecycleListenersBound=false;
+let ctx=null,channel=null,activeGameId=null,state=null,games=[],myGames=[],busy=false,playersPanelOpen=false,selectedCardId=null,handScrollPosition=0,lastCardCounts=new Map(),lastCountGameId=null,refreshTimer=null,channelConnected=false,lifecycleListenersBound=false;
 const $=id=>document.getElementById(id),el=(t,c="",v="")=>{const n=document.createElement(t);if(c)n.className=c;if(v)n.textContent=v;return n;};
 const uid=()=>ctx?.user?.()?.id||null,chats=()=>ctx?.chats?.()||[],toast=m=>ctx?.toast?.(m),profile=id=>ctx?.profiles?.()?.[id]||{},name=id=>profile(id).display_name||profile(id).username||"Gather member";
 const call=async(n,a)=>{const r=await ctx.db.rpc(n,a);if(r.error)throw r.error;return r.data;};
@@ -89,6 +89,7 @@ function renderGame(){
   const g=state.game,players=(state.players||[]).filter(p=>p.status==="joined"||p.status==="invited"),joined=players.filter(p=>p.status==="joined");
   const started=!!state.started,host=g.created_by===uid(),pub=state.public_state||g.state||{};
   const finished=!!(pub.finished||pub.winner_id||g.status==="completed");
+  if(lastCountGameId!==g.id){lastCountGameId=g.id;lastCardCounts.clear();}
   root.classList.toggle("uno-in-match",started&&!finished);applyPlayerPrefs();
   const top=el("div","uno-game-top"),heading=el("div","uno-game-heading");
   const gameTitle=el("h2","uno-title",finished?"UNO results":started?"UNO":"UNO lobby");gameTitle.id="uno-dialog-title";
@@ -187,20 +188,22 @@ function renderGame(){
   const seatRing=el("div","uno-seat-ring");seatRing.setAttribute("aria-label","Players around the UNO table");
   const opponents=joined.filter(p=>p.user_id!==uid());
   opponents.forEach((p,index)=>{
-    const seat=el("button","uno-seat"+(p.user_id===pub.turn_user_id?" is-turn":""));
-    seat.type="button";seat.dataset.userId=p.user_id;seat.setAttribute("aria-label",name(p.user_id)+", "+(p.card_count||0)+" cards");
+    const count=Math.max(0,Number(p.card_count)||0),previous=lastCardCounts.get(p.user_id),delta=previous===undefined?0:count-previous;lastCardCounts.set(p.user_id,count);
+    const seat=el("button","uno-seat"+(p.user_id===pub.turn_user_id?" is-turn":"")+(delta?" has-card-change":""));
+    seat.type="button";seat.dataset.userId=p.user_id;seat.setAttribute("aria-label",name(p.user_id)+", "+count+" cards");
     const angle=(opponents.length===1?0:-150+(300*index/Math.max(1,opponents.length-1)))*Math.PI/180;
     seat.style.left=(50+36*Math.sin(angle))+"%";seat.style.top=(44-27*Math.cos(angle))+"%";
     const avatar=el("span","uno-seat-avatar",String(name(p.user_id)||"P").trim().slice(0,1).toUpperCase());
     const copy=el("span","uno-seat-copy");copy.append(el("strong","",name(p.user_id)),el("small","",String(Math.max(0,Number(p.card_count)||0))+" cards"));
-    seat.append(avatar,copy);if(p.user_id===pub.turn_user_id)seat.append(el("span","uno-seat-turn","TURN"));
+    seat.append(avatar,copy);if(p.user_id===pub.turn_user_id)seat.append(el("span","uno-seat-turn","TURN"));if(delta)seat.append(el("span","uno-card-change",(delta>0?"+":"")+delta));
     seat.onclick=()=>showPlayerProfile(p);seatRing.append(seat);
   });
   const me=joined.find(p=>p.user_id===uid());
   if(me){
-    const own=el("button","uno-seat uno-seat-you"+(myTurn?" is-turn":""));own.type="button";own.style.left="50%";own.style.top="88%";
+    const ownCount=hand.length,previous=lastCardCounts.get(me.user_id),delta=previous===undefined?0:ownCount-previous;lastCardCounts.set(me.user_id,ownCount);
+    const own=el("button","uno-seat uno-seat-you"+(myTurn?" is-turn":"")+(delta?" has-card-change":""));own.type="button";own.style.left="50%";own.style.top="88%";
     own.append(el("span","uno-seat-avatar",String(name(uid())||"Y").trim().slice(0,1).toUpperCase()));
-    const ownCopy=el("span","uno-seat-copy");ownCopy.append(el("strong","","You"),el("small","",hand.length+" cards"));own.append(ownCopy);
+    const ownCopy=el("span","uno-seat-copy");ownCopy.append(el("strong","","You"),el("small","",hand.length+" cards"));own.append(ownCopy);if(delta)own.append(el("span","uno-card-change",(delta>0?"+":"")+delta));
     own.onclick=()=>showPlayerProfile(me);seatRing.append(own);
   }
   const direction=Number(pub.direction??1)<0?-1:1;
