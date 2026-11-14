@@ -63,7 +63,7 @@ The following is the required application contract. It does not imply that all e
 
 - [x] Live shared schema, relevant SELECT policies, multiplayer create/join/update functions, Realtime publication membership, and chat cleanup trigger inspected.
 - [x] Existing turn-based state-trust weakness explicitly isolated and documented.
-- [ ] Map every existing multiplayer RPC caller and lifecycle transition before changing shared RPC behavior.
+- [x] Map client callers and live RPC/helper transitions for legacy turn-based games, Battleship, both Ludo paths, UNO, Tag, shared multiplayer lifecycle, and temporary game chat (see `MULTIPLAYER_RPC_INVENTORY.md`).
 - [x] Add deterministic pure-rule test harness to CI (Node built-in test runner; 9 contract tests).
 - [ ] Add authenticated two-account E2E harness and test matrix; execute it before Phase 0 is marked complete.
 - [ ] Decide and document a supported trusted runtime for Snake before implementing its tick loop.
