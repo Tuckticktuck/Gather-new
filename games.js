@@ -7,7 +7,8 @@
     tic_tac_toe: { name: "Tic-Tac-Toe", description: "A quick three-in-a-row match.", mark: "×○" },
     connect_four: { name: "Connect Four", description: "Drop four discs in a row to win.", mark: "●" },
     battleship: { name: "Battleship", description: "Place your fleet, then find and hit every ship square.", mark: "⚓" },
-    ludo: { name: "Ludo", description: "Race all four tokens around the board and into home. Roll a six to leave base.", mark: "●" }
+    ludo: { name: "Ludo", description: "Race all four tokens around the board and into home. Roll a six to leave base.", mark: "●" },
+    dominoes: { name: "Dominoes", description: "Draw and match neon tiles around the table.", mark: "▰" }
   };
   const PIECES = {
     K: "♔", Q: "♕", R: "♖", B: "♗", N: "♘", P: "♙",
@@ -325,7 +326,7 @@
     if (!overlay) {
       overlay = node("div", "overlay games-overlay");
       overlay.id = "games-multiplayer-chooser";
-      overlay.innerHTML = '<section class="modal games-create-modal games-type-chooser-modal" role="dialog" aria-modal="true" aria-labelledby="games-multiplayer-title"><button id="games-multiplayer-close" class="close" type="button" aria-label="Close">×</button><p class="eyebrow">MULTIPLAYER</p><h2 id="games-multiplayer-title">Choose a game</h2><p class="muted tiny">Pick a turn-based game for your group.</p><div class="games-type-chooser-options"><button id="games-multiplayer-uno" class="games-type-choice" type="button"><span class="games-type-choice-icon" aria-hidden="true">▦</span><span><strong>UNO</strong><small>Play cards with your group.</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button><button id="games-multiplayer-ludo" class="games-type-choice" type="button"><span class="games-type-choice-icon" aria-hidden="true">◉</span><span><strong>Ludo</strong><small>Take turns racing your tokens around the board.</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button></div></section>';
+      overlay.innerHTML = '<section class="modal games-create-modal games-type-chooser-modal" role="dialog" aria-modal="true" aria-labelledby="games-multiplayer-title"><button id="games-multiplayer-close" class="close" type="button" aria-label="Close">×</button><p class="eyebrow">MULTIPLAYER</p><h2 id="games-multiplayer-title">Choose a game</h2><p class="muted tiny">Pick a turn-based game for your group.</p><div class="games-type-chooser-options"><button id="games-multiplayer-uno" class="games-type-choice" type="button"><span class="games-type-choice-icon" aria-hidden="true">▦</span><span><strong>UNO</strong><small>Play cards with your group.</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button><button id="games-multiplayer-ludo" class="games-type-choice" type="button"><span class="games-type-choice-icon" aria-hidden="true">◉</span><span><strong>Ludo</strong><small>Take turns racing your tokens around the board.</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button><button id="games-multiplayer-dominoes" class="games-type-choice" type="button"><span class="games-type-choice-icon" aria-hidden="true">▰</span><span><strong>Dominoes</strong><small>Draw, match, and score with 2–4 players.</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button></div></section>';
       document.body.append(overlay);
       $("games-multiplayer-close").addEventListener("click", () => { overlay.hidden = true; });
       overlay.addEventListener("click", event => { if (event.target === overlay) overlay.hidden = true; });
@@ -336,6 +337,10 @@
       $("games-multiplayer-ludo").addEventListener("click", () => {
         overlay.hidden = true;
         window.GatherLudo?.open?.();
+      });
+      $("games-multiplayer-dominoes").addEventListener("click", () => {
+        overlay.hidden = true;
+        window.GatherDominoes?.open?.();
       });
     }
     overlay.hidden = false;

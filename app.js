@@ -722,6 +722,7 @@ function showAuth() {
   window.GatherGames?.shutdown();
   window.GatherUno?.shutdown();
   window.GatherLudo?.shutdown();
+  window.GatherDominoes?.shutdown();
   saveActiveChatDraft();clearUnreadDividerState();
   closeTypingChannel();
   stopOnlinePresence();
@@ -1117,6 +1118,7 @@ async function signedIn(user,retry=false){
     window.GatherParty?.init({db,user:()=>S.user,chats:()=>S.chats,profiles:()=>S.profiles,toast});
     window.GatherUno?.init({db,user:()=>S.user,chats:()=>S.chats,profiles:()=>S.profiles,toast,onGamesUpdated:()=>{renderNotificationBadge();if(S.notificationView==="games"||S.notificationView==="all")renderNotifications();}});
     window.GatherLudo?.init({db,user:()=>S.user,chats:()=>S.chats,profiles:()=>S.profiles,toast,onGamesUpdated:()=>{renderNotificationBadge();if(S.notificationView==="games"||S.notificationView==="all")renderNotifications();}});
+    window.GatherDominoes?.init({db,user:()=>S.user,chats:()=>S.chats,profiles:()=>S.profiles,toast,onGamesUpdated:()=>{renderNotificationBadge();if(S.notificationView==="games"||S.notificationView==="all")renderNotifications();}});
     subscribeMessages();
     // Start friend data immediately after chats are ready, in parallel with secondary home data.
     const friendsLoad=loadFriends();
@@ -1918,6 +1920,43 @@ function renderGameNotificationCards(list){
     open.addEventListener("click",()=>{$("notifications-modal").hidden=true;window.GatherLudo?.openGame?.(game.id);});
     actions.append(open);card.append(actions);list.append(card);
   });
+  const liveDominoes=window.GatherDominoes?.getLiveGames?.()||[];
+  liveDominoes.forEach(game=>{
+    const card=el("article","notification-center-item notification-game-item");
+    const icon=el("span","notification-center-icon","▰");
+    const copy=el("span","notification-center-copy");
+    copy.append(el("strong","","Dominoes"),el("small","",game.state?.started?"In progress · "+(S.profiles[game.state?.turn_user_id]?.display_name||"Player")+"'s turn":"Waiting room"),el("time","",dateLabel(game.updated_at||game.created_at)));
+    card.append(icon,copy);
+    const actions=el("span","notification-game-actions");
+    const open=el("button","primary","Open");open.type="button";
+    open.addEventListener("click",()=>{$("notifications-modal").hidden=true;window.GatherDominoes?.openGame?.(game.id);});
+    actions.append(open);card.append(actions);list.append(card);
+  });
+  const dominoesInvites=(S.notifications||[]).filter(item=>!item.read_at&&(item.kind==="dominoes_invite"||item.kind==="dominoes_spectate"));
+  dominoesInvites.forEach(item=>{
+    const spectator=item.kind==="dominoes_spectate";
+    const card=el("article","notification-center-item notification-game-item unread");
+    const icon=el("span","notification-center-icon","▰");
+    const copy=el("span","notification-center-copy");
+    const sender=S.profiles[item.actor_id]?.display_name||S.profiles[item.actor_id]?.username||"A Gather member";
+    copy.append(el("strong","",spectator?"Dominoes spectator invitation":"Dominoes lobby invitation"),el("small","",sender+(spectator?" invited you to watch a match.":" invited you to play.")),el("time","",dateLabel(item.created_at)));
+    card.append(icon,copy);
+    const actions=el("span","notification-game-actions");
+    const view=el("button","primary",spectator?"Watch":"View");view.type="button";
+    view.addEventListener("click",async()=>{
+      $("notifications-modal").hidden=true;
+      await window.GatherDominoes?.openInvitation?.(item.body,spectator);
+      await db.from("notifications").update({read_at:new Date().toISOString()}).eq("id",item.id);
+      await loadNotifications();
+    });
+    const dismiss=el("button","outline","Dismiss");dismiss.type="button";
+    dismiss.addEventListener("click",async()=>{
+      dismiss.disabled=true;
+      await db.from("notifications").update({read_at:new Date().toISOString()}).eq("id",item.id);
+      await loadNotifications();
+    });
+    actions.append(view,dismiss);card.append(actions);list.append(card);
+  });
   const unoInvites=window.GatherUno?.getInvitations?.()||[];
   unoInvites.forEach(game=>{
     const card=el("article","notification-center-item notification-game-item unread");
@@ -1961,7 +2000,7 @@ function renderGameNotificationCards(list){
   });
   const rematchOffers=new Map();
   S.notifications.filter(item=>item.kind==="uno_rematch"&&!item.read_at).forEach(item=>{if(item.body)rematchOffers.set(item.body,item);});
-  if(unoInvites.length||ludoInvites.length||invitations.length||rematchOffers.size)list.append(el("h3","notification-section-heading","Invitations"));
+  if(unoInvites.length||ludoInvites.length||dominoesInvites.length||invitations.length||rematchOffers.size)list.append(el("h3","notification-section-heading","Invitations"));
   rematchOffers.forEach((item,offerId)=>{
     const card=el("article","notification-center-item notification-game-item unread");
     const icon=el("span","notification-center-icon","🃏");
@@ -1976,7 +2015,7 @@ function renderGameNotificationCards(list){
     decline.addEventListener("click",async()=>{decline.disabled=true;accept.disabled=true;await window.GatherUno?.respondToRematch?.(offerId,false);await loadNotifications();});
     actions.append(accept,decline);card.append(actions);list.append(card);
   });
-  return liveClassic.length+liveUno.length+liveSnake.length+unoInvites.length+snakeInvites.length+invitations.length+rematchOffers.size;
+  return liveClassic.length+liveUno.length+liveLudo.length+liveDominoes.length+liveSnake.length+unoInvites.length+ludoInvites.length+dominoesInvites.length+snakeInvites.length+invitations.length+rematchOffers.size;
 }
 function renderNotifications(){
   const list=$("notifications-list");

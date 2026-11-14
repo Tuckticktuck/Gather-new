@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "gather-shell-v86";
+const CACHE_NAME = "gather-shell-v87";
 const APP_BASE = new URL("./", self.registration.scope);
 const SHELL_URLS = [
   "./",
@@ -9,6 +9,7 @@ const SHELL_URLS = [
   "./games.css?v=20261114-uno-card-count-strip-1",
   "./party.css?v=20261114-party-hub-2",
   "./ludo.css?v=20261113-ludo-menu-center-1",
+  "./dominoes.css?v=20261114-dominoes-1",
   "./uno.css?v=20261114-uno-recap-actions-1",
   "./games.js?v=20261114-event-driven-games-1",
   "./game-people-picker.js?v=20261114-selection-limit-1",
@@ -16,6 +17,7 @@ const SHELL_URLS = [
   "./game-chat.js?v=20261114-gather-chat-icon-2",
   "./uno.js?v=20261114-uno-event-driven-1",
   "./ludo.js?v=20261114-event-driven-ludo-1",
+  "./dominoes.js?v=20261114-dominoes-1",
   "./app.js?v=20261114-retire-live-games-1",
   "./favicon.svg?v=20261111-1",
   "./manifest.webmanifest?v=20261111-pwa",
@@ -31,6 +33,7 @@ const STATIC_PATHS = new Set([
   "./games.css",
   "./party.css",
   "./ludo.css",
+  "./dominoes.css",
   "./uno.css",
   "./games.js",
   "./game-people-picker.js",
@@ -38,6 +41,7 @@ const STATIC_PATHS = new Set([
   "./game-chat.js",
   "./uno.js",
   "./ludo.js",
+  "./dominoes.js",
   "./favicon.svg",
   "./manifest.webmanifest",
   "./icons/gather-180.png",
