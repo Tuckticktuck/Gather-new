@@ -130,6 +130,12 @@ assert.ok(snakeSpectatorLeaveMigration.includes("v_member.status='spectating'"),
 assert.ok(snakeSpectatorHardeningMigration.includes("coalesce(v_member.status='invited',false)"), "Missing invitations must fail closed when requesting spectator access");
 assert.ok(snakeCss.includes(".snake-spectator-banner"), "Snake spectator mode must have a clear visual indicator");
 assert.ok(snakeCss.includes(".snake-modal:has(.snake-in-match)"), "Snake gameplay must have responsive full-screen styling");
+const tagClient = readFileSync(join(root, "tag.js"), "utf8");
+const tagCancelMigration = readFileSync(join(root, "supabase/migrations/20261114150000_add_tag_lobby_cancellation.sql"), "utf8");
+assert.match(tagClient, /rpc\("gather_tag_cancel"/, "Tag must expose a host action to close the entire lobby");
+assert.match(tagCancelMigration, /v_lobby\.created_by <> v_uid/, "Only the Tag lobby host may cancel the lobby");
+assert.match(tagCancelMigration, /status = 'cancelled'/, "Tag lobby cancellation must close the lobby for all members");
+assert.ok(html.includes("tag.js?v=20261114-tag-lobby-cancel-1") && serviceWorker.includes("./tag.js?v=20261114-tag-lobby-cancel-1"), "Tag lobby cancellation must invalidate the cached client asset");
 
 const cssFiles = localAssets.filter(ref => /\.css(?:[?#]|$)/i.test(ref));
 for (const ref of cssFiles) {
