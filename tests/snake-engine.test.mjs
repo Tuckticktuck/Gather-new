@@ -99,6 +99,31 @@ test("the server timer ends a round and picks the highest score", () => {
   assert.equal(result.state.phase, "finished");
   assert.equal(result.state.winnerId, "a");
   assert.equal(result.state.finishReason, "time");
+  assert.equal(result.state.tick, 1);
+});
+
+
+test("a snake colliding with its own body is eliminated", () => {
+  const source = makeState({
+    snakes: [
+      { user_id: "a", direction: "down", alive: true, score: 0, segments: [{x:4,y:4},{x:4,y:3},{x:3,y:3},{x:3,y:4}] },
+      { user_id: "b", direction: "left", alive: true, score: 0, segments: [{x:10,y:5},{x:11,y:5}] }
+    ]
+  });
+  const result = advanceSnakeState(source, {}, tickMs);
+  assert.equal(result.state.snakes[0].alive, false);
+});
+
+test("two snakes cannot exchange head positions in one tick", () => {
+  const source = makeState({
+    snakes: [
+      { user_id: "a", direction: "right", alive: true, score: 0, segments: [{x:5,y:4},{x:4,y:4}] },
+      { user_id: "b", direction: "left", alive: true, score: 0, segments: [{x:6,y:4},{x:7,y:4}] }
+    ]
+  });
+  const result = advanceSnakeState(source, {}, tickMs);
+  assert.equal(result.state.snakes[0].alive, false);
+  assert.equal(result.state.snakes[1].alive, false);
 });
 
 test("a completed round is immutable to subsequent ticks", () => {
