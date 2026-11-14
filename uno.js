@@ -36,7 +36,8 @@ function pubWinner(v){return !!(v?.public_state?.winner_id||v?.game?.state?.winn
 function playerPrefs(){
   if(accountPrefs&&typeof accountPrefs==="object")return {...accountPrefs};
   try{return JSON.parse(localStorage.getItem("gather-uno-preferences:"+uid())||"{}");}catch(_){return {};}
-}async function savePlayerPrefs(prefs){
+}
+async function savePlayerPrefs(prefs){
   accountPrefs={...prefs};
   try{localStorage.setItem("gather-uno-preferences:"+uid(),JSON.stringify(accountPrefs));}catch(_){}
   const authUser=ctx?.user?.();
@@ -45,7 +46,8 @@ function playerPrefs(){
   if(result.error){toast("Appearance saved on this device, but account sync failed: "+result.error.message);return false;}
   if(authUser.user_metadata)authUser.user_metadata.gather_uno_preferences=accountPrefs;
   return true;
-}function applyPlayerPrefs(){
+}
+function applyPlayerPrefs(){
   const prefs=playerPrefs(),modal=document.querySelector(".uno-modal");
   if(!modal)return;
   const accent=/^#[0-9a-f]{6}$/i.test(prefs.accent||"")?prefs.accent:"#65e0b1";
@@ -56,7 +58,8 @@ function playerPrefs(){
   modal.dataset.tableTheme=tableThemes.includes(prefs.tableTheme)?prefs.tableTheme:"emerald";
   modal.dataset.cardBack=cardBacks.includes(prefs.cardBack)?prefs.cardBack:"classic";
   modal.classList.toggle("uno-effects-off",prefs.effects===false);
-}function avatarInitial(userId){return String(name(userId)||"P").trim().slice(0,1).toUpperCase();}
+}
+function avatarInitial(userId){return String(name(userId)||"P").trim().slice(0,1).toUpperCase();}
 function avatarNode(userId,kind="uno-seat-avatar"){
   const node=el("span",kind,avatarInitial(userId));node.dataset.avatarId=userId;
   const image=avatarCache.get(userId);
@@ -123,7 +126,8 @@ function renderSettingsPanel(root){
   const save=el("button","primary uno-settings-save","Save to my account");save.type="button";
   save.onclick=async()=>{save.disabled=true;save.textContent="Saving…";const next={accent:accent.value,tableTheme:table.value,cardBack:back.value,effects:motion.checked};const synced=await savePlayerPrefs(next);applyPlayerPrefs();toast(synced?"UNO appearance synced to your account.":"UNO appearance updated on this device.");panel.remove();};
   panel.append(save);root.append(panel);
-}function renderGame(){
+}
+function renderGame(){
   const root=$("uno-content");root.replaceChildren();
   const g=state.game,players=(state.players||[]).filter(p=>p.status==="joined"||p.status==="invited"),joined=players.filter(p=>p.status==="joined"),spectating=!!state.spectating;
   const started=!!state.started,host=g.created_by===uid(),pub=state.public_state||g.state||{};
