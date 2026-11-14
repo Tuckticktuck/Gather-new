@@ -3966,3 +3966,13 @@ html[data-theme="light"] .offline-status{color:#59421d;background:#fff4d8;border
   .message-group-avatar{width:21px;height:21px}
   .message .body-text{font-size:calc(11px * var(--font-scale,1));line-height:1.45}
 }
+
+.message-sender-line{display:inline-flex;align-items:center;gap:7px;min-width:0;margin-right:4px}
+.message-sender-line .message-group-avatar{width:23px;height:23px;flex:none}
+.message-group-name{overflow:hidden;max-width:180px;color:var(--accent-text);font-size:calc(10px * var(--font-scale,1));font-weight:800;text-overflow:ellipsis;white-space:nowrap}
+.message .bubble{box-shadow:0 2px 7px #00000012}
+.message.mine .bubble{box-shadow:0 2px 9px var(--accent-shadow,transparent)}
+@media(max-width:720px){
+  .message-sender-line .message-group-avatar{width:21px;height:21px}
+  .message-group-name{max-width:140px}
+}
