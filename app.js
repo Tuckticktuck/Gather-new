@@ -1813,33 +1813,8 @@ function notificationItemsForCenter(){
     !(item.kind==="message"&&item.conversation_id&&S.chatSettings.muted[item.conversation_id])
   );
 }
-function notificationItemsForView(view=S.notificationView){
-  const items=notificationItemsForCenter();
-  if(view==="admin"){
-    const linked=new Map();
-    S.notifications.filter(item=>item.kind==="announcement"&&item.announcement_id).forEach(item=>{
-      const group=linked.get(item.announcement_id)||[];
-      group.push(item);
-      linked.set(item.announcement_id,group);
-    });
-    return (S.announcements||[]).map(announcement=>{
-      const related=linked.get(announcement.id)||[];
-      const unread=related.some(item=>!item.read_at);
-      return {
-        id:"announcement:"+announcement.id,
-        kind:"announcement",
-        announcement_id:announcement.id,
-        announcement_history:true,
-        title:announcement.title,
-        body:announcement.body,
-        created_at:announcement.created_at,
-        read_at:unread?null:(related.find(item=>item.read_at)?.read_at||"history")
-      };
-    });
-  }
-  if(view==="games")return [];
-  if(view==="messages")return items.filter(item=>item.kind==="message");
-  return items;
+function notificationItemsForView(){
+  return notificationItemsForCenter().sort((a,b)=>Date.parse(b.created_at||0)-Date.parse(a.created_at||0));
 }
 function notificationUnreadCount(){
   const notificationUnread=notificationItemsForCenter().filter(item=>!item.read_at).length;
@@ -1853,7 +1828,7 @@ function renderNotificationBadge(){
   const badge=$("notification-badge");if(!badge)return;
   const count=notificationUnreadCount();badge.textContent=count>99?"99+":String(count);badge.hidden=count===0;
   const regularUnread=notificationItemsForCenter().filter(item=>!item.read_at).length;
-  $("notifications-mark-all").disabled=regularUnread===0||S.notificationView==="games";
+  const markAll=$("notifications-mark-all");if(markAll)markAll.disabled=regularUnread===0;
 }
 function notificationKindLabel(kind){
   return ({message:"New message",friend_request:"Friend request",chat_request:"Chat request",feedback_reply:"Feedback update",report:"Safety report",announcement:"Official admin announcement",uno_invite:"UNO lobby invitation",uno_rematch:"UNO rematch request",uno_rematch_result:"UNO rematch update",ludo_invite:"Ludo lobby invitation"})[kind]||"Gather update";
@@ -1883,10 +1858,11 @@ function setNotificationView(view){
   renderNotifications();
 }
 function renderGameNotificationCards(list){
-  list.append(el("h3","notification-section-heading","Live games"));
+  // Active games and invites share the chronological notification feed.
   const liveClassic=window.GatherGames?.getLiveGames?.()||[];
   liveClassic.forEach(game=>{
     const card=el("article","notification-center-item notification-game-item");
+    card.dataset.createdAt=String(Date.parse(game.updated_at||game.created_at)||0);
     const icon=el("span","notification-center-icon","🎮");
     const copy=el("span","notification-center-copy");
     const names={chess:"Chess",checkers:"Checkers",tic_tac_toe:"Tic-Tac-Toe",connect_four:"Connect Four",battleship:"Battleship"};
@@ -1901,6 +1877,7 @@ function renderGameNotificationCards(list){
   const liveUno=window.GatherUno?.getLiveGames?.()||[];
   liveUno.forEach(game=>{
     const card=el("article","notification-center-item notification-game-item");
+    card.dataset.createdAt=String(Date.parse(game.updated_at||game.created_at)||0);
     const icon=el("span","notification-center-icon","UNO");
     const copy=el("span","notification-center-copy");
     copy.append(el("strong","","UNO"),el("small","","In progress · "+(game.settings?.title||"UNO match")),el("time","",dateLabel(game.updated_at||game.created_at)));
@@ -1912,6 +1889,7 @@ function renderGameNotificationCards(list){
   const liveLudo=window.GatherLudo?.getLiveGames?.()||[];
   liveLudo.forEach(game=>{
     const card=el("article","notification-center-item notification-game-item");
+    card.dataset.createdAt=String(Date.parse(game.updated_at||game.created_at)||0);
     const icon=el("span","notification-center-icon","◉");
     const copy=el("span","notification-center-copy");
     const status=game.state?.started?"In progress":"Waiting room";
@@ -1925,6 +1903,7 @@ function renderGameNotificationCards(list){
   const liveDominoes=window.GatherDominoes?.getLiveGames?.()||[];
   liveDominoes.forEach(game=>{
     const card=el("article","notification-center-item notification-game-item");
+    card.dataset.createdAt=String(Date.parse(game.updated_at||game.created_at)||0);
     const icon=el("span","notification-center-icon","▰");
     const copy=el("span","notification-center-copy");
     copy.append(el("strong","","Dominoes"),el("small","",game.state?.started?"In progress · "+(S.profiles[game.state?.turn_user_id]?.display_name||"Player")+"'s turn":"Waiting room"),el("time","",dateLabel(game.updated_at||game.created_at)));
@@ -1938,6 +1917,7 @@ function renderGameNotificationCards(list){
   dominoesInvites.forEach(item=>{
     const spectator=item.kind==="dominoes_spectate";
     const card=el("article","notification-center-item notification-game-item unread");
+    card.dataset.createdAt=String(Date.parse(item.created_at)||0);
     const icon=el("span","notification-center-icon","▰");
     const copy=el("span","notification-center-copy");
     const sender=S.profiles[item.actor_id]?.display_name||S.profiles[item.actor_id]?.username||"A Gather member";
@@ -1962,6 +1942,7 @@ function renderGameNotificationCards(list){
   const unoInvites=window.GatherUno?.getInvitations?.()||[];
   unoInvites.forEach(game=>{
     const card=el("article","notification-center-item notification-game-item unread");
+    card.dataset.createdAt=String(Date.parse(game.created_at)||0);
     const icon=el("span","notification-center-icon","UNO");
     const copy=el("span","notification-center-copy");
     const sender=S.profiles[game.created_by]?.display_name||S.profiles[game.created_by]?.username||"A Gather member";
@@ -1975,6 +1956,7 @@ function renderGameNotificationCards(list){
   const ludoInvites=window.GatherLudo?.getInvitations?.()||[];
   ludoInvites.forEach(game=>{
     const card=el("article","notification-center-item notification-game-item unread");
+    card.dataset.createdAt=String(Date.parse(game.created_at)||0);
     const icon=el("span","notification-center-icon","◉");
     const copy=el("span","notification-center-copy");
     const sender=S.profiles[game.created_by]?.display_name||S.profiles[game.created_by]?.username||"A Gather member";
@@ -1988,6 +1970,7 @@ function renderGameNotificationCards(list){
   const invitations=window.GatherGames?.getPendingInvitations?.()||[];
   invitations.forEach(game=>{
     const card=el("article","notification-center-item notification-game-item unread");
+    card.dataset.createdAt=String(Date.parse(game.created_at)||0);
     const icon=el("span","notification-center-icon","🎮");
     const copy=el("span","notification-center-copy");
     const gameNames={chess:"Chess",checkers:"Checkers",tic_tac_toe:"Tic-Tac-Toe",connect_four:"Connect Four",battleship:"Battleship"};
@@ -2002,9 +1985,10 @@ function renderGameNotificationCards(list){
   });
   const rematchOffers=new Map();
   S.notifications.filter(item=>item.kind==="uno_rematch"&&!item.read_at).forEach(item=>{if(item.body)rematchOffers.set(item.body,item);});
-  if(unoInvites.length||ludoInvites.length||dominoesInvites.length||invitations.length||rematchOffers.size)list.append(el("h3","notification-section-heading","Invitations"));
+
   rematchOffers.forEach((item,offerId)=>{
     const card=el("article","notification-center-item notification-game-item unread");
+    card.dataset.createdAt=String(Date.parse(item.created_at)||0);
     const icon=el("span","notification-center-icon","🃏");
     const copy=el("span","notification-center-copy");
     const sender=S.profiles[item.actor_id]?.display_name||S.profiles[item.actor_id]?.username||"A Gather player";
@@ -2020,64 +2004,46 @@ function renderGameNotificationCards(list){
   return liveClassic.length+liveUno.length+liveLudo.length+liveDominoes.length+liveSnake.length+unoInvites.length+ludoInvites.length+dominoesInvites.length+snakeInvites.length+invitations.length+rematchOffers.size;
 }
 function renderNotifications(){
-  const list=$("notifications-list");
-  if(!list)return;
+  const list=$("notifications-list");if(!list)return;
   list.replaceChildren();
   const sectionItems=notificationItemsForView();
-  const gameView=S.notificationView==="games";
-  const gameCount=(gameView||S.notificationView==="all")?renderGameNotificationCards(list):0;
-  if(gameView&&!gameCount){
-    list.append(el("p","muted tiny","No incoming game invitations. New invitations will appear here automatically."));
-  }else if(!sectionItems.length&&!gameCount){
-    const emptyText={
-      all:"You're all caught up. New messages and requests will appear here.",
-      admin:"There are no Gather Admin announcements in your notifications yet.",
-      messages:"No recent message notifications. Messages in the conversation you're currently viewing stay out of this list.",
-      games:"No live games or invitations right now. Your active matches and new invitations will appear here."
-    };
-    list.append(el("p","muted tiny",emptyText[S.notificationView]||emptyText.all));
-  }else{
-    notificationDisplayItems(sectionItems).forEach(entry=>{
-      const item=entry.notification,items=entry.items;
-      const unread=items.some(notification=>!notification.read_at);
-      const card=el("button","notification-center-item"+(unread?" unread":""));
-      card.type="button";
-      const icon=el("span","notification-center-icon",item.kind==="announcement"?"◎":item.kind==="message"?"✉":item.kind==="friend_request"?"＋":item.kind==="chat_request"?"↗":item.kind==="report"?"⚑":"•");
-      const copy=el("span","notification-center-copy");
-      const senderName=S.profiles[item.actor_id]?.display_name||item.title||"New messages";
-      const title=item.kind==="announcement"?(item.announcement_history?(item.title||"Gather Admin"):"Gather Admin"):item.kind==="message"&&items.length>1?senderName:(item.title||notificationKindLabel(item.kind));
-      const baseDescription=item.kind==="announcement"?"Official announcement · "+(item.body||"Open to read the full message."):(item.body||notificationKindLabel(item.kind));
-      const description=item.kind==="message"&&items.length>1?items.length+" unread messages · "+baseDescription:baseDescription;
-      copy.append(el("strong","",title),el("small","",description),el("time","",dateLabel(item.created_at)));
-      card.append(icon,copy);
-      if(unread)card.append(el("span","notification-unread-dot",""));
-      card.addEventListener("click",async()=>{
-        if(item.announcement_history){
-          await markAnnouncementNotificationsRead(item.announcement_id);
-          setModalBackTarget("announcement-view-modal","notifications-modal");
-          $("notifications-modal").hidden=true;
-          await openAnnouncement(item.announcement_id);
-        }else{
-          await openNotification(entry);
-        }
-      });
-      list.append(card);
-    });
-  }
-  const unread=sectionItems.filter(item=>!item.read_at).length;
-  $("notifications-summary").textContent=gameView?gameCount+" awaiting response":(unread+gameCount)+" unread · "+(sectionItems.length+gameCount)+" updates";
-  document.querySelectorAll("[data-notification-view]").forEach(button=>{
-    const active=button.dataset.notificationView===S.notificationView;
-    button.classList.toggle("active",active);
-    button.setAttribute("aria-pressed",String(active));
+  const gameBuffer=el("div","notification-game-buffer");
+  const gameCount=renderGameNotificationCards(gameBuffer);
+  const rows=[];
+  notificationDisplayItems(sectionItems).forEach(entry=>{
+    const item=entry.notification,items=entry.items;
+    const unread=items.some(notification=>!notification.read_at);
+    const card=el("button","notification-center-item"+(unread?" unread":""));
+    card.type="button";card.dataset.createdAt=String(Date.parse(item.created_at||0)||0);
+    const chat=item.kind==="message"&&item.conversation_id?S.chats.find(candidate=>candidate.id===item.conversation_id):null;
+    const icon=el("span","notification-center-icon",item.kind==="message"?"✉":item.kind==="friend_request"?"＋":item.kind==="chat_request"?"↗":item.kind==="report"?"⚑":item.kind==="announcement"?"◎":"•");
+    const copy=el("span","notification-center-copy");
+    const sender=S.profiles[item.actor_id]?.display_name||item.title||"Gather member";
+    const groupName=chat?.kind==="group"?chatTitle(chat):"";
+    const heading=item.kind==="message"&&items.length>1?sender:(item.title||notificationKindLabel(item.kind));
+    const detail=item.kind==="message"&&groupName?sender+" in "+groupName+": "+(item.body||"Sent a message"):(item.body||notificationKindLabel(item.kind));
+    copy.append(el("strong","",heading),el("small","",items.length>1?items.length+" unread messages · "+detail:detail),el("time","",dateLabel(item.created_at)));
+    card.append(icon,copy);if(unread)card.append(el("span","notification-unread-dot",""));
+    card.addEventListener("click",async()=>{await openNotification(entry);});
+    rows.push(card);
   });
+  const ordered=[...Array.from(gameBuffer.children),...rows].sort((x,y)=>Number(y.dataset.createdAt||0)-Number(x.dataset.createdAt||0));
+  if(ordered.length)list.append(...ordered);
+  else list.append(el("p","muted tiny","You're all caught up. New messages, requests, and invitations will appear here."));
+  const unread=sectionItems.filter(item=>!item.read_at).length;
+  $("notifications-summary").textContent=(unread+gameCount)+" unread · "+(sectionItems.length+gameCount)+" updates";
   renderNotificationBadge();
 }
 async function loadNotifications(){
   if(!S.user)return false;
-  const result=await db.from("notifications").select("id,recipient_id,actor_id,kind,title,body,conversation_id,message_id,feedback_thread_id,announcement_id,created_at,read_at").eq("recipient_id",S.user.id).order("created_at",{ascending:false}).limit(80);
+  const result=await db.from("notifications").select("id,recipient_id,actor_id,kind,title,body,conversation_id,message_id,feedback_thread_id,announcement_id,created_at,read_at").eq("recipient_id",S.user.id).order("created_at",{ascending:false}).limit(120);
   if(result.error){console.warn("Notifications could not be loaded:",result.error.message);return false;}
-  S.notifications=result.data||[];renderNotifications();return true;
+  const rows=result.data||[],viewed=rows.filter(item=>item.read_at).map(item=>item.id);
+  if(viewed.length){
+    const cleanup=await db.from("notifications").delete().eq("recipient_id",S.user.id).in("id",viewed);
+    if(cleanup.error)console.warn("Previously viewed notifications could not be cleared:",cleanup.error.message);
+  }
+  S.notifications=rows.filter(item=>!item.read_at);renderNotifications();return true;
 }
 function subscribeNotifications(){
   if(S.notificationChannel){db.removeChannel(S.notificationChannel);S.notificationChannel=null;}
@@ -6069,10 +6035,7 @@ function wire(){
   $("announcement-edit-open").addEventListener("click",()=>openAnnouncementEditor(S.activeAnnouncementId));
   $("home-announcement-open").addEventListener("click",()=>{const latest=S.announcements[0];if(latest)openAnnouncement(latest.id);});
   $("home-announcements-all").addEventListener("click",openAnnouncementsPage);
-  $("notifications-mark-all").addEventListener("click",markAllNotificationsRead);
-  $("notifications-admin-open").addEventListener("click",()=>{setModalBackTarget("announcements-page-modal","notifications-modal");$("notifications-modal").hidden=true;openAnnouncementsPage();});
-  $("notifications-recent-open").addEventListener("click",()=>setNotificationView("messages"));
-  document.querySelectorAll("[data-notification-view]").forEach(button=>button.addEventListener("click",()=>setNotificationView(button.dataset.notificationView)));
+  // Notification center uses a single chronological feed; viewing an item dismisses it.
   $("report-form").addEventListener("submit",submitReport);
   $("member-profile-report").addEventListener("click",()=>{const userId=S.publicProfileId;setModalBackTarget("report-modal","member-profile-modal");$("member-profile-modal").hidden=true;openReport(userId);});
   $("reports-admin-open").addEventListener("click",()=>{setModalBackTarget("reports-admin-modal","settings-modal");$("settings-modal").hidden=true;openReportsAdmin();});
