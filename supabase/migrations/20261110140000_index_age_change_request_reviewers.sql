@@ -1,1 +1,0 @@
-create index if not exists age_change_requests_reviewed_by_idx on public.age_change_requests(reviewed_by);
