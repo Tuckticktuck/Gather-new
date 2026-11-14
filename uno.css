@@ -708,3 +708,16 @@
 .uno-modal[data-card-back="grid"] .uno-deck{background-color:#09251a;background-image:linear-gradient(#4fffb455 1px,transparent 1px),linear-gradient(90deg,#4fffb455 1px,transparent 1px),radial-gradient(circle at center,#175c42,#09251a);background-size:12px 12px,12px 12px,100% 100%;border-color:#9bffce;box-shadow:0 0 15px #54ffb366}
 .uno-modal[data-card-back="classic"] .uno-deck{background:repeating-linear-gradient(45deg,#234a78 0 7px,#1b3c63 7px 14px)}
 @media(max-width:520px){.uno-settings-select{min-width:0;max-width:62%}}
+
+/* Host-owned UNO house rules: compact, readable, and shared by the whole lobby. */
+.uno-house-rules{display:grid;gap:10px;margin:12px 0;padding:13px;border:1px solid color-mix(in srgb,var(--uno-neon) 34%,transparent);border-radius:15px;background:linear-gradient(145deg,rgba(17,64,42,.72),rgba(5,19,13,.86));}
+.uno-house-rules>strong{color:#e3ffed;font-size:12px;letter-spacing:.1em;}
+.uno-house-rules-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;}
+.uno-house-rule{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0;padding:9px 10px;border:1px solid rgba(139,255,193,.16);border-radius:10px;background:rgba(2,16,10,.44);color:#dfffea;font-size:11px;}
+.uno-house-rule-check{justify-content:flex-start;align-items:flex-start;}
+.uno-house-rule-check input{flex:0 0 auto;width:17px;height:17px;margin:0;accent-color:var(--uno-neon);}
+.uno-house-rule>span{min-width:0;}
+.uno-house-rules-select{min-width:92px;padding:7px 8px;border:1px solid rgba(139,255,193,.3);border-radius:8px;background:#0b2417;color:#eafff3;font:inherit;}
+.uno-house-rules-save{justify-self:start;min-height:38px;}
+.uno-rule-summary{margin:6px 0 10px;color:#b7d8c5;font-size:10px;line-height:1.5;text-align:center;}
+@media(max-width:600px){.uno-house-rules-grid{grid-template-columns:1fr}.uno-house-rule{font-size:12px}.uno-house-rules-save{width:100%}}
