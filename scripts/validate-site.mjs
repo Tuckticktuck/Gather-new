@@ -94,7 +94,7 @@ assert.match(unoRecapLeaveMigration, /status='joined'[\s\S]*joined_count<>cardin
 
 const partyClient = readFileSync(join(root, "party.js"), "utf8");
 assert.ok(partyClient.includes("members.length > 10") && partyClient.includes("p_max_players: members.length"), "UNO Quick Play must enforce the 10-player maximum");
-assert.ok(partyClient.includes('p_ready: false'), "UNO Quick Play host must explicitly ready up like every other player");
+assert.ok(unoClient.includes("joined.some(p=>!p.ready)") && unoClient.includes("start.disabled"), "UNO start must remain disabled until every joined player, including the host, is ready");
 const appClient = readFileSync(join(root, "app.js"), "utf8");
 const ludoClient = readFileSync(join(root, "ludo.js"), "utf8");
 const ludoCloseMigration = readFileSync(join(root, "supabase/migrations/20261114160000_allow_ludo_host_to_close_any_lobby.sql"), "utf8");
