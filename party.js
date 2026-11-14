@@ -395,8 +395,6 @@
         if (response.error) throw response.error;
         gameId = response.data?.id;
         if (gameId) {
-          const readyReset = await ctx.db.rpc("gather_uno_ready", { p_game_id: gameId, p_ready: false });
-          if (readyReset.error) throw readyReset.error;
           await verifyPartyLobbyRoster("gather_multiplayer_players", "game_id", gameId, [uid(), ...otherIds]);
           window.GatherUno?.openGame?.(gameId);
         }
