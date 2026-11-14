@@ -1120,7 +1120,7 @@ async function signedIn(user,retry=false){
     window.GatherTag?.init({db,user:()=>S.user,chats:()=>S.chats,profiles:()=>S.profiles,toast});
     window.GatherUno?.init({db,user:()=>S.user,chats:()=>S.chats,profiles:()=>S.profiles,toast});
     window.GatherLudo?.init({db,user:()=>S.user,chats:()=>S.chats,profiles:()=>S.profiles,toast});
-    window.GatherSnake?.init({db,user:()=>S.user,chats:()=>S.chats,profiles:()=>S.profiles,toast});
+    window.GatherSnake?.init({db,user:()=>S.user,chats:()=>S.chats,profiles:()=>S.profiles,toast,onGamesUpdated:()=>{renderNotificationBadge();if(S.notificationView==="games"||S.notificationView==="all")renderNotifications();}});
     subscribeMessages();
     // Start friend data immediately after chats are ready, in parallel with secondary home data.
     const friendsLoad=loadFriends();
