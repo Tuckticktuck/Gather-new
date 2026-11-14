@@ -1,6 +1,6 @@
 # Gather Arcade Expansion — Implementation Plan
 
-Status: Planning baseline (no game code or database schema changed by this document)
+Status: Phase 1 Snake Arena implementation underway; first playable architecture and clients are in the repository, with authenticated multi-account verification still outstanding
 Repository: `Tuckticktuck/Gather-new`
 Supabase project: `xrwldphmeafiakittcof`
 Hosting: GitHub Pages
@@ -32,7 +32,7 @@ All three use the existing Gather game hub, party/lobby conventions, invitation 
 
 Existing tables include `gather_multiplayer_games`, `gather_games`, `gather_game_chat_messages`, `gather_game_parties`, and `gather_game_party_members`. The multiplayer game record already has `game_type`, `status`, `created_by`, `join_mode`, `settings`, `state`, `revision`, and timestamps. Existing RPC families include `gather_tag_*`, `gather_game_*`, and `gather_party_*`.
 
-This is a planning inspection, not a full schema or policy audit. Before implementation, inspect the complete definitions, constraints, indexes, RLS policies, triggers, Realtime publication, and grants for the relevant objects.
+This was the planning inspection baseline. Subsequent Phase 0 work inspected the multiplayer create/join/leave/update helpers, RLS policies, Realtime publication, game chat cleanup trigger, function grants, and relevant private game state. Snake now uses the existing `gather_multiplayer_games` / `gather_multiplayer_players` tables plus a private per-player direction-input table; it does not use the generic full-state update RPC.
 
 ## Architecture decisions
 
@@ -73,9 +73,9 @@ Reuse existing conventions:
 
 ### 4. Realtime strategy
 
-Use Supabase Realtime as a notification/replication transport for canonical database changes, not as an authorization boundary. For high-frequency Snake movement, avoid writing every animation frame to Postgres. Use bounded input commands and server-authoritative simulation ticks or a carefully rate-limited state update model. Evaluate whether the current Supabase-only deployment can meet latency requirements before committing to a high-frequency architecture.
+Use Supabase Realtime as a notification/replication transport for canonical database changes, not as an authorization boundary. Snake uses a bounded tick model: browsers submit direction changes only; a JWT-verified Supabase Edge Function computes movement, collisions, food, scores, and results; a service-role-only database RPC commits the canonical snapshot under a row lock, revision/state compare-and-swap, and a database-clock tick interval. A client tick driver prompts the Edge Function (host-driven, with a stale-tick failover by another joined player). The browser never sends claimed positions or scores.
 
-If a trusted persistent server loop is required for fair Snake simulation, identify and approve the hosting/runtime choice before implementation; GitHub Pages is static hosting and cannot run a game server. Do not silently add Netlify or Cloudflare. Prefer the current Supabase Edge Function / database capabilities only where their execution model fits the workload.
+This is a server-authoritative, client-prompted tick MVP, not an always-running dedicated game server. It avoids per-frame Postgres writes, but still performs a database-backed transition per tick (currently 220–400 ms based on speed setting). This is suitable for an initial low-player-count, turn-tick arcade prototype, not a claim of high-scale low-latency real-time simulation. Performance, background-tab failover, reconnect, and multi-account consistency remain release checks. GitHub Pages is static hosting; do not silently add Netlify or Cloudflare. If the MVP's measured latency is not good enough, revisit a persistent trusted runtime as a separate approved architecture decision.
 
 ## Game specifications
 
@@ -97,18 +97,22 @@ If a trusted persistent server loop is required for fair Snake simulation, ident
 - Speed preset: slow / standard / fast.
 - Player cap: 2–8.
 
-**Implementation files**
-- New `snake-engine.ts`: deterministic rules, movement, collision, scoring, and unit-testable pure functions.
-- New `snake.js`: lobby integration, input handling, rendering loop, interpolation, reconnect, and HUD.
-- New `snake.css`: responsive arena and controls.
-- Register scripts/styles in `index.html` and cache in `service-worker.js`.
+**Implementation files (first playable slice committed)**
+- `supabase/functions/gather-snake-action/snake-engine.mjs`: deterministic authoritative movement, collision, food spawn, scoring, timer and winner rules.
+- `supabase/functions/gather-snake-action/index.ts`: JWT-verified direction and tick endpoint.
+- `snake.js`: lobby/invitation UI, ready/start/settings, fullscreen Canvas view, keyboard/touch controls, realtime refresh, host tick driver with failover, recap/rematch, and temporary game chat.
+- `snake.css`: responsive lobby and fullscreen arena styles.
+- `supabase/migrations/20261114022328_snake_arena_authoritative_multiplayer_foundation.sql` plus lifecycle and invitation migrations: private inputs, game-specific RPCs, and secure friend open-lobby discovery.
+- `tests/snake-engine.test.mjs`: deterministic rules tests.
+- Registered in `index.html`, `app.js`, `games.js`, `party.js`, and `service-worker.js`.
 
-**Integrity/performance requirements**
-- Server owns authoritative tick, collision, collectible spawn, and result.
-- Client sends direction/input changes, not claimed positions or score.
-- Reject impossible direction reversals and excessive input rates.
-- Interpolate between authoritative snapshots; do not make the UI depend on a database write every animation frame.
-- Test latency, dropped packets, background-tab suspension, and reconnect.
+**Integrity/performance status**
+- The Edge Function owns the rules calculation for tick, collision, collectible spawn, score, and result.
+- Client sends direction input only; private input rows are not readable by authenticated clients.
+- Impossible reversal and extra direction changes during the same tick are rejected.
+- A service-role-only compare-and-swap RPC commits the computed state and checks the server tick interval.
+- The current Canvas renders canonical snapshots; interpolation/smoothing is still a follow-up before higher-speed play.
+- Automated engine tests cover due ticks, direction changes, food growth, wall/obstacle/self/player collisions, head-on swaps, timeout, and completed-state immutability. Real-device latency, dropped packets, background-tab suspension, reconnect, and two-account match completion remain unverified.
 
 ### Draw & Guess
 
@@ -206,24 +210,29 @@ For each migration:
 
 ## Delivery phases and acceptance gates
 
-### Phase 0 — Stabilize shared foundation (must pass before game work)
-- Resolve or explicitly isolate the known client-submitted turn-based state validation weakness.
-- Inspect and document existing multiplayer participant schema, Tag RPC security, game chat cleanup, and Realtime publication.
-- Define one canonical lobby/match lifecycle contract.
-- Add unit-test harness for pure game rules and deterministic fixtures.
-- Add two-account E2E test setup and a documented test matrix.
-- Confirm GitHub Actions checks can compile new TypeScript and validate all assets.
+### Phase 0 — Stabilize shared foundation
+- [x] Isolate the legacy two-player board-game state integrity weakness with per-game server validators and intent-based client actions.
+- [x] Inspect and document existing multiplayer participant schema, Tag action limits, game chat cleanup, Realtime publication, and helper functions.
+- [x] Define the multiplayer lifecycle contract and action privacy rules.
+- [x] Add deterministic Node test harness and shared contract tests.
+- [x] Add a documented two-account E2E matrix (the actual authenticated browser run is still pending).
+- [x] Confirm GitHub Actions compiles TypeScript and validates scripts, assets, CSS structure and service-worker cache.
 
-**Exit gate:** existing UNO, Ludo, Tag, and two-player games still create, invite, join, play, end, and rematch without regression.
+**Exit gate status:** code-level compatibility and automated regression checks pass. A real two-account regression of UNO, Ludo, Tag, and the board games is still pending.
 
 ### Phase 1 — Snake Arena
-- Implement deterministic rules engine and tests.
-- Implement server-authoritative movement/tick model and rate limits.
-- Integrate lobby, invites, ready state, spectator access, chat, results, rematch.
-- Implement desktop keyboard and mobile touch controls.
-- Test reconnect, latency, collision boundaries, simultaneous inputs, and host departure.
+<text>**Implementation status: first playable slice committed; release verification outstanding.**</text>
+- [x] Deterministic rules engine and automated tests.
+- [x] Server-authoritative direction/tick endpoint, server timing, row lock and revision/state compare-and-swap.
+- [x] Shared multiplayer lobby, invites, ready state, host settings, max-player validation, leave/end, recap and rematch.
+- [x] Friend-scoped open lobby discovery without weakening participant table RLS.
+- [x] Fullscreen arena, keyboard/touch directional controls, temporary game chat, result panel.
+- [x] Integrate Game Hub, central game notifications and Party Quick Play.
+- [ ] Verify two-to-eight accounts through complete create/invite/join/ready/start/play/end/rematch cycles.
+- [ ] Test reconnect, latency, dropped packets, background-tab suspension, host departure, and mobile/Chromebook visual layout.
+- [ ] Tune or replace the client-prompted tick driver based on observed latency.
 
-**Exit gate:** two or more authenticated accounts complete repeated matches without divergent state or client-controlled scoring.
+**Exit gate:** two or more authenticated accounts complete repeated matches without divergent state or client-controlled scoring; the current automated tests alone do not satisfy this gate.
 
 ### Phase 2 — Draw & Guess
 - Implement private drawer word assignment and public round state.
@@ -281,8 +290,8 @@ For each migration:
 
 ## Immediate next engineering tasks
 
-1. Inspect full definitions and access policies for `gather_multiplayer_games`, participant tables, Tag tables/RPCs, and game chat.
-2. Write the canonical multiplayer lifecycle contract and state privacy model.
-3. Decide whether Snake's authoritative tick can be implemented within the current Supabase-only runtime.
-4. Add deterministic rules tests and two-account E2E infrastructure.
-5. Implement Phase 0 before adding the three game modules.
+1. Run authenticated two-account and multi-account smoke tests for UNO recap actions and Snake Arena lobby/match/rematch flows.
+2. Validate Snake Arena on iPhone Safari, Chromebook Chrome, and desktop; measure tick latency and background-tab failover.
+3. Tune Canvas interpolation and the client-prompted tick cadence if the real tests show visible stepping or stutter.
+4. Complete existing-game regression for UNO, Ludo, Tag, Battleship, Chess, Checkers, Tic-Tac-Toe, and Connect Four.
+5. Proceed to Phase 2 — Draw & Guess — after the Snake release gate is met.
