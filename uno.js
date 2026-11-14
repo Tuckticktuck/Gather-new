@@ -22,7 +22,7 @@ root.append(el("p","eyebrow","NEW UNO LOBBY"),title,el("p","muted tiny uno-intro
 const form=el("form","uno-form tag-form"),selected=[];
 const choose=el("button","outline","Choose people");choose.type="button";const summary=el("small","muted tiny","No people selected");
 const people=el("section","uno-people-picker tag-people-picker");people.append(choose,summary);
-const max=el("select");[2,3,4,5,6,8,10,12,16,20].forEach(n=>{const o=el("option","",n+" players");o.value=n;if(n===10)o.selected=true;max.append(o);});
+const max=el("select");[2,3,4,5,6,8,10].forEach(n=>{const o=el("option","",n+" players");o.value=n;if(n===10)o.selected=true;max.append(o);});
 form.append(people,field("Player limit",max));
 const actions=el("div","uno-actions tag-actions"),back=el("button","secondary-action","Back"),submit=el("button","primary","Create lobby");back.type="button";back.onclick=renderLobby;submit.type="submit";actions.append(back,submit);form.append(actions);
 form.onsubmit=async e=>{e.preventDefault();if(busy)return;if(!selected.length){toast("Choose at least one person to invite.");return;}if(selected.length+1>Number(max.value)){toast("The player limit must include you and every invited player.");return;}busy=true;submit.disabled=true;try{const g=await call("gather_uno_create",{p_conversation_id:null,p_join_mode:"invite",p_invited_user_ids:selected.slice(),p_max_players:Number(max.value)});activeGameId=g.id;await loadGame();}catch(err){toast(err.message||"Could not create lobby.");}finally{busy=false;submit.disabled=false;}};
