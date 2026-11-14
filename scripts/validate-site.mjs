@@ -87,7 +87,7 @@ const snakeLifecycleMigration = readFileSync(join(root, "supabase/migrations/202
 const snakeDeclineMigration = readFileSync(join(root, "supabase/migrations/20261114023244_add_snake_arena_invitation_decline.sql"), "utf8");
 assert.ok(snakeClient.includes('functions.invoke("gather-snake-action"'), "Snake controls must call the JWT-verified action endpoint");
 assert.match(snakeClient, /gather_snake_start/, "Snake lobby must use the server-side start RPC");
-assert.match(snakeClient, /gather_snake_commit_tick/, "Snake client source must be backed by the server-side tick commit");
+assert.match(snakeClient, /action:\s*"tick"/, "Snake client must request ticks from the authoritative server endpoint");
 assert.doesNotMatch(snakeClient, /gather_multiplayer_update_state/, "Snake must not use client-submitted shared state updates");
 assert.ok(snakeFunction.includes("auth.getUser(accessToken)"), "Snake endpoint must verify the Supabase user session");
 assert.match(snakeFunction, /gather_snake_commit_tick/, "Snake endpoint must commit authoritative server ticks");
