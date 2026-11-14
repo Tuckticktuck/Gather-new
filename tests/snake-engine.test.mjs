@@ -132,3 +132,31 @@ test("a completed round is immutable to subsequent ticks", () => {
   assert.equal(result.advanced, false);
   assert.equal(result.state.tick, 0);
 });
+
+
+test("a tail is not treated as vacated when its snake is eliminated on the same tick", () => {
+  const source = makeState({
+    snakes: [
+      { user_id: "a", direction: "right", alive: true, score: 0, segments: [{x:10,y:5},{x:9,y:5},{x:8,y:5}] },
+      { user_id: "b", direction: "right", alive: true, score: 0, segments: [{x:13,y:5},{x:12,y:5},{x:11,y:5}] }
+    ]
+  });
+  const result = advanceSnakeState(source, {}, tickMs);
+  assert.equal(result.state.snakes.find(snake => snake.user_id === "a").alive, false);
+  assert.equal(result.state.snakes.find(snake => snake.user_id === "b").alive, false);
+  assert.equal(result.state.finishReason, "collision-draw");
+});
+
+test("a surviving snake can enter another surviving snake's vacating tail square", () => {
+  const source = makeState({
+    snakes: [
+      { user_id: "a", direction: "right", alive: true, score: 0, segments: [{x:5,y:5},{x:4,y:5}] },
+      { user_id: "b", direction: "right", alive: true, score: 0, segments: [{x:8,y:5},{x:7,y:5},{x:6,y:5}] }
+    ]
+  });
+  const result = advanceSnakeState(source, {}, tickMs);
+  assert.equal(result.state.snakes.find(snake => snake.user_id === "a").alive, true);
+  assert.deepEqual(result.state.snakes.find(snake => snake.user_id === "a").segments[0], {x:6,y:5});
+  assert.equal(result.state.snakes.find(snake => snake.user_id === "b").alive, true);
+  assert.deepEqual(result.state.snakes.find(snake => snake.user_id === "b").segments.at(-1), {x:7,y:5});
+});
