@@ -250,6 +250,7 @@ For each migration:
 - [ ] Run the Phase 1 E2E checklist using two player accounts and a third observer account, in a dedicated test environment.
 - [ ] Verify complete create/invite/join/ready/start/play/finish/leave/rematch cycles, including host departure, capacity, invitation decline, spectator restrictions, stale revisions, duplicate actions, and chat cleanup.
 - [ ] Re-run the UNO recap test with two signed-in players: both see I am done and Request rematch; confirm done/decline/accept flows, player-leave-during-recap cancellation, and ensure no duplicate lobby or stale recap.
+- [ ] Regression-test existing UNO, Ludo, Tag, Battleship, Chess, Checkers, Tic-Tac-Toe, and Connect Four flows after shared RPC/client changes.
 - [ ] Test reconnect, simultaneous inputs, latency, dropped requests, background-tab suspension, and host tick-driver handoff.
 - [ ] Validate iPhone Safari, Chromebook Chrome, and desktop layouts/accessibility; check touch controls, keyboard controls, fullscreen exit, safe-area spacing, and no clipping.
 - [ ] Decide whether the current client-prompted Edge Function tick cadence is adequate based on measured results; replace it only if the measured latency/background-tab behavior requires a persistent trusted simulation runtime.
