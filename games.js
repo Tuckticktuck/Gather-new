@@ -957,21 +957,28 @@
     toast("Rematch invitation sent to " + memberName(opponentId) + ".");
   }
 
-  async function commitMove(game, nextState, nextTurnUserId, result) {
+  async function commitMove(game, action) {
     if (!game || game.status !== "active" || game.turn_user_id !== userId() || busy) return;
     busy = true;
-    $("games-board-status").textContent = "Saving move…";
-    const response = await ctx.db.rpc("gather_game_move", {
-      p_game_id: game.id,
-      p_expected_revision: game.revision,
-      p_state: nextState,
-      p_next_turn_user_id: nextTurnUserId,
-      p_result: result || null
-    });
-    busy = false;
-    const updated = Array.isArray(response.data) ? response.data[0] : response.data;
-    if (response.error || !updated) {
-      toast(response.error?.message || "The move could not be saved. The latest board will be reloaded.");
+    $("games-board-status").textContent = "Checking and saving move…";
+    let response;
+    try {
+      response = await ctx.db.functions.invoke("gather-board-game-action", {
+        body: {
+          gameId: game.id,
+          expectedRevision: game.revision,
+          action
+        }
+      });
+    } catch (error) {
+      response = { error: { message: error?.message || "The move could not be saved." }, data: null };
+    } finally {
+      busy = false;
+    }
+    const updated = response?.data?.game || response?.data;
+    if (response?.error || !updated || !updated.id) {
+      const message = response?.error?.message || "The move could not be saved. The latest board will be reloaded.";
+      toast(message);
       await refreshGames(false);
       const latest = games.find(item => item.id === game.id);
       if (latest) { activeGame = latest; renderBoardModal(); }
@@ -1286,15 +1293,7 @@
       const isWinningCell = !!winningLine?.includes(index);
       const cell = button("", "games-ttt-cell" + (mark ? " mark-" + mark : " mark-empty") + (isWinningCell ? " is-winning" : ""), () => {
         if (!canMove || board[index]) return;
-        const next = board.slice();
-        next[index] = currentMark;
-        const nextWinningLine = tttWinningLine(next);
-        const winningMark = nextWinningLine ? next[nextWinningLine[0]] : null;
-        const draw = !winningMark && next.every(Boolean);
-        const nextTurn = currentMark === "x" ? "o" : "x";
-        const nextId = winningMark || draw ? null : (nextTurn === "x" ? game.player_one_id : game.player_two_id);
-        const result = winningMark ? resultForWinner(game, winningMark === "x" ? game.player_one_id : game.player_two_id) : (draw ? "draw" : null);
-        void commitMove(game, { board: next, turn: nextTurn, moves: (state.moves || 0) + 1 }, nextId, result);
+        void commitMove(game, { type: "place", index });
       });
       cell.append(node("span", "games-ttt-mark", mark ? mark.toUpperCase() : ""));
       cell.disabled = !canMove || !!mark || game.status !== "active";
@@ -1337,18 +1336,7 @@
     for (let col = 0; col < 7; col++) {
       columns.append(button("↓", "games-connect-column", () => {
         if (!canMove) return;
-        const next = board.slice();
-        let row = -1;
-        for (let r = 5; r >= 0; r--) if (!next[r * 7 + col]) { row = r; break; }
-        if (row < 0) return;
-        const token = state.turn === "red" ? "R" : "Y";
-        next[row * 7 + col] = token;
-        const won = connectWinner(next, row, col, token);
-        const draw = !won && next.every(Boolean);
-        const nextTurn = state.turn === "red" ? "yellow" : "red";
-        const nextId = won || draw ? null : (nextTurn === "red" ? game.player_one_id : game.player_two_id);
-        const result = won ? resultForWinner(game, token === "R" ? game.player_one_id : game.player_two_id) : (draw ? "draw" : null);
-        void commitMove(game, { board: next, turn: nextTurn, moves: (state.moves || 0) + 1 }, nextId, result);
+        void commitMove(game, { type: "drop", column: col });
       }));
     }
     for (let i = 0; i < 42; i++) {
@@ -1436,32 +1424,8 @@
   }
 
   async function playCheckerMove(game, state, move) {
-    const board = String(state.board).split("");
-    const piece = board[move.from];
-    board[move.from] = ".";
-    if (move.captured !== null) board[move.captured] = ".";
-    board[move.to] = piece;
-    const row = Math.floor(move.to / 8);
-    const promoted = (piece === "w" && row === 0) || (piece === "b" && row === 7);
-    if (promoted) board[move.to] = piece.toUpperCase();
-    let nextTurn = state.turn === "white" ? "black" : "white";
-    let forcedIndex = null;
-    if (move.captured !== null && !promoted) {
-      const continuation = checkersLegalMoves({ board: board.join(""), turn: state.turn, forcedIndex: move.to });
-      if (continuation.length) {
-        nextTurn = state.turn;
-        forcedIndex = move.to;
-      }
-    }
-    const nextState = { board: board.join(""), turn: nextTurn, forcedIndex, moves: (state.moves || 0) + 1 };
-    let result = null, nextUser = nextTurn === "white" ? game.player_one_id : game.player_two_id;
-    if (checkerCount(nextState.board, nextTurn) === 0 || checkersLegalMoves(nextState).length === 0) {
-      result = resultForWinner(game, state.turn === "white" ? game.player_one_id : game.player_two_id);
-      nextUser = null;
-      nextState.forcedIndex = null;
-    }
     selectedSquare = null;
-    await commitMove(game, nextState, nextUser, result);
+    await commitMove(game, { type: "move", from: move.from, to: move.to });
   }
 
   const LUDO_TRACK = (() => {
@@ -1691,19 +1655,8 @@
   async function playChessMove(game, chess, from, to, promotion) {
     const move = chess.move({ from, to, promotion: promotion || "q" });
     if (!move) return;
-    const over = chess.game_over();
-    let result = null, nextUser = chess.turn() === "w" ? game.player_one_id : game.player_two_id;
-    if (over) {
-      if (chess.in_checkmate()) {
-        const winnerIsWhite = chess.turn() === "b";
-        result = resultForWinner(game, winnerIsWhite ? game.player_one_id : game.player_two_id);
-      } else {
-        result = "draw";
-      }
-      nextUser = null;
-    }
     selectedSquare = null;
-    await commitMove(game, { fen: chess.fen(), moves: chess.history(), lastMove: move.san }, nextUser, result);
+    await commitMove(game, { type: "move", from, to, promotion: promotion || "q" });
   }
 
   function shutdown() {
