@@ -68,7 +68,7 @@ Run a complete match with Host and Player; repeat with additional players up to 
 - [ ] Disconnect and restore network connectivity; verify the client refreshes after the browser's online event and Realtime re-subscription without duplicating a tick.
 - [ ] Simulate a dropped request and retry; no duplicate movement, score, finish, or lobby appears.
 - [ ] Put the host tab in the background or close it; confirm another joined player can take over tick prompting and state continues or recovers cleanly.
-- [ ] Host leaves the lobby before start; lobby is cancelled safely.
+- [ ] Host leaves the lobby before start; verify handoff to the earliest eligible joined player, or safe cancellation if no joined players remain, with no stranded lobby.
 - [ ] Host leaves during a match; host handoff goes to the earliest eligible joined player and game lifecycle remains valid.
 - [ ] A non-host leaves during a round; the player is eliminated/removed as specified and match does not get corrupted.
 - [ ] All players leave; match finishes/cleans up without orphaned active state.
