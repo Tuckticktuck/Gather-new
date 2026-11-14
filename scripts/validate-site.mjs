@@ -61,8 +61,8 @@ const boardGameRules = readFileSync(join(root, "supabase/functions/gather-board-
 const boardGameMigration = readFileSync(join(root, "supabase/migrations/20261114120000_authoritative_board_game_moves.sql"), "utf8");
 const gamesClient = readFileSync(join(root, "games.js"), "utf8");
 assert.match(gamesClient, /functions\.invoke\\("gather-board-game-action"/, "Board-game clients must submit move intents to the Edge Function");
-assert.doesNotMatch(gamesClient, /rpc\\("gather_game_move"/, "Board-game clients must not submit full client-authored states");
-assert.match(boardGameFunction, /auth\.getUser\\(accessToken\\)/, "The board-game endpoint must validate the caller's Supabase session");
+assert.doesNotMatch(gamesClient, /rpc\("gather_game_move"/, "Board-game clients must not submit full client-authored states");
+assert.match(boardGameFunction, /auth\.getUser\(accessToken\)/, "The board-game endpoint must validate the caller's Supabase session");
 assert.match(boardGameFunction, /gather_board_game_commit_move/, "The endpoint must commit through the restricted database RPC");
 assert.match(boardGameRules, /Captures must be taken when available/, "Checkers must enforce mandatory captures");
 assert.match(boardGameMigration, /revoke execute on function public\.gather_game_move/i, "The legacy client-submitted state RPC must be disabled");
