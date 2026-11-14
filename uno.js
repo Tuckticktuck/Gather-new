@@ -1,10 +1,10 @@
 (()=>{"use strict";
-let ctx=null,channel=null,activeGameId=null,state=null,games=[],myGames=[],busy=false,playersPanelOpen=false,refreshTimer=null,channelConnected=false,lifecycleListenersBound=false;
+let ctx=null,channel=null,activeGameId=null,state=null,games=[],myGames=[],busy=false,playersPanelOpen=false,selectedCardId=null,refreshTimer=null,channelConnected=false,lifecycleListenersBound=false;
 const $=id=>document.getElementById(id),el=(t,c="",v="")=>{const n=document.createElement(t);if(c)n.className=c;if(v)n.textContent=v;return n;};
 const uid=()=>ctx?.user?.()?.id||null,chats=()=>ctx?.chats?.()||[],toast=m=>ctx?.toast?.(m),profile=id=>ctx?.profiles?.()?.[id]||{},name=id=>profile(id).display_name||profile(id).username||"Gather member";
 const call=async(n,a)=>{const r=await ctx.db.rpc(n,a);if(r.error)throw r.error;return r.data;};
 function mount(){if($("uno-overlay"))return;const o=el("div","overlay uno-overlay");o.id="uno-overlay";o.hidden=true;o.innerHTML='<section class="modal uno-modal tag-modal" role="dialog" aria-modal="true" aria-labelledby="uno-dialog-title"><button id="uno-close" class="close" type="button" aria-label="Close">×</button><div id="uno-content"></div></section>';document.body.append(o);$("uno-close").onclick=close;o.onclick=e=>{if(e.target===o)close();};}
-function close(){if($("uno-overlay"))$("uno-overlay").hidden=true;$("uno-content")?.classList.remove("uno-in-match");activeGameId=null;state=null;playersPanelOpen=false;}
+function close(){if($("uno-overlay"))$("uno-overlay").hidden=true;$("uno-content")?.classList.remove("uno-in-match");activeGameId=null;state=null;playersPanelOpen=false;selectedCardId=null;}
 const eligible=()=>chats().filter(c=>(c.members||[]).some(m=>m.user_id===uid())&&(c.members||[]).length>=2);
 const conversationTitle=c=>c.kind==="group"?(c.title||c.name||"Group chat"):name((c.members||[]).find(m=>m.user_id!==uid())?.user_id);
 const byName=(a,b)=>a.localeCompare(b,undefined,{sensitivity:"base"});
@@ -31,12 +31,260 @@ root.append(form);window.GatherPeoplePicker?.create({db:ctx.db,button:choose,sum
 async function enter(id){if(busy)return;busy=true;try{await call("gather_uno_join",{p_game_id:id,p_color:"#40826D"});await ctx.db.from("notifications").update({read_at:new Date().toISOString()}).eq("recipient_id",uid()).eq("kind","uno_invite").eq("body",id).is("read_at",null);activeGameId=id;await loadGame();await refresh();}catch(e){toast(e.message||"Could not join UNO.");}finally{busy=false;}}
 async function loadGame(){if(!activeGameId)return;const gameId=activeGameId;try{const next=await call("gather_uno_get_state",{p_game_id:gameId});if(activeGameId!==gameId)return;state=next;renderGame();}catch(e){if(activeGameId===gameId)toast(e.message||"Could not load UNO.");}}
 function pubWinner(v){return !!(v?.public_state?.winner_id||v?.game?.state?.winner_id);}
-function renderGame(){const root=$("uno-content");root.replaceChildren();const g=state.game,players=state.players||[],started=!!state.started,host=g.created_by===uid(),top=el("div","uno-game-top"),heading=el("div","uno-game-heading");root.classList.toggle("uno-in-match",started);const gameTitle=el("h2","uno-title",started?"UNO match":"UNO lobby");gameTitle.id="uno-dialog-title";heading.append(el("p","eyebrow",started?"MATCH IN PROGRESS":"WAITING ROOM"),gameTitle,el("p","muted tiny uno-intro",(eligible().find(c=>c.id===g.conversation_id)?conversationTitle(eligible().find(c=>c.id===g.conversation_id)):"Gather multiplayer")+" · "+(g.join_mode==="open"?"Open lobby":"Invite only")));top.append(heading);const headerActions=el("div","uno-header-actions");const playerToggle=el("button","uno-player-toggle", "Players · "+players.filter(p=>p.status==="joined").length+"/"+(g.settings?.max_players||10));playerToggle.type="button";playerToggle.hidden=!started;playerToggle.setAttribute("aria-expanded",String(playersPanelOpen));headerActions.append(playerToggle);top.append(headerActions);root.append(top);if(players.some(p=>p.user_id===uid()&&p.status==="joined")){window.GatherGameChat?.attach(root,ctx.db,"uno",activeGameId,uid(),name);const chatDock=root.querySelector(".game-chat-dock");if(chatDock)headerActions.prepend(chatDock);}const actions=el("div","uno-actions tag-actions tag-lobby-actions");let lobbyExit=null;const pub=state.public_state||g.state||{},finished=!!(pub.finished||pub.winner_id||g.status==="completed");if(host&&!finished){const end=el("button","secondary-action",started?"End match":"Cancel lobby");end.onclick=async()=>{if(!confirm(started?"End this UNO game for everyone?":"Cancel this UNO lobby?"))return;end.disabled=true;try{await call("gather_uno_end",{p_game_id:activeGameId});activeGameId=null;state=null;await refresh();}catch(e){toast(e.message||"Could not end game.");end.disabled=false;}};lobbyExit=end;}else if(!host&&!finished&&g.status==="active"){const leave=el("button","secondary-action","Leave lobby");leave.onclick=async()=>{if(!confirm("Leave this UNO lobby?"))return;leave.disabled=true;try{await call("gather_uno_leave",{p_game_id:activeGameId});activeGameId=null;state=null;await refresh();toast("You left the UNO lobby.");}catch(e){toast(e.message||"Could not leave this lobby.");leave.disabled=false;}};lobbyExit=leave;}if(started){if(finished){const doneMap=pub.done||{},alreadyDone=!!doneMap[uid()];const doneButton=el("button",alreadyDone?"outline":"primary",alreadyDone?"You are done":"I am done");doneButton.disabled=alreadyDone;doneButton.setAttribute("aria-label",alreadyDone?"You have confirmed that you are done":"Confirm that you are done with this match");doneButton.onclick=async()=>{doneButton.disabled=true;try{await call("gather_uno_done",{p_game_id:activeGameId});await loadGame();await refresh();}catch(e){toast(e.message||"Could not confirm.");doneButton.disabled=false;}};const rematch=el("button","outline",state.rematch_pending?"Rematch requested":"Request rematch");rematch.disabled=!!state.rematch_pending;rematch.onclick=async()=>{rematch.disabled=true;try{await call("gather_uno_request_rematch",{p_game_id:activeGameId});toast("Rematch request sent. Everyone has been notified.");await loadGame();await refresh();}catch(e){toast(e.message||"Could not request a rematch.");rematch.disabled=!!state.rematch_pending;}};actions.append(doneButton,rematch);}}if(!started&&!finished){const me=players.find(p=>p.user_id===uid()),ready=el("button",me?.ready?"secondary-action":"primary",me?.ready?"Not ready":"Ready");ready.onclick=async()=>{try{await call("gather_uno_ready",{p_game_id:activeGameId,p_ready:!me?.ready});await loadGame();}catch(e){toast(e.message);}};actions.append(ready);if(host){const start=el("button","primary","Start game");start.onclick=async()=>{start.disabled=true;try{state=await call("gather_uno_start",{p_game_id:activeGameId});renderGame();}catch(e){toast(e.message||"Could not start.");start.disabled=false;}};start.disabled=players.filter(p=>p.status==="joined").length<2||players.some(p=>p.status==="joined"&&!p.ready);actions.append(start);}}if(lobbyExit)actions.append(lobbyExit);if(!started&&!finished){const hand=el("section","tag-customize uno-lobby-feature");hand.append(el("strong","","Your hand"),el("span","muted tiny","Seven cards will be dealt to you when the host starts the match."));root.append(hand);}const roster=el("div","uno-roster tag-roster");roster.append(el("h3","tag-section-title","Players · "+players.filter(p=>p.status==="joined").length+"/"+(g.settings?.max_players||10)));players.forEach(p=>{const row=el("div","uno-player-row tag-player-row"),copy=el("div","tag-player-copy"),playerName=name(p.user_id)+(p.user_id===uid()?" (you)":"");copy.append(el("strong","",playerName),el("small","muted tiny",started?(p.user_id===uid()?"Your hand · ":"Holding ")+(p.card_count||0)+" cards":p.status==="invited"?"Invited":p.ready?"Ready":"Not ready"));const dot=el("span","uno-player-dot tag-player-swatch");dot.style.background=p.color||"var(--accent)";row.append(dot,copy);if(started&&p.user_id!==uid()){const count=Math.max(0,Number(p.card_count)||0),stack=el("div","uno-opponent-hand");stack.setAttribute("aria-label",playerName+" is holding "+count+" cards");for(let i=0;i<Math.min(count,6);i++){const back=el("span","uno-card-back");back.style.left=(i*6)+"px";back.style.transform="rotate("+((i-2.5)*5)+"deg)";back.style.zIndex=String(i+1);stack.append(back);}stack.append(el("span","uno-card-count",String(count)));row.append(stack);}if(p.user_id===g.created_by)row.append(el("span","tag-host-mark","HOST"));roster.append(row);});if(started){const panel=el("aside","uno-players-panel");panel.id="uno-players-panel";const panelHead=el("div","uno-players-panel-head");panelHead.append(el("strong","","Players"),el("button","uno-players-close","×"));panelHead.lastChild.type="button";panelHead.lastChild.setAttribute("aria-label","Close players panel");panel.append(panelHead,roster);panel.hidden=!playersPanelOpen;root.append(panel);const closePanel=()=>{playersPanelOpen=false;panel.hidden=true;playerToggle.setAttribute("aria-expanded","false");};playerToggle.onclick=()=>{playersPanelOpen=!playersPanelOpen;panel.hidden=!playersPanelOpen;playerToggle.setAttribute("aria-expanded",String(playersPanelOpen));};panelHead.lastChild.onclick=closePanel;document.addEventListener("keydown",function escPlayers(e){if(e.key==="Escape"&&!panel.hidden){closePanel();document.removeEventListener("keydown",escPlayers);}});}else root.append(roster);if(!started)root.append(actions);if(finished){const doneMap=pub.done||{},doneCount=players.filter(p=>p.status==="joined"&&doneMap[p.user_id]).length,playerCount=players.filter(p=>p.status==="joined").length;const finish=el("section","uno-finished-panel");finish.append(el("div","uno-finished-icon","✓"),el("h3","",pub.winner_id?name(pub.winner_id)+" wins!":"Match finished"),el("p","muted",g.status==="completed"?"Everyone is done. This lobby has been closed. You can return to UNO or request a rematch.":"Confirm when you are finished. The lobby will close after everyone confirms, unless a rematch is accepted."),el("div","uno-finished-progress",doneCount+" of "+playerCount+" players confirmed"));if(state.rematch_pending)finish.append(el("p","uno-rematch-wait","Rematch requested · Waiting for the other players to respond. Check your notifications to accept or decline a request."));players.filter(p=>p.status==="joined").forEach(p=>finish.append(el("div","uno-done-player",(doneMap[p.user_id]?"✓ ":"○ ")+name(p.user_id)+(p.user_id===uid()?" (you)":""))));if(g.status==="completed"){const back=el("button","outline","Back to UNO");back.type="button";back.onclick=async()=>{activeGameId=null;state=null;playersPanelOpen=false;await refresh();};actions.append(back);}finish.append(actions);root.append(finish);return;}if(!started){root.append(el("p","uno-lobby-wait tag-lobby-hint muted tiny","The host can start once at least two players have joined and everyone is ready."));const back=el("button","outline tag-back","Back to UNO");back.onclick=async()=>{activeGameId=null;state=null;await refresh();};root.append(back);return;}const myTurn=pub.turn_user_id===uid(),drawPending=!!state.drawn_card_id&&myTurn;const board=el("section","uno-board");board.append(el("div","uno-turn-banner",pub.winner_id?name(pub.winner_id)+" won!":drawPending?"You drew a card · Play it if legal or pass":myTurn?"Your turn":"Waiting for "+name(pub.turn_user_id)));const countStrip=el("div","uno-card-count-strip");countStrip.setAttribute("aria-label","Cards held by each player");players.filter(p=>p.status==="joined").forEach(p=>{const pill=el("div","uno-card-count-player"),label=el("span","uno-card-count-name",p.user_id===uid()?"You":name(p.user_id)),count=el("strong","uno-card-count-value",String(Math.max(0,Number(p.card_count)||0)));pill.append(label,count,el("span","uno-card-count-label","cards"));if(p.user_id===pub.turn_user_id)pill.classList.add("is-turn");countStrip.append(pill);});board.append(countStrip);if(pub.message)board.append(el("p","uno-turn-message muted tiny",pub.message));const table=el("div","uno-table"),piles=el("div","uno-piles"),draw=el("button","uno-deck",drawPending?"Card drawn":"Draw card");draw.disabled=!myTurn||drawPending;draw.onclick=()=>act("draw");piles.append(draw);const disc=el("div","uno-discard");disc.append(cardNode(pub.top_card,true));piles.append(disc,el("span","uno-current-color "+(pub.current_color||"wild"),"Color: "+(pub.current_color||"wild")));table.append(piles);board.append(table);if(pub.winner_id)board.append(el("p","uno-winner",name(pub.winner_id)+" wins!"));const hand=sortHand(state.hand||[]),area=el("div","uno-hand-area");area.append(el("div","uno-hand-heading","Your hand · "+hand.length+" cards"));const strip=el("div","uno-hand-strip");strip.id="uno-hand-strip";strip.setAttribute("aria-label","Your UNO hand. Use the left and right arrow buttons to move through cards.");const fanCenter=(hand.length-1)/2;hand.forEach((card,index)=>{const n=cardNode(card,false);const legal=isCardPlayable(card,pub,hand),drawnOnly=drawPending&&card.id!==state.drawn_card_id,canPlay=myTurn&&legal&&!drawnOnly;const angle=Math.max(-10,Math.min(10,(index-fanCenter)*1.55)),lift=Math.min(16,Math.abs(index-fanCenter)*1.15);n.style.setProperty("--fan-angle",angle.toFixed(2)+"deg");n.style.setProperty("--fan-lift",lift.toFixed(2)+"px");n.style.zIndex=String(index+1);n.dataset.cardIndex=String(index);n.disabled=false;n.setAttribute("aria-disabled",String(!canPlay));n.classList.toggle("uno-card-unplayable",!canPlay);if(drawPending&&card.id===state.drawn_card_id)n.classList.add("uno-card-drawn");strip.append(n);});strip.addEventListener("click",event=>{const button=event.target?.closest?.(".uno-card");if(!button||!strip.contains(button))return;const index=Number(button.dataset.cardIndex);if(!Number.isInteger(index)||index<0||index>=hand.length)return;void play(hand[index]);});area.append(strip);const controls=el("div","uno-hand-controls"),left=el("button","outline","‹"),right=el("button","outline","›"),callUno=el("button","primary","UNO!");left.type="button";right.type="button";left.setAttribute("aria-label","Scroll to earlier cards");right.setAttribute("aria-label","Scroll to later cards");const updateScrollButtons=()=>{const max=Math.max(0,strip.scrollWidth-strip.clientWidth);left.disabled=strip.scrollLeft<=2;right.disabled=strip.scrollLeft>=max-2;};left.onclick=()=>strip.scrollBy({left:-Math.max(180,strip.clientWidth*.72),behavior:"smooth"});right.onclick=()=>strip.scrollBy({left:Math.max(180,strip.clientWidth*.72),behavior:"smooth"});strip.addEventListener("scroll",updateScrollButtons,{passive:true});callUno.onclick=()=>act("call_uno");controls.append(left,right,callUno);if(drawPending){const pass=el("button","outline uno-pass-button","Pass turn");pass.onclick=()=>act("pass");controls.append(pass);}area.append(controls);board.append(area);root.append(board);root.append(actions);updateScrollButtons();}
+function playerPrefs(){
+  try{return JSON.parse(localStorage.getItem("gather-uno-preferences:"+uid())||"{}");}catch(_){return {};}
+}
+function savePlayerPrefs(prefs){
+  try{localStorage.setItem("gather-uno-preferences:"+uid(),JSON.stringify(prefs));}catch(_){toast("Appearance settings could not be saved on this device.");}
+}
+function applyPlayerPrefs(){
+  const prefs=playerPrefs(),modal=document.querySelector(".uno-modal");
+  if(!modal)return;
+  const accent=/^#[0-9a-f]{6}$/i.test(prefs.accent||"")?prefs.accent:"#65e0b1";
+  modal.style.setProperty("--uno-neon",accent);
+  modal.style.setProperty("--uno-glow",accent+"33");
+  modal.classList.toggle("uno-effects-off",prefs.effects===false);
+}
+function showPlayerProfile(player){
+  const root=$("uno-content");if(!root||!player)return;
+  root.querySelector(".uno-profile-popover")?.remove();
+  const info=profile(player.user_id)||{},panel=el("aside","uno-profile-popover");
+  panel.setAttribute("role","dialog");panel.setAttribute("aria-label","Player profile");
+  const head=el("div","uno-profile-head"),avatar=el("span","uno-profile-avatar",String(name(player.user_id)||"P").trim().slice(0,1).toUpperCase());
+  const title=el("div","uno-profile-title");title.append(el("strong","",name(player.user_id)),el("small","muted",player.user_id===uid()?"Your player profile":"UNO player"));
+  const closeButton=el("button","uno-profile-close","×");closeButton.type="button";closeButton.setAttribute("aria-label","Close profile");
+  head.append(avatar,title,closeButton);panel.append(head);
+  const details=el("div","uno-profile-details");
+  const addDetail=(label,value)=>{if(value===undefined||value===null||value==="")return;const item=el("div","uno-profile-stat");item.append(el("small","muted",label),el("strong","",String(value)));details.append(item);};
+  addDetail("Cards held",player.card_count??0);
+  const online=info.online??info.is_online??(info.status==="online"?true:undefined);
+  if(online!==undefined)addDetail("Status",online?"Online":"Offline");
+  const wins=info.uno_wins??info.game_stats?.uno_wins;
+  if(wins!==undefined)addDetail("UNO wins",wins);
+  const losses=info.uno_losses??info.game_stats?.uno_losses;
+  if(losses!==undefined)addDetail("UNO losses",losses);
+  if(details.childElementCount)panel.append(details);
+  const note=el("p","muted tiny","Player information is shown from data currently available to Gather.");
+  panel.append(note);closeButton.onclick=()=>panel.remove();root.append(panel);
+}
+function renderSettingsPanel(root){
+  root.querySelector(".uno-settings-panel")?.remove();
+  const prefs=playerPrefs(),panel=el("aside","uno-settings-panel");
+  panel.setAttribute("role","dialog");panel.setAttribute("aria-label","UNO appearance settings");
+  const head=el("div","uno-settings-head");head.append(el("div","", "PERSONAL SETTINGS"),el("button","uno-settings-close","×"));
+  head.lastChild.type="button";head.lastChild.setAttribute("aria-label","Close settings");head.lastChild.onclick=()=>panel.remove();panel.append(head);
+  const intro=el("p","muted tiny","These appearance choices affect only your view on this device.");
+  panel.append(intro);
+  const accentLabel=el("label","uno-settings-field");accentLabel.append(el("span","","Neon accent"));
+  const accent=el("input");accent.type="color";accent.value=/^#[0-9a-f]{6}$/i.test(prefs.accent||"")?prefs.accent:"#65e0b1";
+  accentLabel.append(accent);panel.append(accentLabel);
+  const motionLabel=el("label","uno-settings-check"),motion=el("input");motion.type="checkbox";motion.checked=prefs.effects!==false;
+  motionLabel.append(motion,el("span","","Enable arcade glow and motion"));panel.append(motionLabel);
+  const save=el("button","primary uno-settings-save","Apply appearance");save.type="button";
+  save.onclick=()=>{const next={accent:accent.value,effects:motion.checked};savePlayerPrefs(next);applyPlayerPrefs();toast("Your UNO appearance was updated.");panel.remove();};
+  panel.append(save);root.append(panel);
+}
+function renderGame(){
+  const root=$("uno-content");root.replaceChildren();
+  const g=state.game,players=(state.players||[]).filter(p=>p.status==="joined"||p.status==="invited"),joined=players.filter(p=>p.status==="joined");
+  const started=!!state.started,host=g.created_by===uid(),pub=state.public_state||g.state||{};
+  const finished=!!(pub.finished||pub.winner_id||g.status==="completed");
+  root.classList.toggle("uno-in-match",started&&!finished);applyPlayerPrefs();
+  const top=el("div","uno-game-top"),heading=el("div","uno-game-heading");
+  const gameTitle=el("h2","uno-title",finished?"UNO results":started?"UNO":"UNO lobby");gameTitle.id="uno-dialog-title";
+  const chat=eligible().find(c=>c.id===g.conversation_id);
+  heading.append(el("p","eyebrow",finished?"ROUND COMPLETE":started?"ARCADE MATCH":"ARCADE LOBBY"),gameTitle,
+    el("p","muted tiny uno-intro",(chat?conversationTitle(chat):"Gather multiplayer")+" · "+(g.join_mode==="open"?"Open lobby":"Invite only")));
+  top.append(heading);
+  const headerActions=el("div","uno-header-actions");
+  const playerToggle=el("button","uno-player-toggle","Players · "+joined.length+"/"+(g.settings?.max_players||10));
+  playerToggle.type="button";playerToggle.hidden=!started||finished;playerToggle.setAttribute("aria-expanded",String(playersPanelOpen));
+  headerActions.append(playerToggle);
+  const settingsButton=el("button","uno-settings-toggle","⚙");settingsButton.type="button";settingsButton.setAttribute("aria-label","Open UNO appearance settings");settingsButton.title="Appearance settings";
+  settingsButton.onclick=()=>renderSettingsPanel(root);headerActions.append(settingsButton);
+  top.append(headerActions);root.append(top);
+  if(joined.some(p=>p.user_id===uid())){
+    window.GatherGameChat?.attach(root,ctx.db,"uno",activeGameId,uid(),name);
+    const chatDock=root.querySelector(".game-chat-dock");if(chatDock)headerActions.prepend(chatDock);
+  }
+  const actions=el("div","uno-actions tag-actions tag-lobby-actions");let lobbyExit=null;
+  if(host&&!finished){
+    const end=el("button","secondary-action",started?"End match":"Cancel lobby");
+    end.onclick=async()=>{if(!confirm(started?"End this UNO game for everyone?":"Cancel this UNO lobby?"))return;end.disabled=true;try{await call("gather_uno_end",{p_game_id:activeGameId});activeGameId=null;state=null;await refresh();}catch(e){toast(e.message||"Could not end game.");end.disabled=false;}};
+    lobbyExit=end;
+  }else if(!host&&!finished&&g.status==="active"){
+    const leave=el("button","secondary-action","Leave lobby");
+    leave.onclick=async()=>{if(!confirm("Leave this UNO lobby?"))return;leave.disabled=true;try{await call("gather_uno_leave",{p_game_id:activeGameId});activeGameId=null;state=null;await refresh();toast("You left the UNO lobby.");}catch(e){toast(e.message||"Could not leave this lobby.");leave.disabled=false;}};
+    lobbyExit=leave;
+  }
+  if(!started&&!finished){
+    const me=joined.find(p=>p.user_id===uid()),ready=el("button",me?.ready?"secondary-action":"primary",me?.ready?"Not ready":"Ready");
+    ready.onclick=async()=>{ready.disabled=true;try{await call("gather_uno_ready",{p_game_id:activeGameId,p_ready:!me?.ready});await loadGame();}catch(e){toast(e.message||"Could not update readiness.");ready.disabled=false;}};
+    actions.append(ready);
+    if(host){
+      const start=el("button","primary","Start game");start.onclick=async()=>{start.disabled=true;try{state=await call("gather_uno_start",{p_game_id:activeGameId});selectedCardId=null;renderGame();}catch(e){toast(e.message||"Could not start.");start.disabled=false;}};
+      start.disabled=joined.length<2||joined.some(p=>!p.ready);actions.append(start);
+    }
+  }
+  if(lobbyExit)actions.append(lobbyExit);
+  if(!started&&!finished){
+    const handInfo=el("section","uno-lobby-feature");handInfo.append(el("strong","","Ready for the arcade?"),el("span","muted tiny","Each player must mark Ready before the host can start. Seven cards are dealt when the match begins."));root.append(handInfo);
+    const roster=el("div","uno-roster tag-roster");roster.append(el("h3","tag-section-title","Players · "+joined.length+"/"+(g.settings?.max_players||10)));
+    players.forEach(p=>{
+      const row=el("button","uno-player-row tag-player-row"),copy=el("span","tag-player-copy");
+      row.type="button";row.append(el("span","uno-player-dot tag-player-swatch"));
+      copy.append(el("strong","",name(p.user_id)+(p.user_id===uid()?" (you)":"")),el("small","muted tiny",p.status==="invited"?"Invitation sent":p.ready?"Ready":"Not ready"));row.append(copy);
+      if(p.user_id===g.created_by)row.append(el("span","tag-host-mark","HOST"));
+      row.onclick=()=>showPlayerProfile(p);roster.append(row);
+    });
+    root.append(roster,actions,el("p","uno-lobby-wait tag-lobby-hint muted tiny","The host can start when at least two players have joined and everyone is ready."));
+    const back=el("button","outline tag-back","Back to UNO");back.onclick=async()=>{activeGameId=null;state=null;await refresh();};root.append(back);return;
+  }
+  if(finished){
+    const winner=pub.winner_id,scoreboard=el("section","uno-results-scoreboard");
+    const hero=el("div","uno-results-hero");hero.append(el("div","uno-results-trophy","✦"),el("p","eyebrow","ROUND COMPLETE"),
+      el("h3","",winner?name(winner)+" wins!":"Match finished"),
+      el("p","muted tiny","The round has ended. Review the standings before returning to the lobby."));
+    scoreboard.append(hero);
+    const ordered=joined.slice().sort((a,b)=>{
+      if(a.user_id===winner)return -1;if(b.user_id===winner)return 1;
+      return (Number(a.card_count)||0)-(Number(b.card_count)||0);
+    });
+    const list=el("div","uno-results-list");
+    ordered.forEach((p,index)=>{
+      const row=el("div","uno-results-row"+(p.user_id===winner?" is-winner":""));
+      row.append(el("span","uno-result-rank",String(index+1).padStart(2,"0")),
+        el("span","uno-result-player",name(p.user_id)+(p.user_id===uid()?" (you)":"")),
+        el("strong","uno-result-cards",p.user_id===winner?"Winner":String(Math.max(0,Number(p.card_count)||0))+" cards left"));
+      list.append(row);
+    });
+    scoreboard.append(el("h4","","Round standings"),list);
+    root.append(scoreboard);
+    const doneMap=pub.done||{},doneCount=joined.filter(p=>doneMap[p.user_id]).length,alreadyDone=!!doneMap[uid()];
+    const completion=el("div","uno-results-completion");
+    completion.append(el("p","muted tiny",g.status==="completed"?"This lobby has closed.":"Confirm when you are finished with the results."),
+      el("strong","",doneCount+" of "+joined.length+" players confirmed"));
+    joined.forEach(p=>completion.append(el("div","uno-done-player",(doneMap[p.user_id]?"✓ ":"○ ")+name(p.user_id)+(p.user_id===uid()?" (you)":""))));
+    scoreboard.append(completion);
+    if(state.rematch_pending)scoreboard.append(el("p","uno-rematch-wait","A rematch request is pending. Check your Gather notifications to accept or decline."));
+    if(g.status!=="completed"){
+      const done=el("button",alreadyDone?"outline":"primary",alreadyDone?"You're done":"Done");
+      done.disabled=alreadyDone;done.onclick=async()=>{done.disabled=true;try{await call("gather_uno_done",{p_game_id:activeGameId});await loadGame();await refresh();}catch(e){toast(e.message||"Could not confirm.");done.disabled=false;}};
+      const rematch=el("button","outline",state.rematch_pending?"Rematch requested":"Request rematch");
+      rematch.disabled=!!state.rematch_pending;rematch.onclick=async()=>{rematch.disabled=true;try{await call("gather_uno_request_rematch",{p_game_id:activeGameId});toast("Rematch request sent.");await loadGame();await refresh();}catch(e){toast(e.message||"Could not request a rematch.");rematch.disabled=!!state.rematch_pending;}};
+      actions.append(done,rematch);
+    }else{
+      const back=el("button","outline","Back to UNO");back.onclick=async()=>{activeGameId=null;state=null;selectedCardId=null;await refresh();};actions.append(back);
+    }
+    root.append(actions);return;
+  }
+  const myTurn=pub.turn_user_id===uid(),drawPending=!!state.drawn_card_id&&myTurn,hand=sortHand(state.hand||[]);
+  const board=el("section","uno-board");
+  const banner=el("div","uno-turn-banner",drawPending?"You drew a card · Play it if legal or pass":myTurn?"Your turn":"Waiting for "+name(pub.turn_user_id));
+  board.append(banner);
+  if(pub.message)board.append(el("p","uno-turn-message muted tiny",pub.message));
+  const table=el("div","uno-table");
+  const seatRing=el("div","uno-seat-ring");seatRing.setAttribute("aria-label","Players around the UNO table");
+  const opponents=joined.filter(p=>p.user_id!==uid());
+  opponents.forEach((p,index)=>{
+    const seat=el("button","uno-seat"+(p.user_id===pub.turn_user_id?" is-turn":""));
+    seat.type="button";seat.dataset.userId=p.user_id;seat.setAttribute("aria-label",name(p.user_id)+", "+(p.card_count||0)+" cards");
+    const angle=(opponents.length===1?0:-76+(152*index/Math.max(1,opponents.length-1)))*Math.PI/180;
+    seat.style.left=(50+42*Math.sin(angle))+"%";seat.style.top=(43-27*Math.cos(angle))+"%";
+    const avatar=el("span","uno-seat-avatar",String(name(p.user_id)||"P").trim().slice(0,1).toUpperCase());
+    const copy=el("span","uno-seat-copy");copy.append(el("strong","",name(p.user_id)),el("small","",String(Math.max(0,Number(p.card_count)||0))+" cards"));
+    seat.append(avatar,copy);if(p.user_id===pub.turn_user_id)seat.append(el("span","uno-seat-turn","TURN"));
+    seat.onclick=()=>showPlayerProfile(p);seatRing.append(seat);
+  });
+  const me=joined.find(p=>p.user_id===uid());
+  if(me){
+    const own=el("button","uno-seat uno-seat-you"+(myTurn?" is-turn":""));own.type="button";own.style.left="50%";own.style.top="88%";
+    own.append(el("span","uno-seat-avatar",String(name(uid())||"Y").trim().slice(0,1).toUpperCase()));
+    const ownCopy=el("span","uno-seat-copy");ownCopy.append(el("strong","","You"),el("small","",hand.length+" cards"));own.append(ownCopy);
+    own.onclick=()=>showPlayerProfile(me);seatRing.append(own);
+  }
+  table.append(seatRing);
+  const piles=el("div","uno-piles"),drawCan= myTurn&&!drawPending;
+  const draw=el(drawCan?"button":"div","uno-deck"+(drawCan?"":" is-inactive"),drawPending?"DRAWN":"DRAW");
+  if(drawCan){draw.type="button";draw.setAttribute("aria-label","Draw a card");draw.onclick=()=>act("draw");}
+  else draw.setAttribute("aria-label",drawPending?"A card has been drawn":"Draw pile");
+  piles.append(draw);
+  const disc=el("div","uno-discard uno-discard-target");disc.setAttribute("role","button");disc.tabIndex=0;
+  disc.setAttribute("aria-label",selectedCardId?"Play selected card":"Discard pile. Select a playable card first.");
+  disc.append(cardNode(pub.top_card,true));
+  const playSelected=()=>{const selected=hand.find(card=>card.id===selectedCardId);if(!selected){toast("Choose a card from your hand first.");return;}void play(selected);};
+  disc.addEventListener("click",playSelected);disc.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();playSelected();}});
+  disc.addEventListener("dragover",e=>{if(myTurn&&!drawPending){e.preventDefault();disc.classList.add("is-drop-target");}});
+  disc.addEventListener("dragleave",()=>disc.classList.remove("is-drop-target"));
+  disc.addEventListener("drop",e=>{e.preventDefault();disc.classList.remove("is-drop-target");const id=e.dataTransfer?.getData("text/plain");const card=hand.find(item=>item.id===id);if(card)void play(card);});
+  piles.append(disc,el("span","uno-current-color "+(pub.current_color||"wild"),"COLOR · "+String(pub.current_color||"wild").toUpperCase()));
+  table.append(piles);board.append(table);
+  const area=el("div","uno-hand-area");
+  area.append(el("div","uno-hand-heading","YOUR HAND · "+hand.length+" CARDS"));
+  const selected=hand.find(card=>card.id===selectedCardId);
+  if(selected){
+    const preview=el("div","uno-selection-preview");
+    const mini=cardNode(selected,true);mini.disabled=true;mini.tabIndex=-1;
+    const copy=el("div","uno-selection-copy");copy.append(el("strong","",selected.color==="wild"?"Wild card":String(selected.color||"").toUpperCase()+" "+(selected.kind==="number"?selected.value:selected.kind)));
+    const legal=myTurn&&isCardPlayable(selected,pub,hand)&&(!drawPending||selected.id===state.drawn_card_id);
+    copy.append(el("small","muted",legal?"Selected · Tap the discard pile or drag this card onto it": "Selected · Not playable in the current turn"));
+    const clear=el("button","outline","Clear");clear.type="button";clear.onclick=()=>{selectedCardId=null;renderGame();};
+    preview.append(mini,copy,clear);area.append(preview);
+  }
+  const strip=el("div","uno-hand-strip");strip.id="uno-hand-strip";
+  strip.setAttribute("aria-label","Your UNO hand. Swipe or use the arrow controls to browse cards.");
+  const fanCenter=(hand.length-1)/2;
+  hand.forEach((card,index)=>{
+    const n=cardNode(card,false),legal=isCardPlayable(card,pub,hand),canPlay=myTurn&&legal&&(!drawPending||card.id===state.drawn_card_id);
+    const angle=Math.max(-13,Math.min(13,(index-fanCenter)*1.75)),lift=Math.min(17,Math.abs(index-fanCenter)*1.25);
+    n.style.setProperty("--fan-angle",angle.toFixed(2)+"deg");n.style.setProperty("--fan-lift",lift.toFixed(2)+"px");
+    n.style.zIndex=String(index+1);n.dataset.cardIndex=String(index);n.dataset.cardId=String(card.id);
+    n.draggable=!!canPlay;n.setAttribute("aria-pressed",String(card.id===selectedCardId));
+    n.classList.toggle("uno-card-unplayable",!canPlay);n.classList.toggle("is-selected",card.id===selectedCardId);
+    if(drawPending&&card.id===state.drawn_card_id)n.classList.add("uno-card-drawn");
+    n.addEventListener("dragstart",event=>{if(!canPlay){event.preventDefault();return;}selectedCardId=card.id;event.dataTransfer?.setData("text/plain",String(card.id));if(event.dataTransfer)event.dataTransfer.effectAllowed="move";n.classList.add("is-dragging");});
+    n.addEventListener("dragend",()=>n.classList.remove("is-dragging"));
+    strip.append(n);
+  });
+  strip.addEventListener("click",event=>{
+    const button=event.target?.closest?.(".uno-card");if(!button||!strip.contains(button))return;
+    const card=hand.find(item=>item.id===button.dataset.cardId);if(!card)return;
+    selectedCardId=selectedCardId===card.id?null:card.id;renderGame();
+  });
+  area.append(strip);
+  const controls=el("div","uno-hand-controls"),left=el("button","outline","‹"),right=el("button","outline","›");
+  left.type="button";right.type="button";left.setAttribute("aria-label","Scroll to earlier cards");right.setAttribute("aria-label","Scroll to later cards");
+  const updateScrollButtons=()=>{const max=Math.max(0,strip.scrollWidth-strip.clientWidth);left.disabled=strip.scrollLeft<=2;right.disabled=strip.scrollLeft>=max-2;};
+  left.onclick=()=>strip.scrollBy({left:-Math.max(180,strip.clientWidth*.72),behavior:"smooth"});
+  right.onclick=()=>strip.scrollBy({left:Math.max(180,strip.clientWidth*.72),behavior:"smooth"});
+  strip.addEventListener("scroll",updateScrollButtons,{passive:true});controls.append(left,right);
+  if(hand.length===1&&!pub.uno_called?.[uid()]){
+    const callUno=el("button","primary","UNO!");callUno.type="button";callUno.onclick=()=>act("call_uno");controls.append(callUno);
+  }
+  if(drawPending){const pass=el("button","outline uno-pass-button","Pass turn");pass.type="button";pass.onclick=()=>act("pass");controls.append(pass);}
+  area.append(controls);board.append(area);root.append(board);
+  const playerPanel=el("aside","uno-players-panel");playerPanel.id="uno-players-panel";
+  const panelHead=el("div","uno-players-panel-head");panelHead.append(el("strong","","Players"),el("button","uno-players-close","×"));
+  panelHead.lastChild.type="button";panelHead.lastChild.setAttribute("aria-label","Close players panel");
+  const roster=el("div","uno-roster tag-roster");joined.forEach(p=>{
+    const row=el("button","uno-player-row tag-player-row");row.type="button";
+    row.append(el("span","uno-player-dot tag-player-swatch"));
+    const copy=el("span","tag-player-copy");copy.append(el("strong","",name(p.user_id)+(p.user_id===uid()?" (you)":"")),
+      el("small","muted tiny",(p.user_id===pub.turn_user_id?"Current turn · ":"")+(p.card_count||0)+" cards"));
+    row.append(copy);row.onclick=()=>showPlayerProfile(p);roster.append(row);
+  });
+  playerPanel.append(panelHead,roster);playerPanel.hidden=!playersPanelOpen;root.append(playerPanel);
+  const closePanel=()=>{playersPanelOpen=false;playerPanel.hidden=true;playerToggle.setAttribute("aria-expanded","false");};
+  playerToggle.onclick=()=>{playersPanelOpen=!playersPanelOpen;playerPanel.hidden=!playersPanelOpen;playerToggle.setAttribute("aria-expanded",String(playersPanelOpen));};
+  panelHead.lastChild.onclick=closePanel;
+  const exitButton=lobbyExit;if(exitButton)actions.append(exitButton);
+  updateScrollButtons();
+}
 function cardNode(card,small){const icons={skip:"⊘",reverse:"↻"},label=card?.kind==="number"?String(card.value):({skip:"Skip",reverse:"Reverse",draw2:"+2",wild:"Wild",wild4:"+4"})[card?.kind]||String(card?.value||""),display=icons[card?.kind]||label,actionIcon=!!icons[card?.kind],n=el("button","uno-card "+(card?.color||"wild")+(small?" uno-card-small":""));n.type="button";n.setAttribute("aria-label",(card?.color||"wild")+" "+label);n.append(el("span","uno-card-corner"+(actionIcon?" uno-action-icon":""),display),el("span","uno-card-center"+(actionIcon?" uno-action-icon":""),display),el("span","uno-card-color",card?.color==="wild"?"WILD":String(card?.color||"").toUpperCase()));return n;}
 function sortHand(cards){const colorOrder={red:0,yellow:1,green:2,blue:3,wild:4},kindOrder={number:0,draw2:1,skip:2,reverse:3,wild:4,wild4:5};return(cards||[]).slice().sort((a,b)=>{const colorDiff=(colorOrder[a?.color]??4)-(colorOrder[b?.color]??4);if(colorDiff)return colorDiff;const kindDiff=(kindOrder[a?.kind]??6)-(kindOrder[b?.kind]??6);if(kindDiff)return kindDiff;if(a?.kind==="number"&&b?.kind==="number")return Number(a.value)-Number(b.value);return String(a?.kind||"").localeCompare(String(b?.kind||""));});}
 function isCardPlayable(card,pub,hand){if(!card||!pub)return false;if(card.color==="wild"){if(card.kind==="wild4")return !(hand||[]).some(item=>item.id!==card.id&&item.color===pub.current_color);return true;}return card.color===pub.current_color||String(card.value)===String(pub.top_card?.value);}
 async function play(card){const pub=state?.public_state;if(pub?.turn_user_id!==uid()){toast("It is not your turn yet.");return;}if(state?.drawn_card_id&&state.drawn_card_id!==card.id){toast("You can only play the card you just drew, or pass.");return;}if(!isCardPlayable(card,pub,state?.hand||[])){toast("That card does not match the current color or number.");return;}if(card.color==="wild"){const root=$("uno-content"),picker=el("section","uno-color-picker");picker.setAttribute("aria-label","Choose a color");picker.append(el("strong","","Choose the next color"));const choices=el("div","uno-color-choices");["red","blue","green","yellow"].forEach(color=>{const choice=el("button","uno-color-choice "+color,color);choice.type="button";choice.onclick=()=>{picker.remove();void act("play",card.id,color);};choices.append(choice);});const cancel=el("button","outline","Cancel");cancel.type="button";cancel.onclick=()=>picker.remove();picker.append(choices,cancel);root.append(picker);return;}await act("play",card.id,null);}
-async function act(action,id=null,color=null){if(busy||!activeGameId)return;busy=true;const gameId=activeGameId;try{const next=await call("gather_uno_action",{p_game_id:gameId,p_action:action,p_card_id:id,p_color:color});if(activeGameId!==gameId)return;state=next;renderGame();}catch(e){if(activeGameId===gameId)toast(e.message||"That move could not be made.");}finally{busy=false;}}
+async function act(action,id=null,color=null){if(busy||!activeGameId)return;busy=true;const gameId=activeGameId;try{const next=await call("gather_uno_action",{p_game_id:gameId,p_action:action,p_card_id:id,p_color:color});if(activeGameId!==gameId)return;state=next;selectedCardId=null;renderGame();}catch(e){if(activeGameId===gameId)toast(e.message||"That move could not be made.");}finally{busy=false;}}
 function scheduleRefresh(){clearTimeout(refreshTimer);refreshTimer=window.setTimeout(()=>{if(ctx&&uid())void refresh();},160);}
 function refreshOnReturn(){if(!document.hidden&&navigator.onLine&&ctx&&uid())scheduleRefresh();}
 function init(options){ctx=options;mount();if(!channel)channel=ctx.db.channel("gather-uno-sync").on("postgres_changes",{event:"*",schema:"public",table:"gather_multiplayer_games"},e=>{if(e.new?.game_type==="uno"||e.old?.game_type==="uno")scheduleRefresh();}).on("postgres_changes",{event:"*",schema:"public",table:"gather_multiplayer_players"},scheduleRefresh).subscribe(status=>{if(status==="SUBSCRIBED"){if(channelConnected)refreshOnReturn();channelConnected=true;}});if(!lifecycleListenersBound){document.addEventListener("visibilitychange",refreshOnReturn);window.addEventListener("focus",refreshOnReturn);window.addEventListener("pageshow",refreshOnReturn);window.addEventListener("online",refreshOnReturn);lifecycleListenersBound=true;}void refresh();}
