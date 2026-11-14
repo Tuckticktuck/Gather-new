@@ -22,7 +22,8 @@
 
   let ctx = null;
   let channel = null;
-  let syncTimer = null;
+  let lifecycleListenersBound = false;
+  let channelConnected = false;
   let refreshTimer = null;
   let busy = false;
   let panelOpen = false;
@@ -103,6 +104,12 @@
     });
   }
 
+  function refreshOnReturn() {
+    if (document.hidden || !navigator.onLine || !ctx || !uid()) return;
+    clearTimeout(refreshTimer);
+    refreshTimer = window.setTimeout(() => { if (ctx && uid()) void refresh(); }, 160);
+  }
+
   function init(options) {
     ctx = options;
     mount();
@@ -117,15 +124,21 @@
           const row = payload?.new || payload?.old;
           if (activeGameId && row?.game_id === activeGameId) scheduleLoad();
           else scheduleRefresh();
-        }).subscribe();
+        })
+        .subscribe(status => {
+          if (status === "SUBSCRIBED") {
+            if (channelConnected) refreshOnReturn();
+            channelConnected = true;
+          }
+        });
     }
-    if (syncTimer) clearInterval(syncTimer);
-    syncTimer = window.setInterval(() => {
-      if (!document.hidden && navigator.onLine && ctx && uid()) {
-        if (activeGameId) void loadGame();
-        else if (panelOpen) void refresh();
-      }
-    }, 15000);
+    if (!lifecycleListenersBound) {
+      document.addEventListener("visibilitychange", refreshOnReturn);
+      window.addEventListener("focus", refreshOnReturn);
+      window.addEventListener("pageshow", refreshOnReturn);
+      window.addEventListener("online", refreshOnReturn);
+      lifecycleListenersBound = true;
+    }
     void refresh();
   }
 
@@ -135,7 +148,7 @@
   }
   function scheduleRefresh() {
     clearTimeout(refreshTimer);
-    refreshTimer = setTimeout(() => { if (!activeGameId && panelOpen) void refresh(); }, 260);
+    refreshTimer = setTimeout(() => { if (!activeGameId && ctx && uid()) void refresh(); }, 260);
   }
 
   async function refresh() {
@@ -181,6 +194,7 @@
     } else {
       membershipRows = mine.data || [];
     }
+    if (typeof ctx.onGamesUpdated === "function") ctx.onGamesUpdated();
     if (activeGameId) {
       await loadGame();
       return;
@@ -195,28 +209,31 @@
       .in("status", ["joined", "invited"])
       .order("joined_at", { ascending: true });
     if (result.error) throw result.error;
+    if (activeGameId !== id) return;
     players = result.data || [];
   }
 
   async function loadGame() {
     if (!ctx || !activeGameId) return;
+    const gameId = activeGameId;
     const result = await ctx.db.from("gather_multiplayer_games")
       .select("id,conversation_id,game_type,status,created_by,join_mode,settings,state,revision,created_at,updated_at")
-      .eq("id", activeGameId)
+      .eq("id", gameId)
       .eq("game_type", "ludo")
       .maybeSingle();
+    if (activeGameId !== gameId) return;
     if (result.error || !result.data) {
       setStatus(result.error?.message || "This Ludo game could not be found.", true);
       return;
     }
     activeGame = result.data;
     try {
-      await loadPlayers(activeGameId);
+      await loadPlayers(gameId);
     } catch (error) {
-      setStatus(error?.message || "The player list could not be loaded.", true);
+      if (activeGameId === gameId) setStatus(error?.message || "The player list could not be loaded.", true);
       return;
     }
-    if (panelOpen) renderGamePanel();
+    if (activeGameId === gameId && panelOpen) renderGamePanel();
   }
 
   function open() {
@@ -951,15 +968,27 @@
   }
 
   function shutdown() {
-    if (syncTimer) clearInterval(syncTimer);
     if (refreshTimer) clearTimeout(refreshTimer);
-    syncTimer = null;
     refreshTimer = null;
+    if (lifecycleListenersBound) {
+      document.removeEventListener("visibilitychange", refreshOnReturn);
+      window.removeEventListener("focus", refreshOnReturn);
+      window.removeEventListener("pageshow", refreshOnReturn);
+      window.removeEventListener("online", refreshOnReturn);
+      lifecycleListenersBound = false;
+    }
     if (channel && ctx?.db) ctx.db.removeChannel(channel);
     channel = null;
+    channelConnected = false;
     ctx = null;
     close();
   }
 
-  window.GatherLudo = { init, open, openInvitation, openGame, refresh, shutdown };
+  window.GatherLudo = {
+    init, open, openInvitation, openGame, refresh, shutdown,
+    getLiveGames: () => games.filter(game => game.status === "active" &&
+      membershipRows.some(member => member.game_id === game.id && member.status === "joined")),
+    getInvitations: () => games.filter(game => game.status === "active" &&
+      membershipRows.some(member => member.game_id === game.id && member.status === "invited"))
+  };
 })();

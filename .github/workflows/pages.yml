@@ -32,9 +32,7 @@ jobs:
         with:
           deno-version: v2.x
       - name: Type-check Phase 1 Supabase Edge Functions
-        run: deno check supabase/functions/gather-snake-action/index.ts supabase/functions/gather-board-game-action/index.ts
-      - name: Build Tag Canvas engine
-        run: npx --yes --package typescript@5.9.3 tsc --project tsconfig.tag.json
+        run: deno check supabase/functions/gather-board-game-action/index.ts
       - name: Run deterministic multiplayer contract tests
         run: node --test tests/*.test.mjs
       - name: Validate all JavaScript

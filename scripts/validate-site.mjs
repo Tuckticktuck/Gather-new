@@ -38,7 +38,7 @@ for (const ref of localAssets) {
   assert.ok(shellSet.has(url.pathname + url.search), "Service worker shell is missing current asset version: " + ref);
 }
 
-for (const file of ["manifest.webmanifest", "tsconfig.tag.json"]) {
+for (const file of ["manifest.webmanifest"]) {
   JSON.parse(readFileSync(join(root, file), "utf8"));
 }
 
@@ -92,57 +92,41 @@ const unoOfferLock = unoRecapLeaveMigration.indexOf("SELECT * INTO o", unoRecapL
 assert.ok(unoMatchLock >= 0 && unoOfferLock > unoMatchLock, "UNO rematch response must lock match before offer to keep lifecycle lock order consistent");
 assert.match(unoRecapLeaveMigration, /status='joined'[\s\S]*joined_count<>cardinality\(o\.participants\)/i, "UNO rematch start must revalidate that all original participants are still joined");
 
-const snakeClient = readFileSync(join(root, "snake.js"), "utf8");
-const snakeCss = readFileSync(join(root, "snake.css"), "utf8");
-const snakeFunction = readFileSync(join(root, "supabase/functions/gather-snake-action/index.ts"), "utf8");
-const snakeEngine = readFileSync(join(root, "supabase/functions/gather-snake-action/snake-engine.mjs"), "utf8");
-const snakeFoundationMigration = readFileSync(join(root, "supabase/migrations/20261114022328_snake_arena_authoritative_multiplayer_foundation.sql"), "utf8");
-const snakeLifecycleMigration = readFileSync(join(root, "supabase/migrations/20261114022743_harden_snake_host_and_leave_lifecycle.sql"), "utf8");
-const snakeDeclineMigration = readFileSync(join(root, "supabase/migrations/20261114023244_add_snake_arena_invitation_decline.sql"), "utf8");
-const snakeSpectatorMigration = readFileSync(join(root, "supabase/migrations/20261114125425_add_read_only_snake_spectator_membership.sql"), "utf8");
-const snakeSpectatorDiscoveryMigration = readFileSync(join(root, "supabase/migrations/20261114125529_show_full_snake_lobbies_to_spectators.sql"), "utf8");
-const snakeSpectatorLeaveMigration = readFileSync(join(root, "supabase/migrations/20261114125905_allow_spectators_to_leave_finished_snake_matches.sql"), "utf8");
-const snakeSpectatorHardeningMigration = readFileSync(join(root, "supabase/migrations/20261114130015_harden_snake_spectator_invitation_checks.sql"), "utf8");
-assert.ok(snakeClient.includes('functions.invoke("gather-snake-action"'), "Snake controls must call the JWT-verified action endpoint");
-assert.match(snakeClient, /gather_snake_start/, "Snake lobby must use the server-side start RPC");
-assert.match(snakeClient, /action:\s*"tick"/, "Snake client must request ticks from the authoritative server endpoint");
-assert.doesNotMatch(snakeClient, /gather_multiplayer_update_state/, "Snake must not use client-submitted shared state updates");
-assert.ok(snakeFunction.includes("auth.getUser(accessToken)"), "Snake endpoint must verify the Supabase user session");
-assert.match(snakeFunction, /gather_snake_commit_tick/, "Snake endpoint must commit authoritative server ticks");
-assert.match(snakeEngine, /advanceSnakeState/, "Snake Edge Function must use the authoritative rules engine");
-assert.match(snakeFoundationMigration, /gather_snake_record_input/, "Snake migration must define server-validated direction input");
-assert.match(snakeLifecycleMigration, /The host must still be in the lobby/, "Snake start must require the host to remain joined");
-assert.match(snakeDeclineMigration, /gather_snake_decline/, "Snake invitation decline RPC must exist");
-assert.match(snakeSpectatorMigration, /'spectating'::text/, "Snake roster must support a distinct spectator status");
-assert.match(snakeSpectatorMigration, /gather_snake_spectate/, "Snake spectator admission must be server-authorized");
-assert.match(snakeSpectatorMigration, /status = 'joined'/, "Snake spectators must not be counted as active players");
-assert.ok(snakeClient.includes('rpc("gather_snake_spectate"'), "Snake UI must offer a read-only spectator path");
-assert.ok(snakeClient.includes('membership?.status === "joined"'), "Only joined players may use the Snake tick driver and game chat");
-assert.match(snakeClient, /document\.addEventListener\("visibilitychange", handleVisibilityChange\)/, "Snake must refresh after returning to a backgrounded tab");
-assert.match(snakeClient, /window\.addEventListener\("online", handleOnline\)/, "Snake must refresh after network connectivity returns");
-assert.match(snakeClient, /\.subscribe\(status => \{[\s\S]*?status === "SUBSCRIBED"[\s\S]*?refreshOnResume\(\)/, "Snake must refresh after its Realtime channel reconnects");
-assert.match(snakeClient, /function unbindLifecycleEvents\([\s\S]*?removeEventListener\("visibilitychange", handleVisibilityChange\)[\s\S]*?removeEventListener\("online", handleOnline\)/, "Snake must clean up its reconnect listeners on shutdown");
-assert.ok(snakeClient.includes("You are observing this match"), "Spectators must see a read-only control state");
-assert.ok(html.includes("snake.js?v=20261114-snake-resume-1") && serviceWorker.includes("./snake.js?v=20261114-snake-resume-1"), "Snake resume changes must invalidate the cached shell asset");
-assert.ok(snakeClient.includes('btn(joinedCount >= maxPlayers ? "Lobby full" : "Join as player"'), "Lobby spectators must be able to take an open player seat before the match starts");
-assert.match(snakeSpectatorDiscoveryMigration, /gather_snake_open_lobbies/, "Friends must be able to discover full lobbies to spectate");
-assert.ok(snakeSpectatorLeaveMigration.includes("v_member.status='spectating'"), "Spectators must be able to leave without changing a finished match");
-assert.ok(snakeSpectatorHardeningMigration.includes("coalesce(v_member.status='invited',false)"), "Missing invitations must fail closed when requesting spectator access");
-assert.ok(snakeCss.includes(".snake-spectator-banner"), "Snake spectator mode must have a clear visual indicator");
-assert.ok(snakeCss.includes(".snake-modal:has(.snake-in-match)"), "Snake gameplay must have responsive full-screen styling");
-const tagClient = readFileSync(join(root, "tag.js"), "utf8");
-const tagCancelMigration = readFileSync(join(root, "supabase/migrations/20261114150000_add_tag_lobby_cancellation.sql"), "utf8");
-assert.match(tagClient, /rpc\("gather_tag_cancel"/, "Tag must expose a host action to close the entire lobby");
-assert.match(tagCancelMigration, /v_lobby\.created_by <> v_uid/, "Only the Tag lobby host may cancel the lobby");
-assert.match(tagCancelMigration, /status = 'cancelled'/, "Tag lobby cancellation must close the lobby for all members");
-assert.ok(html.includes("tag.js?v=20261114-tag-lobby-cancel-1") && serviceWorker.includes("./tag.js?v=20261114-tag-lobby-cancel-1"), "Tag lobby cancellation must invalidate the cached client asset");
+const partyClient = readFileSync(join(root, "party.js"), "utf8");
+const appClient = readFileSync(join(root, "app.js"), "utf8");
 const ludoClient = readFileSync(join(root, "ludo.js"), "utf8");
 const ludoCloseMigration = readFileSync(join(root, "supabase/migrations/20261114160000_allow_ludo_host_to_close_any_lobby.sql"), "utf8");
+const retiredSnakeFunction = readFileSync(join(root, "supabase/functions/gather-snake-action/index.ts"), "utf8");
+const retiredGamesMigration = readFileSync(join(root, "supabase/migrations/20261114170000_retire_tag_and_snake_games.sql"), "utf8");
+
+assert.doesNotMatch(html, /(?:tag|snake)\.(?:js|css)|tag-engine\.js/i, "Retired Tag and Snake assets must not load in the app");
+assert.doesNotMatch(serviceWorker, /(?:tag|snake)\.(?:js|css)|tag-engine\.js/i, "Retired Tag and Snake assets must not be cached");
+assert.doesNotMatch(gamesClient, /gather_tag_|gather_snake_|GatherTag|GatherSnake|snake_arena|Tag Arena|Snake Arena/, "Games hub must expose only turn-based games");
+assert.doesNotMatch(partyClient, /gather_tag_|gather_snake_|GatherTag|GatherSnake|snake_arena|Tag Arena|Snake Arena/, "Party Quick Play must expose only supported turn-based multiplayer games");
+assert.doesNotMatch(appClient, /GatherTag|GatherSnake|snake_arena|Snake Arena|Tag Arena/, "App lifecycle and notifications must not reference retired games");
+assert.match(gamesClient, /table: "gather_multiplayer_games"/, "Games hub must receive multiplayer game changes through Realtime");
+assert.match(gamesClient, /table: "gather_multiplayer_players"/, "Games hub must receive multiplayer roster changes through Realtime");
+assert.doesNotMatch(gamesClient, /syncRefreshTimer|setInterval\(refreshGamesOnReturn/, "Games hub must not poll on a timer");
+assert.match(ludoClient, /table: "gather_multiplayer_games"/, "Ludo must receive turn updates through Realtime");
+assert.match(ludoClient, /visibilitychange", refreshOnReturn/, "Ludo must catch up after a suspended tab resumes");
+assert.doesNotMatch(ludoClient, /syncTimer|setInterval/, "Ludo must not poll on a timer");
+assert.doesNotMatch(partyClient, /setInterval/, "Party list must not poll on a timer");
+assert.match(unoClient, /table:\\s*"gather_multiplayer_games"/, "UNO must receive game changes through Realtime");
+assert.match(unoClient, /visibilitychange",refreshOnReturn/, "UNO must catch up after a suspended tab resumes");
+assert.doesNotMatch(unoClient, /setInterval/, "UNO must not poll on a timer");
+assert.match(unoClient, /if\\(activeGameId!==gameId\\)return/, "UNO must ignore stale responses from a previously opened lobby");
+assert.match(unoClient, /playerToggle.hidden=!started/, "UNO player controls must not show an inactive Players button in the waiting room");
+assert.ok(html.includes("uno.js?v=20261114-uno-event-driven-1") && serviceWorker.includes("./uno.js?v=20261114-uno-event-driven-1"), "UNO event-driven changes must invalidate the cached client asset");
+assert.match(retiredSnakeFunction, /status: 410/, "Retired Snake endpoint must return Gone");
+assert.match(retiredGamesMigration, /REVOKE ALL PRIVILEGES ON FUNCTION/i, "Retired Tag/Snake RPCs must no longer be callable by client roles");
+assert.match(retiredGamesMigration, /gather_tag_|gather_snake_/, "Retirement migration must cover both game RPC families");
+
 assert.match(ludoClient, /rpc\("gather_ludo_cancel"/, "Ludo must expose a host action to close the entire lobby");
 assert.match(ludoClient, /if \(isHost\(\)\) root\.append\(closeLobby\(\)\)/, "Ludo host must be able to close an active match lobby");
 assert.match(ludoCloseMigration, /v_game\.created_by <> auth\.uid\(\)/, "Only the Ludo host may close the lobby");
 assert.match(ludoCloseMigration, /status = 'cancelled'/, "Ludo cancellation must close the lobby for all members");
-assert.ok(html.includes("ludo.js?v=20261114-ludo-close-lobby-1") && serviceWorker.includes("./ludo.js?v=20261114-ludo-close-lobby-1"), "Ludo lobby closure must invalidate the cached client asset");
+assert.ok(html.includes("ludo.js?v=20261114-event-driven-ludo-1") && serviceWorker.includes("./ludo.js?v=20261114-event-driven-ludo-1"), "Ludo event-driven changes must invalidate the cached client asset");
+
 
 const cssFiles = localAssets.filter(ref => /\.css(?:[?#]|$)/i.test(ref));
 for (const ref of cssFiles) {

@@ -1,3 +1,5 @@
+**Product status — 2026-11-14:** Live Tag Arena and Snake Arena are retired. Future Gather multiplayer additions should prioritize turn-based games that advance only on player actions and do not require a continuous simulation loop.
+
 # Gather Arcade Expansion — Implementation Plan
 
 Status: Phase 1 implementation, Supabase security/RPC review, deterministic CI, static validation, and GitHub Pages deployment pass; authenticated multi-account, reconnect, latency, and physical-device release verification remain outstanding

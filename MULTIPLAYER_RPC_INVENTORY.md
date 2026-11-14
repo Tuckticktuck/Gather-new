@@ -1,3 +1,5 @@
+**Product status — 2026-11-14:** Tag and Snake entries below are historical only. The app no longer loads their clients, and client execution of their public RPCs is revoked. The Snake Edge Function responds HTTP 410. Database history is preserved rather than dropping tables or replaying old migrations.
+
 # Gather Multiplayer RPC and Client-Caller Inventory
 
 Status: Phase 0 compatibility mapping, 2026-11-14

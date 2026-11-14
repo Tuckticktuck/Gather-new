@@ -3,7 +3,6 @@
 
   let ctx = null;
   let parties = [];
-  let refreshTimer = null;
   let busy = false;
   let initialized = false;
   let dialog = null;
@@ -33,14 +32,12 @@
     battleship: "Battleship",
     uno: "UNO",
     ludo: "Ludo",
-    tag: "Tag Arena",
-    snake_arena: "Snake Arena"
   };
   const GAME_MARKS = {
     chess: "♞", checkers: "◈", tic_tac_toe: "×○", connect_four: "●",
-    battleship: "⚓", uno: "▦", ludo: "◉", tag: "◎", snake_arena: "〰"
+    battleship: "⚓", uno: "▦", ludo: "◉"
   };
-  const MULTIPLAYER = new Set(["uno", "ludo", "tag", "snake_arena"]);
+  const MULTIPLAYER = new Set(["uno", "ludo"]);
   const TWO_PLAYER = new Set(["chess", "checkers", "tic_tac_toe", "connect_four", "battleship"]);
 
   function memberName(member) {
@@ -208,9 +205,7 @@
       TWO_PLAYER.forEach(type => result.push(type));
     }
     if (count <= 20) result.push("uno");
-    if (count <= 12) result.push("tag");
     if (count <= 4) result.push("ludo");
-    if (count <= 8) result.push("snake_arena");
     return result;
   }
 
@@ -421,51 +416,8 @@
           await verifyPartyLobbyRoster("gather_multiplayer_players", "game_id", gameId, [uid(), ...otherIds]);
           window.GatherLudo?.openGame?.(gameId);
         }
-      } else if (type === "snake_arena") {
-        const existing = await ctx.db.from("gather_multiplayer_games")
-          .select("id").eq("created_by", uid()).eq("game_type", "snake_arena").eq("status", "active")
-          .limit(1).maybeSingle();
-        if (existing.error) throw existing.error;
-        if (existing.data?.id) throw new Error("You already have an open Snake Arena lobby. Finish or close it before starting another Quick Play match.");
-        const response = await ctx.db.rpc("gather_snake_create", {
-          p_invited_user_ids: otherIds,
-          p_join_mode: "invite",
-          p_settings: {
-            arena: "standard",
-            obstacles: "standard",
-            speed: "standard",
-            round_seconds: 180,
-            max_players: members.length
-          }
-        });
-        if (response.error) throw response.error;
-        gameId = response.data?.id;
-        if (gameId) {
-          await verifyPartyLobbyRoster("gather_multiplayer_players", "game_id", gameId, [uid(), ...otherIds]);
-          window.GatherSnake?.openGame?.(gameId);
-        }
-      } else if (type === "tag") {
-        const existing = await ctx.db.from("gather_tag_lobbies")
-          .select("id").eq("created_by", uid()).in("status", ["lobby", "active"])
-          .limit(1).maybeSingle();
-        if (existing.error) throw existing.error;
-        if (existing.data?.id) throw new Error("You already have an open Tag lobby. Finish or close it before starting another Quick Play match.");
-        const response = await ctx.db.rpc("gather_tag_create", {
-          p_conversation_id: null,
-          p_mode: "classic",
-          p_join_mode: "invite",
-          p_invited_user_ids: otherIds,
-          p_color: "#38BDF8",
-          p_max_players: members.length
-        });
-        if (response.error) throw response.error;
-        gameId = response.data?.id;
-        if (gameId) {
-          await verifyPartyLobbyRoster("gather_tag_players", "lobby_id", gameId, [uid(), ...otherIds]);
-          window.GatherTag?.openGame?.(gameId);
-        }
       }
-      if (!gameId) throw new Error("The game lobby was created but could not be opened. Refresh the Games tab and check your invitations.");
+            if (!gameId) throw new Error("The game lobby was created but could not be opened. Refresh the Games tab and check your invitations.");
       toast("Quick Play started " + GAME_LABELS[type] + " for your party.");
       await refresh(false);
     } catch (error) {
@@ -614,13 +566,9 @@
       window.addEventListener("focus", refreshOnReturn);
       window.addEventListener("online", refreshOnReturn);
     }
-    if (refreshTimer) clearInterval(refreshTimer);
-    refreshTimer = window.setInterval(refreshOnReturn, 10000);
   }
 
   function shutdown() {
-    if (refreshTimer) clearInterval(refreshTimer);
-    refreshTimer = null;
     ctx = null;
     parties = [];
     busy = false;

@@ -1,3 +1,5 @@
+**Retired — 2026-11-14:** Snake Arena was removed from Gather due to live tick/refresh overhead. This document remains a historical checklist only and is not an active release or acceptance requirement.
+
 # Phase 1 — Snake Arena authenticated release checklist
 
 Status: prepared; NOT YET EXECUTED. Passing CI does not replace signed-in multiplayer and device checks.
