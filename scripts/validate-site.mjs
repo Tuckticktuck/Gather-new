@@ -115,6 +115,7 @@ assert.match(snakeClient, /window\.addEventListener\("online", handleOnline\)/, 
 assert.match(snakeClient, /\.subscribe\(status => \{[\s\S]*?status === "SUBSCRIBED"[\s\S]*?refreshOnResume\(\)/, "Snake must refresh after its Realtime channel reconnects");
 assert.match(snakeClient, /function unbindLifecycleEvents\([\s\S]*?removeEventListener\("visibilitychange", handleVisibilityChange\)[\s\S]*?removeEventListener\("online", handleOnline\)/, "Snake must clean up its reconnect listeners on shutdown");
 assert.ok(snakeClient.includes("You are observing this match"), "Spectators must see a read-only control state");
+assert.ok(indexHtml.includes("snake.js?v=20261114-snake-resume-1") && serviceWorker.includes("./snake.js?v=20261114-snake-resume-1"), "Snake resume changes must invalidate the cached shell asset");
 assert.ok(snakeClient.includes('btn(joinedCount >= maxPlayers ? "Lobby full" : "Join as player"'), "Lobby spectators must be able to take an open player seat before the match starts");
 assert.match(snakeSpectatorDiscoveryMigration, /gather_snake_open_lobbies/, "Friends must be able to discover full lobbies to spectate");
 assert.ok(snakeSpectatorLeaveMigration.includes("v_member.status='spectating'"), "Spectators must be able to leave without changing a finished match");
