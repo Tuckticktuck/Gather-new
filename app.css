@@ -3945,3 +3945,24 @@ html[data-theme="light"] .offline-status{color:#59421d;background:#fff4d8;border
   .layout.show-chat .messages{min-height:0;overscroll-behavior:contain}
   .layout.show-chat .composer{flex:none}
 }
+
+
+/* Compact conversation bubbles with sender avatars outside incoming group messages. */
+.message{align-items:flex-end;gap:7px;max-width:min(72%,680px)}
+.message .bubble{min-width:0;padding:8px 11px;border-radius:12px 12px 12px 4px}
+.message.mine .bubble{border-radius:12px 12px 4px 12px}
+.message.group-continued{margin-top:-8px}
+.message.group-continued .bubble{padding-top:7px;padding-bottom:7px}
+.message-group-avatar{display:block;flex:none;width:23px;height:23px;margin:0 0 3px;align-self:flex-end;border:1px solid var(--accent-outline-soft);box-shadow:0 1px 4px #0002}
+.message .meta{margin-bottom:3px}
+.message .body-text{font-size:calc(11px * var(--font-scale,1));line-height:1.48}
+.message .message-reaction-area{margin-top:5px}
+.message-action-trigger,.message-quick-react,.message-reaction-quick{display:none!important}
+.message-action-menu{z-index:100}
+@media(min-width:721px){.message{max-width:min(72%,680px)}}
+@media(max-width:720px){
+  .message{max-width:88%;gap:6px}
+  .message .bubble{padding:7px 10px}
+  .message-group-avatar{width:21px;height:21px}
+  .message .body-text{font-size:calc(11px * var(--font-scale,1));line-height:1.45}
+}
