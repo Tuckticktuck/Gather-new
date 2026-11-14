@@ -85,17 +85,17 @@ const snakeEngine = readFileSync(join(root, "supabase/functions/gather-snake-act
 const snakeFoundationMigration = readFileSync(join(root, "supabase/migrations/20261114022328_snake_arena_authoritative_multiplayer_foundation.sql"), "utf8");
 const snakeLifecycleMigration = readFileSync(join(root, "supabase/migrations/20261114022743_harden_snake_host_and_leave_lifecycle.sql"), "utf8");
 const snakeDeclineMigration = readFileSync(join(root, "supabase/migrations/20261114023244_add_snake_arena_invitation_decline.sql"), "utf8");
-assert.match(snakeClient, /functions\\.invoke\\("gather-snake-action"/, "Snake controls must call the JWT-verified action endpoint");
+assert.ok(snakeClient.includes('functions.invoke("gather-snake-action"'), "Snake controls must call the JWT-verified action endpoint");
 assert.match(snakeClient, /gather_snake_start/, "Snake lobby must use the server-side start RPC");
 assert.match(snakeClient, /gather_snake_commit_tick/, "Snake client source must be backed by the server-side tick commit");
 assert.doesNotMatch(snakeClient, /gather_multiplayer_update_state/, "Snake must not use client-submitted shared state updates");
-assert.match(snakeFunction, /auth\\.getUser\\(accessToken\\)/, "Snake endpoint must verify the Supabase user session");
+assert.ok(snakeFunction.includes("auth.getUser(accessToken)"), "Snake endpoint must verify the Supabase user session");
 assert.match(snakeFunction, /gather_snake_commit_tick/, "Snake endpoint must commit authoritative server ticks");
 assert.match(snakeEngine, /advanceSnakeState/, "Snake Edge Function must use the authoritative rules engine");
 assert.match(snakeFoundationMigration, /gather_snake_record_input/, "Snake migration must define server-validated direction input");
 assert.match(snakeLifecycleMigration, /The host must still be in the lobby/, "Snake start must require the host to remain joined");
 assert.match(snakeDeclineMigration, /gather_snake_decline/, "Snake invitation decline RPC must exist");
-assert.match(snakeCss, /snake-modal:has\\(.snake-in-match\\)/, "Snake gameplay must have responsive full-screen styling");
+assert.ok(snakeCss.includes(".snake-modal:has(.snake-in-match)"), "Snake gameplay must have responsive full-screen styling");
 
 const cssFiles = localAssets.filter(ref => /\.css(?:[?#]|$)/i.test(ref));
 for (const ref of cssFiles) {
