@@ -69,6 +69,18 @@ assert.match(boardGameMigration, /revoke execute on function public\.gather_game
 
 const unoClient = readFileSync(join(root, "uno.js"), "utf8");
 const unoCss = readFileSync(join(root, "uno.css"), "utf8");
+const unoHouseRulesMigration = readFileSync(join(root, "supabase/migrations/20261114180000_uno_host_house_rules.sql"), "utf8");
+assert.match(unoHouseRulesMigration, /FUNCTION public\.gather_uno_set_house_rules/i, "UNO house rules must have a dedicated host-only RPC");
+assert.match(unoHouseRulesMigration, /v_game\.created_by <> auth\.uid\(\)/i, "Only the host may save UNO house rules");
+assert.match(unoHouseRulesMigration, /starting_hand_size[\s\S]*draw_until_playable[\s\S]*wild4_anytime/i, "UNO host rules must cover the configured hand size, draw-until-playable, and Wild Draw Four override");
+assert.match(unoHouseRulesMigration, /v_hand_size/i, "UNO starting hand size must be applied by the authoritative start function");
+assert.match(unoHouseRulesMigration, /cards_drawn[\s\S]*Your turn was passed/i, "Draw-until-playable must be resolved by the authoritative action function");
+assert.match(unoHouseRulesMigration, /skipturn:=\(n=2\)/i, "UNO Reverse must only skip the next turn in a two-player game");
+assert.ok(unoClient.includes("gather_uno_set_house_rules") && unoClient.includes("uno-house-rules"), "UNO lobby must expose host controls for shared house rules");
+assert.ok(unoClient.includes("ruleSummary") && unoClient.includes("wild4_anytime"), "UNO lobby and active game must display the shared rule configuration");
+const unoHouseRulesFollowup = readFileSync(join(root, "supabase/migrations/20261114185000_uno_house_rules_late_join_and_ready_reset.sql"), "utf8");
+assert.match(unoHouseRulesFollowup, /for i in 1\.\.[\s\S]*starting_hand_size/i, "Late-joining UNO players must receive the configured starting hand size");
+assert.match(unoHouseRulesFollowup, /SET ready = false[\s\S]*status = 'joined'/i, "Changing UNO house rules must clear existing ready confirmations");
 const unoRematchMigration = readFileSync(join(root, "supabase/migrations/20261114021319_fix_uno_recap_actions_and_standalone_rematch.sql"), "utf8");
 const unoRematchOfferRlsMigration = readFileSync(join(root, "supabase/migrations/20261114131141_secure_uno_rematch_offer_table.sql"), "utf8");
 const unoRecapLeaveMigration = readFileSync(join(root, "supabase/migrations/20261114133052_preserve_uno_recap_when_player_leaves.sql"), "utf8");
@@ -118,8 +130,8 @@ assert.match(unoClient, /visibilitychange",refreshOnReturn/, "UNO must catch up 
 assert.doesNotMatch(unoClient, /setInterval/, "UNO must not poll on a timer");
 assert.match(unoClient, /if\(activeGameId!==gameId\)return/, "UNO must ignore stale responses from a previously opened lobby");
 assert.match(unoClient, /playerToggle.hidden=!started/, "UNO player controls must not show an inactive Players button in the waiting room");
-assert.ok(html.includes("uno.js?v=20261114-account-themes-1") && serviceWorker.includes("./uno.js?v=20261114-account-themes-1"), "UNO arcade UI changes must invalidate the cached client asset");
-assert.ok(html.includes("uno.css?v=20261114-account-themes-1") && serviceWorker.includes("./uno.css?v=20261114-account-themes-1"), "UNO arcade theme changes must invalidate the cached stylesheet");
+assert.ok(html.includes("uno.js?v=20261114-house-rules-1") && serviceWorker.includes("./uno.js?v=20261114-house-rules-1"), "UNO arcade UI changes must invalidate the cached client asset");
+assert.ok(html.includes("uno.css?v=20261114-house-rules-1") && serviceWorker.includes("./uno.css?v=20261114-house-rules-1"), "UNO arcade theme changes must invalidate the cached stylesheet");
 assert.ok(unoClient.includes("uno-seat-ring") && unoClient.includes("uno-direction-ring"), "UNO must render player seats and a direction indicator around the table");
 assert.ok(unoClient.includes("selectedCardId") && unoClient.includes("uno-selection-preview"), "UNO must provide a selected-card preview");
 assert.ok(unoClient.includes('addEventListener("drop"') && unoClient.includes("playSelected"), "UNO must support drag-and-drop and tap-to-discard interactions");

@@ -131,6 +131,8 @@ function renderGame(){
   const root=$("uno-content");root.replaceChildren();
   const g=state.game,players=(state.players||[]).filter(p=>p.status==="joined"||p.status==="invited"),joined=players.filter(p=>p.status==="joined"),spectating=!!state.spectating;
   const started=!!state.started,host=g.created_by===uid(),pub=state.public_state||g.state||{};
+  const rules={starting_hand_size:7,draw_until_playable:false,wild4_anytime:false,...(g.settings?.house_rules||pub.house_rules||{})};
+  const ruleSummary="Rules: "+rules.starting_hand_size+" starting cards · Draw until playable "+(rules.draw_until_playable?"on":"off")+" · Wild Draw Four anytime "+(rules.wild4_anytime?"on":"off");
   const finished=!!(pub.finished||pub.winner_id||g.status==="completed");
   if(lastCountGameId!==g.id){lastCountGameId=g.id;lastCardCounts.clear();}
   root.classList.toggle("uno-in-match",started&&!finished);applyPlayerPrefs();
@@ -162,6 +164,21 @@ function renderGame(){
     lobbyExit=leave;
   }
   if(!started&&!finished){
+    if(host){
+      const panel=el("section","uno-lobby-feature uno-house-rules");
+      panel.append(el("strong","","HOST HOUSE RULES"),el("span","muted tiny","These options are saved to this lobby and enforced for every player."));
+      const grid=el("div","uno-house-rules-grid"),handSize=el("select","uno-house-rules-select");
+      [5,7,10].forEach(value=>{const option=el("option","",value+" cards");option.value=String(value);option.selected=Number(rules.starting_hand_size)===value;handSize.append(option);});
+      const handLabel=el("label","uno-house-rule");handLabel.append(el("span","","Starting hand"),handSize);grid.append(handLabel);
+      const makeRule=(label,checked)=>{const row=el("label","uno-house-rule uno-house-rule-check"),input=el("input");input.type="checkbox";input.checked=!!checked;row.append(input,el("span","",label));grid.append(row);return input;};
+      const drawUntil=makeRule("Draw until a playable card appears",rules.draw_until_playable);
+      const wild4Anytime=makeRule("Allow Wild Draw Four at any time",rules.wild4_anytime);
+      const saveRules=el("button","outline uno-house-rules-save","Save rules for everyone");saveRules.type="button";
+      saveRules.onclick=async()=>{saveRules.disabled=true;saveRules.textContent="Saving rules…";try{await call("gather_uno_set_house_rules",{p_game_id:activeGameId,p_house_rules:{starting_hand_size:Number(handSize.value),draw_until_playable:drawUntil.checked,wild4_anytime:wild4Anytime.checked}});await loadGame();toast("House rules saved for everyone.");}catch(error){toast(error.message||"Could not save house rules.");saveRules.disabled=false;saveRules.textContent="Save rules for everyone";}};
+      panel.append(grid,saveRules,el("small","muted tiny",ruleSummary));root.append(panel);
+    }else{
+      root.append(el("p","uno-rule-summary muted tiny",ruleSummary));
+    }
     const me=joined.find(p=>p.user_id===uid()),ready=el("button",me?.ready?"secondary-action":"primary",me?.ready?"Not ready":"Ready");
     ready.onclick=async()=>{ready.disabled=true;try{await call("gather_uno_ready",{p_game_id:activeGameId,p_ready:!me?.ready});await loadGame();}catch(e){toast(e.message||"Could not update readiness.");ready.disabled=false;}};
     actions.append(ready);
@@ -172,7 +189,7 @@ function renderGame(){
   }
   if(lobbyExit)actions.append(lobbyExit);
   if(!started&&!finished){
-    const handInfo=el("section","uno-lobby-feature");handInfo.append(el("strong","","Ready for the arcade?"),el("span","muted tiny","Each player must mark Ready before the host can start. Seven cards are dealt when the match begins."));root.append(handInfo);
+    const handInfo=el("section","uno-lobby-feature");handInfo.append(el("strong","","Ready for the arcade?"),el("span","muted tiny","Each player must mark Ready before the host can start. "+rules.starting_hand_size+" cards are dealt when the match begins."));root.append(handInfo);
     const roster=el("div","uno-roster tag-roster");roster.append(el("h3","tag-section-title","Players · "+joined.length+"/"+(g.settings?.max_players||10)));
     players.forEach(p=>{
       const row=el("button","uno-player-row tag-player-row"),copy=el("span","tag-player-copy");
@@ -262,7 +279,7 @@ function renderGame(){
   const myTurn=pub.turn_user_id===uid(),drawPending=!!state.drawn_card_id&&myTurn,hand=sortHand(state.hand||[]);
   const board=el("section","uno-board");
   const banner=el("div","uno-turn-banner",drawPending?"You drew a card · Play it if legal or pass":myTurn?"Your turn":"Waiting for "+name(pub.turn_user_id));
-  board.append(banner);
+  board.append(banner,el("p","uno-rule-summary muted tiny",ruleSummary));
   if(pub.message)board.append(el("p","uno-turn-message muted tiny",pub.message));
   const table=el("div","uno-table");
   const seatRing=el("div","uno-seat-ring");seatRing.setAttribute("aria-label","Players around the UNO table");
@@ -369,8 +386,8 @@ function renderGame(){
 }
 function cardNode(card,small){const icons={skip:"⊘",reverse:"↻",draw2:"＋2",wild:"✦",wild4:"✦＋4"},label=card?.kind==="number"?String(card.value):({skip:"Skip",reverse:"Reverse",draw2:"+2",wild:"Wild",wild4:"+4"})[card?.kind]||String(card?.value||""),display=icons[card?.kind]||label,actionIcon=!!icons[card?.kind],n=el("button","uno-card "+(card?.color||"wild")+(small?" uno-card-small":""));n.type="button";n.setAttribute("aria-label",(card?.color||"wild")+" "+label);n.append(el("span","uno-card-corner"+(actionIcon?" uno-action-icon":""),display),el("span","uno-card-center"+(actionIcon?" uno-action-icon":""),display),el("span","uno-card-color",card?.color==="wild"?"WILD":String(card?.color||"").toUpperCase()));return n;}
 function sortHand(cards){const colorOrder={red:0,yellow:1,green:2,blue:3,wild:4},kindOrder={number:0,draw2:1,skip:2,reverse:3,wild:4,wild4:5};return(cards||[]).slice().sort((a,b)=>{const colorDiff=(colorOrder[a?.color]??4)-(colorOrder[b?.color]??4);if(colorDiff)return colorDiff;const kindDiff=(kindOrder[a?.kind]??6)-(kindOrder[b?.kind]??6);if(kindDiff)return kindDiff;if(a?.kind==="number"&&b?.kind==="number")return Number(a.value)-Number(b.value);return String(a?.kind||"").localeCompare(String(b?.kind||""));});}
-function isCardPlayable(card,pub,hand){if(!card||!pub)return false;if(card.color==="wild"){if(card.kind==="wild4")return !(hand||[]).some(item=>item.id!==card.id&&item.color===pub.current_color);return true;}return card.color===pub.current_color||String(card.value)===String(pub.top_card?.value);}
-async function play(card){const pub=state?.public_state;if(pub?.turn_user_id!==uid()){toast("It is not your turn yet.");return;}if(state?.drawn_card_id&&state.drawn_card_id!==card.id){toast("You can only play the card you just drew, or pass.");return;}if(!isCardPlayable(card,pub,state?.hand||[])){toast("That card does not match the current color or number.");return;}if(card.color==="wild"){const root=$("uno-content"),picker=el("section","uno-color-picker");picker.setAttribute("aria-label","Choose a color");picker.append(el("strong","","Choose the next color"));const choices=el("div","uno-color-choices");["red","blue","green","yellow"].forEach(color=>{const choice=el("button","uno-color-choice "+color,color);choice.type="button";choice.setAttribute("aria-label","Choose "+color);choice.onclick=()=>{picker.remove();void act("play",card.id,color);};choices.append(choice);});const cancel=el("button","outline","Cancel");cancel.type="button";cancel.onclick=()=>picker.remove();picker.append(choices,cancel);root.append(picker);return;}await act("play",card.id,null);}
+function isCardPlayable(card,pub,hand){if(!card||!pub)return false;const rules={starting_hand_size:7,draw_until_playable:false,wild4_anytime:false,...(state?.game?.settings?.house_rules||pub.house_rules||{})};if(card.kind==="wild4")return !!rules.wild4_anytime||!(hand||[]).some(item=>item.id!==card.id&&item.color===pub.current_color);if(card.color==="wild")return true;return card.color===pub.current_color||String(card.value)===String(pub.top_card?.value);}
+async function play(card){const pub=state?.public_state;if(pub?.turn_user_id!==uid()){toast("It is not your turn yet.");return;}if(state?.drawn_card_id&&state.drawn_card_id!==card.id){toast("You can only play the card you just drew, or pass.");return;}if(!isCardPlayable(card,pub,state?.hand||[])){toast("That card is not playable under the current UNO rules.");return;}if(card.color==="wild"){const root=$("uno-content"),picker=el("section","uno-color-picker");picker.setAttribute("aria-label","Choose a color");picker.append(el("strong","","Choose the next color"));const choices=el("div","uno-color-choices");["red","blue","green","yellow"].forEach(color=>{const choice=el("button","uno-color-choice "+color,color);choice.type="button";choice.setAttribute("aria-label","Choose "+color);choice.onclick=()=>{picker.remove();void act("play",card.id,color);};choices.append(choice);});const cancel=el("button","outline","Cancel");cancel.type="button";cancel.onclick=()=>picker.remove();picker.append(choices,cancel);root.append(picker);return;}await act("play",card.id,null);}
 async function act(action,id=null,color=null){if(busy||!activeGameId)return;busy=true;const gameId=activeGameId;try{const next=await call("gather_uno_action",{p_game_id:gameId,p_action:action,p_card_id:id,p_color:color});if(activeGameId!==gameId)return;state=next;selectedCardId=null;renderGame();}catch(e){if(activeGameId===gameId)toast(e.message||"That move could not be made.");}finally{busy=false;}}
 function scheduleRefresh(){clearTimeout(refreshTimer);refreshTimer=window.setTimeout(()=>{if(ctx&&uid())void refresh();},160);}
 function refreshOnReturn(){if(!document.hidden&&navigator.onLine&&ctx&&uid())scheduleRefresh();}
