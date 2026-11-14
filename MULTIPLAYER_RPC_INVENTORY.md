@@ -72,8 +72,8 @@ Do not treat a same-named game in two families as the same runtime. In particula
 ### Tag
 
 - Client submits desired position to `gather_tag_move`; client-side `tag-engine.ts` handles presentation/simulation support.
-- Public wrapper delegates to `private.gather_tag_move`. The private definition and all collision/tick semantics must be reviewed separately before reusing any of this for Snake.
-- Tag's dedicated lobby schema and RPCs are not interchangeable with the generic multiplayer lifecycle.
+- Public wrapper delegates to `private.gather_tag_move`. Live helper verifies authenticated joined player, active lobby, conversation permissions, bounds, and a maximum per-request displacement of 9 arena units; it serializes on the moving player's row and resolves tagging/collision modes. It does not enforce elapsed-time movement speed or run a trusted continuous simulation/tick. Therefore it is not a server-authoritative movement simulation and must not be reused for Snake.
+- Tag's dedicated lobby schema and RPCs are not interchangeable with the generic multiplayer lifecycle. The live Tag helper set includes create, customize, start, join, ready, set_mode, leave, end/return, finish_expired, and move. The lobby host controls mode/start/return; ready is per joined player. The Tag movement helper does not itself check the round deadline on every movement; expiry is handled through a separate finish-expired RPC path.
 - A client-submitted position is not a server-authoritative continuous simulation; do not copy this pattern for a competitive Snake simulation.
 
 ## RPC exposure baseline
@@ -98,3 +98,15 @@ Live inspection shows the relevant public RPCs are executable by `authenticated`
 - [ ] Add deterministic rule tests for the actual game-specific validators, not only the shared contract gate.
 - [ ] Build and run a dedicated two-account browser E2E environment.
 - [ ] Decide Snake's trusted simulation runtime without adding Netlify or Cloudflare.
+
+
+## Additional live helper inspection (2026-11-14)
+
+- The shared multiplayer create helper takes an advisory transaction lock keyed by creator and game type, reuses that creator's active match of the same type, bounds settings and initial-state JSON sizes, validates invitation eligibility, inserts the host as joined, and invited users as invited. Its current generic contract is not yet a complete new-game validator: it accepts any syntactically valid game type and caller-provided initial state, so future game-type allowlisting and strict settings schemas belong in game-specific create wrappers.
+- Shared multiplayer join locks the match row, validates invite/open-join policy, blocks, color uniqueness, and increments revision. The inspected helper does not enforce a generic max-player limit; individual game start functions (e.g. UNO/Ludo) must validate their own capacities. Do not assume generic join alone guarantees capacity.
+- Shared multiplayer leave marks the caller left and completes the match when no joined players remain. It repairs the `is_it` marker for remaining players; it is Tag-oriented legacy behavior and should not be treated as a universal player lifecycle without review.
+- Shared multiplayer end currently permits the creator or any joined player to end the match. Game-specific host-only end behavior (e.g. multiplayer Ludo) is stricter and should be preserved through the dedicated game action.
+- Shared generic update-state helper accepts the complete client state after membership, active status, revision, object-shape, and 32 KB checks. It has no game-type allowlist, transition validator, or host/turn authority. New games must not call it.
+- Legacy Ludo's server-side action function and multiplayer Ludo's action function are both server-computed and use row locks, but operate on different tables and player/color/turn models.
+- UNO stores private hands and deck in a private state table and publishes only public top-card, turn, and card-count data in the shared match row. This confirms the intended private/public split for new hidden-information games.
+- Tag movement checks maximum displacement per request but does not apply elapsed-time speed limits or a continuous server tick. It is unsuitable as a trusted Snake movement loop.
