@@ -124,7 +124,19 @@ Desktop and accessibility:
 - [ ] Respect reduced-motion preference.
 - [ ] Confirm text contrast and state labels for ready, invited, eliminated, spectator, completed, and rematch pending.
 
-## 8. Performance evidence and sign-off
+## 8. Existing game regression sweep
+
+Run these existing games after the Phase 1 RPC and shared multiplayer changes. Use at least two signed-in users, and use a fresh lobby per game.
+
+- [ ] UNO: create/invite/join/ready/start; draw/play wild and +4 cards where legal; finish; both recap buttons appear; test done, rematch accept/decline, and player-leave-during-recap handling.
+- [ ] Ludo: create lobby with 2–4 players; invite/join/ready/start; verify turn order, dice/move validation, leave/end, recap, and rematch.
+- [ ] Tag: create each supported mode; verify host duration settings, player movement/tagging, round timer, end-round-to-lobby, host handoff/exit, and rematch.
+- [ ] Battleship: verify fleet placement validation, hidden fleet privacy, legal/illegal shots, win detection, leave/end, and rematch.
+- [ ] Chess and Checkers: verify turn ownership, legal/illegal move handling, end/win detection, leaving and rematch.
+- [ ] Tic-Tac-Toe and Connect Four: verify alternating turns, occupied/full-board rejection, win/tie detection, end and rematch.
+- [ ] For every game above, confirm no duplicate lobby after retries/refresh, invitations reach the intended player, spectators cannot mutate state, and no temporary game chat remains after completion.
+
+## 9. Performance evidence and sign-off
 
 Record tick interval, observed input-to-visible-update delay, missed/duplicate tick count, reconnect duration, and behavior when the active tick-prompting tab is backgrounded. Record median and 95th-percentile measurements from repeated rounds rather than relying on a single playthrough.
 
