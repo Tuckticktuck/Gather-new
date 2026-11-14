@@ -1,6 +1,6 @@
 # Gather Arcade Expansion — Implementation Plan
 
-Status: Phase 1 code, Supabase release review, automated CI, and GitHub Pages deployment pass on commit 758c21d639880b418dd4c64685016466e6a72e3d; authenticated multi-account, reconnect, latency, and physical-device release verification remain outstanding
+Status: Phase 1 implementation, Supabase security/RPC review, deterministic CI, static validation, and GitHub Pages deployment pass on commit 339ed7c4fa4f26cfb61cc72bbcda92ee070e6b19; authenticated multi-account, reconnect, latency, and physical-device release verification remain outstanding
 Repository: `Tuckticktuck/Gather-new`
 Supabase project: `xrwldphmeafiakittcof`
 Hosting: GitHub Pages
@@ -222,7 +222,7 @@ For each migration:
 
 ### Phase 1 — Snake Arena
 
-**Implementation status:** The first playable slice is implemented, including read-only spectator admission. Supabase schema/RPC review, deployed Edge Function verification, deterministic tests, static validation, and GitHub Pages deployment pass. The authenticated multiplayer and device acceptance gate is still open.
+**Implementation status:** The first playable slice is implemented, including read-only spectator admission, pre-start spectator-to-player conversion when a seat is free, and foreground/network/Realtime resume refresh. Supabase schema/RPC review, deployed Edge Function verification, deterministic tests, static validation, and GitHub Pages deployment pass. The authenticated multiplayer and device acceptance gate is still open.
 
 - [x] Deterministic rules engine and automated tests (28 current deterministic tests across Snake and shared/board-game contracts).
 - [x] JWT-verified Supabase Edge Function accepts player direction intent and performs server-calculated ticks; tick commits use a row lock and revision/state compare-and-swap.
@@ -241,7 +241,7 @@ For each migration:
 - [x] Confirmed the Snake tick/input/snapshot and board-game commit RPCs are service_role-only; client-facing game RPCs are authenticated-only (not anonymous). Snake input, UNO private state, and UNO rematch-offer tables deny direct client SELECT; the rematch-offer table has RLS enabled and no client policies.
 - [x] Confirmed UNO rematch-offer data is accessed through the joined-player-authorized rematch RPC flow rather than direct table access.
 
-**Latest automated release verification (2026-11-14):** GitHub Actions run [43599275426](https://github.com/Tuckticktuck/Gather-new/actions/runs/43599275426) passed TypeScript compilation, all 28 deterministic tests (28 passed, 0 failed), JavaScript syntax validation, and static site checks (429 unique HTML IDs, 20 local assets, 7 CSS files, service-worker versions aligned) on commit 20b54925e7a66c2c03bbb026cc2c66c3c2f1c52c. GitHub Pages deployment [43599275667](https://github.com/Tuckticktuck/Gather-new/actions/runs/43599275667) also succeeded on that same commit.
+**Latest automated release verification (2026-11-14):** GitHub Actions run [43599491964](https://github.com/Tuckticktuck/Gather-new/actions/runs/43599491964) passed TypeScript compilation, all 28 deterministic tests, JavaScript syntax validation, static site validation, and the GitHub Pages deploy job on commit 339ed7c4fa4f26cfb61cc72bbcda92ee070e6b19. GitHub Pages deployment run [43599491622](https://github.com/Tuckticktuck/Gather-new/actions/runs/43599491622) also succeeded on that same commit.
 
 **Remaining release gates (not simulated or claimed as passed):** tests/e2e/README.md and tests/e2e/PHASE_1_SNAKE_RELEASE.md are test plans/checklists, not an executable authenticated browser suite. No dedicated E2E test users, disposable test project, or browser automation runner are provisioned in this repository. The live project must not be used for destructive multi-account lifecycle tests.
 - [ ] Run the Phase 1 E2E checklist using two player accounts and a third observer account, in a dedicated test environment.
