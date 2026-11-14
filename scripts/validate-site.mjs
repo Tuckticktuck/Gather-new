@@ -70,12 +70,12 @@ assert.match(boardGameMigration, /revoke execute on function public\.gather_game
 const unoClient = readFileSync(join(root, "uno.js"), "utf8");
 const unoCss = readFileSync(join(root, "uno.css"), "utf8");
 const unoHouseRulesMigration = readFileSync(join(root, "supabase/migrations/20261114180000_uno_host_house_rules.sql"), "utf8");
-assert.match(unoHouseRulesMigration, /FUNCTION public\\.gather_uno_set_house_rules/i, "UNO house rules must have a dedicated host-only RPC");
-assert.match(unoHouseRulesMigration, /v_game\\.created_by <> auth\\.uid\\(\\)/i, "Only the host may save UNO house rules");
-assert.match(unoHouseRulesMigration, /starting_hand_size[\\s\\S]*draw_until_playable[\\s\\S]*wild4_anytime/i, "UNO host rules must cover the configured hand size, draw-until-playable, and Wild Draw Four override");
+assert.match(unoHouseRulesMigration, /FUNCTION public\.gather_uno_set_house_rules/i, "UNO house rules must have a dedicated host-only RPC");
+assert.match(unoHouseRulesMigration, /v_game\.created_by <> auth\.uid\(\)/i, "Only the host may save UNO house rules");
+assert.match(unoHouseRulesMigration, /starting_hand_size[\s\S]*draw_until_playable[\s\S]*wild4_anytime/i, "UNO host rules must cover the configured hand size, draw-until-playable, and Wild Draw Four override");
 assert.match(unoHouseRulesMigration, /v_hand_size/i, "UNO starting hand size must be applied by the authoritative start function");
-assert.match(unoHouseRulesMigration, /cards_drawn[\\s\\S]*Your turn was passed/i, "Draw-until-playable must be resolved by the authoritative action function");
-assert.match(unoHouseRulesMigration, /skipturn:=\\(n=2\\)/i, "UNO Reverse must only skip the next turn in a two-player game");
+assert.match(unoHouseRulesMigration, /cards_drawn[\s\S]*Your turn was passed/i, "Draw-until-playable must be resolved by the authoritative action function");
+assert.match(unoHouseRulesMigration, /skipturn:=\(n=2\)/i, "UNO Reverse must only skip the next turn in a two-player game");
 assert.ok(unoClient.includes("gather_uno_set_house_rules") && unoClient.includes("uno-house-rules"), "UNO lobby must expose host controls for shared house rules");
 assert.ok(unoClient.includes("ruleSummary") && unoClient.includes("wild4_anytime"), "UNO lobby and active game must display the shared rule configuration");
 const unoRematchMigration = readFileSync(join(root, "supabase/migrations/20261114021319_fix_uno_recap_actions_and_standalone_rematch.sql"), "utf8");
