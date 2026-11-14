@@ -172,7 +172,11 @@ Deno.serve(async (request: Request) => {
     return jsonResponse({ error: "The board changed. Refresh the game and try again." }, 409);
   }
 
-  let transition;
+  let transition: {
+    state: Record<string, unknown>;
+    nextTurnUserId: string | null;
+    result: string | null;
+  } | null = null;
   try {
     if (game.game_type === "chess") {
       transition = validateAndApplyChessMove(game, actorId, body.action);
@@ -181,6 +185,10 @@ Deno.serve(async (request: Request) => {
     }
   } catch (error) {
     return jsonResponse({ error: error instanceof Error ? error.message : "That move is not valid." }, 400);
+  }
+
+  if (!transition) {
+    return jsonResponse({ error: "The move could not be validated." }, 400);
   }
 
   const { data: updated, error: commitError } = await admin.rpc("gather_board_game_commit_move", {
