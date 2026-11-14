@@ -3884,7 +3884,7 @@ function renderMessages(preserveScroll=false){
     if(S.editingMessageId===m.id){
       const editor=el("div","message-inline-editor");
       const field=el("textarea","message-inline-edit-field");
-      field.rows=Math.min(6,Math.max(2,String(S.editDraft||"").split("\\n").length));
+      field.rows=Math.min(6,Math.max(2,String(S.editDraft||"").split("\n").length));
       field.maxLength=4000;field.value=S.editDraft;
       field.setAttribute("aria-label","Edit message");
       field.addEventListener("input",()=>{S.editDraft=field.value;});
