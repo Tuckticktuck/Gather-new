@@ -139,7 +139,7 @@ assert.ok(unoClient.includes("function showPlayerProfile") && unoClient.includes
 assert.ok(unoClient.includes("gather_uno_preferences") && unoClient.includes("auth.updateUser"), "UNO personal appearance preferences must sync through the signed-in account");
 assert.ok(unoClient.includes("tableTheme") && unoClient.includes("cardBack"), "UNO personal settings must include table and card-back customization");
 assert.ok(unoCss.includes('data-table-theme="violet"') && unoCss.includes('data-card-back="aurora"'), "UNO must provide the selectable table and card-back themes");
-assert.ok(unoClient.includes('seat.style.top="91%"') && unoClient.includes('"BLUE"')===false, "UNO player seat positioning and concise color labels must be maintained");
+assert.ok(unoClient.includes('seat.style.top="91%"') && unoClient.includes('String(pub.current_color||"wild").toUpperCase()') && !unoClient.includes('"COLOR · "'), "UNO player seat positioning and concise color labels must be maintained");
 assert.ok(unoCss.includes(".uno-direction-ring:before{display:none}") && unoCss.includes(".uno-seat-turn{display:none}"), "UNO mobile table must remove overlapping decorative rings and redundant turn labels");
 assert.ok(unoCss.includes("touch-action:pan-x") && unoCss.includes("margin-left:-8px"), "UNO mobile hand must remain swipeable with readable card spacing");
 assert.ok(unoCss.includes("max-height:285px") && unoCss.includes("top:43%"), "UNO mobile playfield must stay bounded with clear center-pile spacing");
