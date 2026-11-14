@@ -1,3 +1,5 @@
+**Product status — 2026-11-14:** Snake Arena and Tag Arena have been retired from Gather's playable client. Their exposed public RPCs are disabled for client roles and the Snake Edge Function returns HTTP 410. Historical tables and migrations remain intact. Current playable modes are Chess, Checkers, Tic-Tac-Toe, Connect Four, Battleship, UNO, and Ludo.
+
 # Multiplayer Match Lifecycle Contract
 
 Status: Operational multiplayer contract. Chess/Checkers/Tic-Tac-Toe/Connect Four use server-validated move intents, and Snake Arena uses a JWT-verified authoritative tick endpoint. Draw & Guess and Word Hunt remain future implementations.
