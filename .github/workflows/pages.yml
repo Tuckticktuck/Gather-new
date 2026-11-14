@@ -27,6 +27,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Set up Deno for Supabase Edge Function checks
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type-check Phase 1 Supabase Edge Functions
+        run: deno check supabase/functions/gather-snake-action/index.ts supabase/functions/gather-board-game-action/index.ts
       - name: Build Tag Canvas engine
         run: npx --yes --package typescript@5.9.3 tsc --project tsconfig.tag.json
       - name: Run deterministic multiplayer contract tests
