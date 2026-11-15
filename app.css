@@ -4110,3 +4110,27 @@ html[data-theme="light"] .offline-status{color:#59421d;background:#fff4d8;border
   border:0 !important;
   box-shadow:none !important;
 }
+
+
+/* Restore the themed input surface while keeping the composer shell black. */
+.composer .composer-main-row textarea{
+  color:var(--text) !important;
+  background:var(--accent-input) !important;
+  border:1px solid var(--line) !important;
+  border-radius:11px !important;
+  box-shadow:none;
+}
+.composer .composer-main-row textarea:focus{
+  background:var(--accent-input) !important;
+  border-color:var(--accent-outline) !important;
+  outline:none !important;
+  box-shadow:0 0 0 3px var(--accent-surface) !important;
+}
+@media(max-width:720px){
+  /* iOS Safari zooms the page when focused controls use text below 16px. */
+  .composer .composer-main-row textarea{font-size:16px !important;-webkit-text-size-adjust:100%}
+  /* Do not resize the whole chat shell to the shrinking visual viewport. */
+  .layout{height:calc(100dvh - 60px);min-height:0}
+}
+
+.message-group-avatar-spacer{visibility:hidden;pointer-events:none}
