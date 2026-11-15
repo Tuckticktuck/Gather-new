@@ -111,6 +111,21 @@ test("an invited member can join a live multiplayer lobby", async () => {
   assert.equal(calls[0][0], "join");
 });
 
+test("UNO permits a spectator or departed player to rejoin an unfinished match", async () => {
+  for (const status of ["spectating", "left"]) {
+    const snapshot = snapshotFor("uno", {
+      state: { phase: "playing", started: true, finished: false, winner_id: null },
+      players: [
+        { user_id: "host", status: "joined", ready: true },
+        { user_id: "returning", status, ready: false }
+      ]
+    });
+    const { service, calls } = setup({ gameType: "uno", viewerId: "returning", snapshot });
+    await service.join("uno", "match-1");
+    assert.equal(calls[0][0], "join");
+  }
+});
+
 test("a spectator or invitee cannot change readiness", async () => {
   const snapshot = snapshotFor("dominoes", {
     players: [
