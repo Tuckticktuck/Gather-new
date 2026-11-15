@@ -103,7 +103,9 @@ assert.ok(gamesClient.includes("<strong>UNO</strong><small>2–10 players</small
 assert.ok(gamesClient.includes("<strong>Ludo</strong><small>2–4 players</small>"), "Ludo picker must show its 2–4 player capacity");
 assert.ok(gamesClient.includes("<strong>Dominoes</strong><small>2–4 players</small>"), "Dominoes picker must show its 2–4 player capacity");
 assert.doesNotMatch(gamesClient, /games-choose-two-player|games-choose-multiplayer|games-multiplayer-chooser/, "New Game must not split the catalog into player-count sections");
-assert.ok(gamesClient.includes("openCreateModal(undefined, gameType)") && gamesClient.includes("openMultiplayerGame(gameType)"), "Each selected game must launch the shared opponent setup automatically");
+assert.ok(gamesClient.includes("openCreateModal(conversationId, gameType)") && gamesClient.includes("openMultiplayerGame(gameType)"), "Selected games must retain their originating conversation when launching setup");
+assert.match(gamesClient, /if \(activeChat\?\.id\) openGameTypeChooser\(activeChat\.id\)/, "Conversation Play a game must open the game chooser in conversation context");
+assert.match(gamesClient, /select\.disabled = !!defaultConversationId/, "Conversation-started game setup must stay tied to that conversation");
 assert.match(sharedLobbyUi, /Every joined player must be ready before the host can start/);
 assert.match(multiplayerCapacityMigration, /drop trigger if exists gather_multiplayer_players_two_player_limit/i);
 assert.match(multiplayerCapacityMigration, /supports between two and ten players/i);
