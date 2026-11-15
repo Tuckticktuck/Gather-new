@@ -4043,3 +4043,34 @@ html[data-theme="light"] .offline-status{color:#59421d;background:#fff4d8;border
 /* Group sender avatars sit before incoming bubbles and show the complete uploaded picture. */
 .message-group-avatar{order:0;align-self:flex-end;object-fit:contain}
 .message:not(.mine)>.bubble{order:1}
+
+
+/* Clean, keyboard-stable conversation composer. */
+.composer{
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+  gap:0;
+}
+.composer:focus-within{border-color:transparent;box-shadow:none}
+.composer .composer-main-row .composer-more-trigger{
+  color:var(--accent-text);
+  background:var(--accent-panel-raised);
+  border-color:var(--accent-outline-soft);
+  font-size:29px;
+  font-weight:400;
+  line-height:1;
+}
+@media(max-width:720px){
+  .layout{height:calc(var(--gather-visual-viewport-height,100dvh) - 60px - env(safe-area-inset-top,0px));}
+  .composer{
+    margin:0 auto max(7px,env(safe-area-inset-bottom));
+    padding:0;
+    border:0;
+    background:transparent;
+    box-shadow:none;
+  }
+  .composer:focus-within{border:0;box-shadow:none}
+}
