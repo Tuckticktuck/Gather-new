@@ -1,6 +1,6 @@
 # Gather Game Engine Rebuild
 
-Status: Foundation implementation started  
+Status: Core contracts and Phase 2 compatibility services implemented; game-client migration has not started  
 Repository: \`Tuckticktuck/Gather-new\`  
 Frontend hosting: GitHub Pages  
 Backend: Supabase  
@@ -131,6 +131,34 @@ Supabase
 - Validates that each module maps to a registered game.
 - Keeps shared services injected rather than allowing modules to own their own lobby, invitation, and synchronization systems.
 
+### `games/core/supabase-adapters.mjs`
+
+- Reads canonical snapshots from the existing `gather_games` and `gather_multiplayer_games` persistence families.
+- Normalizes the legacy two-player row into the shared match/roster contract.
+- Subscribes to match/roster changes and emits invalidation callbacks; it never trusts Realtime payload state.
+- Maps the existing Chess, Checkers, Tic-Tac-Toe, Connect Four, Battleship, UNO, Ludo, and Dominoes lifecycle RPCs into per-game drivers.
+- Does not expose `gather_multiplayer_update_state` or any generic client-authored full-state update operation.
+- Keeps private hands and game-specific secret data behind the existing private-state RPCs.
+
+### `games/core/lobby-service.mjs`
+
+- Provides a shared facade for create, join, decline, ready, start, leave, cancel, end, spectate, load, and watch operations.
+- Validates game registration, player bounds, invitation lists, and Dominoes team settings before calling a driver.
+- Applies UI-level role checks for host, joined player, invitee, and spectator actions.
+- Delegates the actual authorization and state transition to the existing server-side RPC for each game.
+- Refreshes canonical snapshots after successful mutations without converting a successful mutation into a failure if the follow-up read is temporarily unavailable.
+
+### Current persistence/RPC boundaries
+
+| Games | Existing persistence path | Driver behavior |
+|---|---|---|
+| Chess, Checkers, Tic-Tac-Toe, Connect Four, Battleship | `gather_games` | Create invitation, accept, decline, cancel pending invite, end active match |
+| UNO | `gather_multiplayer_games` + private UNO state | Dedicated create/join/ready/start/leave/end/spectate/get-state RPCs |
+| Ludo | `gather_multiplayer_games` | Dedicated create/join/decline/ready/start/leave/cancel RPCs |
+| Dominoes | `gather_multiplayer_games` + private hands/boneyard tables | Dedicated create/join/decline/ready/start/leave/end/spectate/get-state RPCs |
+
+The game-specific server functions remain authoritative. These adapters are compatibility boundaries, not replacements for database authorization. In particular, `gather_multiplayer_update_state` remains intentionally unused because it accepts client-supplied full state.
+
 ## Proposed target directory layout
 
 \`\`\`
@@ -140,10 +168,10 @@ games/
     game-registry.mjs
     match-contract.mjs
     match-sync.mjs
-    lobby-service.mjs             # next foundation increment
-    match-service.mjs             # next foundation increment
-    action-dispatcher.mjs         # next foundation increment
-    game-module-contract.mjs      # next foundation increment
+    lobby-service.mjs             # shared lifecycle facade
+    supabase-adapters.mjs         # existing RPC/storage compatibility
+    action-dispatcher.mjs         # ordered intent dispatch
+    game-module-contract.mjs      # versioned game module interface
   shared/
     match-contract.mjs            # backward-compatible exports during migration
   modules/
