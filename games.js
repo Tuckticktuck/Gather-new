@@ -247,7 +247,7 @@
     if (!document.hidden && navigator.onLine && ctx && userId()) scheduleGamesRefresh();
   }
 
-  const SHARED_BOARD_GAME_IDS = new Set(["tic_tac_toe", "connect_four"]);
+  const SHARED_BOARD_GAME_IDS = new Set(["tic_tac_toe", "connect_four", "battleship"]);
 
   function isSharedBoardGame(gameType) {
     return SHARED_BOARD_GAME_IDS.has(gameType);
@@ -260,16 +260,9 @@
 
     sharedBoardRuntimePromise = Promise.all([
       import("./games/core/index.mjs"),
-      import("./games/modules/legacy-board-modules.mjs")
-    ]).then(([core, moduleApi]) => {
-      const modules = core.createGameModuleRegistry(
-        moduleApi.createLegacyBoardModules({
-          renderLobby: renderSharedBoardLobby,
-          renderTicTacToe: context => renderTicTacToe(context.game, context.container, context.canMove),
-          renderConnectFour: context => renderConnectFour(context.game, context.container, context.canMove)
-        }),
-        core.GatherGameRegistry
-      );
+      import("./games/modules/legacy-board-modules.mjs"),
+      import("./games/modules/battleship/index.mjs")
+    ]).then(([core, moduleApi, battleshipApi]) => {
       const repository = core.createSupabaseMatchRepository(ctx.db);
       const drivers = core.createSupabaseGameDrivers(ctx.db);
       const lobbyService = core.createLobbyService({
@@ -278,6 +271,23 @@
         repository,
         getViewerId: () => userId()
       });
+      const battleship = battleshipApi.createBattleshipModule({
+        drivers,
+        lobbyService,
+        getViewerId: () => userId(),
+        renderLobby: renderSharedBoardLobby,
+        renderMatch: context => renderBattleship(
+          context.game, context.container, context.privateState, context.isSpectator, context.canMove
+        )
+      });
+      const modules = core.createGameModuleRegistry([
+        ...moduleApi.createLegacyBoardModules({
+          renderLobby: renderSharedBoardLobby,
+          renderTicTacToe: context => renderTicTacToe(context.game, context.container, context.canMove),
+          renderConnectFour: context => renderConnectFour(context.game, context.container, context.canMove)
+        }),
+        battleship.module
+      ], core.GatherGameRegistry);
       sharedBoardRuntime = Object.freeze({ core, modules, repository, drivers, lobbyService });
       return sharedBoardRuntime;
     }).catch(error => {
@@ -318,7 +328,7 @@
       activeModuleGameId = game.id;
       activeGameModuleInstance = module.mount({ services: runtime.lobbyService, viewerId: userId() });
 
-      const sync = runtime.lobbyService.watch(game.game_type, game.id, async snapshot => {
+      const onSnapshot = async snapshot => {
         if (activeGameId !== game.id) return;
         const current = games.find(item => item.id === game.id);
         const nextRevision = snapshot?.match?.revision;
@@ -330,15 +340,17 @@
             renderBoardModal();
           }
         }
-      }, {
-        onError: error => {
-          if (activeGameId === game.id) {
-            const status = $("games-board-status");
-            if (status) status.textContent = "Live updates are reconnecting. The latest board will load when the connection returns.";
-          }
-          console.warn("[GatherGames] Match sync issue", error);
+      };
+      const onSyncError = error => {
+        if (activeGameId === game.id) {
+          const status = $("games-board-status");
+          if (status) status.textContent = "Live updates are reconnecting. The latest board will load when the connection returns.";
         }
-      });
+        console.warn("[GatherGames] Match sync issue", error);
+      };
+      const sync = typeof module.watch === "function"
+        ? module.watch(game.id, onSnapshot, { onError: onSyncError })
+        : runtime.lobbyService.watch(game.game_type, game.id, onSnapshot, { onError: onSyncError });
       activeMatchSync = sync;
       sync.start();
       renderBoardModal();
@@ -1113,10 +1125,7 @@
         isSpectator ? "Spectator view · The board updates live as the players take turns." :
         isTurn ? "Your turn. Select a piece or column to make a move." : "Waiting for your opponent's move.";
     const canMove = game.status === "active" && player && isTurn && !busy;
-    if (gameModule) {
-      gameModule.renderMatch({ game, container: boardArea, canMove, viewerId: userId() }, activeGameModuleInstance);
-    } else if (game.game_type === "ludo") renderLudo(game, boardArea, canMove);
-    else if (game.game_type === "battleship") {
+    if (game.game_type === "battleship") {
       ensureBattleshipPrivateState(game);
       if (battleshipPrivateLoading || battleshipPrivateState === null) {
         boardArea.append(node("p", "games-board-waiting", "Loading your private Battleship board…"));
@@ -1127,10 +1136,18 @@
           ensureBattleshipPrivateState(game);
           renderBoardModal();
         }));
+      } else if (gameModule) {
+        gameModule.renderMatch({
+          game, container: boardArea, canMove, viewerId: userId(), isSpectator,
+          privateState: battleshipPrivateState
+        }, activeGameModuleInstance);
       } else {
         renderBattleship(game, boardArea, battleshipPrivateState, isSpectator, canMove);
       }
-    } else if (game.game_type === "tic_tac_toe") renderTicTacToe(game, boardArea, canMove);
+    } else if (gameModule) {
+      gameModule.renderMatch({ game, container: boardArea, canMove, viewerId: userId(), isSpectator }, activeGameModuleInstance);
+    } else if (game.game_type === "ludo") renderLudo(game, boardArea, canMove);
+    else if (game.game_type === "tic_tac_toe") renderTicTacToe(game, boardArea, canMove);
     else if (game.game_type === "connect_four") renderConnectFour(game, boardArea, canMove);
     else if (game.game_type === "checkers") renderCheckers(game, boardArea, canMove);
     else renderChess(game, boardArea, canMove);
@@ -1310,12 +1327,16 @@
     }
     if (battleshipPrivateLoading || battleshipPrivateState !== null) return;
     battleshipPrivateLoading = true;
-    ctx.db.rpc("gather_game_battleship_private_state", { p_game_id: game.id })
-      .then(response => {
+    ensureSharedBoardRuntime()
+      .then(runtime => {
+        const module = runtime.modules.get("battleship");
+        if (!module?.loadPrivateState) throw new Error("The Battleship game module is unavailable.");
+        return module.loadPrivateState(game.id);
+      })
+      .then(privateState => {
         if (activeGameId !== game.id) return;
         battleshipPrivateLoading = false;
-        if (response.error) battleshipPrivateState = { error: response.error.message || "Your private fleet could not be loaded." };
-        else battleshipPrivateState = response.data || { is_player: false, placed: false, ships: [] };
+        battleshipPrivateState = privateState || { is_player: false, placed: false, ships: [] };
         renderBoardModal();
       })
       .catch(error => {
@@ -1387,28 +1408,18 @@
     const status = $("games-board-status");
     if (status) status.textContent = action === "place_fleet" ? "Locking in your fleet…" : "Checking that square…";
     try {
-      const response = await ctx.db.rpc("gather_game_battleship_action", {
-        p_game_id: game.id,
-        p_action: action,
-        p_payload: payload
-      });
-      if (response.error) {
-        toast(response.error.message || "That Battleship action could not be completed.");
-        battleshipDraft.message = response.error.message || "That action could not be completed.";
-        return;
-      }
-      const updated = Array.isArray(response.data) ? response.data[0] : response.data;
-      if (!updated) {
+      const runtime = await ensureSharedBoardRuntime();
+      const module = runtime.modules.get("battleship");
+      if (!module?.action) throw new Error("The Battleship game module is unavailable.");
+      const updated = await module.action(game.id, action, payload);
+      if (!updated?.game) {
         toast("The Battleship board did not return an update. Refresh and try again.");
         return;
       }
-      games = [updated, ...games.filter(item => item.id !== updated.id)];
-      activeGame = updated;
-      if (action === "place_fleet") {
-        battleshipPrivateState = null;
-        battleshipPrivateLoading = false;
-        battleshipDraft.message = "";
-      }
+      games = [updated.game, ...games.filter(item => item.id !== updated.game.id)];
+      activeGame = updated.game;
+      battleshipPrivateState = updated.privateState || { is_player: false, placed: false, ships: [] };
+      if (action === "place_fleet") battleshipDraft.message = "";
       renderAll();
     } catch (error) {
       toast(error?.message || "That Battleship action could not be completed.");
