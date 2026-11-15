@@ -35,10 +35,33 @@ export function createDominoesModule(options = {}) {
 
   async function load(matchId) {
     const publicSnapshot = await lobby.load("dominoes", matchId);
+    const match = publicSnapshot.match;
     const privateState = await drivers.byGame.dominoes.loadPrivateState(matchId);
+    const game = Object.freeze({
+      id: match.id,
+      game_type: match.gameType,
+      status: match.status,
+      created_by: match.hostId,
+      join_mode: match.joinMode,
+      settings: match.settings,
+      state: match.state,
+      revision: match.revision,
+      created_at: match.createdAt,
+      updated_at: match.updatedAt
+    });
+    const players = Object.freeze(publicSnapshot.players.map(player => Object.freeze({
+      user_id: player.userId,
+      status: player.status,
+      ready: player.ready,
+      color: player.color,
+      joined_at: player.joinedAt
+    })));
     return Object.freeze({
-      ...publicSnapshot,
-      privateState: privateState || null
+      game,
+      players,
+      // This is returned only to the current viewer by the dedicated RPC.
+      // It is never merged into or persisted as public match state.
+      your_hand: Object.freeze(Array.isArray(privateState?.your_hand) ? privateState.your_hand : [])
     });
   }
 
