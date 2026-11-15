@@ -38,6 +38,7 @@
   let hubFilter = "all";
   let selectedGameConversationId = null;
   let selectedDraftGameType = "chess";
+  let draftSelectedInvitees = [];
   let hubSearchQuery = "";
   let sharedBoardRuntime = null;
   let sharedBoardRuntimePromise = null;
@@ -190,7 +191,7 @@
       const overlay = node("div", "overlay games-overlay");
       overlay.id = "games-create-overlay";
       overlay.hidden = true;
-      overlay.innerHTML = '<section class="modal games-create-modal games-draft-lobby-modal" role="dialog" aria-modal="true" aria-labelledby="games-create-title"><button id="games-create-close" class="close" type="button" aria-label="Close">×</button><p class="eyebrow">GAME LOBBY</p><h2 id="games-create-title">Chess lobby</h2><p id="games-create-subtitle" class="muted tiny">Set up your lobby and invite one opponent. Both players will ready up here before the match begins.</p><div class="gather-shared-lobby-players games-draft-lobby-players"><article class="gather-shared-player-card is-you"><span class="gather-shared-player-avatar" id="games-draft-host-avatar">Y</span><span class="gather-shared-player-copy"><strong id="games-draft-host-name">You</strong><small>Host</small></span><span class="gather-shared-ready-pill">Host</span></article><article class="gather-shared-player-card"><span class="gather-shared-player-avatar">?</span><span class="gather-shared-player-copy"><strong id="games-draft-opponent-name">Waiting for opponent</strong><small>Opponent</small></span><span class="gather-shared-ready-pill">Open seat</span></article></div><form id="games-create-form"><label>Choose a conversation<select id="games-conversation" required></select><small class="games-picker-note">The opponent must be a member of this conversation. Other group members can watch.</small></label><label>Invite opponent<select id="games-opponent" required></select></label><div id="games-game-settings" class="games-game-settings"></div><p id="games-spectator-note" class="games-spectator-note"></p><p id="games-create-status" class="status" role="status"></p><div class="games-form-actions"><button id="games-create-cancel" class="secondary-action" type="button">Cancel</button><button id="games-create-submit" class="primary" type="submit">Invite opponent</button></div></form></section>';
+      overlay.innerHTML = '<section class="modal games-create-modal games-draft-lobby-modal" role="dialog" aria-modal="true" aria-labelledby="games-create-title"><button id="games-create-close" class="close" type="button" aria-label="Close">×</button><p class="eyebrow">GAME LOBBY</p><h2 id="games-create-title">Chess lobby</h2><p id="games-create-subtitle" class="muted tiny">Set up your lobby and invite one opponent. Both players will ready up here before the match begins.</p><div class="gather-shared-lobby-players games-draft-lobby-players"><article class="gather-shared-player-card is-you"><span class="gather-shared-player-avatar" id="games-draft-host-avatar">Y</span><span class="gather-shared-player-copy"><strong id="games-draft-host-name">You</strong><small>Host</small></span><span class="gather-shared-ready-pill">HOST</span></article><div id="games-draft-invitees" class="games-draft-invitees"></div></div><p id="games-draft-seat-summary" class="games-draft-seat-summary" aria-live="polite"></p><form id="games-create-form"><label>Choose a conversation<select id="games-conversation" required></select><small class="games-picker-note">The opponent must be a member of this conversation. Other group members can watch.</small></label><label>Invite players<div id="games-opponent-list" class="games-opponent-list" role="group" aria-label="People to invite"></div><small class="games-picker-note">Choose people from this conversation. Everyone else in the group can spectate.</small></label><div id="games-game-settings" class="games-game-settings"></div><p id="games-spectator-note" class="games-spectator-note"></p><p id="games-create-status" class="status" role="status"></p><div class="games-form-actions"><button id="games-create-cancel" class="secondary-action" type="button">Cancel</button><button id="games-create-submit" class="primary" type="submit">Invite opponent</button></div></form></section>';
       document.body.append(overlay);
       $("games-create-close").addEventListener("click", closeCreateModal);
       $("games-create-cancel").addEventListener("click", closeCreateModal);
@@ -530,14 +531,14 @@
     appendSortedChatOptions(select, eligible);
     const chosen = eligible.find(chat => chat.id === defaultConversationId) || eligible[0];
     select.value = chosen.id;
-    updateOpponentOptions();
+    draftSelectedInvitees = [];
     $("games-create-title").textContent = gameName(selectedDraftGameType) + " lobby";
-    $("games-create-subtitle").textContent = "Invite one opponent to fill the second seat. Both players will ready up here before the match begins.";
+    $("games-create-subtitle").textContent = "Choose the player seats and invite people. Everyone readies up in the same lobby before the host starts.";
     const hostName = memberName(userId());
     $("games-draft-host-name").textContent = hostName + " (you)";
     $("games-draft-host-avatar").textContent = hostName.trim().slice(0, 1).toUpperCase();
-    $("games-draft-opponent-name").textContent = "Waiting for opponent";
     renderGameSetupSettings(selectedDraftGameType);
+    updateOpponentOptions();
     $("games-create-status").textContent = "";
     $("games-create-submit").textContent = "Invite opponent";
     $("games-create-submit").disabled = false;
@@ -548,38 +549,72 @@
     const root = $("games-game-settings");
     if (!root) return;
     root.replaceChildren();
-    if (gameType === "dominoes") {
+
+    const addField = (labelText, control) => {
       const label = node("label", "games-setting-field");
-      label.append(node("span", "", "Rule preset"));
-      const select = node("select");
-      select.id = "games-dominoes-preset";
+      label.append(node("span", "", labelText), control);
+      root.append(label);
+      return control;
+    };
+
+    if (gameType === "uno" || gameType === "ludo") {
+      const maximum = gameType === "uno" ? 10 : 4;
+      const limit = node("select");
+      limit.id = "games-player-limit";
+      for (let count = 2; count <= maximum; count++) {
+        const option = node("option", "", count + " players");
+        option.value = String(count);
+        option.selected = count === 4;
+        limit.append(option);
+      }
+      addField("Player limit", limit);
+      limit.addEventListener("change", updateOpponentOptions);
+    }
+
+    if (gameType === "dominoes") {
+      const mode = node("select");
+      mode.id = "games-dominoes-mode";
+      [["free_for_all", "Free-for-all · 2–4 players"], ["teams", "Teams · exactly 4 players"]].forEach(([value, title]) => {
+        const option = node("option", "", title);
+        option.value = value;
+        mode.append(option);
+      });
+      addField("Game mode", mode);
+      mode.addEventListener("change", updateOpponentOptions);
+
+      const preset = node("select");
+      preset.id = "games-dominoes-preset";
       [["quick", "Quick · 50 points"], ["classic", "Classic · 100 points"], ["marathon", "Marathon · 150 points"]].forEach(([value, title]) => {
         const option = node("option", "", title);
         option.value = value;
         option.selected = value === "classic";
-        select.append(option);
+        preset.append(option);
       });
-      label.append(select);
-      root.append(label);
+      addField("Rule preset", preset);
+      root.append(node("p", "games-setting-note muted tiny", "Team mode needs you plus three invited players. Free-for-all starts with at least two."));
       return;
     }
+
     if (gameType === "ludo") {
-      const label = node("label", "games-setting-field");
-      label.append(node("span", "", "Your Ludo color"));
-      const select = node("select");
-      select.id = "games-ludo-color";
+      const color = node("select");
+      color.id = "games-ludo-color";
       [["#39A96B", "Green"], ["#D85A60", "Red"], ["#D9AD45", "Yellow"], ["#4F83D1", "Blue"]].forEach(([value, title]) => {
         const option = node("option", "", title);
         option.value = value;
         option.selected = value === "#39A96B";
-        select.append(option);
+        color.append(option);
       });
-      label.append(select);
-      root.append(label);
+      addField("Your Ludo color", color);
+      root.append(node("p", "games-setting-note muted tiny", "Ludo supports two to four players."));
       return;
     }
-    const note = gameType === "uno" ? "Standard UNO rules · two players." : "Standard game rules · two players.";
-    root.append(node("p", "games-setting-note muted tiny", note));
+
+    if (gameType === "uno") {
+      root.append(node("p", "games-setting-note muted tiny", "Standard UNO rules · choose from 2 to 10 player seats."));
+      return;
+    }
+
+    root.append(node("p", "games-setting-note muted tiny", "Standard game rules · two players."));
   }
 
   function closeCreateModal() {
@@ -587,60 +622,143 @@
     if (overlay) overlay.hidden = true;
   }
 
+  function draftPlayerLimit() {
+    if (selectedDraftGameType === "uno") return Number($("games-player-limit")?.value) || 4;
+    if (selectedDraftGameType === "ludo") return Number($("games-player-limit")?.value) || 4;
+    return 2;
+  }
+
+  function draftRequiredInvitees() {
+    return selectedDraftGameType === "dominoes" && $("games-dominoes-mode")?.value === "teams" ? 3 : 1;
+  }
+
+  function updateDraftRoster() {
+    const root = $("games-draft-invitees");
+    if (!root) return;
+    root.replaceChildren();
+    const chat = chatList().find(item => item.id === $("games-conversation")?.value);
+    draftSelectedInvitees.forEach(id => {
+      const member = (chat?.members || []).find(item => item.user_id === id);
+      const label = memberName(id) || "Gather player";
+      const card = node("article", "gather-shared-player-card");
+      const avatar = node("span", "gather-shared-player-avatar", label.trim().slice(0, 1).toUpperCase());
+      const copy = node("span", "gather-shared-player-copy");
+      copy.append(node("strong", "", label), node("small", "", "Invited player"));
+      card.append(avatar, copy, node("span", "gather-shared-ready-pill", "INVITED"));
+      root.append(card);
+    });
+    const seats = draftPlayerLimit();
+    const count = draftSelectedInvitees.length + 1;
+    const open = Math.max(0, seats - count);
+    const summary = $("games-draft-seat-summary");
+    if (summary) {
+      summary.textContent = count + "/" + seats + " seats reserved · " + open + " open" +
+        (draftRequiredInvitees() > 1 ? " · team mode needs all four players" : "");
+    }
+  }
+
+  function updateDraftSubmitState() {
+    const submit = $("games-create-submit");
+    if (!submit) return;
+    const chat = chatList().find(item => item.id === $("games-conversation")?.value);
+    const inviteeCount = draftSelectedInvitees.length;
+    const required = draftRequiredInvitees();
+    const capacity = draftPlayerLimit() - 1;
+    const available = (chat?.members || []).filter(member => member.user_id !== userId()).length;
+    submit.disabled = inviteeCount < required || inviteeCount > capacity || inviteeCount > available;
+  }
+
   function updateOpponentOptions() {
     const conversationId = $("games-conversation")?.value;
     const chat = chatList().find(item => item.id === conversationId);
-    const select = $("games-opponent");
-    if (!select) return;
-    select.replaceChildren();
+    const list = $("games-opponent-list");
+    if (!list) return;
     const people = (chat?.members || []).filter(member => member.user_id !== userId())
       .slice().sort((a, b) => byName(memberName(a.user_id), memberName(b.user_id)));
-    if (people.length) {
-      const group = node("optgroup");
-      group.label = "People in this chat";
+    const availableIds = new Set(people.map(member => member.user_id));
+    draftSelectedInvitees = draftSelectedInvitees.filter(id => availableIds.has(id));
+    const capacity = draftPlayerLimit() - 1;
+    if (draftSelectedInvitees.length > capacity) draftSelectedInvitees = draftSelectedInvitees.slice(0, capacity);
+    list.replaceChildren();
+
+    if (!people.length) {
+      list.append(node("p", "muted tiny", "No other people are available in this conversation."));
+    } else {
       people.forEach(member => {
-        const option = node("option", "", memberName(member.user_id));
-        option.value = member.user_id;
-        group.append(option);
+        const label = node("label", "games-opponent-option");
+        const checkbox = node("input");
+        checkbox.type = "checkbox";
+        checkbox.value = member.user_id;
+        checkbox.checked = draftSelectedInvitees.includes(member.user_id);
+        checkbox.disabled = !checkbox.checked && draftSelectedInvitees.length >= capacity;
+        checkbox.addEventListener("change", () => {
+          if (checkbox.checked) {
+            if (draftSelectedInvitees.length >= capacity) {
+              checkbox.checked = false;
+              $("games-create-status").textContent = "This game is limited to " + draftPlayerLimit() + " players.";
+              return;
+            }
+            draftSelectedInvitees.push(member.user_id);
+          } else {
+            draftSelectedInvitees = draftSelectedInvitees.filter(id => id !== member.user_id);
+          }
+          $("games-create-status").textContent = "";
+          updateOpponentOptions();
+        });
+        label.append(checkbox, node("span", "", memberName(member.user_id)));
+        list.append(label);
       });
-      select.append(group);
     }
-    const watchers = Math.max(0, (chat?.members?.length || 2) - 2);
+
+    const otherMembers = Math.max(0, (chat?.members?.length || 1) - 1 - draftSelectedInvitees.length);
     $("games-spectator-note").textContent = chat?.kind === "group"
-      ? watchers + " other group member" + (watchers === 1 ? " can" : "s can") + " spectate. Only the two selected players can move."
-      : "Private games have only the two players.";
-    $("games-create-submit").disabled = !select.options.length;
+      ? otherMembers + " other group member" + (otherMembers === 1 ? " can" : "s can") + " spectate. Invitees fill player seats."
+      : "Private games use the selected player seats only.";
+    updateDraftRoster();
+    updateDraftSubmitState();
   }
 
   async function createGame(event) {
     event.preventDefault();
     if (busy) return;
     const conversationId = $("games-conversation").value;
-    const opponentId = $("games-opponent").value;
+    const inviteeIds = draftSelectedInvitees.slice();
     const gameType = selectedDraftGameType;
-    if (!conversationId || !opponentId || !TYPES[gameType]) {
-      $("games-create-status").textContent = "Choose a conversation and an opponent.";
+    const playerLimit = draftPlayerLimit();
+    const mode = $("games-dominoes-mode")?.value || "free_for_all";
+    const required = draftRequiredInvitees();
+    if (!conversationId || !TYPES[gameType] || inviteeIds.length < required || inviteeIds.length > playerLimit - 1) {
+      $("games-create-status").textContent = gameType === "dominoes" && mode === "teams"
+        ? "Team mode needs exactly three invitees plus the host."
+        : "Invite between 1 and " + (playerLimit - 1) + " other players.";
+      return;
+    }
+    if (gameType === "dominoes" && mode === "teams" && inviteeIds.length !== 3) {
+      $("games-create-status").textContent = "Team mode needs exactly four players.";
       return;
     }
     busy = true;
     const submit = $("games-create-submit");
     submit.disabled = true;
-    $("games-create-status").textContent = "Creating your lobby and inviting your opponent…";
+    $("games-create-status").textContent = "Creating your lobby and sending invitations…";
     let game = null;
     let createError = null;
     try {
       if (isSharedBoardGame(gameType)) {
         const runtime = await ensureSharedBoardRuntime();
-        const mutation = await runtime.lobbyService.create(gameType, { conversationId, opponentId });
+        const mutation = await runtime.lobbyService.create(gameType, {
+          conversationId,
+          opponentId: inviteeIds[0]
+        });
         game = mutation.result;
       } else if (["uno", "ludo", "dominoes"].includes(gameType)) {
         const module = await ensureMultiplayerLobbyModule(gameType);
         const mutation = await module.create({
           conversationId,
           joinMode: "invite",
-          invitedUserIds: [opponentId],
-          playerLimit: 2,
-          mode: "free_for_all",
+          invitedUserIds: inviteeIds,
+          playerLimit,
+          mode,
           preset: $("games-dominoes-preset")?.value || "classic",
           color: $("games-ludo-color")?.value || "#39A96B"
         });
@@ -655,7 +773,8 @@
       submit.disabled = false;
     }
     if (createError) {
-      $("games-create-status").textContent = createError.message || "The game invitation could not be sent.";
+      $("games-create-status").textContent = createError.message || "The game lobby could not be created.";
+      updateDraftSubmitState();
       return;
     }
     closeCreateModal();
@@ -667,7 +786,8 @@
       }
     }
     await refreshGames(false);
-    toast(gameName(gameType) + " lobby created. Waiting for " + memberName(opponentId) + ".");
+    const invitedNames = inviteeIds.map(memberName);
+    toast(gameName(gameType) + " lobby created · invited " + invitedNames.join(", ") + ".");
     if (["uno", "ludo", "dominoes"].includes(gameType)) await openCreatedMultiplayerGame(gameType, game.id);
     else if (game?.id) openGame(game);
     if (activeChat?.id === conversationId) renderChatTray();
