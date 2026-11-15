@@ -1001,7 +1001,7 @@
     if (showStatus && $("games-hub-status")) $("games-hub-status").textContent = "Refreshing games…";
     if (ids.length) {
       const result = await ctx.db.from("gather_games")
-        .select("id,conversation_id,game_type,status,created_by,player_one_id,player_two_id,turn_user_id,state,winner_id,result,revision,created_at,updated_at")
+        .select("id,conversation_id,game_type,status,created_by,player_one_id,player_two_id,player_one_ready,player_two_ready,started_at,turn_user_id,state,winner_id,result,revision,created_at,updated_at")
         .in("conversation_id", ids)
         .order("updated_at", { ascending: false })
         .limit(120);
@@ -1372,7 +1372,7 @@
   async function gameAction(rpcName, game) {
     if (busy) return;
     if (isSharedBoardGame(game?.game_type)) {
-      const actions = { gather_game_accept: "join", gather_game_decline: "decline", gather_game_cancel: "cancel" };
+      const actions = { gather_game_accept: "join", gather_game_decline: "decline", gather_game_cancel: "cancel", gather_game_end: "end" };
       const command = actions[rpcName];
       if (!command) return;
       busy = true;
@@ -1395,7 +1395,7 @@
         const latest = games.find(item => item.id === game.id) || game;
         openGame(latest);
       } else {
-        toast(command === "decline" ? "Invitation declined." : "Game invitation cancelled.");
+        toast(command === "decline" ? "Invitation declined." : command === "end" ? "Game ended." : "Game invitation cancelled.");
       }
       return;
     }
