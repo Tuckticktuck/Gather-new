@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import vm from "node:vm";
 
 const source = await readFile(new URL("../games/shared/lobby-ui.js", import.meta.url), "utf8");
+const css = await readFile(new URL("../games.css", import.meta.url), "utf8");
 
 class FakeElement {
   constructor(tag) {
@@ -99,4 +100,10 @@ test("invited players receive accept and decline actions", () => {
   const labels = flatten(root).map(node => node.textContent);
   assert.ok(labels.includes("Accept invitation"));
   assert.ok(labels.includes("Decline"));
+});
+
+
+test("shared game lobby remains vertically scrollable inside the full-screen board shell", () => {
+  assert.match(css, /\.games-board-area:has\(\.gather-shared-lobby\)[\s\S]*?overflow-y:auto/);
+  assert.match(css, /\.games-board-area:has\(\.gather-shared-lobby\)>\.gather-shared-lobby\s*\{\s*flex:0 0 auto;/);
 });
