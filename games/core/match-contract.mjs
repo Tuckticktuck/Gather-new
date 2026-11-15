@@ -81,6 +81,7 @@ export function normalizeMatchSnapshot(input) {
     hostId,
     revision,
     joinMode: typeof game.join_mode === "string" ? game.join_mode : null,
+    conversationId: typeof game.conversation_id === "string" ? game.conversation_id : null,
     settings: freezeJson(settings),
     state: freezeJson(state),
     createdAt: game.created_at || game.createdAt || null,

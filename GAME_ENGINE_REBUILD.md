@@ -1,6 +1,6 @@
 # Gather Game Engine Rebuild
 
-Status: Core contracts, compatibility services, Tic-Tac-Toe / Connect Four pilot, Dominoes integration, and UNO integration committed; CI verification pending  
+Status: Core contracts, Tic-Tac-Toe / Connect Four pilot, Dominoes, UNO, and multiplayer Ludo integrations committed; CI verification pending  
 Repository: \`Tuckticktuck/Gather-new\`  
 Frontend hosting: GitHub Pages  
 Backend: Supabase  
@@ -328,4 +328,16 @@ Added `games/modules/uno/index.mjs` and connected the existing `uno.js` screen t
 - The module and client are included in the service-worker shell and static path list; the UNO script asset version was advanced to invalidate stale cached UI.
 - Added dedicated module tests and screen-integration assertions. No production schema, game rows, private-state data, or existing UNO RPC definitions were changed.
 
-The shared game engine now has two complex multiplayer client integrations: Dominoes and UNO. The remaining migration sequence is multiplayer Ludo, Battleship, Chess, and Checkers, with additional regression testing across the two older turn-based games as required.
+The shared game engine now has three complex multiplayer client integrations: Dominoes, UNO, and multiplayer Ludo. The remaining migration sequence is Battleship, Chess, and Checkers, with additional regression testing across the two older turn-based games as required.
+
+## Phase 6 — Multiplayer Ludo module migration
+
+Added `games/modules/ludo/index.mjs` and moved the standalone multiplayer `ludo.js` screen onto the shared game engine.
+
+- Active-match reads use the shared canonical match repository and normalized roster contract, including conversation metadata.
+- Lobby creation, color selection, invitations, readiness, start, leave, decline, and cancellation route through the shared lobby service and Ludo RPC adapter.
+- Match-scoped Realtime invalidation and canonical reloads are managed by the shared match-sync service. The broad Ludo Realtime listener now refreshes lobby discovery only.
+- Dice rolls, token moves, and host end-match intent stay behind `gather_ludo_multiplayer_action`. The browser sends only allowlisted action intent and token index; server-side code retains dice outcomes, legal movement, captures, turn progression, and winner calculation.
+- Legacy two-player Ludo remains on its separate `gather_ludo_action` path and is not routed through the multiplayer module.
+- The existing Ludo UI and board logic are retained. The board now uses a dark neon playfield, glowing player colors, illuminated safe spaces, and a neon dice/control treatment.
+- Added module and screen-integration regression tests; updated service-worker cache and asset versions. No production schema or live RPC definitions were changed.

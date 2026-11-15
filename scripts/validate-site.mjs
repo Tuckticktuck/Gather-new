@@ -120,6 +120,8 @@ assert.ok(partyClient.includes("members.length > 10") && partyClient.includes("p
 assert.ok(unoClient.includes("joined.some(p=>!p.ready)") && unoClient.includes("start.disabled"), "UNO start must remain disabled until every joined player, including the host, is ready");
 const appClient = readFileSync(join(root, "app.js"), "utf8");
 const ludoClient = readFileSync(join(root, "ludo.js"), "utf8");
+const ludoModule = readFileSync(join(root, "games/modules/ludo/index.mjs"), "utf8");
+const ludoCss = readFileSync(join(root, "ludo.css"), "utf8");
 const ludoCloseMigration = readFileSync(join(root, "supabase/migrations/20261114160000_allow_ludo_host_to_close_any_lobby.sql"), "utf8");
 const retiredSnakeFunction = readFileSync(join(root, "supabase/functions/gather-snake-action/index.ts"), "utf8");
 const retiredGamesMigration = readFileSync(join(root, "supabase/migrations/20261114170000_retire_tag_and_snake_games.sql"), "utf8");
@@ -175,7 +177,15 @@ assert.match(ludoClient, /rpc\("gather_ludo_cancel"/, "Ludo must expose a host a
 assert.match(ludoClient, /if \(isHost\(\)\) root\.append\(closeLobby\(\)\)/, "Ludo host must be able to close an active match lobby");
 assert.match(ludoCloseMigration, /v_game\.created_by <> auth\.uid\(\)/, "Only the Ludo host may close the lobby");
 assert.match(ludoCloseMigration, /status = 'cancelled'/, "Ludo cancellation must close the lobby for all members");
-assert.ok(html.includes("ludo.js?v=20261114-event-driven-ludo-1") && serviceWorker.includes("./ludo.js?v=20261114-event-driven-ludo-1"), "Ludo event-driven changes must invalidate the cached client asset");
+assert.ok(html.includes("ludo.js?v=20261114-shared-engine-1") && serviceWorker.includes("./ludo.js?v=20261114-shared-engine-1"), "Ludo shared-engine asset versions must match");
+assert.ok(html.includes("ludo.css?v=20261114-neon-board-1") && serviceWorker.includes("./ludo.css?v=20261114-neon-board-1"), "Ludo neon board stylesheet versions must match");
+assert.ok(ludoClient.includes('import("./games/modules/ludo/index.mjs")') && ludoClient.includes("module.load(gameId)") && ludoClient.includes("module.mount("), "Ludo reads and synchronizes active matches through its module");
+assert.ok(ludoClient.includes("module.action(gameId, action") && ludoClient.includes("module.create("), "Ludo actions and lobby creation route through the module");
+assert.doesNotMatch(ludoClient, /ctx\.db\.rpc\("gather_ludo_(?:create|join|ready|start|leave|cancel|decline|multiplayer_action)"/, "Ludo screen does not bypass its module");
+assert.ok(ludoModule.includes("createLobbyService") && ludoModule.includes("lobby.watch("), "Ludo module uses shared lifecycle and Realtime services");
+assert.ok(ludoModule.includes("drivers.byGame.ludo.action"), "Ludo uses its dedicated multiplayer action adapter");
+assert.ok(serviceWorker.includes('"./games/modules/ludo/index.mjs"'), "Ludo module is cached offline");
+assert.ok(ludoCss.includes("--ludo-neon-cyan:#42eaff") && ludoCss.includes("rgba(66,234,255,.78)"), "Ludo neon board styles are included");
 
 
 const cssFiles = localAssets.filter(ref => /\.css(?:[?#]|$)/i.test(ref));

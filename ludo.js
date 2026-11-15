@@ -22,6 +22,9 @@
 
   let ctx = null;
   let channel = null;
+  let ludoModule = null;
+  let ludoModulePromise = null;
+  let watchingMatchId = null;
   let lifecycleListenersBound = false;
   let channelConnected = false;
   let refreshTimer = null;
@@ -117,13 +120,11 @@
       channel = ctx.db.channel("gather-ludo-multiplayer-" + (uid() || "member"))
         .on("postgres_changes", { event: "*", schema: "public", table: "gather_multiplayer_games" }, payload => {
           const row = payload?.new || payload?.old;
-          if (activeGameId && row?.id === activeGameId) scheduleLoad();
-          else scheduleRefresh();
+          scheduleRefresh();
         })
         .on("postgres_changes", { event: "*", schema: "public", table: "gather_multiplayer_players" }, payload => {
           const row = payload?.new || payload?.old;
-          if (activeGameId && row?.game_id === activeGameId) scheduleLoad();
-          else scheduleRefresh();
+          scheduleRefresh();
         })
         .subscribe(status => {
           if (status === "SUBSCRIBED") {
@@ -142,10 +143,6 @@
     void refresh();
   }
 
-  function scheduleLoad() {
-    clearTimeout(refreshTimer);
-    refreshTimer = setTimeout(() => { if (activeGameId) void loadGame(); }, 160);
-  }
   function scheduleRefresh() {
     clearTimeout(refreshTimer);
     refreshTimer = setTimeout(() => { if (!activeGameId && ctx && uid()) void refresh(); }, 260);
@@ -202,41 +199,60 @@
     if (panelOpen && panelView === "list") renderLobbyList();
   }
 
-  async function loadPlayers(id) {
-    const result = await ctx.db.from("gather_multiplayer_players")
-      .select("game_id,user_id,status,color,ready,joined_at")
-      .eq("game_id", id)
-      .in("status", ["joined", "invited"])
-      .order("joined_at", { ascending: true });
-    if (result.error) throw result.error;
-    if (activeGameId !== id) return;
-    players = result.data || [];
+  async function getLudoModule() {
+    if (!ludoModulePromise) {
+      ludoModulePromise = import("./games/modules/ludo/index.mjs")
+        .then(({ createLudoModule }) => {
+          ludoModule = createLudoModule({ db: ctx.db, getViewerId: uid });
+          return ludoModule;
+        })
+        .catch(error => { ludoModulePromise = null; throw error; });
+    }
+    return ludoModulePromise;
   }
-
+  function stopEngineWatch() {
+    if (ludoModule) ludoModule.unmount();
+    watchingMatchId = null;
+  }
+  function applyEngineSnapshot(matchId, snapshot) {
+    if (activeGameId !== matchId || !snapshot?.game) return;
+    activeGame = snapshot.game;
+    players = Array.isArray(snapshot.players) ? snapshot.players.slice() : [];
+    if (panelOpen && panelView === "game") renderGamePanel();
+  }
+  async function startEngineWatch(matchId, module) {
+    if (watchingMatchId === matchId) return;
+    stopEngineWatch();
+    watchingMatchId = matchId;
+    try {
+      await module.mount({
+        matchId,
+        onSnapshot: snapshot => applyEngineSnapshot(matchId, snapshot),
+        onError: error => { if (activeGameId === matchId) setStatus(error?.message || "Ludo could not refresh this match.", true); }
+      });
+    } catch (error) { watchingMatchId = null; throw error; }
+  }
   async function loadGame() {
     if (!ctx || !activeGameId) return;
     const gameId = activeGameId;
-    const result = await ctx.db.from("gather_multiplayer_games")
-      .select("id,conversation_id,game_type,status,created_by,join_mode,settings,state,revision,created_at,updated_at")
-      .eq("id", gameId)
-      .eq("game_type", "ludo")
-      .maybeSingle();
-    if (activeGameId !== gameId) return;
-    if (result.error || !result.data) {
-      setStatus(result.error?.message || "This Ludo game could not be found.", true);
-      return;
-    }
-    activeGame = result.data;
     try {
-      await loadPlayers(gameId);
+      const module = await getLudoModule();
+      const snapshot = await module.load(gameId);
+      if (activeGameId !== gameId) return;
+      activeGame = snapshot.game;
+      players = snapshot.players.slice();
+      await startEngineWatch(gameId, module);
+      if (activeGameId === gameId && panelOpen) renderGamePanel();
     } catch (error) {
-      if (activeGameId === gameId) setStatus(error?.message || "The player list could not be loaded.", true);
-      return;
+      if (activeGameId === gameId) {
+        setStatus(error?.message || "This Ludo game could not be loaded.", true);
+        toast(error?.message || "This Ludo game could not be loaded.");
+      }
     }
-    if (activeGameId === gameId && panelOpen) renderGamePanel();
   }
 
   function open() {
+    stopEngineWatch();
     if (!ctx || !uid()) {
       toast("Sign in to play Ludo.");
       return;
@@ -268,6 +284,7 @@
   }
 
   function close() {
+    stopEngineWatch();
     gameMenuOpen = false;
     const menu = $("ludo-game-menu");
     if (menu) menu.hidden = true;
@@ -381,8 +398,8 @@
         const gameId = activeGame.id;
         busy = true;
         try {
-          const result = await ctx.db.rpc("gather_ludo_leave", { p_game_id: gameId });
-          if (result.error) throw result.error;
+          await (await getLudoModule()).leave(gameId);
+          stopEngineWatch();
           closeGameMenu();
           activeGameId = null;
           activeGame = null;
@@ -404,6 +421,7 @@
       async () => {
         if (busy) return;
         closeGameMenu();
+        stopEngineWatch();
         activeGameId = null;
         activeGame = null;
         players = [];
@@ -550,7 +568,7 @@
     const actions=el("div","ludo-actions tag-actions");actions.append(btn("Back","secondary-action",renderLobbyList));
     const submit=btn("Create lobby","primary",()=>{});submit.type="submit";actions.append(submit);form.append(actions);
     form.addEventListener("submit",async event=>{event.preventDefault();if(busy)return;if(!selected.length){toast("Choose at least one person to invite.");return;}if(selected.length+1>Number(max.value)){toast("The player limit must include you and everyone you invite.");return;}
-      busy=true;submit.disabled=true;try{const result=await ctx.db.rpc("gather_ludo_create",{p_conversation_id:null,p_join_mode:"invite",p_invited_user_ids:selected.slice(),p_max_players:Number(max.value),p_creator_color:color.value});if(result.error)throw result.error;activeGameId=result.data.id;panelView="game";await loadGame();}
+      busy=true;submit.disabled=true;try{const module=await getLudoModule();const result=await module.create({conversationId:null,joinMode:"invite",invitedUserIds:selected.slice(),playerLimit:Number(max.value),color:color.value});activeGameId=result.matchId;panelView="game";await loadGame();}
       catch(error){toast(error?.message||"Could not create the Ludo lobby.");}finally{busy=false;submit.disabled=false;}
     });
     root.append(form);window.GatherPeoplePicker?.create({db:ctx.db,button:choose,summary,onChange:ids=>selected.splice(0,selected.length,...ids)});
@@ -588,8 +606,8 @@
       if (!window.confirm("Close this Ludo lobby for everyone? The match will end and all invited and joined players will be removed.")) return;
       busy = true;
       try {
-        const result = await ctx.db.rpc("gather_ludo_cancel", { p_game_id: game.id });
-        if (result.error) throw result.error;
+        const snapshot = await (await getLudoModule()).cancel(game.id);
+        if (snapshot?.game) { activeGame = snapshot.game; players = snapshot.players.slice(); }
         activeGame = { ...activeGame, status: "cancelled" };
         players = players.map(player => ({ ...player, status: "left", ready: false }));
         toast("Ludo lobby closed.");
@@ -630,11 +648,7 @@
           ready.disabled = true;
           ready.textContent = "Updating…";
           try {
-            const result = await ctx.db.rpc("gather_ludo_ready", {
-              p_game_id: game.id,
-              p_ready: !me.ready
-            });
-            if (result.error) throw result.error;
+            await (await getLudoModule()).setReady(game.id, !me.ready);
             await loadGame();
           } catch (error) {
             toast(error?.message || "Your ready status could not be changed.");
@@ -651,8 +665,7 @@
         const start = btn("Start match", "primary", async () => {
           start.disabled = true;
           try {
-            const result = await ctx.db.rpc("gather_ludo_start", { p_game_id: game.id });
-            if (result.error) throw result.error;
+            await (await getLudoModule()).start(game.id);
             await loadGame();
           } catch (error) {
             toast(error?.message || "The match could not be started.");
@@ -663,8 +676,8 @@
         actionBar.append(start, btn("Close lobby", "secondary-action tag-end", async () => {
           if (!window.confirm("Close this Ludo lobby for everyone?")) return;
           try {
-            const result = await ctx.db.rpc("gather_ludo_cancel", { p_game_id: game.id });
-            if (result.error) throw result.error;
+            const snapshot = await (await getLudoModule()).cancel(game.id);
+        if (snapshot?.game) { activeGame = snapshot.game; players = snapshot.players.slice(); }
             activeGame = { ...activeGame, status: "cancelled" };
             players = players.map(player => ({ ...player, status: "left", ready: false }));
             toast("Ludo lobby closed.");
@@ -674,7 +687,7 @@
       }
       root.append(actionBar);
       root.append(el("p", "muted tiny ludo-lobby-hint tag-lobby-hint", "The host can start once at least two players have joined and everyone is ready."));
-      root.append(btn("Back to Ludo", "outline tag-back", async () => { activeGameId = null; activeGame = null; players = []; await refresh(); }));
+      root.append(btn("Back to Ludo", "outline tag-back", async () => { stopEngineWatch(); activeGameId = null; activeGame = null; players = []; await refresh(); }));
       return;
     }
 
@@ -733,8 +746,8 @@
     if (currentPlayer()?.status === "invited") {
       panel.append(btn("Decline invitation", "outline", async () => {
         try {
-          const result = await ctx.db.rpc("gather_ludo_decline", { p_game_id: activeGame.id });
-          if (result.error) throw result.error;
+          await (await getLudoModule()).decline(activeGame.id);
+          stopEngineWatch();
           activeGameId = null; activeGame = null; players = [];
           await refresh();
         } catch (error) { toast(error?.message || "The invitation could not be declined."); }
@@ -747,8 +760,7 @@
     if (busy || !activeGameId) return;
     busy = true;
     try {
-      const result = await ctx.db.rpc("gather_ludo_join", { p_game_id: activeGameId, p_color: color });
-      if (result.error) throw result.error;
+      await (await getLudoModule()).join(activeGameId, color);
       await loadGame();
     } catch (error) {
       toast(error?.message || "Could not join this Ludo lobby.");
@@ -939,20 +951,14 @@
       rollButton.textContent = "Rolling…";
     }
     try {
-      const request = ctx.db.rpc("gather_ludo_multiplayer_action", {
-        p_game_id: gameId,
-        p_action: action,
-        p_token_index: tokenIndex === undefined ? null : tokenIndex
-      });
-      const [result] = await Promise.all([
-        request,
+      const module = await getLudoModule();
+      const [snapshot] = await Promise.all([
+        module.action(gameId, action, tokenIndex === undefined ? null : tokenIndex),
         action === "roll" ? new Promise(resolve => window.setTimeout(resolve, 560)) : Promise.resolve()
       ]);
       if (activeGameId !== gameId) return;
-      if (result.error) throw result.error;
-      activeGame = result.data;
-      await loadPlayers(gameId);
-      if (activeGameId !== gameId) return;
+      activeGame = snapshot.game;
+      players = snapshot.players.slice();
       renderGamePanel();
       if (action === "roll" && activeGame?.state?.dice !== null && activeGame?.state?.dice !== undefined) {
         const landedDie = $("ludo-dice-value");
@@ -962,9 +968,7 @@
     } catch (error) {
       toast(error?.message || "That Ludo action could not be completed.");
       if (activeGameId === gameId) await loadGame();
-    } finally {
-      busy = false;
-    }
+    } finally { busy = false; }
   }
 
   function shutdown() {
@@ -977,6 +981,7 @@
       window.removeEventListener("online", refreshOnReturn);
       lifecycleListenersBound = false;
     }
+    stopEngineWatch();
     if (channel && ctx?.db) ctx.db.removeChannel(channel);
     channel = null;
     channelConnected = false;

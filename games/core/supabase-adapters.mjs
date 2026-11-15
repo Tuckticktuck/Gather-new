@@ -166,6 +166,13 @@ function createLudoDriver(rpc) {
     },
     async cancel(matchId) {
       return rpc("gather_ludo_cancel", { p_game_id: requiredString(matchId, "matchId") });
+    },
+    async action(matchId, action, tokenIndex = null) {
+      const id = requiredString(matchId, "matchId");
+      if (!["roll", "move", "end"].includes(action)) throw new TypeError("Unsupported Ludo action.");
+      if (action === "move" && (!Number.isInteger(tokenIndex) || tokenIndex < 0 || tokenIndex > 3)) throw new TypeError("Ludo token index must be an integer from 0 through 3.");
+      if (action !== "move" && tokenIndex !== null && tokenIndex !== undefined) throw new TypeError("Only a Ludo move accepts a token index.");
+      return rpc("gather_ludo_multiplayer_action", {p_game_id:id,p_action:action,p_token_index:action==="move"?tokenIndex:null});
     }
   });
 }

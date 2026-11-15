@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "gather-shell-v115";
+const CACHE_NAME = "gather-shell-v116";
 const APP_BASE = new URL("./", self.registration.scope);
 const SHELL_URLS = [
   "./",
@@ -8,7 +8,7 @@ const SHELL_URLS = [
   "./app.css?v=20261114-group-avatar-left-8",
   "./games.css?v=20261114-uno-card-count-strip-1",
   "./party.css?v=20261114-party-hub-2",
-  "./ludo.css?v=20261113-ludo-menu-center-1",
+  "./ludo.css?v=20261114-neon-board-1",
   "./dominoes.css?v=20261114-dominoes-draw-fix-1",
   "./uno.css?v=20261114-adaptive-table-1",
   "./design-system.css?v=20261114-interface-sync-5",
@@ -24,11 +24,12 @@ const SHELL_URLS = [
   "./games/modules/legacy-board-modules.mjs",
   "./games/modules/dominoes/index.mjs",
   "./games/modules/uno/index.mjs",
+  "./games/modules/ludo/index.mjs",
   "./game-people-picker.js?v=20261114-selection-limit-1",
   "./party.js?v=20261114-uno-ready-3",
   "./game-chat.js?v=20261114-gather-chat-icon-2",
   "./uno.js?v=20261114-shared-engine-1",
-  "./ludo.js?v=20261114-event-driven-ludo-1",
+  "./ludo.js?v=20261114-shared-engine-1",
   "./dominoes.js?v=20261114-shared-engine-1",
   "./app.js?v=20261114-dominoes-live-hub-2",
   "./favicon.svg?v=20261111-1",
@@ -60,6 +61,7 @@ const STATIC_PATHS = new Set([
   "./games/modules/legacy-board-modules.mjs",
   "./games/modules/dominoes/index.mjs",
   "./games/modules/uno/index.mjs",
+  "./games/modules/ludo/index.mjs",
   "./game-people-picker.js",
   "./party.js",
   "./game-chat.js",

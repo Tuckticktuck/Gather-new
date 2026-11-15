@@ -28,7 +28,7 @@ Do not treat a same-named game in two families as the same runtime. In particula
 | `games.js` | Legacy Ludo | `gather_game_create`, `gather_ludo_action` | Legacy turn-based |
 | `games.js` | Legacy Ludo (alternate multiplayer module) | Client code contains `gather_ludo_multiplayer_action` path in multiplayer module; verify which UI path is mounted before changing | Shared multiplayer |
 | `games/modules/uno/index.mjs` + `uno.js` | UNO lobby and match | Shared lobby service and match-scoped Realtime; dedicated `gather_uno_*` RPCs for private state, card intents, house rules, recap, and rematches | Shared multiplayer module + private UNO state |
-| `ludo.js` | Standalone multiplayer Ludo | `gather_ludo_create/join/ready/start/multiplayer_action/leave/cancel/decline`; reads shared game/player rows; Realtime subscriptions | Shared multiplayer |
+| `games/modules/ludo/index.mjs` + `ludo.js` | Standalone multiplayer Ludo | Shared lobby service + canonical match repository + match-scoped Realtime; dedicated Ludo lifecycle RPCs and `gather_ludo_multiplayer_action` for move intent | Shared multiplayer module |
 | `snake.js` | Snake Arena | `gather_snake_create/join/decline/ready/set_settings/start/leave/end/rematch/spectate`; `gather-snake-action` Edge Function for direction input and authoritative tick | Shared multiplayer + private input table |
 | `tag.js` | Tag lobby and round | `gather_tag_create/join/ready/set_mode/customize/start_round/return_lobby/leave/decline/finish_expired/move`; reads Tag lobby/player rows; Realtime subscriptions | Dedicated Tag |
 | `game-chat.js` | Temporary in-game chat | `gather_game_chat_list`, `gather_game_chat_send` | Shared chat table + per-family authorization |
@@ -63,7 +63,10 @@ Do not treat a same-named game in two families as the same runtime. In particula
 
 ### Multiplayer Ludo
 
-- Client submits `roll`, `move`, or `end` with token index to `gather_ludo_multiplayer_action`.
+- The `ludo.js` screen delegates active-match reads, roster normalization, lifecycle operations, and match-scoped Realtime invalidation to `games/modules/ludo/index.mjs`.
+- The module delegates lifecycle permissions and mutations to the shared lobby service and Ludo-specific adapter.
+- The client submits only `roll`, `move`, or `end` intent with an optional token index to `gather_ludo_multiplayer_action`; dice, legal moves, captures, turn progression, and win detection remain server-computed.
+- Legacy two-player Ludo remains separate on `gather_games` and `gather_ludo_action`.
 - Live RPC checks joined membership, match state, current turn, validates token movement, computes captures and winner, and updates canonical shared state under a row lock.
 - Dice roll is server-generated. Host-only end is enforced.
 - This is a suitable intent/action pattern to study for future turn-based multiplayer games, subject to additional test coverage.
