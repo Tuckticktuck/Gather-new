@@ -589,9 +589,11 @@
       const availableColor = COLORS.find(color => !players.some(player =>
         player.status === "joined" && String(player.color || "").toLowerCase() === color.hex.toLowerCase()
       ))?.hex || "#D85A60";
+      const hostColor = COLORS.find(color => color.hex.toLowerCase() ===
+        String(players.find(player => player.user_id === game.created_by)?.color || "").toLowerCase())?.label || "Default";
       window.GatherSharedLobby?.render({
         root,gameName:"Ludo",game,players,viewerId:uid(),getName:name,
-        settingsSummary:"Two players · neon board · standard Ludo rules",
+        settingsSummary:"Two players · neon board · host color: "+hostColor,
         onJoin:()=>joinGame(availableColor),
         onDecline:async()=>{await (await getLudoModule()).decline(game.id);await refresh();},
         onReady:async()=>{await (await getLudoModule()).setReady(game.id,!me?.ready);await loadGame();},
