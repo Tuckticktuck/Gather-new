@@ -137,7 +137,7 @@ function createLudoDriver(rpc) {
     async join(matchId, options = {}) {
       return rpc("gather_ludo_join", {
         p_game_id: requiredString(matchId, "matchId"),
-        p_color: options.color || "#D85A60"
+        p_color: requiredString(options.color, "Ludo player color")
       });
     },
     async decline(matchId) {
