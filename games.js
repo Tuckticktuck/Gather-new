@@ -274,8 +274,9 @@
     sharedBoardRuntimePromise = Promise.all([
       import("./games/core/index.mjs"),
       import("./games/modules/legacy-board-modules.mjs"),
-      import("./games/modules/battleship/index.mjs")
-    ]).then(([core, moduleApi, battleshipApi]) => {
+      import("./games/modules/battleship/index.mjs"),
+      import("./games/modules/legacy-turn-based/index.mjs")
+    ]).then(([core, moduleApi, battleshipApi, turnBasedApi]) => {
       const repository = core.createSupabaseMatchRepository(ctx.db);
       const drivers = core.createSupabaseGameDrivers(ctx.db);
       const lobbyService = core.createLobbyService({
@@ -299,7 +300,15 @@
           renderTicTacToe: context => renderTicTacToe(context.game, context.container, context.canMove),
           renderConnectFour: context => renderConnectFour(context.game, context.container, context.canMove)
         }),
-        battleship.module
+        battleship.module,
+        ...turnBasedApi.createLegacyTurnBasedModules({
+          db: ctx.db,
+          lobbyService,
+          getViewerId: () => userId(),
+          renderLobby: renderSharedBoardLobby,
+          renderChess: context => renderChess(context.game, context.container, context.canMove),
+          renderCheckers: context => renderCheckers(context.game, context.container, context.canMove)
+        })
       ], core.GatherGameRegistry);
       sharedBoardRuntime = Object.freeze({ core, modules, repository, drivers, lobbyService });
       return sharedBoardRuntime;
@@ -1725,13 +1734,21 @@
     $("games-board-status").textContent = "Checking and saving move…";
     let response;
     try {
-      response = await ctx.db.functions.invoke("gather-board-game-action", {
-        body: {
-          gameId: game.id,
-          expectedRevision: game.revision,
-          action
-        }
-      });
+      if (["chess", "checkers"].includes(game.game_type)) {
+        const runtime = await ensureSharedBoardRuntime();
+        const module = runtime.modules.get(game.game_type);
+        if (!module?.action) throw new Error("The selected board game module is unavailable.");
+        const updatedGame = await module.action(game.id, action);
+        response = { data: updatedGame, error: null };
+      } else {
+        response = await ctx.db.functions.invoke("gather-board-game-action", {
+          body: {
+            gameId: game.id,
+            expectedRevision: game.revision,
+            action
+          }
+        });
+      }
     } catch (error) {
       response = { error: { message: error?.message || "The move could not be saved." }, data: null };
     } finally {
