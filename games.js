@@ -195,6 +195,7 @@
       $("games-create-cancel").addEventListener("click", closeCreateModal);
       overlay.addEventListener("click", event => { if (event.target === overlay) closeCreateModal(); });
       $("games-conversation").addEventListener("change", updateOpponentOptions);
+      $("games-type").addEventListener("change", event => renderGameSetupSettings(event.target.value));
       $("games-create-form").addEventListener("submit", createGame);
     }
 
