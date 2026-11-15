@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "gather-shell-v118";
+const CACHE_NAME = "gather-shell-v119";
 const APP_BASE = new URL("./", self.registration.scope);
 const SHELL_URLS = [
   "./",
@@ -12,6 +12,7 @@ const SHELL_URLS = [
   "./dominoes.css?v=20261114-dominoes-draw-fix-1",
   "./uno.css?v=20261114-adaptive-table-1",
   "./design-system.css?v=20261114-interface-sync-5",
+  "./games/shared/lobby-ui.js?v=20261115-shared-lobby-1",
   "./games.js?v=20261115-unified-game-picker-1",
   "./games/core/index.mjs",
   "./games/core/game-registry.mjs",
@@ -50,6 +51,7 @@ const STATIC_PATHS = new Set([
   "./dominoes.css",
   "./uno.css",
   "./design-system.css",
+  "./games/shared/lobby-ui.js",
   "./games.js",
   "./games/core/index.mjs",
   "./games/core/game-registry.mjs",
