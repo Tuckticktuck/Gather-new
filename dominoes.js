@@ -66,7 +66,39 @@ function setStatus(m,error=false){const n=$("dominoes-status");if(n){n.textConte
 function header(title,eyebrow,subtitle){const h=el("header","dominoes-header"),copy=el("div","dominoes-header-copy");copy.append(el("p","eyebrow",eyebrow));const t=el("h2","dominoes-title",title);t.id="dominoes-title";copy.append(t,el("p","dominoes-subtitle muted",subtitle));h.append(copy);const tools=el("div","dominoes-header-tools");tools.append(btn("Stats","dominoes-tool-button",stats),btn("Customize","dominoes-tool-button",settings));h.append(tools);return h;}
 function renderList(){const root=$("dominoes-content");if(!root)return;root.replaceChildren();root.append(header("Dominoes","GATHER MULTIPLAYER · ARCADE TABLE","Draw, match, and score your way to the target."),btn("＋ Create Dominoes lobby","primary dominoes-create-button",createForm));const live=games.filter(g=>g.status==="active"),done=games.filter(g=>g.status==="completed"),sec=el("section","dominoes-section");sec.append(el("h3","dominoes-section-title","Your lobbies and invitations"));if(!live.length)sec.append(el("p","dominoes-empty muted","No Dominoes lobbies yet. Create one and invite people from Gather."));live.forEach(g=>{const row=el("article","dominoes-lobby-card"),copy=el("div","dominoes-lobby-copy");copy.append(el("strong","",g.settings?.preset==="quick"?"Quick Dominoes":g.settings?.preset==="marathon"?"Marathon Dominoes":"Draw Dominoes"),el("small","muted",(g.settings?.mode==="teams"?"Teams":"Free-for-all")+" · "+(g.state?.phase==="playing"?name(g.state.turn_user_id)+"'s turn":g.state?.phase||"Lobby")));row.append(copy,btn("Open","outline",()=>openGame(g.id)));sec.append(row);});root.append(sec);if(done.length){const h=el("section","dominoes-section");h.append(el("h3","dominoes-section-title","Completed matches"));done.slice(0,8).forEach(g=>{const row=el("article","dominoes-lobby-card");row.append(el("div","dominoes-lobby-copy","Dominoes · "+(g.state?.winner_id?name(g.state.winner_id)+" won":"Match ended")),btn("View result","outline",()=>openGame(g.id)));h.append(row);});root.append(h);}applyPrefs();}
 function field(label,control){const l=el("label","dominoes-field");l.append(el("span","",label),control);return l;}
-function createForm(){const root=$("dominoes-content");root.replaceChildren();root.append(header("Set up your table","NEW DOMINOES LOBBY","Invite 1–3 players. Team partners sit opposite each other."));const form=el("form","dominoes-form"),selected=[],choose=btn("Choose people","outline"),summary=el("small","muted","No players selected"),picker=el("section","dominoes-picker");picker.append(choose,summary);form.append(picker);form.append(el("p","dominoes-hint","Two players · free-for-all · seven tiles each."));const preset=el("select");[["quick","Quick · 50 points"],["classic","Classic · 100 points"],["marathon","Marathon · 150 points"]].forEach(([v,t])=>{const o=el("option","",t);o.value=v;if(v==="classic")o.selected=true;preset.append(o);});form.append(field("Rule preset",preset),el("p","dominoes-hint","Seven tiles each · untimed turns · draw until playable."));mode.onchange=()=>{form.querySelector(".dominoes-hint").textContent=mode.value==="teams"?"Team mode needs exactly four players. Invite three people for two opposing pairs.":"Seven tiles each · untimed turns · draw until playable.";};const actions=el("div","dominoes-actions");actions.append(btn("Back","secondary-action",renderList));const submit=btn("Create lobby","primary");submit.type="submit";actions.append(submit);form.append(actions);form.onsubmit=async e=>{e.preventDefault();if(busy)return;if(!selected.length||selected.length>3||(mode.value==="teams"&&selected.length!==3)){toast(mode.value==="teams"?"Choose exactly three people for team mode.":"Choose one to three people to invite.");return;}busy=true;submit.disabled=true;try{const module=await ensureEngineModule();const created=await module.create({joinMode:"invite",invitedUserIds:selected,playerLimit:4,mode:"free_for_all",preset:preset.value});gameId=created.matchId;await loadGame();void startEngineWatch(gameId);await refresh();}catch(err){toast(err.message||"Could not create the Dominoes lobby.");}finally{busy=false;submit.disabled=false;}};root.append(form);window.GatherPeoplePicker?.create({db:ctx.db,button:choose,summary,maxSelected:3,onChange:ids=>selected.splice(0,selected.length,...ids)});applyPrefs();}
+function createForm(){
+  const root=$("dominoes-content");
+  root.replaceChildren();
+  root.append(header("Set up your table","NEW DOMINOES LOBBY","Invite one opponent. Every Gather match has two player seats."));
+  const form=el("form","dominoes-form"),selected=[];
+  const choose=btn("Choose opponent","outline"),summary=el("small","muted","No opponent selected");
+  const picker=el("section","dominoes-picker");
+  picker.append(choose,summary);
+  form.append(picker,el("p","dominoes-hint","Free-for-all · seven tiles each · untimed turns."));
+  const preset=el("select");
+  [["quick","Quick · 50 points"],["classic","Classic · 100 points"],["marathon","Marathon · 150 points"]].forEach(([value,label])=>{
+    const option=el("option","",label);option.value=value;if(value==="classic")option.selected=true;preset.append(option);
+  });
+  form.append(field("Rule preset",preset));
+  const actions=el("div","dominoes-actions");
+  actions.append(btn("Back","secondary-action",renderList));
+  const submit=btn("Create lobby","primary");submit.type="submit";actions.append(submit);form.append(actions);
+  form.onsubmit=async event=>{
+    event.preventDefault();
+    if(busy)return;
+    if(selected.length!==1){toast("Choose exactly one opponent to invite.");return;}
+    busy=true;submit.disabled=true;
+    try{
+      const module=await ensureEngineModule();
+      const created=await module.create({joinMode:"invite",invitedUserIds:selected.slice(),playerLimit:2,mode:"free_for_all",preset:preset.value});
+      gameId=created.matchId;await loadGame();void startEngineWatch(gameId);await refresh();
+    }catch(error){toast(error.message||"Could not create the Dominoes lobby.");}
+    finally{busy=false;submit.disabled=false;}
+  };
+  root.append(form);
+  window.GatherPeoplePicker?.create({db:ctx.db,button:choose,summary,maxSelected:1,onChange:ids=>selected.splice(0,selected.length,...ids)});
+  applyPrefs();
+}
 async function rpc(fn,args){
   if(busy||!ctx)return null;
   busy=true;
