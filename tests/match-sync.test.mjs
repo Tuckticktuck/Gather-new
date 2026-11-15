@@ -99,3 +99,35 @@ test("stop cancels pending refreshes and releases the subscription", async () =>
   assert.equal(loads, 0);
   assert.equal(disposed, 1);
 });
+
+
+test("an old in-flight load cannot overwrite a restarted sync session", async () => {
+  let notifyFirst;
+  let resolveFirst;
+  let calls = 0;
+  const received = [];
+  const sync = createMatchSync({
+    subscribe: callback => {
+      calls += 1;
+      if (calls === 1) notifyFirst = callback;
+      return () => {};
+    },
+    loadSnapshot: () => {
+      if (calls === 1) return new Promise(resolve => { resolveFirst = resolve; });
+      return Promise.resolve({ revision: 3 });
+    },
+    onSnapshot: snapshot => received.push(snapshot.revision),
+    debounceMs: 0
+  });
+
+  sync.start();
+  await wait(5);
+  assert.equal(typeof resolveFirst, "function");
+  sync.stop();
+  sync.start();
+  resolveFirst({ revision: 1 });
+  await wait(10);
+  assert.deepEqual(received, [3]);
+  assert.equal(sync.getStatus().revision, 3);
+  sync.stop();
+});
