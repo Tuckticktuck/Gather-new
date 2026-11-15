@@ -72,21 +72,25 @@ async function rpc(fn,args){
   busy=true;
   try{
     let result;
+    let sharedLifecycle=false;
     const module=await ensureEngineModule();
-    if(fn==="gather_dominoes_join")result=await module.join(args.p_game_id,args.p_color);
-    else if(fn==="gather_dominoes_ready")result=await module.setReady(args.p_game_id,args.p_ready);
-    else if(fn==="gather_dominoes_start")result=await module.start(args.p_game_id);
-    else if(fn==="gather_dominoes_spectate")result=await module.spectate(args.p_game_id);
-    else if(fn==="gather_dominoes_end")result=await module.end(args.p_game_id);
-    else if(fn==="gather_dominoes_leave")result=me()?.status==="invited"
-      ? await module.decline(args.p_game_id)
-      : await module.leave(args.p_game_id);
-    else{
+    if(fn==="gather_dominoes_join"){sharedLifecycle=true;result=await module.join(args.p_game_id,args.p_color);}
+    else if(fn==="gather_dominoes_ready"){sharedLifecycle=true;result=await module.setReady(args.p_game_id,args.p_ready);}
+    else if(fn==="gather_dominoes_start"){sharedLifecycle=true;result=await module.start(args.p_game_id);}
+    else if(fn==="gather_dominoes_spectate"){sharedLifecycle=true;result=await module.spectate(args.p_game_id);}
+    else if(fn==="gather_dominoes_end"){sharedLifecycle=true;result=await module.end(args.p_game_id);}
+    else if(fn==="gather_dominoes_leave"){
+      sharedLifecycle=true;
+      result=me()?.status==="invited"
+        ? await module.decline(args.p_game_id)
+        : await module.leave(args.p_game_id);
+    }else{
       const response=await ctx.db.rpc(fn,args);
       if(response.error)throw response.error;
       result=response.data;
     }
     await refresh();
+    if(!sharedLifecycle)return result;
     return result&&typeof result==="object"&&Object.hasOwn(result,"result")?result.result:true;
   }catch(e){
     toast(e.message||"That Dominoes action could not be completed.");
