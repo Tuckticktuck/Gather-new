@@ -38,6 +38,7 @@ export function createMatchSync(options) {
 
   async function refresh() {
     if (!active) return latestSnapshot;
+    cancelScheduledRefresh();
     const runGeneration = generation;
 
     if (refreshPromise) {
