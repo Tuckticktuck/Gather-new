@@ -116,6 +116,20 @@ Supabase
 
 \`games/shared/match-contract.mjs\` re-exports the established helpers from the new core so existing contract tests and in-progress work do not break.
 
+### `games/core/action-dispatcher.mjs`
+
+- Serializes this browser's mutation requests per match.
+- Reads the latest canonical revision immediately before dispatch.
+- Sends a standard intent envelope containing match ID, action, payload, expected revision, and request ID.
+- Does not claim that local queuing is a substitute for server-side idempotency or atomic revision checks.
+
+### `games/core/game-module-contract.mjs`
+
+- Defines the minimum interface for independently mounted game modules.
+- Requires mount, lobby rendering, match rendering, and unmount hooks.
+- Validates that each module maps to a registered game.
+- Keeps shared services injected rather than allowing modules to own their own lobby, invitation, and synchronization systems.
+
 ## Proposed target directory layout
 
 \`\`\`
