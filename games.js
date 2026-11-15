@@ -625,6 +625,7 @@
   function draftPlayerLimit() {
     if (selectedDraftGameType === "uno") return Number($("games-player-limit")?.value) || 4;
     if (selectedDraftGameType === "ludo") return Number($("games-player-limit")?.value) || 4;
+    if (selectedDraftGameType === "dominoes") return 4;
     return 2;
   }
 
