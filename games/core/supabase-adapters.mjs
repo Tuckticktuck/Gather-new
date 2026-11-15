@@ -59,31 +59,30 @@ function makeDriver(id, family, methods, endPolicy = "host-only") {
 }
 
 function createLegacyBoardDriver(rpc, id) {
-  if (!LEGACY_BOARD_GAME_TYPES.includes(id)) {
-    throw new TypeError("Unsupported legacy board game: " + id);
-  }
-
-  return makeDriver(id, "legacy-two-player", {
+  if (!LEGACY_BOARD_GAME_TYPES.includes(id)) throw new TypeError("Unsupported legacy board game: " + id);
+  const methods = {
     async create(options = {}) {
-      return rpc("gather_game_create", {
-        p_conversation_id: requiredString(options.conversationId, "conversationId"),
-        p_game_type: id,
-        p_player_two_id: requiredString(options.opponentId, "opponentId")
-      });
+      return rpc("gather_game_create", { p_conversation_id: requiredString(options.conversationId, "conversationId"), p_game_type: id, p_player_two_id: requiredString(options.opponentId, "opponentId") });
     },
-    async join(matchId) {
-      return rpc("gather_game_accept", { p_game_id: requiredString(matchId, "matchId") });
-    },
-    async decline(matchId) {
-      return rpc("gather_game_decline", { p_game_id: requiredString(matchId, "matchId") });
-    },
-    async cancel(matchId) {
-      return rpc("gather_game_cancel", { p_game_id: requiredString(matchId, "matchId") });
-    },
-    async end(matchId) {
-      return rpc("gather_game_end", { p_game_id: requiredString(matchId, "matchId") });
-    }
-  }, "any-joined-player");
+    async join(matchId) { return rpc("gather_game_accept", { p_game_id: requiredString(matchId, "matchId") }); },
+    async decline(matchId) { return rpc("gather_game_decline", { p_game_id: requiredString(matchId, "matchId") }); },
+    async cancel(matchId) { return rpc("gather_game_cancel", { p_game_id: requiredString(matchId, "matchId") }); },
+    async end(matchId) { return rpc("gather_game_end", { p_game_id: requiredString(matchId, "matchId") }); }
+  };
+  if (id === "battleship") {
+    methods.loadPrivateState = async matchId => rpc("gather_game_battleship_private_state", { p_game_id: requiredMatchId(matchId) });
+    methods.action = async (matchId, action, payload) => {
+      const gameId = requiredMatchId(matchId);
+      if (!["place_fleet", "fire"].includes(action)) throw new TypeError("Unsupported Battleship action.");
+      if (!payload || typeof payload !== "object" || Array.isArray(payload)) throw new TypeError("Battleship action payload must be an object.");
+      if (JSON.stringify(payload).length > 12000) throw new TypeError("Battleship action payload is too large.");
+      if (action === "place_fleet") {
+        if (!Array.isArray(payload.ships) || payload.ships.length !== 5 || payload.ships.some(ship => !ship || !Array.isArray(ship.cells) || !ship.cells.length || ship.cells.some(cell => !Number.isInteger(cell) || cell < 0 || cell > 99))) throw new TypeError("Place five ships using valid board squares.");
+      } else if (!Number.isInteger(payload.cell) || payload.cell < 0 || payload.cell > 99) throw new TypeError("Choose a valid Battleship square.");
+      return rpc("gather_game_battleship_action", { p_game_id: gameId, p_action: action, p_payload: payload });
+    };
+  }
+  return makeDriver(id, "legacy-two-player", methods, "any-joined-player");
 }
 
 function createUnoDriver(rpc) {
@@ -250,7 +249,12 @@ function normalizeLegacyRow(game) {
       revision: Number(game.revision || 0),
       created_at: game.created_at,
       updated_at: game.updated_at,
-      conversation_id: game.conversation_id
+      conversation_id: game.conversation_id,
+      player_one_id: game.player_one_id,
+      player_two_id: game.player_two_id,
+      turn_user_id: game.turn_user_id,
+      winner_id: game.winner_id,
+      result: game.result
     },
     players: legacyRoster(game)
   };
