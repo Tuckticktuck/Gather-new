@@ -189,7 +189,7 @@
       const overlay = node("div", "overlay games-overlay");
       overlay.id = "games-create-overlay";
       overlay.hidden = true;
-      overlay.innerHTML = '<section class="modal games-create-modal" role="dialog" aria-modal="true" aria-labelledby="games-create-title"><button id="games-create-close" class="close" type="button" aria-label="Close">×</button><p class="eyebrow">NEW MATCH</p><h2 id="games-create-title">Invite someone to play</h2><p class="muted tiny">Choose a conversation, a game and one opponent. In a group chat, everyone else can watch the match.</p><form id="games-create-form"><label>Choose a chat<select id="games-conversation" required></select><small class="games-picker-note">Chats are grouped by type. Choose a person from that chat in the next field.</small></label><label>Game<select id="games-type" required><option value="chess">Chess</option><option value="checkers">Checkers</option><option value="tic_tac_toe">Tic-Tac-Toe</option><option value="connect_four">Connect Four</option><option value="battleship">Battleship</option><option value="uno">UNO</option><option value="ludo">Ludo</option><option value="dominoes">Dominoes</option></select></label><label>Person to invite<select id="games-opponent" required></select></label><p id="games-spectator-note" class="games-spectator-note"></p><p id="games-create-status" class="status" role="status"></p><div class="games-form-actions"><button id="games-create-cancel" class="secondary-action" type="button">Cancel</button><button id="games-create-submit" class="primary" type="submit">Send invitation</button></div></form></section>';
+      overlay.innerHTML = '<section class="modal games-create-modal" role="dialog" aria-modal="true" aria-labelledby="games-create-title"><button id="games-create-close" class="close" type="button" aria-label="Close">×</button><p class="eyebrow">NEW MATCH</p><h2 id="games-create-title">Invite someone to play</h2><p class="muted tiny">Choose a conversation, a game and one opponent. In a group chat, everyone else can watch the match.</p><form id="games-create-form"><label>Choose a chat<select id="games-conversation" required></select><small class="games-picker-note">Chats are grouped by type. Choose a person from that chat in the next field.</small></label><label>Game<select id="games-type" required><option value="chess">Chess</option><option value="checkers">Checkers</option><option value="tic_tac_toe">Tic-Tac-Toe</option><option value="connect_four">Connect Four</option><option value="battleship">Battleship</option><option value="uno">UNO</option><option value="ludo">Ludo</option><option value="dominoes">Dominoes</option></select></label><label>Person to invite<select id="games-opponent" required></select></label><div id="games-game-settings" class="games-game-settings"></div><p id="games-spectator-note" class="games-spectator-note"></p><p id="games-create-status" class="status" role="status"></p><div class="games-form-actions"><button id="games-create-cancel" class="secondary-action" type="button">Cancel</button><button id="games-create-submit" class="primary" type="submit">Send invitation</button></div></form></section>';
       document.body.append(overlay);
       $("games-create-close").addEventListener("click", closeCreateModal);
       $("games-create-cancel").addEventListener("click", closeCreateModal);
@@ -531,9 +531,48 @@
     select.value = chosen.id;
     updateOpponentOptions();
     $("games-type").value = TYPES[gameType] ? gameType : "chess";
+    renderGameSetupSettings(gameType);
     $("games-create-status").textContent = "";
     $("games-create-submit").disabled = false;
     $("games-create-overlay").hidden = false;
+  }
+
+  function renderGameSetupSettings(gameType) {
+    const root = $("games-game-settings");
+    if (!root) return;
+    root.replaceChildren();
+    if (gameType === "dominoes") {
+      const label = node("label", "games-setting-field");
+      label.append(node("span", "", "Rule preset"));
+      const select = node("select");
+      select.id = "games-dominoes-preset";
+      [["quick", "Quick · 50 points"], ["classic", "Classic · 100 points"], ["marathon", "Marathon · 150 points"]].forEach(([value, title]) => {
+        const option = node("option", "", title);
+        option.value = value;
+        option.selected = value === "classic";
+        select.append(option);
+      });
+      label.append(select);
+      root.append(label);
+      return;
+    }
+    if (gameType === "ludo") {
+      const label = node("label", "games-setting-field");
+      label.append(node("span", "", "Your Ludo color"));
+      const select = node("select");
+      select.id = "games-ludo-color";
+      [["#39A96B", "Green"], ["#D85A60", "Red"], ["#D9AD45", "Yellow"], ["#4F83D1", "Blue"]].forEach(([value, title]) => {
+        const option = node("option", "", title);
+        option.value = value;
+        option.selected = value === "#39A96B";
+        select.append(option);
+      });
+      label.append(select);
+      root.append(label);
+      return;
+    }
+    const note = gameType === "uno" ? "Standard UNO rules · two players." : "Standard game rules · two players.";
+    root.append(node("p", "games-setting-note muted tiny", note));
   }
 
   function closeCreateModal() {
@@ -595,8 +634,8 @@
           invitedUserIds: [opponentId],
           playerLimit: 2,
           mode: "free_for_all",
-          preset: "classic",
-          color: "#39A96B"
+          preset: $("games-dominoes-preset")?.value || "classic",
+          color: $("games-ludo-color")?.value || "#39A96B"
         });
         game = mutation.result?.game || mutation.result;
       } else {
