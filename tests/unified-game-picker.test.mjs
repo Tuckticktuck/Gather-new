@@ -41,3 +41,12 @@ test("Unified game catalog uses a responsive, scrollable card grid", () => {
   assert.match(css, /\.games-type-chooser-modal[^\n]*max-height/);
   assert.match(css, /@media\(max-width:520px\)/);
 });
+
+
+test("Conversation Play a game opens the game chooser and keeps the originating conversation", () => {
+  assert.match(games, /if \(activeChat\?\.id\) openGameTypeChooser\(activeChat\.id\)/);
+  assert.match(games, /function openGameTypeChooser\(conversationId = null\)/);
+  assert.match(games, /const conversationId = gameTypeChooserConversationId;\s*openCreateModal\(conversationId, gameType\)/);
+  assert.match(games, /select\.disabled = !!defaultConversationId/);
+  assert.match(games, /This conversation is no longer available for starting a game/);
+});
