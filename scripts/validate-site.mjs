@@ -45,6 +45,7 @@ for (const file of ["manifest.webmanifest"]) {
 const party = readFileSync(join(root, "party.js"), "utf8");
 const picker = readFileSync(join(root, "game-people-picker.js"), "utf8");
 const partyMigration = readFileSync(join(root, "supabase/migrations/20261113235904_harden_party_voting_and_game_chat_cleanup.sql"), "utf8");
+const partyCapacityMigration = readFileSync(join(root, "supabase/migrations/20261115145849_party_poll_multiplayer_capacity_rules.sql"), "utf8");
 const gameMoveMigration = readFileSync(join(root, "supabase/migrations/20261113235906_harden_turn_based_game_results.sql"), "utf8");
 assert.match(party, /poll\.my_vote !== null && poll\.my_vote !== undefined/, "Party vote selection must distinguish null from option zero");
 assert.match(party, /chat\.kind !== "direct"/, "Two-player Quick Play must require a direct conversation");
@@ -56,6 +57,11 @@ assert.match(party, /gather_dominoes_create/, "Party Quick Play must be able to 
 assert.doesNotMatch(party, /members\.length !== 2/, "Party Quick Play must not force every game to two players");
 assert.match(picker, /selected\.size >= selectionLimit/, "The people picker must enforce its selection limit");
 assert.match(partyMigration, /m\.role='leader'/, "Party vote creation must require the leader role in SQL");
+assert.match(partyCapacityMigration, /'dominoes'/, "Party voting must include Dominoes as a supported game");
+assert.match(partyCapacityMigration, /v_party_size > 4 and 'dominoes'=any\(v_options\)/, "Party voting must enforce Dominoes' four-player cap");
+assert.match(partyCapacityMigration, /v_party_size > 10 and 'uno'=any\(v_options\)/, "Party voting must enforce UNO's ten-player cap");
+assert.match(partyCapacityMigration, /m\.role='leader' and m\.status='joined'/, "Party voting authorization must remain leader-only");
+
 assert.match(partyMigration, /revoke execute on function public\.gather_game_chat_cleanup\(\)/i, "Trigger-only cleanup RPC must not be directly executable");
 assert.match(gameMoveMigration, /v_winner <> v_uid/, "A turn-based player must not declare the opponent the winner");
 
