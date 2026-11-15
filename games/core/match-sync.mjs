@@ -20,9 +20,11 @@ export function createMatchSync(options) {
   }
 
   let active = false;
+  let generation = 0;
   let unsubscribe = null;
   let timer = null;
   let refreshPromise = null;
+  let refreshGeneration = -1;
   let refreshAgain = false;
   let latestSnapshot = null;
   let latestRevision = -1;
@@ -36,27 +38,31 @@ export function createMatchSync(options) {
 
   async function refresh() {
     if (!active) return latestSnapshot;
+    const runGeneration = generation;
+
     if (refreshPromise) {
       refreshAgain = true;
       return refreshPromise;
     }
 
+    refreshGeneration = runGeneration;
     refreshPromise = (async () => {
       do {
         refreshAgain = false;
         try {
           const next = await loadSnapshot();
-          if (!active) break;
+          if (!active || generation !== runGeneration) break;
           const revision = readRevision(next);
           if (revision >= latestRevision) {
+            const previousRevision = latestRevision;
             latestRevision = revision;
             latestSnapshot = next;
-            onSnapshot(next, { revision, previousRevision: revision === latestRevision ? revision : latestRevision });
+            onSnapshot(next, { revision, previousRevision });
           }
         } catch (error) {
-          if (active) onError(error);
+          if (active && generation === runGeneration) onError(error);
         }
-      } while (active && refreshAgain);
+      } while (active && generation === runGeneration && refreshAgain);
       return latestSnapshot;
     })();
 
@@ -64,33 +70,40 @@ export function createMatchSync(options) {
       return await refreshPromise;
     } finally {
       refreshPromise = null;
-      if (active && refreshAgain) void refresh();
+      refreshGeneration = -1;
+      if (active && (refreshAgain || generation !== runGeneration)) {
+        refreshAgain = false;
+        void refresh();
+      }
     }
   }
 
-  function scheduleRefresh() {
-    if (!active) return;
+  function scheduleRefresh(expectedGeneration = generation) {
+    if (!active || expectedGeneration !== generation) return;
     cancelScheduledRefresh();
     timer = setTimeout(() => {
       timer = null;
-      void refresh();
+      if (active && expectedGeneration === generation) void refresh();
     }, debounceMs);
   }
 
   function start() {
     if (active) return;
     active = true;
+    generation += 1;
+    const startGeneration = generation;
     try {
-      const result = subscribe(scheduleRefresh);
+      const result = subscribe(() => scheduleRefresh(startGeneration));
       unsubscribe = typeof result === "function" ? result : null;
     } catch (error) {
       onError(error);
     }
-    scheduleRefresh();
+    scheduleRefresh(startGeneration);
   }
 
   function stop() {
     active = false;
+    generation += 1;
     cancelScheduledRefresh();
     refreshAgain = false;
     const dispose = unsubscribe;
@@ -105,7 +118,8 @@ export function createMatchSync(options) {
       active,
       refreshing: refreshPromise !== null,
       revision: latestRevision,
-      hasSnapshot: latestSnapshot !== null
+      hasSnapshot: latestSnapshot !== null,
+      generation
     });
   }
 
