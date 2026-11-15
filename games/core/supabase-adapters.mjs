@@ -131,13 +131,13 @@ function createLudoDriver(rpc) {
         p_join_mode: options.joinMode || "invite",
         p_invited_user_ids: invitedUserIds,
         p_max_players: options.playerLimit ?? 4,
-        p_creator_color: options.color || "#38BDF8"
+        p_creator_color: options.color || "#D85A60"
       });
     },
     async join(matchId, options = {}) {
       return rpc("gather_ludo_join", {
         p_game_id: requiredString(matchId, "matchId"),
-        p_color: options.color || "#38BDF8"
+        p_color: options.color || "#D85A60"
       });
     },
     async decline(matchId) {
