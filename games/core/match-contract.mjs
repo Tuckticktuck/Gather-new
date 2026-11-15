@@ -83,7 +83,7 @@ export function normalizeMatchSnapshot(input) {
     joinMode: typeof game.join_mode === "string" ? game.join_mode : null,
     conversationId: typeof game.conversation_id === "string" ? game.conversation_id : null,
     playerOneId: typeof game.player_one_id === "string" ? game.player_one_id : null,
-    playerTwoId: typeof game.player_two_id === "string" ? game.player_two_id : null,
+    playerTwoId: typeof game.player_two_id === "string" ? game.player_two_id : null,\n    playerOneReady: game.player_one_ready === true,\n    playerTwoReady: game.player_two_ready === true,
     turnUserId: typeof game.turn_user_id === "string" ? game.turn_user_id : null,
     startedAt: game.started_at || game.startedAt || null,
     winnerId: typeof game.winner_id === "string" ? game.winner_id : null,
