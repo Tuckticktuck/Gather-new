@@ -36,3 +36,11 @@ test("module registry rejects duplicate modules and exposes immutable entries", 
   assert.equal(registry.get("dominoes").id, "dominoes");
   assert.equal(Object.isFrozen(registry.get("dominoes")), true);
 });
+
+test("public engine barrel exports the complete foundation", async () => {
+  const core = await import("../games/core/index.mjs");
+  assert.equal(typeof core.GatherGameRegistry.get, "function");
+  assert.equal(typeof core.createMatchSync, "function");
+  assert.equal(typeof core.createActionDispatcher, "function");
+  assert.equal(typeof core.createGameModuleRegistry, "function");
+});
