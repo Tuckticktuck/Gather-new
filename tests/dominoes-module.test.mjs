@@ -45,6 +45,7 @@ test("Dominoes module uses shared lobby service and dedicated private-state RPC"
   const snapshot = await result.module.load("11111111-1111-4111-8111-111111111111");
   assert.equal(snapshot.game.game_type, "dominoes");
   assert.equal(snapshot.your_hand[0].id, "private-tile");
+  assert.equal(Object.hasOwn(snapshot, "privateState"), false);
   assert.ok(db.calls.some(call => call.name === "gather_dominoes_get_state"));
 });
 
