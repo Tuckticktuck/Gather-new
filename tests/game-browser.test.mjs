@@ -42,18 +42,19 @@ test("Open lobby actions use authoritative game lifecycle RPCs", () => {
 });
 
 test("Game browser assets are versioned consistently in the page and offline shell", () => {
-  assert.match(html, /games\.js\?v=20261115-chess-checkers-classic-themes-1/);
-  assert.match(html, /games\.css\?v=20261115-chess-checkers-theme-1/);
-  assert.match(serviceWorker, /games\.js\?v=20261115-chess-checkers-classic-themes-1/);
-  assert.match(serviceWorker, /games\.css\?v=20261115-chess-checkers-theme-1/);
-  assert.match(serviceWorker, /gather-shell-v126/);
+  assert.match(html, /games\.js\?v=20261115-chess-simple-icon-1/);
+  assert.match(html, /games\.css\?v=20261115-chess-simple-icon-1/);
+  assert.match(serviceWorker, /games\.js\?v=20261115-chess-simple-icon-1/);
+  assert.match(serviceWorker, /games\.css\?v=20261115-chess-simple-icon-1/);
+  assert.match(serviceWorker, /gather-shell-v127/);
 });
 
 test("Chess and Checkers use their separately selected classic visual themes", () => {
-  assert.match(gamesClient, /mark: "♔♕♖"/);
+  assert.match(gamesClient, /mark: "pawn"/);
   assert.match(gamesClient, /mark: "●○"/);
   assert.match(gamesClient, /games-catalog-mark-" \+ gameType/);
   assert.match(gamesClient, /games-type-choice-icon-chess/);
+  assert.match(gamesClient, /gameType === "chess" \? "♟" : info\.mark/);
   assert.match(gamesClient, /games-type-choice-icon-checkers/);
   assert.match(gamesClient, /checker\.textContent = "●"/);
   assert.match(gamesStyles, /\.games-chess-cell\.light\{background:#f0d9b5\}/);
