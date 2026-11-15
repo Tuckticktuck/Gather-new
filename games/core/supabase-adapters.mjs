@@ -65,6 +65,11 @@ function createLegacyBoardDriver(rpc, id) {
       return rpc("gather_game_create", { p_conversation_id: requiredString(options.conversationId, "conversationId"), p_game_type: id, p_player_two_id: requiredString(options.opponentId, "opponentId") });
     },
     async join(matchId) { return rpc("gather_game_accept", { p_game_id: requiredString(matchId, "matchId") }); },
+    async setReady(matchId, ready) {
+      if (typeof ready !== "boolean") throw new TypeError("ready must be a boolean.");
+      return rpc("gather_game_set_ready", { p_game_id: requiredString(matchId, "matchId"), p_ready: ready });
+    },
+    async start(matchId) { return rpc("gather_game_start", { p_game_id: requiredString(matchId, "matchId") }); },
     async decline(matchId) { return rpc("gather_game_decline", { p_game_id: requiredString(matchId, "matchId") }); },
     async cancel(matchId) { return rpc("gather_game_cancel", { p_game_id: requiredString(matchId, "matchId") }); },
     async end(matchId) { return rpc("gather_game_end", { p_game_id: requiredString(matchId, "matchId") }); }
@@ -140,7 +145,7 @@ function createLudoDriver(rpc) {
         p_conversation_id: options.conversationId ?? null,
         p_join_mode: options.joinMode || "invite",
         p_invited_user_ids: invitedUserIds,
-        p_max_players: options.playerLimit ?? 4,
+        p_max_players: 2,
         p_creator_color: options.color || "#D85A60"
       });
     },
@@ -183,7 +188,7 @@ function createDominoesDriver(rpc) {
       return rpc("gather_dominoes_create", {
         p_join_mode: options.joinMode || "invite",
         p_invited_user_ids: invitedUserIds,
-        p_mode: options.mode || "free_for_all",
+        p_mode: "free_for_all",
         p_preset: options.preset || "classic"
       });
     },
@@ -225,13 +230,13 @@ function legacyRoster(game) {
   const declined = game.status === "declined";
   const cancelled = game.status === "cancelled";
   return [
-    { user_id: game.player_one_id, status: "joined", ready: true, color: null, joined_at: game.created_at },
+    { user_id: game.player_one_id, status: "joined", ready: game.player_one_ready === true, color: null, joined_at: game.created_at },
     {
       user_id: game.player_two_id,
       status: pending ? "invited" : declined || cancelled ? (declined ? "declined" : "left") : "joined",
-      ready: false,
+      ready: game.player_two_ready === true,
       color: null,
-      joined_at: null
+      joined_at: game.started_at || null
     }
   ];
 }
@@ -254,7 +259,10 @@ function normalizeLegacyRow(game) {
       player_two_id: game.player_two_id,
       turn_user_id: game.turn_user_id,
       winner_id: game.winner_id,
-      result: game.result
+      result: game.result,
+      started_at: game.started_at || null,
+      player_one_ready: game.player_one_ready === true,
+      player_two_ready: game.player_two_ready === true
     },
     players: legacyRoster(game)
   };
