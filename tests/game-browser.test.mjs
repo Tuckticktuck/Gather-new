@@ -52,11 +52,11 @@ test("Game browser assets are versioned consistently in the page and offline she
 test("Chess and Checkers use their separately selected classic visual themes", () => {
   assert.match(gamesClient, /mark: "♔♕♖"/);
   assert.match(gamesClient, /mark: "●○"/);
-  assert.match(gamesClient, /games-catalog-mark-" \\+ gameType/);
+  assert.match(gamesClient, /games-catalog-mark-" \+ gameType/);
   assert.match(gamesClient, /games-type-choice-icon-chess/);
   assert.match(gamesClient, /games-type-choice-icon-checkers/);
-  assert.match(gamesClient, /checker\\.textContent = "●"/);
-  assert.match(gamesStyles, /\\.games-chess-cell\\.light\\{background:#f0d9b5\\}/);
-  assert.match(gamesStyles, /\\.games-checkers-cell\\.dark\\{background:#8b3038\\}/);
-  assert.match(gamesStyles, /\\.games-checker-piece\\.king:after/);
+  assert.match(gamesClient, /checker\.textContent = "●"/);
+  assert.match(gamesStyles, /\.games-chess-cell\.light\{background:#f0d9b5\}/);
+  assert.match(gamesStyles, /\.games-checkers-cell\.dark\{background:#8b3038\}/);
+  assert.match(gamesStyles, /\.games-checker-piece\.king:after/);
 });
