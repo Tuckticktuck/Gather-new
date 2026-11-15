@@ -31,6 +31,14 @@ function uniqueUserIds(value) {
   return ids;
 }
 
+function playerLimit(value, fallback, maximum, gameName) {
+  const limit = value ?? fallback;
+  if (!Number.isSafeInteger(limit) || limit < 2 || limit > maximum) {
+    throw new TypeError(gameName + " supports 2 to " + maximum + " players.");
+  }
+  return limit;
+}
+
 function unwrap(result, operation) {
   if (!result) throw new Error(operation + " returned no response.");
   if (result.error) {
@@ -95,7 +103,7 @@ function createUnoDriver(rpc) {
     async create(options = {}) {
       const invitedUserIds = uniqueUserIds(options.invitedUserIds);
       const joinMode = options.joinMode || "invite";
-      const maxPlayers = 2;
+      const maxPlayers = playerLimit(options.playerLimit, 10, 10, "UNO");
       return rpc("gather_uno_create", {
         p_conversation_id: options.conversationId ?? null,
         p_join_mode: joinMode,
@@ -145,7 +153,7 @@ function createLudoDriver(rpc) {
         p_conversation_id: options.conversationId ?? null,
         p_join_mode: options.joinMode || "invite",
         p_invited_user_ids: invitedUserIds,
-        p_max_players: 2,
+        p_max_players: playerLimit(options.playerLimit, 4, 4, "Ludo"),
         p_creator_color: options.color || "#D85A60"
       });
     },
@@ -188,7 +196,7 @@ function createDominoesDriver(rpc) {
       return rpc("gather_dominoes_create", {
         p_join_mode: options.joinMode || "invite",
         p_invited_user_ids: invitedUserIds,
-        p_mode: "free_for_all",
+        p_mode: options.mode || "free_for_all",
         p_preset: options.preset || "classic"
       });
     },
