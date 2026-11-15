@@ -1159,3 +1159,248 @@ select:focus {
     width: 100%;
   }
 }
+
+
+/* Secondary app surfaces: settings, support, announcements, profiles, and admin. */
+#app :is(
+  .accent-choice,
+  .font-choice,
+  .feedback-thread-card,
+  .feedback-message,
+  .admin-mode-card,
+  .admin-summary-card,
+  .admin-account-item,
+  .admin-approval-card,
+  .admin-activity-item,
+  .admin-report-card,
+  .announcement-history-item,
+  .saved-message-card,
+  .message-poll-card,
+  .profile-photo-editor,
+  .group-member-row,
+  .friend-list-item,
+  .request-item,
+  .deleted-conversation-card,
+  .shared-media-item,
+  .session-row
+) {
+  border-color: var(--g-ui-border);
+  border-radius: 13px;
+}
+
+#app :is(
+  .accent-choice,
+  .font-choice,
+  .feedback-thread-card,
+  .admin-mode-card,
+  .admin-summary-card,
+  .admin-account-item,
+  .admin-approval-card,
+  .admin-activity-item,
+  .admin-report-card,
+  .announcement-history-item,
+  .saved-message-card,
+  .message-poll-card,
+  .profile-photo-editor,
+  .group-member-row,
+  .friend-list-item,
+  .request-item,
+  .deleted-conversation-card,
+  .shared-media-item,
+  .session-row
+) {
+  background: var(--g-ui-surface-raised);
+}
+
+#app :is(.feedback-thread-card:hover, .feedback-thread-card.active, .admin-summary-card:hover, .admin-account-item:hover, .admin-account-item.active, .announcement-history-item:hover, .accent-choice[aria-pressed="true"], .font-choice[aria-pressed="true"]) {
+  border-color: var(--g-ui-border-strong);
+  background: var(--accent-surface);
+}
+
+#app .feedback-sidebar,
+#app .feedback-content {
+  border-color: var(--g-ui-border);
+  border-radius: 14px;
+  background: var(--g-ui-surface);
+}
+
+#app .feedback-message {
+  background: var(--g-ui-surface-raised);
+  border-color: var(--g-ui-border);
+}
+
+#app .feedback-message.mine {
+  background: var(--accent-surface);
+  border-color: var(--g-ui-border-strong);
+}
+
+#app .message-notification {
+  border-color: var(--g-ui-border-strong);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--g-ui-surface-raised) 96%, var(--accent));
+  box-shadow: var(--g-shadow-raised);
+}
+
+#app .admin-mode-card,
+#app .admin-summary-card,
+#app .admin-approval-card,
+#app .admin-activity-item,
+#app .admin-report-card {
+  box-shadow: 0 4px 15px rgba(0, 0, 0, .09);
+}
+
+#app .settings-section {
+  padding-top: 4px;
+}
+
+#app .settings-section h3 {
+  color: var(--g-ui-muted);
+  font-size: 10px;
+  font-weight: 780;
+  letter-spacing: .09em;
+}
+
+#app .profile-photo-editor,
+#app .password-form,
+#app .group-settings-members-head {
+  border-color: var(--g-ui-border);
+}
+
+#app .member-profile-modal,
+#app .profile-modal,
+#app .settings-modal,
+#app .feedback-modal {
+  border-color: var(--g-ui-border);
+}
+
+#app .admin-section-heading {
+  border-bottom-color: var(--g-ui-border);
+}
+
+#app .admin-empty-state,
+#app .in-chat-empty,
+#app .home-search-empty {
+  border-color: var(--g-ui-border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--g-ui-surface-raised) 50%, transparent);
+}
+
+#app .chat-notice {
+  border-radius: 12px;
+}
+
+/* Shared visual containers inside the actual game boards, not the board tiles. */
+:is(.games-overlay, .uno-overlay, .ludo-overlay, .dominoes-overlay) :is(
+  .games-battleship-panel,
+  .games-ludo-dice-card,
+  .games-ludo-token-panel,
+  .ludo-dice-card,
+  .ludo-token-panel,
+  .ludo-join-panel,
+  .ludo-finished-panel,
+  .uno-players-panel,
+  .uno-settings-panel,
+  .uno-board,
+  .uno-lobby-wait,
+  .dominoes-score-row,
+  .dominoes-stat-card,
+  .dominoes-leader-row,
+  .dominoes-history,
+  .tag-round-setting,
+  .tag-round-clock,
+  .tag-round-result
+) {
+  border-color: var(--g-ui-border);
+  border-radius: 14px;
+}
+
+:is(.games-overlay, .uno-overlay, .ludo-overlay, .dominoes-overlay) :is(
+  .games-battleship-panel,
+  .games-ludo-dice-card,
+  .games-ludo-token-panel,
+  .ludo-dice-card,
+  .ludo-token-panel,
+  .ludo-join-panel,
+  .uno-players-panel,
+  .uno-settings-panel,
+  .uno-board,
+  .uno-lobby-wait,
+  .dominoes-score-row,
+  .dominoes-stat-card,
+  .dominoes-leader-row,
+  .dominoes-history
+) {
+  background: var(--g-ui-surface-raised);
+}
+
+:is(.games-overlay, .uno-overlay, .ludo-overlay, .dominoes-overlay) :is(
+  .games-board-waiting,
+  .games-board-hint,
+  .games-board-footer,
+  .ludo-message,
+  .dominoes-hint
+) {
+  border-color: var(--g-ui-border);
+  color: var(--g-ui-muted);
+}
+
+:is(.games-overlay, .uno-overlay, .ludo-overlay, .dominoes-overlay) :is(.games-board-footer, .games-board-hint) {
+  border-top-color: var(--g-ui-border);
+}
+
+:is(.games-overlay, .uno-overlay, .ludo-overlay, .dominoes-overlay) :is(.ludo-player-row, .uno-player-row, .dominoes-roster-row) {
+  border-color: var(--g-ui-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--g-ui-surface-raised) 88%, transparent);
+}
+
+/* Keep game-specific status meanings while aligning their shape and typography. */
+:is(.games-overlay, .uno-overlay, .ludo-overlay, .dominoes-overlay) :is(
+  .ludo-status,
+  .uno-status,
+  .dominoes-status,
+  .games-board-status,
+  .games-board-meta
+) {
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+:is(.games-overlay, .uno-overlay, .ludo-overlay, .dominoes-overlay) :is(
+  .ludo-status.error,
+  .uno-status.error,
+  .dominoes-status.error,
+  .status.error
+) {
+  color: #ef9aa3;
+}
+
+@media (max-width: 720px) {
+  #app :is(
+    .feedback-sidebar,
+    .feedback-content,
+    .admin-mode-card,
+    .admin-summary-card,
+    .admin-account-item,
+    .admin-approval-card,
+    .admin-report-card,
+    .announcement-history-item,
+    .saved-message-card,
+    .message-poll-card,
+    .profile-photo-editor,
+    .group-member-row,
+    .friend-list-item,
+    .request-item
+  ) {
+    border-radius: 12px;
+  }
+
+  #app .feedback-content {
+    padding: 11px;
+  }
+
+  #app .message-notifications {
+    right: 10px;
+    width: calc(100vw - 20px);
+  }
+}
