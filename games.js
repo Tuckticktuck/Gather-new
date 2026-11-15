@@ -37,6 +37,7 @@
   let battleshipDraft = { gameId: null, ships: [], selected: "carrier", orientation: "horizontal", message: "" };
   let hubFilter = "all";
   let selectedGameConversationId = null;
+  let selectedDraftGameType = "chess";
   let hubSearchQuery = "";
   let sharedBoardRuntime = null;
   let sharedBoardRuntimePromise = null;
@@ -189,13 +190,12 @@
       const overlay = node("div", "overlay games-overlay");
       overlay.id = "games-create-overlay";
       overlay.hidden = true;
-      overlay.innerHTML = '<section class="modal games-create-modal" role="dialog" aria-modal="true" aria-labelledby="games-create-title"><button id="games-create-close" class="close" type="button" aria-label="Close">×</button><p class="eyebrow">NEW MATCH</p><h2 id="games-create-title">Invite someone to play</h2><p class="muted tiny">Choose a conversation, a game and one opponent. In a group chat, everyone else can watch the match.</p><form id="games-create-form"><label>Choose a chat<select id="games-conversation" required></select><small class="games-picker-note">Chats are grouped by type. Choose a person from that chat in the next field.</small></label><label>Game<select id="games-type" required><option value="chess">Chess</option><option value="checkers">Checkers</option><option value="tic_tac_toe">Tic-Tac-Toe</option><option value="connect_four">Connect Four</option><option value="battleship">Battleship</option><option value="uno">UNO</option><option value="ludo">Ludo</option><option value="dominoes">Dominoes</option></select></label><label>Person to invite<select id="games-opponent" required></select></label><div id="games-game-settings" class="games-game-settings"></div><p id="games-spectator-note" class="games-spectator-note"></p><p id="games-create-status" class="status" role="status"></p><div class="games-form-actions"><button id="games-create-cancel" class="secondary-action" type="button">Cancel</button><button id="games-create-submit" class="primary" type="submit">Send invitation</button></div></form></section>';
+      overlay.innerHTML = '<section class="modal games-create-modal games-draft-lobby-modal" role="dialog" aria-modal="true" aria-labelledby="games-create-title"><button id="games-create-close" class="close" type="button" aria-label="Close">×</button><p class="eyebrow">GAME LOBBY</p><h2 id="games-create-title">Chess lobby</h2><p id="games-create-subtitle" class="muted tiny">Set up your lobby and invite one opponent. Both players will ready up here before the match begins.</p><div class="gather-shared-lobby-players games-draft-lobby-players"><article class="gather-shared-player-card is-you"><span class="gather-shared-player-avatar" id="games-draft-host-avatar">Y</span><span class="gather-shared-player-copy"><strong id="games-draft-host-name">You</strong><small>Host</small></span><span class="gather-shared-ready-pill">Host</span></article><article class="gather-shared-player-card"><span class="gather-shared-player-avatar">?</span><span class="gather-shared-player-copy"><strong id="games-draft-opponent-name">Waiting for opponent</strong><small>Opponent</small></span><span class="gather-shared-ready-pill">Open seat</span></article></div><form id="games-create-form"><label>Choose a conversation<select id="games-conversation" required></select><small class="games-picker-note">The opponent must be a member of this conversation. Other group members can watch.</small></label><label>Invite opponent<select id="games-opponent" required></select></label><div id="games-game-settings" class="games-game-settings"></div><p id="games-spectator-note" class="games-spectator-note"></p><p id="games-create-status" class="status" role="status"></p><div class="games-form-actions"><button id="games-create-cancel" class="secondary-action" type="button">Cancel</button><button id="games-create-submit" class="primary" type="submit">Invite opponent</button></div></form></section>';
       document.body.append(overlay);
       $("games-create-close").addEventListener("click", closeCreateModal);
       $("games-create-cancel").addEventListener("click", closeCreateModal);
       overlay.addEventListener("click", event => { if (event.target === overlay) closeCreateModal(); });
       $("games-conversation").addEventListener("change", updateOpponentOptions);
-      $("games-type").addEventListener("change", event => renderGameSetupSettings(event.target.value));
       $("games-create-form").addEventListener("submit", createGame);
     }
 
@@ -215,8 +215,7 @@
         if (!choice) return;
         const gameType = choice.dataset.gameType;
         closeGameTypeChooser();
-        if (["uno", "ludo", "dominoes"].includes(gameType)) openMultiplayerGame(gameType);
-        else openCreateModal(undefined, gameType);
+        openCreateModal(undefined, gameType);
       });
     }
 
@@ -522,18 +521,25 @@
     if (!ctx || !userId()) return;
     const eligible = chatList().filter(chat => (chat.members || []).some(member => member.user_id === userId()) && (chat.members || []).some(member => member.user_id !== userId()));
     if (!eligible.length) {
-      toast("Start or join a conversation before inviting someone to a game.");
+      toast("Start or join a conversation before creating a game lobby.");
       return;
     }
+    selectedDraftGameType = TYPES[gameType] ? gameType : "chess";
     const select = $("games-conversation");
     select.replaceChildren();
     appendSortedChatOptions(select, eligible);
     const chosen = eligible.find(chat => chat.id === defaultConversationId) || eligible[0];
     select.value = chosen.id;
     updateOpponentOptions();
-    $("games-type").value = TYPES[gameType] ? gameType : "chess";
-    renderGameSetupSettings(gameType);
+    $("games-create-title").textContent = gameName(selectedDraftGameType) + " lobby";
+    $("games-create-subtitle").textContent = "Invite one opponent to fill the second seat. Both players will ready up here before the match begins.";
+    const hostName = memberName(userId());
+    $("games-draft-host-name").textContent = hostName + " (you)";
+    $("games-draft-host-avatar").textContent = hostName.trim().slice(0, 1).toUpperCase();
+    $("games-draft-opponent-name").textContent = "Waiting for opponent";
+    renderGameSetupSettings(selectedDraftGameType);
     $("games-create-status").textContent = "";
+    $("games-create-submit").textContent = "Invite opponent";
     $("games-create-submit").disabled = false;
     $("games-create-overlay").hidden = false;
   }
@@ -611,7 +617,7 @@
     if (busy) return;
     const conversationId = $("games-conversation").value;
     const opponentId = $("games-opponent").value;
-    const gameType = $("games-type").value;
+    const gameType = selectedDraftGameType;
     if (!conversationId || !opponentId || !TYPES[gameType]) {
       $("games-create-status").textContent = "Choose a conversation and an opponent.";
       return;
