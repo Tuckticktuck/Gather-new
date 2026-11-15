@@ -284,3 +284,17 @@ A separate authenticated browser suite must exercise at least two player account
 2. Add compatibility adapters for the current \`gather_games\` and \`gather_multiplayer_games\` persistence families without changing their live behavior.
 3. Wire the new core into Tic-Tac-Toe and Connect Four behind a controlled migration path.
 4. Run automated tests and a dedicated authenticated multi-account regression before enabling the first migrated game.
+
+
+## Phase 4 — Dominoes module adapter
+
+Added `games/modules/dominoes/index.mjs` as the first complex multiplayer game-module adapter.
+
+- The module is registered against the shared game registry and implements the versioned game-module hooks.
+- Lobby creation, join, decline, readiness, start, leave, end, spectate, and canonical public snapshots are routed through the shared lobby service.
+- Per-match Realtime watching uses the shared match-sync service and disposes its subscription on unmount.
+- Dominoes private state is fetched separately through `gather_dominoes_get_state`; the public match snapshot is never augmented with private hands in database storage.
+- The existing game-specific RPCs remain authoritative. No generic client-authored full-state update was introduced.
+- Added `tests/dominoes-module.test.mjs` for module registration, private-state separation, shared lobby creation, and watcher cleanup.
+
+**Migration boundary:** this commit adds and tests the Dominoes module adapter, but the existing `dominoes.js` screen still owns its current UI and direct lifecycle call sites. The next cutover step is to inject this module into that screen and remove its duplicate lobby/realtime lifecycle code. The live gameplay UI is intentionally unchanged until that integration is verified end-to-end.
