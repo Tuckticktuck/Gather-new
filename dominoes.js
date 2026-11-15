@@ -144,7 +144,7 @@ async function doSpectate(){if(await rpc("gather_dominoes_spectate",{p_game_id:g
 function renderGame(){const root=$("dominoes-content");if(!root||!snapshot)return;root.replaceChildren();const g=game(),s=state(),m=me(),phase=s.phase||"lobby";root.append(header(s.started?"Dominoes match":"Dominoes lobby",s.started?"ARCADE TABLE · IN PROGRESS":"WAITING ROOM",(g.settings?.mode==="teams"?"Team match":"Free-for-all")+" · first to "+(s.target_score||g.settings?.target_score||100)));if(["joined","spectating"].includes(m?.status))window.GatherGameChat?.attach(root,ctx.db,"dominoes",g.id,uid(),name);if(phase==="paused"){paused(root);applyPrefs();return;}if(phase==="recap"){recap(root);applyPrefs();return;}if(phase==="finished"||g.status==="completed"){finished(root);applyPrefs();return;}if(phase==="lobby"||!s.started){
   const lobbyPlayers=(snapshot.players||[]).filter(player=>["joined","invited","spectating"].includes(player.status));
   window.GatherSharedLobby?.render({
-    root,gameName:"Dominoes",game:g,players:lobbyPlayers,viewerId:uid(),getName:name,
+    root,gameName:"Dominoes",game:g,players:lobbyPlayers,viewerId:uid(),getName:name,minPlayers:s.mode==="teams"?4:2,
     settingsSummary:"Up to four players · "+(s.mode==="teams"?"four-player teams":"free-for-all")+" · seven tiles each · first to "+(s.target_score||g.settings?.target_score||100)+" points",
     onJoin:()=>join(),
     onDecline:async()=>{await rpc("gather_dominoes_leave",{p_game_id:g.id});await refresh();},
