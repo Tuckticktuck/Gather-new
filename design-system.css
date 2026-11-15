@@ -382,3 +382,675 @@ select:focus {
     transition-duration: .01ms !important;
   }
 }
+
+
+/* -------------------------------------------------------------------------
+   Cross-screen consistency pass
+   Shared surfaces and controls across Messages, Games, party panels, lobbies,
+   and game dialogs. Board cells, pieces, hands, domino chains, and game-table
+   surfaces intentionally keep their game-specific visual treatment.
+   ------------------------------------------------------------------------- */
+
+:root {
+  --g-ui-surface: var(--accent-panel, #191b25);
+  --g-ui-surface-raised: var(--accent-panel-raised, #20222d);
+  --g-ui-surface-deep: var(--accent-deep, #11131a);
+  --g-ui-border: color-mix(in srgb, var(--accent-outline-soft, #ffffff22) 76%, #ffffff 2%);
+  --g-ui-border-strong: color-mix(in srgb, var(--accent-outline, #ffffff44) 86%, #ffffff 3%);
+  --g-ui-text: var(--text, #f2f0f8);
+  --g-ui-muted: var(--muted, #9b9caf);
+  --g-ui-radius-control: 11px;
+  --g-ui-radius-card: 16px;
+  --g-ui-radius-panel: 19px;
+  --g-ui-radius-dialog: 22px;
+  --g-ui-control-height: 40px;
+  --g-ui-panel-shadow: 0 9px 26px rgba(0, 0, 0, .15);
+}
+
+/* One type scale for the two main workspaces and their section headings. */
+#app .workspace-header h1,
+#app .games-hub-header h1 {
+  font-size: clamp(25px, 3vw, 34px);
+  font-weight: 780;
+  line-height: 1.12;
+  letter-spacing: -.045em;
+}
+
+#app .workspace-subtitle,
+#app .games-hub-subtitle,
+#app .ludo-intro,
+#app .dominoes-subtitle {
+  color: var(--g-ui-muted);
+  line-height: 1.62;
+}
+
+#app .games-section-heading h2,
+#app .games-invitations-head h2,
+#app .games-party-heading h2,
+#app .games-inbox-sidebar-head h2,
+#app .games-detail-header h2 {
+  font-size: 16px;
+  font-weight: 760;
+  line-height: 1.3;
+  letter-spacing: -.02em;
+}
+
+#app .games-live-subhead h3,
+#app .games-section-title,
+#app .ludo-section-title,
+#app .dominoes-section-title,
+#app .uno-section-title {
+  font-size: 13px;
+  font-weight: 760;
+  line-height: 1.35;
+}
+
+/* The Messages / Games switcher is the common section navigation. */
+#workspace-switcher {
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid var(--g-ui-border);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--g-ui-surface) 94%, #000);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+#workspace-switcher .workspace-switch-tab {
+  min-height: 42px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  color: var(--g-ui-muted);
+  font-size: 12px;
+  font-weight: 760;
+  letter-spacing: -.01em;
+}
+
+#workspace-switcher .workspace-switch-tab:hover {
+  color: var(--g-ui-text);
+  background: var(--accent-hover);
+}
+
+#workspace-switcher .workspace-switch-tab.active,
+#workspace-switcher .workspace-switch-tab[aria-pressed="true"] {
+  border-color: var(--g-ui-border);
+  color: var(--accent-text);
+  background: var(--accent-surface);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+#workspace-switcher .workspace-switch-tab svg {
+  display: block;
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Consistent content width, top spacing, and panel rhythm in Games. */
+#app .games-workspace {
+  background: var(--g-ui-surface-deep);
+  color: var(--g-ui-text);
+  padding-right: clamp(14px, 3vw, 38px);
+  padding-left: clamp(14px, 3vw, 38px);
+}
+
+#app .games-hub-header,
+#app .games-hub-section,
+#app .games-invitations-panel,
+#app .games-party-panel {
+  width: min(100%, 1180px);
+}
+
+#app .games-hub-header {
+  align-items: center;
+  margin-bottom: 22px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--g-ui-border);
+}
+
+#app .games-hub-header h1 {
+  margin-bottom: 7px;
+}
+
+#app .games-hub-subtitle {
+  max-width: 660px;
+  margin: 0;
+  font-size: 12px;
+}
+
+#app .games-hub-section {
+  margin-bottom: 22px;
+}
+
+#app .games-section-heading {
+  margin-bottom: 12px;
+}
+
+#app .games-list,
+#app .games-invitations-list,
+#app .games-party-list {
+  gap: 12px;
+}
+
+/* Shared surface system for app cards, lobbies, and social/game panels. */
+#app :is(
+  .workspace-folder,
+  .workspace-group-section,
+  .home-announcement-card,
+  .games-invitations-panel,
+  .games-party-panel,
+  .games-inbox-layout,
+  .games-conversation-detail,
+  .games-card,
+  .games-party-card,
+  .games-live-card,
+  .games-invitation-card,
+  .games-conversation-item,
+  .ludo-lobby-card,
+  .uno-lobby-card,
+  .dominoes-lobby-card
+) {
+  border-color: var(--g-ui-border);
+  border-radius: var(--g-ui-radius-card);
+}
+
+#app :is(
+  .workspace-folder,
+  .workspace-group-section,
+  .games-invitations-panel,
+  .games-party-panel,
+  .games-inbox-layout,
+  .games-conversation-detail
+) {
+  background: var(--g-ui-surface);
+  box-shadow: var(--g-ui-panel-shadow);
+}
+
+#app :is(.games-card, .games-party-card, .ludo-lobby-card, .uno-lobby-card, .dominoes-lobby-card) {
+  background: var(--g-ui-surface-raised);
+  box-shadow: 0 5px 18px rgba(0, 0, 0, .10);
+}
+
+#app .games-card,
+#app .games-party-card,
+#app .ludo-lobby-card,
+#app .uno-lobby-card,
+#app .dominoes-lobby-card {
+  padding: 14px;
+}
+
+#app :is(.games-card, .games-party-card, .ludo-lobby-card, .uno-lobby-card, .dominoes-lobby-card):hover {
+  border-color: var(--g-ui-border-strong);
+}
+
+#app .games-inbox-layout {
+  grid-template-columns: minmax(220px, 285px) minmax(0, 1fr);
+  overflow: hidden;
+}
+
+#app .games-inbox-sidebar {
+  border-right-color: var(--g-ui-border);
+  background: color-mix(in srgb, var(--g-ui-surface) 82%, var(--g-ui-surface-deep));
+}
+
+#app .games-inbox-sidebar-head {
+  border-bottom-color: var(--g-ui-border);
+}
+
+#app .games-conversation-item {
+  border-color: transparent;
+  border-radius: 12px;
+}
+
+#app .games-conversation-item.active {
+  border-color: var(--g-ui-border-strong);
+  background: var(--accent-surface);
+}
+
+#app .games-conversation-avatar,
+#app .games-card-mark,
+#app .games-type-choice-icon {
+  border-color: var(--g-ui-border-strong);
+  border-radius: 12px;
+}
+
+/* Filters, counts, status pills, and section labels share one visual language. */
+#app :is(.games-filter-tabs, .workspace-tabs, .folder-tabs) {
+  border-color: var(--g-ui-border);
+  border-radius: 13px;
+  background: var(--g-ui-surface-deep);
+}
+
+#app .games-filter-tabs {
+  gap: 5px;
+  padding: 5px;
+}
+
+#app .games-filter-tab {
+  min-height: 36px;
+  padding: 8px 12px;
+  border-radius: 9px;
+  font-size: 11px;
+}
+
+#app .games-filter-tab.active,
+#app .games-filter-tab[aria-pressed="true"] {
+  border-color: var(--g-ui-border);
+  background: var(--accent-surface);
+  color: var(--accent-text);
+}
+
+#app :is(
+  .games-status-section-count,
+  .games-status-pill,
+  .games-conversation-count,
+  .games-conversation-live,
+  .games-conversation-invites,
+  .games-party-role,
+  .games-party-poll-state,
+  .uno-game-count,
+  .ludo-player-count
+) {
+  min-height: 23px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 9px;
+  border: 1px solid var(--g-ui-border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--g-ui-surface-raised) 85%, transparent);
+  color: var(--g-ui-muted);
+  font-size: 10px;
+  font-weight: 760;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+#app :is(.games-status-pill.status-active, .games-conversation-live) {
+  border-color: color-mix(in srgb, #69c69a 32%, var(--g-ui-border));
+  background: color-mix(in srgb, #69c69a 11%, var(--g-ui-surface));
+  color: #8bd9b8;
+}
+
+#app :is(.games-status-pill.status-pending, .games-conversation-invites) {
+  border-color: var(--g-ui-border-strong);
+  background: var(--accent-surface);
+  color: var(--accent-text);
+}
+
+#app :is(.games-empty, .ludo-empty, .uno-empty, .dominoes-empty, .games-party-empty) {
+  border-color: var(--g-ui-border);
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--g-ui-surface-raised) 55%, transparent);
+  color: var(--g-ui-muted);
+  line-height: 1.55;
+}
+
+/* One standard height and finish for non-gameplay actions. */
+#app :is(
+  .games-new-button,
+  .games-card-actions button,
+  .games-form-actions button,
+  .games-invitation-actions button,
+  .games-end-actions button,
+  .games-rematch-actions button,
+  .games-party-header-actions button,
+  .games-party-card-actions button,
+  .ludo-actions button,
+  .uno-actions button,
+  .dominoes-actions button,
+  .dominoes-tool-button,
+  .dominoes-stats-tabs button,
+  .game-chat-toggle,
+  .game-chat-close
+) {
+  min-height: var(--g-ui-control-height);
+  border-radius: var(--g-ui-radius-control);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 740;
+}
+
+#app :is(
+  .games-card-actions button,
+  .games-form-actions button,
+  .games-invitation-actions button,
+  .games-end-actions button,
+  .games-rematch-actions button,
+  .games-party-header-actions button,
+  .games-party-card-actions button,
+  .ludo-actions button,
+  .uno-actions button,
+  .dominoes-actions button
+) {
+  padding: 9px 13px;
+}
+
+#app .games-card-primary {
+  min-height: var(--g-ui-control-height);
+  border-radius: var(--g-ui-radius-control);
+}
+
+#app .games-type-choice {
+  min-height: 76px;
+  padding: 14px 16px;
+  border-color: var(--g-ui-border);
+  border-radius: 14px;
+  background: var(--g-ui-surface-raised);
+}
+
+#app .games-type-choice:hover {
+  border-color: var(--g-ui-border-strong);
+  background: var(--accent-surface);
+}
+
+#app .games-invitations-panel {
+  padding: 17px;
+}
+
+#app .games-invitations-head {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--g-ui-border);
+}
+
+#app .games-live-subsection + .games-live-subsection {
+  margin-top: 16px;
+  padding-top: 15px;
+  border-top: 1px solid var(--g-ui-border);
+}
+
+#app .games-live-subhead {
+  margin-bottom: 9px;
+}
+
+/* Form controls are consistent in every create-game and lobby dialog. */
+:where(.games-create-modal, .games-board-modal, .uno-modal, .ludo-modal, .dominoes-modal, .games-party-dialog-card) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]), textarea, select) {
+  min-height: 40px;
+  border: 1px solid var(--g-ui-border);
+  border-radius: var(--g-ui-radius-control);
+  background: var(--accent-input, var(--g-ui-surface-deep));
+  color: var(--g-ui-text);
+  font: inherit;
+  font-size: 12px;
+}
+
+:where(.games-create-modal, .games-board-modal, .uno-modal, .ludo-modal, .dominoes-modal, .games-party-dialog-card) :is(input, textarea, select):focus {
+  border-color: var(--g-ui-border-strong);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 11%, transparent);
+}
+
+:where(.games-create-modal, .games-board-modal, .uno-modal, .ludo-modal, .dominoes-modal, .games-party-dialog-card) :is(label, .ludo-field, .uno-field, .dominoes-field, .games-party-field) {
+  color: var(--g-ui-text);
+  font-size: 11px;
+  font-weight: 680;
+}
+
+:where(.games-create-modal, .games-board-modal, .uno-modal, .ludo-modal, .dominoes-modal, .games-party-dialog-card) input[type="checkbox"],
+:where(.games-create-modal, .games-board-modal, .uno-modal, .ludo-modal, .dominoes-modal, .games-party-dialog-card) input[type="radio"],
+:where(.games-create-modal, .games-board-modal, .uno-modal, .ludo-modal, .dominoes-modal, .games-party-dialog-card) input[type="range"] {
+  accent-color: var(--accent);
+}
+
+/* A unified modal shell across chat, game selection, UNO, Ludo, and Dominoes. */
+:is(.overlay, .games-overlay, .uno-overlay, .ludo-overlay, .dominoes-overlay) {
+  background: color-mix(in srgb, var(--g-ui-surface-deep) 84%, #000);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+:is(.games-overlay, .uno-overlay, .ludo-overlay, .dominoes-overlay) :is(
+  .games-create-modal,
+  .games-board-modal,
+  .uno-modal,
+  .ludo-modal,
+  .dominoes-modal,
+  .games-party-dialog-card
+) {
+  border: 1px solid var(--g-ui-border);
+  border-radius: var(--g-ui-radius-dialog);
+  background: var(--g-ui-surface);
+  color: var(--g-ui-text);
+  box-shadow: var(--g-shadow-modal);
+}
+
+:is(.games-overlay, .uno-overlay, .ludo-overlay, .dominoes-overlay) :is(
+  .games-create-modal,
+  .games-board-modal,
+  .uno-modal,
+  .ludo-modal,
+  .dominoes-modal
+) .close {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--g-ui-border);
+  border-radius: 10px;
+  background: var(--g-ui-surface-raised);
+  color: var(--g-ui-text);
+  font-size: 19px;
+}
+
+:is(.games-overlay, .uno-overlay, .ludo-overlay, .dominoes-overlay) :is(
+  .games-create-modal,
+  .games-board-modal,
+  .uno-modal,
+  .ludo-modal,
+  .dominoes-modal
+) .close:hover {
+  border-color: var(--g-ui-border-strong);
+  background: var(--accent-hover);
+}
+
+/* Game chat is a shared utility surface, not a separate visual theme. */
+.game-chat-toggle,
+.game-chat-panel {
+  border-color: var(--g-ui-border);
+  background: var(--g-ui-surface);
+  color: var(--g-ui-text);
+  box-shadow: var(--g-shadow-raised);
+}
+
+.game-chat-panel {
+  border-radius: 17px;
+}
+
+.game-chat-head {
+  border-bottom-color: var(--g-ui-border);
+  background: var(--g-ui-surface);
+}
+
+.game-chat-close {
+  min-width: 34px;
+  min-height: 34px;
+  border: 1px solid var(--g-ui-border);
+  background: var(--g-ui-surface-raised);
+}
+
+.game-chat-message {
+  border: 1px solid var(--g-ui-border);
+  background: var(--g-ui-surface-raised);
+}
+
+.game-chat-message.mine {
+  border-color: var(--g-ui-border-strong);
+}
+
+/* Stronger but restrained shared hover and selected states. */
+#app :is(
+  .games-card,
+  .games-party-card,
+  .ludo-lobby-card,
+  .uno-lobby-card,
+  .dominoes-lobby-card,
+  .games-type-choice,
+  .games-conversation-item,
+  .notification-center-item
+) {
+  transition:
+    transform var(--g-motion),
+    border-color var(--g-motion),
+    background-color var(--g-motion),
+    box-shadow var(--g-motion);
+}
+
+#app :is(.games-card, .games-party-card, .ludo-lobby-card, .uno-lobby-card, .dominoes-lobby-card):hover {
+  transform: translateY(-1px);
+  box-shadow: var(--g-shadow-soft);
+}
+
+#app :is(button, a, input, select, textarea):disabled {
+  transform: none;
+  filter: none;
+  opacity: .52;
+}
+
+@media (max-width: 900px) {
+  #app .games-inbox-layout {
+    grid-template-columns: minmax(190px, 235px) minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  #workspace-switcher {
+    gap: 4px;
+    padding: 4px;
+    border-radius: 15px;
+  }
+
+  #workspace-switcher .workspace-switch-tab {
+    min-height: 39px;
+    padding: 7px 4px;
+    border-radius: 10px;
+    font-size: 11px;
+  }
+
+  #app .games-workspace {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  #app .games-hub-header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 17px;
+    padding-bottom: 15px;
+  }
+
+  #app .games-hub-header > button {
+    width: 100%;
+  }
+
+  #app .games-invitations-panel,
+  #app .games-party-panel {
+    padding: 12px;
+    border-radius: 15px;
+  }
+
+  #app .games-inbox-layout {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+    border-radius: 15px;
+  }
+
+  #app .games-inbox-sidebar {
+    border-right: 0;
+    border-bottom: 1px solid var(--g-ui-border);
+    padding: 12px;
+  }
+
+  #app .games-conversation-detail {
+    padding: 13px;
+  }
+
+  #app .games-detail-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  #app .games-list,
+  #app .games-invitations-list,
+  #app .games-party-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #app :is(.games-card, .games-party-card, .ludo-lobby-card, .uno-lobby-card, .dominoes-lobby-card) {
+    padding: 12px;
+  }
+
+  #app :is(
+    .games-card-actions,
+    .games-form-actions,
+    .games-invitation-actions,
+    .games-party-header-actions,
+    .games-party-card-actions,
+    .ludo-actions,
+    .uno-actions,
+    .dominoes-actions
+  ) {
+    gap: 7px;
+  }
+
+  #app :is(
+    .games-card-actions button,
+    .games-form-actions button,
+    .games-invitation-actions button,
+    .games-party-header-actions button,
+    .games-party-card-actions button,
+    .ludo-actions button,
+    .uno-actions button,
+    .dominoes-actions button
+  ) {
+    min-height: 40px;
+  }
+
+  :is(.games-overlay, .uno-overlay, .ludo-overlay, .dominoes-overlay) :is(
+    .games-create-modal,
+    .games-board-modal,
+    .uno-modal,
+    .ludo-modal,
+    .dominoes-modal,
+    .games-party-dialog-card
+  ) {
+    max-height: calc(100dvh - 20px);
+    border-radius: 18px;
+    padding: 18px 14px;
+  }
+}
+
+@media (max-width: 390px) {
+  #app .games-card-top,
+  #app .games-party-card-header,
+  #app .ludo-lobby-card,
+  #app .uno-lobby-card,
+  #app .dominoes-lobby-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  #app .games-card-actions,
+  #app .games-party-card-actions,
+  #app .ludo-lobby-card > button,
+  #app .uno-lobby-card-actions,
+  #app .dominoes-lobby-card > button {
+    width: 100%;
+  }
+}
+
+/* Keep the user's chosen motion preference consistent in every surface. */
+@media (prefers-reduced-motion: reduce) {
+  #workspace-switcher,
+  #app .games-card,
+  #app .games-party-card,
+  #app .ludo-lobby-card,
+  #app .uno-lobby-card,
+  #app .dominoes-lobby-card,
+  .game-chat-toggle,
+  .game-chat-panel {
+    transition: none !important;
+  }
+}
