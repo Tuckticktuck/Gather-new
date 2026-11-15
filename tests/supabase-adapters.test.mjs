@@ -47,14 +47,14 @@ test("UNO, Ludo, and Dominoes drivers use their dedicated lifecycle RPCs", async
   const db = fakeDb();
   const drivers = createSupabaseGameDrivers(db);
 
-  await drivers.byGame.uno.create({ invitedUserIds: ["p2"], playerLimit: 6 });
+  await drivers.byGame.uno.create({ invitedUserIds: ["p2"], playerLimit: 2 });
   await drivers.byGame.uno.join("uno-1", { color: "#40826D" });
   await drivers.byGame.uno.setReady("uno-1", true);
   await drivers.byGame.uno.start("uno-1");
   await drivers.byGame.uno.spectate("uno-1");
   await drivers.byGame.uno.stopSpectating("uno-1");
 
-  await drivers.byGame.ludo.create({ invitedUserIds: ["p2", "p3"], playerLimit: 4, color: "#38BDF8" });
+  await drivers.byGame.ludo.create({ invitedUserIds: ["p2"], playerLimit: 2, color: "#38BDF8" });
   await assert.rejects(drivers.byGame.ludo.join("ludo-1"), /Ludo player color/);
   await drivers.byGame.ludo.join("ludo-1", { color: "#39A96B" });
   await drivers.byGame.ludo.decline("ludo-1");
@@ -73,13 +73,13 @@ test("UNO, Ludo, and Dominoes drivers use their dedicated lifecycle RPCs", async
     p_conversation_id: null,
     p_join_mode: "invite",
     p_invited_user_ids: ["p2"],
-    p_max_players: 6
+    p_max_players: 2
   });
   assert.deepEqual(db.calls[6].params, {
     p_conversation_id: null,
     p_join_mode: "invite",
-    p_invited_user_ids: ["p2", "p3"],
-    p_max_players: 4,
+    p_invited_user_ids: ["p2"],
+    p_max_players: 2,
     p_creator_color: "#38BDF8"
   });
   assert.deepEqual(db.calls[10].params, {
