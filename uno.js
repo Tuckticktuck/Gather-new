@@ -46,6 +46,8 @@ async function call(n,a){
 }
 function mount(){if($("uno-overlay"))return;const o=el("div","overlay uno-overlay");o.id="uno-overlay";o.hidden=true;o.innerHTML='<section class="modal uno-modal tag-modal" role="dialog" aria-modal="true" aria-labelledby="uno-dialog-title"><button id="uno-close" class="close" type="button" aria-label="Close">×</button><div id="uno-content"></div></section>';document.body.append(o);$("uno-close").onclick=close;o.onclick=e=>{if(e.target===o)close();};}
 function close(){engineModule?.unmount?.();if($("uno-overlay"))$("uno-overlay").hidden=true;$("uno-content")?.classList.remove("uno-in-match");activeGameId=null;state=null;playersPanelOpen=false;selectedCardId=null;handScrollPosition=0;}
+function leaveActiveMatchView(){engineModule?.unmount?.();activeGameId=null;state=null;playersPanelOpen=false;selectedCardId=null;handScrollPosition=0;}
+
 const eligible=()=>chats().filter(c=>(c.members||[]).some(m=>m.user_id===uid())&&(c.members||[]).length>=2);
 const conversationTitle=c=>c.kind==="group"?(c.title||c.name||"Group chat"):name((c.members||[]).find(m=>m.user_id!==uid())?.user_id);
 const byName=(a,b)=>a.localeCompare(b,undefined,{sensitivity:"base"});
@@ -66,12 +68,12 @@ const people=el("section","uno-people-picker tag-people-picker");people.append(c
 const max=el("select");[2,3,4,5,6,8,10].forEach(n=>{const o=el("option","",n+" players");o.value=n;if(n===10)o.selected=true;max.append(o);});
 form.append(people,field("Player limit",max));
 const actions=el("div","uno-actions tag-actions"),back=el("button","secondary-action","Back"),submit=el("button","primary","Create lobby");back.type="button";back.onclick=renderLobby;submit.type="submit";actions.append(back,submit);form.append(actions);
-form.onsubmit=async e=>{e.preventDefault();if(busy)return;if(!selected.length){toast("Choose at least one person to invite.");return;}if(selected.length+1>Number(max.value)){toast("The player limit must include you and every invited player.");return;}busy=true;submit.disabled=true;try{const g=await call("gather_uno_create",{p_conversation_id:null,p_join_mode:"invite",p_invited_user_ids:selected.slice(),p_max_players:Number(max.value)});activeGameId=g.id;selectedCardId=null;await loadGame();}catch(err){toast(err.message||"Could not create lobby.");}finally{busy=false;submit.disabled=false;}};
+form.onsubmit=async e=>{e.preventDefault();if(busy)return;if(!selected.length){toast("Choose at least one person to invite.");return;}if(selected.length+1>Number(max.value)){toast("The player limit must include you and every invited player.");return;}busy=true;submit.disabled=true;try{const g=await call("gather_uno_create",{p_conversation_id:null,p_join_mode:"invite",p_invited_user_ids:selected.slice(),p_max_players:Number(max.value)});activeGameId=g.id;selectedCardId=null;await loadGame();void startEngineWatch(g.id);}catch(err){toast(err.message||"Could not create lobby.");}finally{busy=false;submit.disabled=false;}};
 root.append(form);window.GatherPeoplePicker?.create({db:ctx.db,button:choose,summary,onChange:ids=>selected.splice(0,selected.length,...ids)});
 }
 async function enter(id){if(busy)return;busy=true;try{engineModule?.unmount?.();await call("gather_uno_join",{p_game_id:id,p_color:"#40826D"});await ctx.db.from("notifications").update({read_at:new Date().toISOString()}).eq("recipient_id",uid()).eq("kind","uno_invite").eq("body",id).is("read_at",null);activeGameId=id;selectedCardId=null;await loadGame();void startEngineWatch(id);await refresh();}catch(e){toast(e.message||"Could not join UNO.");}finally{busy=false;}}
 async function watchGame(id){if(busy)return;busy=true;try{engineModule?.unmount?.();await call("gather_uno_spectate",{p_game_id:id});activeGameId=id;selectedCardId=null;await loadGame();void startEngineWatch(id);await refresh();}catch(e){toast(e.message||"Could not watch this UNO match.");}finally{busy=false;}}
-async function stopWatching(){if(!activeGameId)return;const id=activeGameId;try{await call("gather_uno_stop_spectating",{p_game_id:id});engineModule?.unmount?.();activeGameId=null;state=null;selectedCardId=null;await refresh();toast("You stopped watching the UNO match.");}catch(e){toast(e.message||"Could not stop spectating.");}}
+async function stopWatching(){if(!activeGameId)return;const id=activeGameId;try{await call("gather_uno_stop_spectating",{p_game_id:id});engineModule?.unmount?.();leaveActiveMatchView();await refresh();toast("You stopped watching the UNO match.");}catch(e){toast(e.message||"Could not stop spectating.");}}
 function acceptLoadedState(next,gameId,render=true){if(activeGameId!==gameId||!next)return;state=next;void loadPlayerAvatars(next.players||[],gameId);if(selectedCardId&&!next.hand?.some(card=>card.id===selectedCardId))selectedCardId=null;if(render)renderGame();}
 async function loadGame(){if(!activeGameId)return;const gameId=activeGameId;try{const module=await ensureEngineModule();const next=await module.load(gameId);acceptLoadedState(next,gameId);}catch(e){if(activeGameId===gameId)toast(e.message||"Could not load UNO.");}}
 async function startEngineWatch(gameId){try{const module=await ensureEngineModule();if(activeGameId!==gameId)return;await module.mount({matchId:gameId,onSnapshot:next=>acceptLoadedState(next,gameId),onError:error=>{if(activeGameId===gameId)toast(error?.message||"UNO could not synchronize.");}});}catch(error){if(activeGameId===gameId)toast(error?.message||"The shared UNO engine could not be loaded.");}}
@@ -199,7 +201,7 @@ function renderGame(){
   const actions=el("div","uno-actions tag-actions tag-lobby-actions");let lobbyExit=null;
   if(host&&!finished){
     const end=el("button","secondary-action",started?"End match":"Cancel lobby");
-    end.onclick=async()=>{if(!confirm(started?"End this UNO game for everyone?":"Cancel this UNO lobby?"))return;end.disabled=true;try{await call("gather_uno_end",{p_game_id:activeGameId});activeGameId=null;state=null;await refresh();}catch(e){toast(e.message||"Could not end game.");end.disabled=false;}};
+    end.onclick=async()=>{if(!confirm(started?"End this UNO game for everyone?":"Cancel this UNO lobby?"))return;end.disabled=true;try{await call("gather_uno_end",{p_game_id:activeGameId});leaveActiveMatchView();await refresh();}catch(e){toast(e.message||"Could not end game.");end.disabled=false;}};
     lobbyExit=end;
   }else if(!host&&!finished&&g.status==="active"){
     const leave=el("button","secondary-action","Leave lobby");
