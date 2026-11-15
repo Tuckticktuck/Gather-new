@@ -90,6 +90,33 @@ test("UNO, Ludo, and Dominoes drivers use their dedicated lifecycle RPCs", async
   });
 });
 
+test("Battleship adapter exposes dedicated private-state and typed-action RPCs", async () => {
+  const db = fakeDb();
+  const driver = createSupabaseGameDrivers(db).byGame.battleship;
+  const matchId = "11111111-1111-4111-8111-111111111111";
+  const fleet = [
+    { cells: [0, 1, 2, 3, 4] }, { cells: [10, 11, 12, 13] },
+    { cells: [20, 21, 22] }, { cells: [30, 31, 32] }, { cells: [40, 41] }
+  ];
+  await driver.loadPrivateState(matchId);
+  await driver.action(matchId, "place_fleet", { ships: fleet });
+  await driver.action(matchId, "fire", { cell: 54 });
+  assert.deepEqual(db.calls.map(call => call.name), [
+    "gather_game_battleship_private_state",
+    "gather_game_battleship_action",
+    "gather_game_battleship_action"
+  ]);
+  assert.deepEqual(db.calls[1].params, {
+    p_game_id: matchId, p_action: "place_fleet", p_payload: { ships: fleet }
+  });
+  assert.deepEqual(db.calls[2].params, {
+    p_game_id: matchId, p_action: "fire", p_payload: { cell: 54 }
+  });
+  await assert.rejects(driver.action(matchId, "replace_state", {}), /Unsupported Battleship action/);
+  await assert.rejects(driver.action(matchId, "fire", { cell: 100 }), /valid Battleship square/);
+  assert.equal(typeof createSupabaseGameDrivers(fakeDb()).byGame.chess.action, "undefined");
+});
+
 test("the compatibility drivers do not expose the unsafe generic full-state update RPC", () => {
   const drivers = createSupabaseGameDrivers(fakeDb());
   for (const driver of Object.values(drivers.byGame)) {
