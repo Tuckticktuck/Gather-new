@@ -304,7 +304,7 @@
     if (busy) return;
     const options = supportedGames(party);
     if (options.length < 2) {
-      toast("At least two joined party members are needed to start a game vote.");
+      toast("A vote needs at least two compatible game options. Quick Play can still launch a game that fits your party.");
       return;
     }
     busy = true;
