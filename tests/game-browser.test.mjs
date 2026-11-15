@@ -41,7 +41,7 @@ test("Open lobby actions use authoritative game lifecycle RPCs", () => {
 });
 
 test("Game browser assets are versioned consistently in the page and offline shell", () => {
-  assert.match(html, /games\.js\?v=20261115-game-browser-1/);
+  assert.match(html, /games\.js\?v=20261115-chess-checkers-modules-1/);
   assert.match(html, /games\.css\?v=20261115-game-browser-1/);
   assert.match(serviceWorker, /games\.js\?v=20261115-game-browser-1/);
   assert.match(serviceWorker, /games\.css\?v=20261115-game-browser-1/);
