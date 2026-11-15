@@ -4074,3 +4074,39 @@ html[data-theme="light"] .offline-status{color:#59421d;background:#fff4d8;border
   }
   .composer:focus-within{border:0;box-shadow:none}
 }
+
+
+/* Black, borderless message composer: no raised panel or focus backdrop. */
+.composer{
+  background:#000 !important;
+  border:0 !important;
+  border-radius:0 !important;
+  box-shadow:none !important;
+}
+.composer:focus-within{background:#000 !important;border:0 !important;box-shadow:none !important}
+.composer .composer-main-row textarea{
+  color:var(--text);
+  background:#000 !important;
+  border:0 !important;
+  border-radius:0 !important;
+  box-shadow:none !important;
+}
+.composer .composer-main-row textarea:focus{
+  background:#000 !important;
+  border:0 !important;
+  outline:none !important;
+  box-shadow:none !important;
+}
+.composer .composer-main-row .composer-more-trigger{
+  color:var(--text) !important;
+  background:#000 !important;
+  border:0 !important;
+  border-radius:0 !important;
+  box-shadow:none !important;
+}
+.composer .composer-main-row .composer-more-trigger:hover,
+.composer .composer-main-row .composer-more-trigger[aria-expanded="true"]{
+  background:#000 !important;
+  border:0 !important;
+  box-shadow:none !important;
+}
