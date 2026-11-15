@@ -224,7 +224,7 @@ function renderGame(){
     lobbyExit=end;
   }else if(!host&&!finished&&g.status==="active"){
     const leave=el("button","secondary-action","Leave lobby");
-    leave.onclick=async()=>{if(!confirm("Leave this UNO lobby?"))return;leave.disabled=true;try{await call("gather_uno_leave",{p_game_id:activeGameId});leaveActiveMatchView();await refresh();toast("You left the UNO lobby.");}catch(e){toast(e.message||"Could not leave this lobby.");leave.disabled=false;}};
+    leave.onclick=async()=>{if(!confirm(spectating?"Stop watching this UNO match?":"Leave this UNO lobby?"))return;leave.disabled=true;try{await call(spectating?"gather_uno_stop_spectating":"gather_uno_leave",{p_game_id:activeGameId});leaveActiveMatchView();await refresh();toast(spectating?"You stopped watching the UNO match.":"You left the UNO lobby.");}catch(e){toast(e.message||"Could not leave this lobby.");leave.disabled=false;}};
     lobbyExit=leave;
   }
   if(!started&&!finished){
