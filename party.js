@@ -204,8 +204,7 @@
     if (count === 2 && sharedChat) {
       TWO_PLAYER.forEach(type => result.push(type));
     }
-    if (count <= 20) result.push("uno");
-    if (count <= 4) result.push("ludo");
+    if (count === 2) result.push("uno", "ludo");
     return result;
   }
 
