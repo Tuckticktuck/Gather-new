@@ -13,6 +13,14 @@ function requiredString(value, field) {
   return value;
 }
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function requiredMatchId(value) {
+  const id = requiredString(value, "matchId");
+  if (!UUID_PATTERN.test(id)) throw new TypeError("matchId must be a valid match UUID.");
+  return id;
+}
+
 function uniqueUserIds(value) {
   if (value === undefined || value === null) return [];
   if (!Array.isArray(value) || value.some(id => typeof id !== "string" || !id.trim())) {
@@ -258,7 +266,7 @@ export function createSupabaseMatchRepository(db) {
   }
 
   async function getSnapshot(matchId, family) {
-    requiredString(matchId, "matchId");
+    requiredMatchId(matchId);
     if (family === "legacy-two-player") {
       const row = checkQuery(
         await db.from("gather_games").select("*").eq("id", matchId).maybeSingle(),
@@ -284,7 +292,7 @@ export function createSupabaseMatchRepository(db) {
   }
 
   function subscribe(matchId, family, onChange) {
-    requiredString(matchId, "matchId");
+    requiredMatchId(matchId);
     if (typeof onChange !== "function") throw new TypeError("onChange must be a function.");
     if (!["legacy-two-player", "shared-multiplayer"].includes(family)) {
       throw new TypeError("Unknown match persistence family: " + family);
