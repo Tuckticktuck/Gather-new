@@ -88,6 +88,9 @@ assert.ok(html.includes("games.js?v=20261115-multiplayer-capacities-1") && servi
 assert.ok(html.includes("games.css?v=20261115-multiplayer-capacities-1") && serviceWorker.includes("./games.css?v=20261115-multiplayer-capacities-1"), "Unified game picker styles must be versioned in the offline cache");
 const unifiedGameTypes = [...gamesClient.matchAll(/data-game-type="([^"]+)"/g)].map(match => match[1]);
 assert.deepEqual(unifiedGameTypes, ["chess", "checkers", "tic_tac_toe", "connect_four", "battleship", "uno", "ludo", "dominoes"], "New Game must show all games in one unified catalog");
+assert.match(gamesClient, /UNO<\\/strong><small>2–10 players/);
+assert.match(gamesClient, /Ludo<\\/strong><small>2–4 players/);
+assert.match(gamesClient, /Dominoes<\\/strong><small>2–4 players/);
 assert.doesNotMatch(gamesClient, /games-choose-two-player|games-choose-multiplayer|games-multiplayer-chooser/, "New Game must not split the catalog into player-count sections");
 assert.ok(gamesClient.includes("openCreateModal(undefined, gameType)") && gamesClient.includes("openMultiplayerGame(gameType)"), "Each selected game must launch the shared opponent setup automatically");
 assert.match(sharedLobbyUi, /Every joined player must be ready before the host can start/);
