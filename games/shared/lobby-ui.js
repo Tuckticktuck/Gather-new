@@ -37,7 +37,8 @@
 
     const roster = players.filter(player => ["joined", "invited", "spectating"].includes(player.status));
     const hostId = game.created_by || game.host_id || game.player_one_id;
-    const playerIds = [hostId, game.player_two_id || null];
+    const invitedOpponent = roster.find(player => player.user_id !== hostId && ["joined", "invited"].includes(player.status));
+    const playerIds = [hostId, game.player_two_id || invitedOpponent?.user_id || null];
     const cards = el("div", "gather-shared-lobby-players");
     playerIds.forEach((id, index) => {
       const player = roster.find(item => item.user_id === id);
