@@ -8,7 +8,8 @@
     connect_four: { name: "Connect Four", description: "Drop four discs in a row to win.", mark: "●" },
     battleship: { name: "Battleship", description: "Place your fleet, then find and hit every ship square.", mark: "⚓" },
     ludo: { name: "Ludo", description: "Race all four tokens around the board and into home. Roll a six to leave base.", mark: "●" },
-    dominoes: { name: "Dominoes", description: "Draw and match neon tiles around the table.", mark: "▰" }
+    dominoes: { name: "Dominoes", description: "Draw and match neon tiles around the table.", mark: "▰" },
+    uno: { name: "UNO", description: "Play cards and race to empty your hand.", mark: "▦" }
   };
   const PIECES = {
     K: "♔", Q: "♕", R: "♖", B: "♗", N: "♘", P: "♙",
@@ -39,6 +40,7 @@
   let hubSearchQuery = "";
   let sharedBoardRuntime = null;
   let sharedBoardRuntimePromise = null;
+  const multiplayerLobbyModules = new Map();
   let activeMatchSync = null;
   let activeGameModule = null;
   let activeGameModuleInstance = null;
@@ -187,7 +189,7 @@
       const overlay = node("div", "overlay games-overlay");
       overlay.id = "games-create-overlay";
       overlay.hidden = true;
-      overlay.innerHTML = '<section class="modal games-create-modal" role="dialog" aria-modal="true" aria-labelledby="games-create-title"><button id="games-create-close" class="close" type="button" aria-label="Close">×</button><p class="eyebrow">NEW MATCH</p><h2 id="games-create-title">Invite someone to play</h2><p class="muted tiny">Choose a conversation, a game and one opponent. In a group chat, everyone else can watch the match.</p><form id="games-create-form"><label>Choose a chat<select id="games-conversation" required></select><small class="games-picker-note">Chats are grouped by type. Choose a person from that chat in the next field.</small></label><label>Game<select id="games-type" required><option value="chess">Chess</option><option value="checkers">Checkers</option><option value="tic_tac_toe">Tic-Tac-Toe</option><option value="connect_four">Connect Four</option><option value="battleship">Battleship</option></select></label><label>Person to invite<select id="games-opponent" required></select></label><p id="games-spectator-note" class="games-spectator-note"></p><p id="games-create-status" class="status" role="status"></p><div class="games-form-actions"><button id="games-create-cancel" class="secondary-action" type="button">Cancel</button><button id="games-create-submit" class="primary" type="submit">Send invitation</button></div></form></section>';
+      overlay.innerHTML = '<section class="modal games-create-modal" role="dialog" aria-modal="true" aria-labelledby="games-create-title"><button id="games-create-close" class="close" type="button" aria-label="Close">×</button><p class="eyebrow">NEW MATCH</p><h2 id="games-create-title">Invite someone to play</h2><p class="muted tiny">Choose a conversation, a game and one opponent. In a group chat, everyone else can watch the match.</p><form id="games-create-form"><label>Choose a chat<select id="games-conversation" required></select><small class="games-picker-note">Chats are grouped by type. Choose a person from that chat in the next field.</small></label><label>Game<select id="games-type" required><option value="chess">Chess</option><option value="checkers">Checkers</option><option value="tic_tac_toe">Tic-Tac-Toe</option><option value="connect_four">Connect Four</option><option value="battleship">Battleship</option><option value="uno">UNO</option><option value="ludo">Ludo</option><option value="dominoes">Dominoes</option></select></label><label>Person to invite<select id="games-opponent" required></select></label><p id="games-spectator-note" class="games-spectator-note"></p><p id="games-create-status" class="status" role="status"></p><div class="games-form-actions"><button id="games-create-cancel" class="secondary-action" type="button">Cancel</button><button id="games-create-submit" class="primary" type="submit">Send invitation</button></div></form></section>';
       document.body.append(overlay);
       $("games-create-close").addEventListener("click", closeCreateModal);
       $("games-create-cancel").addEventListener("click", closeCreateModal);
@@ -250,7 +252,7 @@
     if (!document.hidden && navigator.onLine && ctx && userId()) scheduleGamesRefresh();
   }
 
-  const SHARED_BOARD_GAME_IDS = new Set(["tic_tac_toe", "connect_four", "battleship"]);
+  const SHARED_BOARD_GAME_IDS = new Set(["chess", "checkers", "tic_tac_toe", "connect_four", "battleship"]);
 
   function isSharedBoardGame(gameType) {
     return SHARED_BOARD_GAME_IDS.has(gameType);
@@ -473,17 +475,36 @@
 
   function openMultiplayerGame(gameType) {
     if (!ctx || !userId()) return;
-    const launchers = {
-      uno: () => window.GatherUno?.open?.(),
-      ludo: () => window.GatherLudo?.open?.(),
-      dominoes: () => window.GatherDominoes?.open?.()
+    openCreateModal(undefined, gameType);
+  }
+
+  async function ensureMultiplayerLobbyModule(gameType) {
+    if (multiplayerLobbyModules.has(gameType)) return multiplayerLobbyModules.get(gameType);
+    if (!ctx?.db) throw new Error("The Gather game database is not ready.");
+    const loaders = {
+      uno: () => import("./games/modules/uno/index.mjs"),
+      ludo: () => import("./games/modules/ludo/index.mjs"),
+      dominoes: () => import("./games/modules/dominoes/index.mjs")
     };
-    const launch = launchers[gameType];
-    if (!launch) {
-      toast("That multiplayer game is not available yet.");
-      return;
-    }
-    launch();
+    const loader = loaders[gameType];
+    if (!loader) throw new Error("That game does not have a multiplayer lobby.");
+    const api = await loader();
+    const factory = gameType === "uno" ? api.createUnoModule
+      : gameType === "ludo" ? api.createLudoModule : api.createDominoesModule;
+    if (typeof factory !== "function") throw new Error("The game lobby module could not be loaded.");
+    const instance = factory({ db: ctx.db, getViewerId: () => userId() });
+    multiplayerLobbyModules.set(gameType, instance.module || instance);
+    return multiplayerLobbyModules.get(gameType);
+  }
+
+  async function openCreatedMultiplayerGame(gameType, gameId) {
+    const launchers = {
+      uno: () => window.GatherUno?.openGame?.(gameId),
+      ludo: () => window.GatherLudo?.openGame?.(gameId),
+      dominoes: () => window.GatherDominoes?.openGame?.(gameId)
+    };
+    if (typeof launchers[gameType] !== "function") return;
+    launchers[gameType]();
   }
 
   function openGameTypeChooser() {
@@ -558,7 +579,7 @@
     busy = true;
     const submit = $("games-create-submit");
     submit.disabled = true;
-    $("games-create-status").textContent = "Sending invitation…";
+    $("games-create-status").textContent = "Creating your lobby and inviting your opponent…";
     let game = null;
     let createError = null;
     try {
@@ -566,14 +587,20 @@
         const runtime = await ensureSharedBoardRuntime();
         const mutation = await runtime.lobbyService.create(gameType, { conversationId, opponentId });
         game = mutation.result;
-      } else {
-        const result = await ctx.db.rpc("gather_game_create", {
-          p_conversation_id: conversationId,
-          p_game_type: gameType,
-          p_player_two_id: opponentId
+      } else if (["uno", "ludo", "dominoes"].includes(gameType)) {
+        const module = await ensureMultiplayerLobbyModule(gameType);
+        const mutation = await module.create({
+          conversationId,
+          joinMode: "invite",
+          invitedUserIds: [opponentId],
+          playerLimit: 2,
+          mode: "free_for_all",
+          preset: "classic",
+          color: "#39A96B"
         });
-        if (result.error) throw new Error(result.error.message || "The game invitation could not be sent.");
-        game = Array.isArray(result.data) ? result.data[0] : result.data;
+        game = mutation.result?.game || mutation.result;
+      } else {
+        throw new Error("That game is not available yet.");
       }
     } catch (error) {
       createError = error;
@@ -587,12 +614,14 @@
     }
     closeCreateModal();
     if (game?.id) {
-      selectedGameConversationId = game.conversation_id;
+      selectedGameConversationId = game.conversation_id || conversationId;
       games = [game, ...games.filter(item => item.id !== game.id)];
       renderAll();
     }
     await refreshGames(false);
-    toast(gameName(gameType) + " invitation sent to " + memberName(opponentId) + ".");
+    toast(gameName(gameType) + " lobby created. Waiting for " + memberName(opponentId) + ".");
+    if (["uno", "ludo", "dominoes"].includes(gameType)) await openCreatedMultiplayerGame(gameType, game.id);
+    else if (game?.id) openGame(game);
     if (activeChat?.id === conversationId) renderChatTray();
   }
 
