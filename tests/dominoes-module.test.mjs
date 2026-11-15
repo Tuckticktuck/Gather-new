@@ -53,7 +53,7 @@ test("Dominoes module delegates lobby creation to shared validation and driver",
   const db = fakeDb();
   const result = createDominoesModule({ db, getViewerId: () => "host" });
   const created = await result.module.create({
-    invitedUserIds: ["player"], playerLimit: 4, mode: "free_for_all", preset: "classic"
+    invitedUserIds: ["player"], playerLimit: 2, mode: "free_for_all", preset: "classic"
   });
   assert.equal(created.matchId, "created-match");
   assert.equal(db.calls.find(call => call.name === "gather_dominoes_create").params.p_mode, "free_for_all");
