@@ -223,8 +223,8 @@
         const choice = event.target.closest("[data-game-type]");
         if (!choice) return;
         const gameType = choice.dataset.gameType;
-        closeGameTypeChooser();
         const conversationId = gameTypeChooserConversationId;
+        closeGameTypeChooser();
         openCreateModal(conversationId, gameType);
       });
     }
