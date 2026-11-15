@@ -683,16 +683,18 @@
   function openCreateModal(defaultConversationId, gameType = "chess") {
     if (!ctx || !userId()) return;
     const eligible = chatList().filter(chat => (chat.members || []).some(member => member.user_id === userId()) && (chat.members || []).some(member => member.user_id !== userId()));
-    if (!eligible.length) {
-      toast("Start or join a conversation before creating a game lobby.");
+    const requestedType = TYPES[gameType] ? gameType : "chess";
+    const canCreateOpen = ["uno", "ludo", "dominoes"].includes(requestedType);
+    if (!eligible.length && !canCreateOpen) {
+      toast("Start or join a conversation before creating this game lobby.");
       return;
     }
-    selectedDraftGameType = TYPES[gameType] ? gameType : "chess";
+    selectedDraftGameType = requestedType;
     const select = $("games-conversation");
     select.replaceChildren();
     appendSortedChatOptions(select, eligible);
     const chosen = eligible.find(chat => chat.id === defaultConversationId) || eligible[0];
-    select.value = chosen.id;
+    if (chosen) select.value = chosen.id;
     draftSelectedInvitees = [];
     $("games-create-title").textContent = gameName(selectedDraftGameType) + " lobby";
     $("games-create-subtitle").textContent = "Choose the player seats and invite people. Everyone readies up in the same lobby before the host starts.";
@@ -700,6 +702,7 @@
     $("games-draft-host-name").textContent = hostName + " (you)";
     $("games-draft-host-avatar").textContent = hostName.trim().slice(0, 1).toUpperCase();
     renderGameSetupSettings(selectedDraftGameType);
+    if (!eligible.length && $("games-join-mode")) $("games-join-mode").value = "open";
     updateOpponentOptions();
     $("games-create-status").textContent = "";
     $("games-create-submit").textContent = "Invite opponent";
