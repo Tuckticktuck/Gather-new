@@ -9,7 +9,7 @@ const [migration, client, games, app, html, worker, lobbyMigration] = await Prom
   readFile(new URL("../app.js", import.meta.url), "utf8"),
   readFile(new URL("../index.html", import.meta.url), "utf8"),
   readFile(new URL("../service-worker.js", import.meta.url), "utf8"),
-  readFile(new URL("../supabase/migrations/20261115160000_restore_multiplayer_game_capacities.sql", import.meta.url), "utf8")
+  readFile(new URL("../supabase/migrations/20261115144745_restore_multiplayer_game_capacities_20261115160000.sql", import.meta.url), "utf8")
 ]);
 
 test("Dominoes stores hands and boneyard in RLS-protected tables", () => {
