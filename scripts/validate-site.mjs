@@ -95,8 +95,8 @@ assert.ok(gamesClient.includes("module.action(game.id, action, payload)"), "Batt
 assert.doesNotMatch(gamesClient, /ctx\.db\.rpc\("gather_game_battleship_(?:private_state|action)"/, "Battleship screen must not bypass the module for private state or actions");
 assert.ok(battleshipModule.includes("canPerformMatchCommand") && battleshipModule.includes("loadPrivateState") && battleshipModule.includes("driver.action"), "Battleship module must use shared permission and dedicated action boundaries");
 assert.equal((serviceWorker.match(/"\.\/games\/modules\/battleship\/index\.mjs"/g) || []).length, 2, "Battleship module must be present in both offline cache lists");
-assert.ok(html.includes("games.js?v=20261115-chess-checkers-modules-1") && serviceWorker.includes("./games.js?v=20261115-chess-checkers-modules-1"), "Unified game picker client asset versions must align");
-assert.ok(html.includes("games.css?v=20261115-game-browser-1") && serviceWorker.includes("./games.css?v=20261115-game-browser-1"), "Unified game picker styles must be versioned in the offline cache");
+assert.ok(html.includes("games.js?v=20261115-chess-checkers-classic-themes-1") && serviceWorker.includes("./games.js?v=20261115-chess-checkers-classic-themes-1"), "Unified game picker client asset versions must align");
+assert.ok(html.includes("games.css?v=20261115-chess-checkers-theme-1") && serviceWorker.includes("./games.css?v=20261115-chess-checkers-theme-1"), "Unified game picker styles must be versioned in the offline cache");
 const unifiedGameTypes = [...gamesClient.matchAll(/data-game-type="([^"]+)"/g)].map(match => match[1]);
 assert.deepEqual(unifiedGameTypes, ["chess", "checkers", "tic_tac_toe", "connect_four", "battleship", "uno", "ludo", "dominoes"], "New Game must show all games in one unified catalog");
 assert.ok(gamesClient.includes("<strong>UNO</strong><small>2–10 players</small>"), "UNO picker must show its 2–10 player capacity");
