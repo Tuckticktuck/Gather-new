@@ -54,7 +54,7 @@ assert.match(party, /verifyPartyLobbyRoster/, "Quick Play must verify the reused
 assert.match(party, /if \(count <= 10\) result\.push\("uno"\)/, "Party Quick Play must support UNO parties up to ten players");
 assert.match(party, /if \(count <= 4\) result\.push\("ludo", "dominoes"\)/, "Party Quick Play must support Ludo and Dominoes up to four players");
 assert.match(party, /gather_dominoes_create/, "Party Quick Play must be able to create Dominoes matches");
-assert.doesNotMatch(party, /members\.length !== 2/, "Party Quick Play must not force every game to two players");
+assert.match(party, /if \(TWO_PLAYER\.has\(type\)\) \{[\s\S]*?members\.length !== 2/, "Only classic two-player games should require exactly two party members");
 assert.match(picker, /selected\.size >= selectionLimit/, "The people picker must enforce its selection limit");
 assert.match(partyMigration, /m\.role='leader'/, "Party vote creation must require the leader role in SQL");
 assert.match(partyCapacityMigration, /'dominoes'/, "Party voting must include Dominoes as a supported game");
