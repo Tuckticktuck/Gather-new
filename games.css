@@ -988,3 +988,66 @@
 .games-opponent-option span{min-width:0;overflow-wrap:anywhere;font-size:13px}
 .games-opponent-option:has(input:checked){border-color:var(--accent-border);background:var(--accent-surface)}
 @media(max-width:480px){.games-opponent-list{grid-template-columns:1fr;max-height:190px}}
+
+
+/* Games homepage catalog and open-lobby directory */
+.games-catalog-panel,.games-lobby-browser{
+  width:100%;max-width:1100px;margin:0 auto 24px;padding:18px;
+  border:1px solid var(--line);border-radius:17px;
+  background:color-mix(in srgb,var(--accent-surface) 16%,var(--panel));
+}
+.games-catalog-heading,.games-browser-heading{
+  display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:14px;
+}
+.games-catalog-heading h2,.games-browser-heading h2{margin:0 0 5px;font-size:18px}
+.games-catalog-heading p,.games-browser-heading p{margin:0;line-height:1.5}
+.games-catalog-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,225px),1fr));gap:11px;
+}
+.games-catalog-card{
+  display:flex;align-items:center;gap:12px;min-width:0;min-height:104px;padding:14px;
+  border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--text);
+  text-align:left;cursor:pointer;transition:border-color .16s ease,background .16s ease,transform .16s ease;
+}
+.games-catalog-card:hover{border-color:var(--accent);background:var(--accent-surface);transform:translateY(-1px)}
+.games-catalog-card:focus-visible,.games-browser-back:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.games-catalog-mark{
+  display:grid;place-items:center;flex:none;width:44px;height:44px;border:1px solid var(--accent-border);
+  border-radius:12px;background:var(--accent-surface);color:var(--accent-text);font-size:23px;font-weight:800;
+}
+.games-catalog-copy{display:grid;gap:4px;min-width:0}
+.games-catalog-copy strong{font-size:14px;line-height:1.2}
+.games-catalog-copy small{color:var(--accent-text);font-size:10px;font-weight:750}
+.games-catalog-description{display:-webkit-box;overflow:hidden;color:var(--muted);font-size:10px;line-height:1.4;-webkit-box-orient:vertical;-webkit-line-clamp:2}
+.games-catalog-arrow{margin-left:auto;color:var(--muted);font-size:23px}
+.games-browser-heading{align-items:flex-end}
+.games-browser-heading>div{min-width:0}
+.games-browser-heading .eyebrow{margin:10px 0 5px}
+.games-browser-heading .outline{flex:none}
+.games-browser-back{
+  padding:5px 0;border:0;background:transparent;color:var(--accent-text);font-size:12px;font-weight:750;cursor:pointer;
+}
+.games-lobby-list{display:grid;gap:10px}
+.games-lobby-directory-card{
+  display:flex;align-items:center;justify-content:space-between;gap:14px;min-width:0;padding:14px;
+  border:1px solid var(--line);border-radius:13px;background:var(--panel);
+}
+.games-lobby-directory-copy{display:grid;gap:5px;min-width:0}
+.games-lobby-directory-copy strong{font-size:13px;overflow-wrap:anywhere}
+.games-lobby-directory-copy small{color:var(--muted);font-size:10px;line-height:1.45}
+.games-lobby-directory-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;flex:none}
+.games-lobby-directory-actions button{width:auto;min-width:105px;padding:9px 12px}
+.games-lobby-full{color:var(--muted);font-size:11px;font-weight:700}
+.games-catalog-panel[hidden],.games-lobby-browser[hidden],.games-workspace .games-inbox-layout[hidden]{display:none!important}
+@media(max-width:620px){
+  .games-catalog-panel,.games-lobby-browser{padding:13px;border-radius:14px}
+  .games-catalog-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .games-catalog-card{align-items:flex-start;min-height:104px;padding:10px;gap:8px}
+  .games-catalog-mark{width:34px;height:34px;border-radius:9px;font-size:18px}
+  .games-catalog-copy strong{font-size:12px}
+  .games-catalog-description{font-size:9px}
+  .games-catalog-arrow{display:none}
+  .games-lobby-directory-card{align-items:flex-start;flex-direction:column}
+  .games-lobby-directory-actions{justify-content:flex-start;width:100%}
+  .games-lobby-directory-actions button{flex:1 1 auto}
+}
