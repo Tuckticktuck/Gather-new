@@ -9,7 +9,7 @@ const [migration, client, games, app, html, worker, lobbyMigration] = await Prom
   readFile(new URL("../app.js", import.meta.url), "utf8"),
   readFile(new URL("../index.html", import.meta.url), "utf8"),
   readFile(new URL("../service-worker.js", import.meta.url), "utf8"),
-  readFile(new URL("../supabase/migrations/20261115135203_unified_two_player_game_lobbies.sql", import.meta.url), "utf8")
+  readFile(new URL("../supabase/migrations/20261115160000_restore_multiplayer_game_capacities.sql", import.meta.url), "utf8")
 ]);
 
 test("Dominoes stores hands and boneyard in RLS-protected tables", () => {
@@ -53,11 +53,14 @@ test("Dominoes keeps move and round history and includes preset variants", () =>
   assert.match(client, /Move history/);
 });
 
-test("New Dominoes matches are two-player and use the shared lobby", () => {
-  assert.match(lobbyMigration, /Dominoes matches are two-player free-for-all only/);
-  assert.match(lobbyMigration, /p_mode<>'free_for_all'/);
+test("Dominoes restores four-player free-for-all and team lobbies", () => {
+  assert.match(lobbyMigration, /drop trigger if exists gather_multiplayer_players_two_player_limit/i);
+  assert.match(lobbyMigration, /p_mode not in \('free_for_all','teams'\)/i);
+  assert.match(lobbyMigration, /cardinality\(v_invites\) <> 3/);
   assert.match(client, /GatherSharedLobby\?\.render/);
-  assert.match(client, /selected\.length!==1/);
+  assert.match(client, /max:3/);
+  assert.match(client, /playerLimit:4/);
+  assert.match(client, /minPlayers:s\.mode==="teams"\?4:2/);
 });
 
 test("Dominoes uses Gather's multiplayer launcher, lifecycle and notifications", () => {
