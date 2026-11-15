@@ -32,12 +32,13 @@
     battleship: "Battleship",
     uno: "UNO",
     ludo: "Ludo",
+    dominoes: "Dominoes",
   };
   const GAME_MARKS = {
     chess: "♞", checkers: "◈", tic_tac_toe: "×○", connect_four: "●",
-    battleship: "⚓", uno: "▦", ludo: "◉"
+    battleship: "⚓", uno: "▦", ludo: "◉", dominoes: "▰"
   };
-  const MULTIPLAYER = new Set(["uno", "ludo"]);
+  const MULTIPLAYER = new Set(["uno", "ludo", "dominoes"]);
   const TWO_PLAYER = new Set(["chess", "checkers", "tic_tac_toe", "connect_four", "battleship"]);
 
   function memberName(member) {
@@ -196,15 +197,17 @@
   }
 
   function supportedGames(party) {
-    const joined = (party.members || []).filter(m => m.status === "joined");
+    const joined = (party.members || []).filter(member => member.status === "joined");
     const count = joined.length;
     if (count < 2) return [];
+
     const result = [];
-    const sharedChat = count === 2 ? findSharedChat(joined.map(m => m.user_id)) : null;
+    const sharedChat = count === 2 ? findSharedChat(joined.map(member => member.user_id)) : null;
     if (count === 2 && sharedChat) {
       TWO_PLAYER.forEach(type => result.push(type));
     }
-    if (count === 2) result.push("uno", "ludo");
+    if (count <= 10) result.push("uno");
+    if (count <= 4) result.push("ludo", "dominoes");
     return result;
   }
 
@@ -347,28 +350,28 @@
       toast("Only the party leader can start Quick Play.");
       return;
     }
-    const members = (party.members || []).filter(m => m.status === "joined");
-    if (members.length !== 2) {
-      toast("Gather Quick Play matches currently support exactly two players.");
+    const members = (party.members || []).filter(member => member.status === "joined");
+    if (members.length < 2) {
+      toast("At least two joined party members are needed for Quick Play.");
       return;
     }
     const options = supportedGames(party);
     if (!options.length) {
-      toast("There is no compatible game for the current party size.");
+      toast("No game supports all " + members.length + " joined players. UNO supports up to 10; Ludo and Dominoes support up to 4.");
       return;
     }
     const type = chooseQuickPlayGame(party, options);
     if (!type) return;
-    const otherIds = members.map(m => m.user_id).filter(id => id !== uid());
-    if (!otherIds.length) return toast("Invite someone to your party first.");
+    const otherIds = members.map(member => member.user_id).filter(id => id !== uid());
+    if (otherIds.length !== members.length - 1) return toast("Your party roster could not be verified. Refresh and try again.");
 
     busy = true;
     try {
       let gameId = null;
       if (TWO_PLAYER.has(type)) {
-        const chat = findSharedChat(members.map(m => m.user_id));
-        if (!chat || otherIds.length !== 1) {
-          throw new Error("This two-player game needs a shared conversation between both party members. Start a new vote or choose a multiplayer game.");
+        const chat = findSharedChat(members.map(member => member.user_id));
+        if (!chat || members.length !== 2 || otherIds.length !== 1) {
+          throw new Error("This two-player game needs a shared conversation between both party members. Choose a multiplayer game for a larger party.");
         }
         const response = await ctx.db.rpc("gather_game_create", {
           p_conversation_id: chat.id,
@@ -378,47 +381,56 @@
         if (response.error) throw response.error;
         gameId = response.data?.id || response.data?.[0]?.id;
         if (gameId) window.GatherGames?.openInvitation?.(gameId);
-      } else if (type === "uno") {
-        if (members.length !== 2) throw new Error("UNO matches are limited to two players.");
-        const existing = await ctx.db.from("gather_multiplayer_games")
-          .select("id").eq("created_by", uid()).eq("game_type", "uno").eq("status", "active")
-          .limit(1).maybeSingle();
-        if (existing.error) throw existing.error;
-        if (existing.data?.id) throw new Error("You already have an open UNO lobby. Finish or close it before starting another Quick Play match.");
-        const response = await ctx.db.rpc("gather_uno_create", {
-          p_conversation_id: null,
-          p_join_mode: "invite",
-          p_invited_user_ids: otherIds,
-          p_max_players: 2
-        });
-        if (response.error) throw response.error;
-        gameId = response.data?.id;
-        if (gameId) {
-          await verifyPartyLobbyRoster("gather_multiplayer_players", "game_id", gameId, [uid(), ...otherIds]);
-          window.GatherUno?.openGame?.(gameId);
+      } else if (MULTIPLAYER.has(type)) {
+        const limits = { uno: 10, ludo: 4, dominoes: 4 };
+        const maxPlayers = limits[type];
+        if (!maxPlayers || members.length > maxPlayers) {
+          throw new Error(GAME_LABELS[type] + " does not support " + members.length + " players.");
         }
-      } else if (type === "ludo") {
         const existing = await ctx.db.from("gather_multiplayer_games")
-          .select("id").eq("created_by", uid()).eq("game_type", "ludo").eq("status", "active")
+          .select("id").eq("created_by", uid()).eq("game_type", type).eq("status", "active")
           .limit(1).maybeSingle();
         if (existing.error) throw existing.error;
-        if (existing.data?.id) throw new Error("You already have an open Ludo lobby. Finish or close it before starting another Quick Play match.");
-        const response = await ctx.db.rpc("gather_ludo_create", {
-          p_conversation_id: null,
-          p_join_mode: "invite",
-          p_invited_user_ids: otherIds,
-          p_max_players: members.length,
-          p_creator_color: "#D9AD45"
-        });
+        if (existing.data?.id) {
+          throw new Error("You already have an open " + GAME_LABELS[type] + " lobby. Finish or close it before starting another Quick Play match.");
+        }
+
+        let response;
+        if (type === "uno") {
+          response = await ctx.db.rpc("gather_uno_create", {
+            p_conversation_id: null,
+            p_join_mode: "invite",
+            p_invited_user_ids: otherIds,
+            p_max_players: members.length
+          });
+        } else if (type === "ludo") {
+          response = await ctx.db.rpc("gather_ludo_create", {
+            p_conversation_id: null,
+            p_join_mode: "invite",
+            p_invited_user_ids: otherIds,
+            p_max_players: members.length,
+            p_creator_color: "#D9AD45"
+          });
+        } else {
+          response = await ctx.db.rpc("gather_dominoes_create", {
+            p_join_mode: "invite",
+            p_invited_user_ids: otherIds,
+            p_mode: "free_for_all",
+            p_preset: "classic"
+          });
+        }
         if (response.error) throw response.error;
-        gameId = response.data?.id;
+        gameId = response.data?.id || response.data?.[0]?.id;
         if (gameId) {
           await verifyPartyLobbyRoster("gather_multiplayer_players", "game_id", gameId, [uid(), ...otherIds]);
-          window.GatherLudo?.openGame?.(gameId);
+          if (type === "uno") window.GatherUno?.openGame?.(gameId);
+          else if (type === "ludo") window.GatherLudo?.openGame?.(gameId);
+          else window.GatherDominoes?.openGame?.(gameId);
         }
       }
-            if (!gameId) throw new Error("The game lobby was created but could not be opened. Refresh the Games tab and check your invitations.");
-      toast("Quick Play started " + GAME_LABELS[type] + " for your party.");
+
+      if (!gameId) throw new Error("The game lobby was created but could not be opened. Refresh the Games tab and check your invitations.");
+      toast("Quick Play started " + GAME_LABELS[type] + " for all " + members.length + " party members.");
       await refresh(false);
     } catch (error) {
       toast(error?.message || "Quick Play could not start a game.");
