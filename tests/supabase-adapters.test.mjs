@@ -23,6 +23,8 @@ test("legacy board-game driver uses the existing pending-invitation RPC family",
 
   await driver.create({ conversationId: "conversation-1", opponentId: "player-2" });
   await driver.join("match-1");
+  await driver.setReady("match-1", true);
+  await driver.start("match-1");
   await driver.decline("match-2");
   await driver.cancel("match-3");
   await driver.end("match-4");
@@ -30,6 +32,8 @@ test("legacy board-game driver uses the existing pending-invitation RPC family",
   assert.deepEqual(db.calls.map(x => x.name), [
     "gather_game_create",
     "gather_game_accept",
+    "gather_game_set_ready",
+    "gather_game_start",
     "gather_game_decline",
     "gather_game_cancel",
     "gather_game_end"
