@@ -89,3 +89,32 @@ test("invalid actions, payloads, revisions, and request IDs are rejected", async
   });
   await assert.rejects(invalidId.dispatch({ matchId: "a", action: "move" }), /createRequestId/);
 });
+
+
+test("a caller can reuse the same request ID when retrying an uncertain action", async () => {
+  let revision = 0;
+  const submitted = [];
+  let firstAttempt = true;
+  const dispatcher = createActionDispatcher({
+    getSnapshot: async () => ({ revision }),
+    createRequestId: () => "generated-id-should-not-be-used",
+    submitAction: async envelope => {
+      submitted.push(envelope);
+      if (firstAttempt) {
+        firstAttempt = false;
+        revision = 1;
+        throw new Error("connection lost after commit");
+      }
+      return { accepted: true, snapshot: { revision } };
+    }
+  });
+
+  await assert.rejects(
+    dispatcher.dispatch({ matchId: "match-1", action: "play_tile", requestId: "stable-request-id" }),
+    /connection lost/
+  );
+  await dispatcher.dispatch({ matchId: "match-1", action: "play_tile", requestId: "stable-request-id" });
+
+  assert.deepEqual(submitted.map(item => item.requestId), ["stable-request-id", "stable-request-id"]);
+  assert.deepEqual(submitted.map(item => item.expectedRevision), [0, 1]);
+});
