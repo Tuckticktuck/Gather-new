@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "gather-shell-v127";
+const CACHE_NAME = "gather-shell-v128";
 const APP_BASE = new URL("./", self.registration.scope);
 const SHELL_URLS = [
   "./",
@@ -13,7 +13,7 @@ const SHELL_URLS = [
   "./uno.css?v=20261114-adaptive-table-1",
   "./design-system.css?v=20261114-interface-sync-5",
   "./games/shared/lobby-ui.js?v=20261115-multiplayer-capacities-1",
-  "./games.js?v=20261115-chess-simple-icon-1",
+  "./games.js?v=20261115-conversation-game-picker-1",
   "./games/core/index.mjs",
   "./games/core/game-registry.mjs",
   "./games/core/match-contract.mjs",
