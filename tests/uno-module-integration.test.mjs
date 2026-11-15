@@ -41,5 +41,5 @@ test("UNO module and current client version are available from the service-worke
   assert.match(html, /uno\.js\?v=20261115-multiplayer-capacities-1/);
   assert.match(worker, /uno\.js\?v=20261115-multiplayer-capacities-1/);
   assert.equal(worker.split('"./games/modules/uno/index.mjs"').length - 1, 2);
-  assert.match(worker, /gather-shell-v124/);
+  assert.match(worker, /gather-shell-v125/);
 });
