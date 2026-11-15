@@ -60,6 +60,7 @@ const boardGameFunction = readFileSync(join(root, "supabase/functions/gather-boa
 const boardGameRules = readFileSync(join(root, "supabase/functions/gather-board-game-action/board-rules.mjs"), "utf8");
 const boardGameMigration = readFileSync(join(root, "supabase/migrations/20261114015809_authoritative_board_game_moves.sql"), "utf8");
 const gamesClient = readFileSync(join(root, "games.js"), "utf8");
+const battleshipModule = readFileSync(join(root, "games/modules/battleship/index.mjs"), "utf8");
 assert.match(gamesClient, /functions\.invoke\("gather-board-game-action"/, "Board-game clients must submit move intents to the Edge Function");
 assert.doesNotMatch(gamesClient, /rpc\("gather_game_move"/, "Board-game clients must not submit full client-authored states");
 assert.match(boardGameFunction, /auth\.getUser\(accessToken\)/, "The board-game endpoint must validate the caller's Supabase session");
@@ -72,6 +73,12 @@ assert.ok(gamesClient.includes('import("./games/core/index.mjs")'), "Migrated bo
 assert.ok(gamesClient.includes("runtime.lobbyService.create(gameType"), "Migrated board game creation must use the shared lifecycle service");
 assert.ok(gamesClient.includes("runtime.lobbyService.watch("), "Migrated board games must use match-scoped canonical Realtime synchronization");
 assert.ok(gamesClient.includes("gameModule.renderMatch("), "Migrated board games must render through registered modules");
+assert.ok(gamesClient.includes('import("./games/modules/battleship/index.mjs")'), "Battleship must load its registered game module");
+assert.ok(gamesClient.includes("module.action(game.id, action, payload)"), "Battleship actions must route through its module");
+assert.doesNotMatch(gamesClient, /ctx\.db\.rpc\("gather_game_battleship_(?:private_state|action)"/, "Battleship screen must not bypass the module for private state or actions");
+assert.ok(battleshipModule.includes("canPerformMatchCommand") && battleshipModule.includes("loadPrivateState") && battleshipModule.includes("driver.action"), "Battleship module must use shared permission and dedicated action boundaries");
+assert.equal((serviceWorker.match(/"\.\/games\/modules\/battleship\/index\.mjs"/g) || []).length, 2, "Battleship module must be present in both offline cache lists");
+assert.ok(html.includes("games.js?v=20261115-battleship-shared-engine-1") && serviceWorker.includes("./games.js?v=20261115-battleship-shared-engine-1"), "Battleship client asset versions must align");
 assert.ok(boardGameModules.includes('createModule("tic_tac_toe"'), "Tic-Tac-Toe must have its own game module");
 assert.ok(boardGameModules.includes('createModule("connect_four"'), "Connect Four must have its own game module");
 assert.ok(boardGameModules.includes("apiVersion: 1"), "Migrated modules must use the versioned module contract");
