@@ -42,6 +42,13 @@ for (const file of ["manifest.webmanifest"]) {
   JSON.parse(readFileSync(join(root, file), "utf8"));
 }
 
+const app = readFileSync(join(root, "app.js"), "utf8");
+const readReceiptHandler = app.slice(app.indexOf("async function markConversationRead(chatId){"), app.indexOf("\\nasync function markActiveConversationUnread"));
+assert.match(readReceiptHandler, /const wasActive=S\\.active===chatId;/, "Read-receipt error handling must capture the initial active conversation");
+assert.doesNotMatch(readReceiptHandler, /if\\(wasActive&&S\\.active===chatId\\)/g, "Read-receipt handler must not reference an undeclared wasActive variable");
+assert.match(readReceiptHandler, /shouldRetryReadRequest/, "Transient read-receipt request failures should be retried once");
+assert.match(readReceiptHandler, /result=await db\\.rpc\\("mark_conversation_read"/, "Read-receipt retry must call the existing secured RPC");
+
 const party = readFileSync(join(root, "party.js"), "utf8");
 const picker = readFileSync(join(root, "game-people-picker.js"), "utf8");
 const partyMigration = readFileSync(join(root, "supabase/migrations/20261113235904_harden_party_voting_and_game_chat_cleanup.sql"), "utf8");
