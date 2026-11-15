@@ -54,7 +54,7 @@ test("service validates create options against the game registry", async () => {
   const { service, calls } = setup();
   const created = await service.create("dominoes", {
     invitedUserIds: ["player"],
-    playerLimit: 4,
+    playerLimit: 2,
     mode: "free_for_all",
     preset: "classic"
   });
@@ -66,7 +66,7 @@ test("service validates create options against the game registry", async () => {
   }), /Duplicate invitees/);
 
   await assert.rejects(service.create("dominoes", {
-    invitedUserIds: ["player", "third", "fourth", "fifth"], playerLimit: 4
+    invitedUserIds: ["player", "third"], playerLimit: 2
   }), /exceed the selected player limit/);
 
   await assert.rejects(service.create("unknown_game", {}), /not registered/);
