@@ -141,8 +141,17 @@ assert.match(unoClient, /visibilitychange",refreshOnReturn/, "UNO must catch up 
 assert.doesNotMatch(unoClient, /setInterval/, "UNO must not poll on a timer");
 assert.match(unoClient, /if\(activeGameId!==gameId\)return/, "UNO must ignore stale responses from a previously opened lobby");
 assert.match(unoClient, /playerToggle.hidden=!started/, "UNO player controls must not show an inactive Players button in the waiting room");
-assert.ok(html.includes("uno.js?v=20261114-adaptive-table-1") && serviceWorker.includes("./uno.js?v=20261114-adaptive-table-1"), "UNO arcade UI changes must invalidate the cached client asset");
+assert.ok(html.includes("uno.js?v=20261114-shared-engine-1") && serviceWorker.includes("./uno.js?v=20261114-shared-engine-1"), "UNO shared-engine client changes must invalidate the cached asset");
 assert.ok(html.includes("uno.css?v=20261114-adaptive-table-1") && serviceWorker.includes("./uno.css?v=20261114-adaptive-table-1"), "UNO arcade theme changes must invalidate the cached stylesheet");
+const unoModule = readFileSync(join(root, "games/modules/uno/index.mjs"), "utf8");
+assert.ok(unoClient.includes('import("./games/modules/uno/index.mjs")'), "UNO client must load its registered game module");
+assert.ok(unoClient.includes("module.load(gameId)") && unoClient.includes("module.mount({matchId:gameId"), "UNO state loading and active match synchronization must use the module");
+assert.ok(unoClient.includes('case "gather_uno_action": return module.action'), "UNO card actions must route through the module intent boundary");
+assert.doesNotMatch(unoClient, /ctx\\.db\\.rpc\\("gather_uno_(?:get_state|action|create|join|ready|start|leave|end|spectate)"/, "UNO client must not bypass the shared module for core lifecycle or private-state reads");
+assert.ok(unoModule.includes("createLobbyService") && unoModule.includes("lobby.watch("), "UNO module must use shared lobby and match synchronization services");
+assert.ok(unoModule.includes("loadPrivateState(matchId)") && unoModule.includes("your hand"), "UNO module must load hidden card data through the dedicated private-state RPC boundary");
+assert.ok(serviceWorker.includes('"./games/modules/uno/index.mjs"'), "UNO module must be available in the offline static cache");
+
 assert.ok(unoClient.includes("uno-seat-ring") && unoClient.includes("uno-direction-ring"), "UNO must render player seats and a direction indicator around the table");
 assert.ok(unoClient.includes("selectedCardId") && unoClient.includes("uno-selection-preview"), "UNO must provide a selected-card preview");
 assert.ok(unoClient.includes('addEventListener("drop"') && unoClient.includes("playSelected"), "UNO must support drag-and-drop and tap-to-discard interactions");
