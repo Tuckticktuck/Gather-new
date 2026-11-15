@@ -12,7 +12,10 @@ const snapshotFor = (gameType, options = {}) => ({
     join_mode: options.joinMode || "invite",
     settings: {},
     revision: 1,
-    player_one_id: options.playerOneId || null,\n    player_two_id: options.playerTwoId || null,\n    started_at: options.startedAt ?? null,\n    state: options.state || { phase: "lobby", started: false, finished: false }
+    player_one_id: options.playerOneId || null,
+    player_two_id: options.playerTwoId || null,
+    started_at: options.startedAt ?? null,
+    state: options.state || { phase: "lobby", started: false, finished: false }
   },
   players: options.players || [
     { user_id: "host", status: "joined", ready: true },
@@ -200,7 +203,8 @@ test("Battleship placement phase remains a lobby until started_at is set", async
   await service.setReady("battleship", "match-1", true);
   assert.deepEqual(calls[0], ["setReady", "match-1", true]);
 });
-\ntest("watch uses canonical snapshots and disposes the realtime subscription", async () => {
+
+test("watch uses canonical snapshots and disposes the realtime subscription", async () => {
   const { service, calls } = setup();
   const received = [];
   const sync = service.watch("dominoes", "match-1", snapshot => received.push(snapshot.match.id), { debounceMs: 1 });
