@@ -1404,3 +1404,38 @@ select:focus {
     width: calc(100vw - 20px);
   }
 }
+
+
+/* Floating feedback lives beside #app in the document, so theme it directly. */
+#message-notifications .message-notification {
+  border-color: var(--g-ui-border-strong);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--g-ui-surface-raised) 96%, var(--accent));
+  box-shadow: var(--g-shadow-raised);
+}
+
+#message-notifications .message-notification-dismiss {
+  border: 1px solid var(--g-ui-border);
+  border-radius: 10px;
+  background: var(--g-ui-surface);
+}
+
+#message-notifications .message-notification-dismiss:hover {
+  border-color: var(--g-ui-border-strong);
+  background: var(--accent-hover);
+}
+
+#toast {
+  border-color: var(--g-ui-border);
+  border-radius: 13px;
+  background: var(--g-ui-surface-raised);
+  color: var(--g-ui-text);
+  box-shadow: var(--g-shadow-raised);
+}
+
+#offline-status {
+  border-color: var(--g-ui-border-strong);
+  border-radius: 12px;
+  background: var(--g-ui-surface-raised);
+  color: var(--g-ui-text);
+}
