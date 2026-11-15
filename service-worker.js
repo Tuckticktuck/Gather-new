@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "gather-shell-v112";
+const CACHE_NAME = "gather-shell-v113";
 const APP_BASE = new URL("./", self.registration.scope);
 const SHELL_URLS = [
   "./",
@@ -12,7 +12,16 @@ const SHELL_URLS = [
   "./dominoes.css?v=20261114-dominoes-draw-fix-1",
   "./uno.css?v=20261114-adaptive-table-1",
   "./design-system.css?v=20261114-interface-sync-5",
-  "./games.js?v=20261114-dominoes-live-hub-2",
+  "./games.js?v=20261114-shared-board-pilot-1",
+  "./games/core/index.mjs",
+  "./games/core/game-registry.mjs",
+  "./games/core/match-contract.mjs",
+  "./games/core/match-sync.mjs",
+  "./games/core/action-dispatcher.mjs",
+  "./games/core/game-module-contract.mjs",
+  "./games/core/lobby-service.mjs",
+  "./games/core/supabase-adapters.mjs",
+  "./games/modules/legacy-board-modules.mjs",
   "./game-people-picker.js?v=20261114-selection-limit-1",
   "./party.js?v=20261114-uno-ready-3",
   "./game-chat.js?v=20261114-gather-chat-icon-2",
@@ -38,6 +47,15 @@ const STATIC_PATHS = new Set([
   "./uno.css",
   "./design-system.css",
   "./games.js",
+  "./games/core/index.mjs",
+  "./games/core/game-registry.mjs",
+  "./games/core/match-contract.mjs",
+  "./games/core/match-sync.mjs",
+  "./games/core/action-dispatcher.mjs",
+  "./games/core/game-module-contract.mjs",
+  "./games/core/lobby-service.mjs",
+  "./games/core/supabase-adapters.mjs",
+  "./games/modules/legacy-board-modules.mjs",
   "./game-people-picker.js",
   "./party.js",
   "./game-chat.js",

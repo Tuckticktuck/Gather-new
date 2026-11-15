@@ -67,6 +67,17 @@ assert.match(boardGameFunction, /gather_board_game_commit_move/, "The endpoint m
 assert.match(boardGameRules, /Captures must be taken when available/, "Checkers must enforce mandatory captures");
 assert.match(boardGameMigration, /revoke execute on function public\.gather_game_move/i, "The legacy client-submitted state RPC must be disabled");
 
+const boardGameModules = readFileSync(join(root, "games/modules/legacy-board-modules.mjs"), "utf8");
+assert.ok(gamesClient.includes('import("./games/core/index.mjs")'), "Migrated board games must initialize the shared game core");
+assert.ok(gamesClient.includes("runtime.lobbyService.create(gameType"), "Migrated board game creation must use the shared lifecycle service");
+assert.ok(gamesClient.includes("runtime.lobbyService.watch("), "Migrated board games must use match-scoped canonical Realtime synchronization");
+assert.ok(gamesClient.includes("gameModule.renderMatch("), "Migrated board games must render through registered modules");
+assert.ok(boardGameModules.includes('createModule("tic_tac_toe"'), "Tic-Tac-Toe must have its own game module");
+assert.ok(boardGameModules.includes('createModule("connect_four"'), "Connect Four must have its own game module");
+assert.ok(boardGameModules.includes("apiVersion: 1"), "Migrated modules must use the versioned module contract");
+assert.ok(gamesClient.includes('functions.invoke("gather-board-game-action"'), "Migrated board moves must remain server-validated");
+
+
 const unoClient = readFileSync(join(root, "uno.js"), "utf8");
 const unoCss = readFileSync(join(root, "uno.css"), "utf8");
 const unoHouseRulesMigration = readFileSync(join(root, "supabase/migrations/20261114180000_uno_host_house_rules.sql"), "utf8");

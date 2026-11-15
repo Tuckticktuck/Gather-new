@@ -37,6 +37,12 @@
   let hubFilter = "all";
   let selectedGameConversationId = null;
   let hubSearchQuery = "";
+  let sharedBoardRuntime = null;
+  let sharedBoardRuntimePromise = null;
+  let activeMatchSync = null;
+  let activeGameModule = null;
+  let activeGameModuleInstance = null;
+  let activeModuleGameId = null;
 
   const $ = id => document.getElementById(id);
   const node = (tag, cls, value) => {
@@ -241,9 +247,139 @@
     if (!document.hidden && navigator.onLine && ctx && userId()) scheduleGamesRefresh();
   }
 
+  const SHARED_BOARD_GAME_IDS = new Set(["tic_tac_toe", "connect_four"]);
+
+  function isSharedBoardGame(gameType) {
+    return SHARED_BOARD_GAME_IDS.has(gameType);
+  }
+
+  async function ensureSharedBoardRuntime() {
+    if (sharedBoardRuntime) return sharedBoardRuntime;
+    if (sharedBoardRuntimePromise) return sharedBoardRuntimePromise;
+    if (!ctx?.db) throw new Error("The Gather game database is not ready.");
+
+    sharedBoardRuntimePromise = Promise.all([
+      import("./games/core/index.mjs"),
+      import("./games/modules/legacy-board-modules.mjs")
+    ]).then(([core, moduleApi]) => {
+      const modules = core.createGameModuleRegistry(
+        moduleApi.createLegacyBoardModules({
+          renderLobby: renderSharedBoardLobby,
+          renderTicTacToe: context => renderTicTacToe(context.game, context.container, context.canMove),
+          renderConnectFour: context => renderConnectFour(context.game, context.container, context.canMove)
+        }),
+        core.GatherGameRegistry
+      );
+      const repository = core.createSupabaseMatchRepository(ctx.db);
+      const drivers = core.createSupabaseGameDrivers(ctx.db);
+      const lobbyService = core.createLobbyService({
+        registry: core.GatherGameRegistry,
+        drivers: drivers.byGame,
+        repository,
+        getViewerId: () => userId()
+      });
+      sharedBoardRuntime = Object.freeze({ core, modules, repository, drivers, lobbyService });
+      return sharedBoardRuntime;
+    }).catch(error => {
+      sharedBoardRuntimePromise = null;
+      throw error;
+    });
+    return sharedBoardRuntimePromise;
+  }
+
+  function deactivateSharedBoardModule() {
+    if (activeMatchSync) {
+      activeMatchSync.stop();
+      activeMatchSync = null;
+    }
+    if (activeGameModule) {
+      try { activeGameModule.unmount(activeGameModuleInstance); }
+      catch (error) { console.warn("[GatherGames] Module cleanup failed", error); }
+    }
+    activeGameModule = null;
+    activeGameModuleInstance = null;
+    activeModuleGameId = null;
+  }
+
+  async function activateSharedBoardModule(game) {
+    if (!game || !isSharedBoardGame(game.game_type)) {
+      deactivateSharedBoardModule();
+      return;
+    }
+    try {
+      const runtime = await ensureSharedBoardRuntime();
+      if (activeGameId !== game.id || !activeGame) return;
+      if (activeModuleGameId === game.id && activeGameModule) return;
+      deactivateSharedBoardModule();
+
+      const module = runtime.modules.get(game.game_type);
+      if (!module) throw new Error("The selected board game module is not registered.");
+      activeGameModule = module;
+      activeModuleGameId = game.id;
+      activeGameModuleInstance = module.mount({ services: runtime.lobbyService, viewerId: userId() });
+
+      const sync = runtime.lobbyService.watch(game.game_type, game.id, async snapshot => {
+        if (activeGameId !== game.id) return;
+        const current = games.find(item => item.id === game.id);
+        const nextRevision = snapshot?.match?.revision;
+        if (!current || nextRevision > Number(current.revision || 0) || snapshot?.match?.status !== current.status) {
+          await refreshGames(false);
+          const latest = games.find(item => item.id === game.id);
+          if (latest && activeGameId === game.id) {
+            activeGame = latest;
+            renderBoardModal();
+          }
+        }
+      }, {
+        onError: error => {
+          if (activeGameId === game.id) {
+            const status = $("games-board-status");
+            if (status) status.textContent = "Live updates are reconnecting. The latest board will load when the connection returns.";
+          }
+          console.warn("[GatherGames] Match sync issue", error);
+        }
+      });
+      activeMatchSync = sync;
+      sync.start();
+      renderBoardModal();
+    } catch (error) {
+      console.warn("[GatherGames] Shared board runtime unavailable", error);
+    }
+  }
+
+  function renderSharedBoardLobby(context) {
+    const { game, status, boardArea, hint, isSpectator } = context;
+    if (game.status === "pending") {
+      if (game.player_two_id === userId()) {
+        status.textContent = "You have been invited to play. Accept to start the match.";
+        const actions = node("div", "games-invitation-actions");
+        actions.append(button("Accept invitation", "primary", () => gameAction("gather_game_accept", game)));
+        actions.append(button("Decline", "outline", () => gameAction("gather_game_decline", game)));
+        boardArea.append(actions);
+      } else if (isSpectator) {
+        status.textContent = "You are a spectator. The match will become available when the invited player accepts.";
+        boardArea.append(node("p", "games-board-waiting", "Waiting for players…"));
+      } else {
+        status.textContent = "Invitation sent. Waiting for " + memberName(game.player_two_id) + ".";
+        boardArea.append(node("p", "games-board-waiting", "Waiting for the invited player…"));
+        boardArea.append(button("Cancel invitation", "outline", () => gameAction("gather_game_cancel", game)));
+      }
+      hint.textContent = isSpectator ? "Spectators can watch the match but cannot make moves." : "";
+      return true;
+    }
+    if (game.status === "declined" || game.status === "cancelled") {
+      status.textContent = game.status === "declined" ? "The invitation was declined." : "This invitation was cancelled.";
+      boardArea.append(node("p", "games-board-waiting", status.textContent));
+      hint.textContent = "";
+      return true;
+    }
+    return false;
+  }
+
   function init(options) {
     ctx = options;
     mount();
+    void ensureSharedBoardRuntime().catch(error => console.warn("[GatherGames] Shared board runtime could not initialize", error));
     if (!initialized) {
       initialized = true;
       channel = ctx.db.channel("gather-games-" + (userId() || "member"))
@@ -419,19 +555,33 @@
     const submit = $("games-create-submit");
     submit.disabled = true;
     $("games-create-status").textContent = "Sending invitation…";
-    const result = await ctx.db.rpc("gather_game_create", {
-      p_conversation_id: conversationId,
-      p_game_type: gameType,
-      p_player_two_id: opponentId
-    });
-    busy = false;
-    submit.disabled = false;
-    if (result.error) {
-      $("games-create-status").textContent = result.error.message || "The game invitation could not be sent.";
+    let game = null;
+    let createError = null;
+    try {
+      if (isSharedBoardGame(gameType)) {
+        const runtime = await ensureSharedBoardRuntime();
+        const mutation = await runtime.lobbyService.create(gameType, { conversationId, opponentId });
+        game = mutation.result;
+      } else {
+        const result = await ctx.db.rpc("gather_game_create", {
+          p_conversation_id: conversationId,
+          p_game_type: gameType,
+          p_player_two_id: opponentId
+        });
+        if (result.error) throw new Error(result.error.message || "The game invitation could not be sent.");
+        game = Array.isArray(result.data) ? result.data[0] : result.data;
+      }
+    } catch (error) {
+      createError = error;
+    } finally {
+      busy = false;
+      submit.disabled = false;
+    }
+    if (createError) {
+      $("games-create-status").textContent = createError.message || "The game invitation could not be sent.";
       return;
     }
     closeCreateModal();
-    const game = Array.isArray(result.data) ? result.data[0] : result.data;
     if (game?.id) {
       selectedGameConversationId = game.conversation_id;
       games = [game, ...games.filter(item => item.id !== game.id)];
@@ -810,6 +960,35 @@
 
   async function gameAction(rpcName, game) {
     if (busy) return;
+    if (isSharedBoardGame(game?.game_type)) {
+      const actions = { gather_game_accept: "join", gather_game_decline: "decline", gather_game_cancel: "cancel" };
+      const command = actions[rpcName];
+      if (!command) return;
+      busy = true;
+      let actionError = null;
+      try {
+        const runtime = await ensureSharedBoardRuntime();
+        await runtime.lobbyService[command](game.game_type, game.id);
+      } catch (error) {
+        actionError = error;
+      } finally {
+        busy = false;
+      }
+      if (actionError) {
+        toast(actionError.message || "That game action could not be completed.");
+        await refreshGames(false);
+        return;
+      }
+      await refreshGames(false);
+      if (command === "join") {
+        const latest = games.find(item => item.id === game.id) || game;
+        openGame(latest);
+      } else {
+        toast(command === "decline" ? "Invitation declined." : "Game invitation cancelled.");
+      }
+      return;
+    }
+
     busy = true;
     const result = await ctx.db.rpc(rpcName, { p_game_id: game.id });
     busy = false;
@@ -827,6 +1006,7 @@
 
   function openGame(game) {
     if (activeGameId !== game.id) {
+      deactivateSharedBoardModule();
       battleshipPrivateGameId = game.id;
       battleshipPrivateState = null;
       battleshipPrivateLoading = false;
@@ -838,9 +1018,11 @@
     promotionChoice = null;
     $("games-board-overlay").hidden = false;
     renderBoardModal();
+    void activateSharedBoardModule(game);
   }
 
   function closeBoardModal() {
+    deactivateSharedBoardModule();
     const overlay = $("games-board-overlay");
     if (overlay) overlay.hidden = true;
     activeGameId = null;
@@ -869,6 +1051,10 @@
     const player = isPlayer(game);
     const isTurn = game.turn_user_id === userId();
     const isSpectator = !player;
+    const gameModule = sharedBoardRuntime?.modules.get(game.game_type) || null;
+    if (gameModule && gameModule.renderLobby({
+      game, status, boardArea, hint, player, isSpectator, viewerId: userId()
+    }, activeGameModuleInstance)) return;
     if (game.status === "pending") {
       if (game.player_two_id === userId()) {
         status.textContent = "You have been invited to play. Accept to start the match.";
@@ -927,7 +1113,9 @@
         isSpectator ? "Spectator view · The board updates live as the players take turns." :
         isTurn ? "Your turn. Select a piece or column to make a move." : "Waiting for your opponent's move.";
     const canMove = game.status === "active" && player && isTurn && !busy;
-    if (game.game_type === "ludo") renderLudo(game, boardArea, canMove);
+    if (gameModule) {
+      gameModule.renderMatch({ game, container: boardArea, canMove, viewerId: userId() }, activeGameModuleInstance);
+    } else if (game.game_type === "ludo") renderLudo(game, boardArea, canMove);
     else if (game.game_type === "battleship") {
       ensureBattleshipPrivateState(game);
       if (battleshipPrivateLoading || battleshipPrivateState === null) {
@@ -968,10 +1156,18 @@
     busy = true;
     $("games-board-status").textContent = "Ending game…";
     try {
-      const response = await ctx.db.rpc("gather_game_end", { p_game_id: game.id });
-      const updated = Array.isArray(response.data) ? response.data[0] : response.data;
-      if (response.error || !updated) {
-        toast(response.error?.message || "The game could not be ended. Please refresh and try again.");
+      let updated = null;
+      if (isSharedBoardGame(game.game_type)) {
+        const runtime = await ensureSharedBoardRuntime();
+        const mutation = await runtime.lobbyService.end(game.game_type, game.id);
+        updated = mutation.result;
+      } else {
+        const response = await ctx.db.rpc("gather_game_end", { p_game_id: game.id });
+        updated = Array.isArray(response.data) ? response.data[0] : response.data;
+        if (response.error) throw new Error(response.error.message || "The game could not be ended.");
+      }
+      if (!updated) {
+        toast("The game could not be ended. Please refresh and try again.");
         await refreshGames(false);
         return;
       }
@@ -1012,19 +1208,31 @@
     }
 
     busy = true;
-    const response = await ctx.db.rpc("gather_game_create", {
-      p_conversation_id: game.conversation_id,
-      p_game_type: game.game_type,
-      p_player_two_id: opponentId
-    });
-    busy = false;
-
-    if (response.error) {
-      toast(response.error.message || "The rematch invitation could not be sent.");
+    let rematch = null;
+    let rematchError = null;
+    try {
+      if (isSharedBoardGame(game.game_type)) {
+        const runtime = await ensureSharedBoardRuntime();
+        const mutation = await runtime.lobbyService.create(game.game_type, { conversationId: game.conversation_id, opponentId });
+        rematch = mutation.result;
+      } else {
+        const response = await ctx.db.rpc("gather_game_create", {
+          p_conversation_id: game.conversation_id,
+          p_game_type: game.game_type,
+          p_player_two_id: opponentId
+        });
+        if (response.error) throw new Error(response.error.message || "The rematch invitation could not be sent.");
+        rematch = Array.isArray(response.data) ? response.data[0] : response.data;
+      }
+    } catch (error) {
+      rematchError = error;
+    } finally {
+      busy = false;
+    }
+    if (rematchError) {
+      toast(rematchError.message || "The rematch invitation could not be sent.");
       return;
     }
-
-    const rematch = Array.isArray(response.data) ? response.data[0] : response.data;
     if (!rematch?.id) {
       await refreshGames(false);
       const latest = games.find(item =>
@@ -1749,6 +1957,9 @@
   }
 
   function shutdown() {
+    deactivateSharedBoardModule();
+    sharedBoardRuntime = null;
+    sharedBoardRuntimePromise = null;
     clearTimeout(refreshTimer);
     refreshTimer = null;
     if (channel && ctx?.db) ctx.db.removeChannel(channel);
