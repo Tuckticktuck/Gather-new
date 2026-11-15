@@ -31,9 +31,10 @@ test("UNO module composes public match state with the authenticated viewer's pri
   assert.doesNotMatch(moduleSource, /updateState|submitFullState|gather_multiplayer_update_state/);
 });
 
+test("UNO uses the common two-player ready-up lobby", () => { assert.match(client, /GatherSharedLobby\?\.render/); assert.match(client, /p_max_players:2/); });
 test("UNO module and current client version are available from the service-worker cache", () => {
-  assert.match(html, /uno\.js\?v=20261114-shared-engine-1/);
-  assert.match(worker, /uno\.js\?v=20261114-shared-engine-1/);
+  assert.match(html, /uno\.js\?v=20261115-shared-two-player-lobby-1/);
+  assert.match(worker, /uno\.js\?v=20261115-shared-two-player-lobby-1/);
   assert.equal(worker.split('"./games/modules/uno/index.mjs"').length - 1, 2);
-  assert.match(worker, /gather-shell-v118/);
+  assert.match(worker, /gather-shell-v120/);
 });
