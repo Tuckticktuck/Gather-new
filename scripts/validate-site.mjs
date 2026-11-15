@@ -149,7 +149,7 @@ assert.ok(unoClient.includes("module.load(gameId)") && unoClient.includes("modul
 assert.ok(unoClient.includes('case "gather_uno_action": return module.action'), "UNO card actions must route through the module intent boundary");
 assert.doesNotMatch(unoClient, /ctx\\.db\\.rpc\\("gather_uno_(?:get_state|action|create|join|ready|start|leave|end|spectate)"/, "UNO client must not bypass the shared module for core lifecycle or private-state reads");
 assert.ok(unoModule.includes("createLobbyService") && unoModule.includes("lobby.watch("), "UNO module must use shared lobby and match synchronization services");
-assert.ok(unoModule.includes("loadPrivateState(matchId)") && unoModule.includes("your hand"), "UNO module must load hidden card data through the dedicated private-state RPC boundary");
+assert.ok(unoModule.includes("loadPrivateState(matchId)") && unoModule.includes("hand: Object.freeze"), "UNO module must load and return only the viewer hand through the dedicated private-state RPC boundary");
 assert.ok(serviceWorker.includes('"./games/modules/uno/index.mjs"'), "UNO module must be available in the offline static cache");
 
 assert.ok(unoClient.includes("uno-seat-ring") && unoClient.includes("uno-direction-ring"), "UNO must render player seats and a direction indicator around the table");
