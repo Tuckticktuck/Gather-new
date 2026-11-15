@@ -236,7 +236,7 @@ function legacyRoster(game) {
       status: pending ? "invited" : declined || cancelled ? (declined ? "declined" : "left") : "joined",
       ready: game.player_two_ready === true,
       color: null,
-      joined_at: game.started_at || null
+      joined_at: game.updated_at || null
     }
   ];
 }
