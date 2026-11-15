@@ -50,6 +50,10 @@ assert.match(party, /poll\.my_vote !== null && poll\.my_vote !== undefined/, "Pa
 assert.match(party, /chat\.kind !== "direct"/, "Two-player Quick Play must require a direct conversation");
 assert.match(party, /chat\.members\.length !== 2/, "Two-player Quick Play must require exactly two conversation members");
 assert.match(party, /verifyPartyLobbyRoster/, "Quick Play must verify the reused lobby roster");
+assert.match(party, /if \(count <= 10\) result\.push\("uno"\)/, "Party Quick Play must support UNO parties up to ten players");
+assert.match(party, /if \(count <= 4\) result\.push\("ludo", "dominoes"\)/, "Party Quick Play must support Ludo and Dominoes up to four players");
+assert.match(party, /gather_dominoes_create/, "Party Quick Play must be able to create Dominoes matches");
+assert.doesNotMatch(party, /members\.length !== 2/, "Party Quick Play must not force every game to two players");
 assert.match(picker, /selected\.size >= selectionLimit/, "The people picker must enforce its selection limit");
 assert.match(partyMigration, /m\.role='leader'/, "Party vote creation must require the leader role in SQL");
 assert.match(partyMigration, /revoke execute on function public\.gather_game_chat_cleanup\(\)/i, "Trigger-only cleanup RPC must not be directly executable");
