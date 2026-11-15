@@ -205,7 +205,7 @@ function renderGame(){
     lobbyExit=end;
   }else if(!host&&!finished&&g.status==="active"){
     const leave=el("button","secondary-action","Leave lobby");
-    leave.onclick=async()=>{if(!confirm("Leave this UNO lobby?"))return;leave.disabled=true;try{await call("gather_uno_leave",{p_game_id:activeGameId});activeGameId=null;state=null;await refresh();toast("You left the UNO lobby.");}catch(e){toast(e.message||"Could not leave this lobby.");leave.disabled=false;}};
+    leave.onclick=async()=>{if(!confirm("Leave this UNO lobby?"))return;leave.disabled=true;try{await call("gather_uno_leave",{p_game_id:activeGameId});leaveActiveMatchView();await refresh();toast("You left the UNO lobby.");}catch(e){toast(e.message||"Could not leave this lobby.");leave.disabled=false;}};
     lobbyExit=leave;
   }
   if(!started&&!finished){
@@ -244,7 +244,7 @@ function renderGame(){
       row.onclick=()=>showPlayerProfile(p);roster.append(row);
     });
     root.append(roster,actions,el("p","uno-lobby-wait tag-lobby-hint muted tiny","The host can start when at least two players have joined and everyone is ready."));
-    const back=el("button","outline tag-back","Back to UNO");back.onclick=async()=>{activeGameId=null;state=null;await refresh();};root.append(back);return;
+    const back=el("button","outline tag-back","Back to UNO");back.onclick=async()=>{leaveActiveMatchView();await refresh();};root.append(back);return;
   }
   if(spectating&&!finished){
     const board=el("section","uno-board");
@@ -305,7 +305,7 @@ function renderGame(){
     if(spectating){
       const stop=el("button","outline","Stop watching");stop.onclick=()=>stopWatching();actions.append(stop);
     }else if(g.status==="completed"){
-      const back=el("button","outline","Back to UNO");back.onclick=async()=>{activeGameId=null;state=null;selectedCardId=null;await refresh();};actions.append(back);
+      const back=el("button","outline","Back to UNO");back.onclick=async()=>{leaveActiveMatchView();await refresh();};actions.append(back);
       if(host){
         const hostRematch=el("button","primary","Start rematch now");hostRematch.onclick=async()=>{hostRematch.disabled=true;try{state=await call("gather_uno_host_rematch",{p_game_id:activeGameId});selectedCardId=null;renderGame();}catch(e){toast(e.message||"Could not start host rematch.");hostRematch.disabled=false;}};actions.append(hostRematch);
       }
