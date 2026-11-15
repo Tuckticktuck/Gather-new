@@ -62,9 +62,9 @@ const boardGameMigration = readFileSync(join(root, "supabase/migrations/20261114
 const gamesClient = readFileSync(join(root, "games.js"), "utf8");
 const battleshipModule = readFileSync(join(root, "games/modules/battleship/index.mjs"), "utf8");
 const sharedLobbyUi = readFileSync(join(root, "games/shared/lobby-ui.js"), "utf8");
-const unoClient = readFileSync(join(root, "uno.js"), "utf8");
-const ludoClient = readFileSync(join(root, "ludo.js"), "utf8");
-const dominoesClient = readFileSync(join(root, "dominoes.js"), "utf8");
+const unoLobbyClient = readFileSync(join(root, "uno.js"), "utf8");
+const ludoLobbyClient = readFileSync(join(root, "ludo.js"), "utf8");
+const dominoesLobbyClient = readFileSync(join(root, "dominoes.js"), "utf8");
 const twoPlayerLobbyMigration = readFileSync(join(root, "supabase/migrations/20261115135203_unified_two_player_game_lobbies.sql"), "utf8");
 assert.match(gamesClient, /functions\.invoke\("gather-board-game-action"/, "Board-game clients must submit move intents to the Edge Function");
 assert.doesNotMatch(gamesClient, /rpc\("gather_game_move"/, "Board-game clients must not submit full client-authored states");
@@ -91,9 +91,9 @@ assert.doesNotMatch(gamesClient, /games-choose-two-player|games-choose-multiplay
 assert.ok(gamesClient.includes("openCreateModal(undefined, gameType)") && gamesClient.includes("openMultiplayerGame(gameType)"), "Each selected game must launch the shared opponent setup automatically");
 assert.match(sharedLobbyUi, /Both players must be ready before the match can begin/);
 assert.match(gamesClient, /GatherSharedLobby\?\.render/);
-assert.match(unoClient, /GatherSharedLobby\?\.render/);
-assert.match(ludoClient, /GatherSharedLobby\?\.render/);
-assert.match(dominoesClient, /GatherSharedLobby\?\.render/);
+assert.match(unoLobbyClient, /GatherSharedLobby\?\.render/);
+assert.match(ludoLobbyClient, /GatherSharedLobby\?\.render/);
+assert.match(dominoesLobbyClient, /GatherSharedLobby\?\.render/);
 assert.match(twoPlayerLobbyMigration, /gather_game_set_ready/);
 assert.match(twoPlayerLobbyMigration, /gather_game_start/);
 assert.match(twoPlayerLobbyMigration, /Gather matches are limited to two players/);
