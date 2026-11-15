@@ -99,13 +99,13 @@ test("UNO module composes the shared canonical match with only the viewer's priv
 test("UNO lobby creation uses shared registry validation and the dedicated create RPC", async () => {
   const db = fakeDb();
   const { module } = createUnoModule({ db, getViewerId: () => "host" });
-  const result = await module.create({ invitedUserIds: ["player"], playerLimit: 4, joinMode: "invite" });
+  const result = await module.create({ invitedUserIds: ["player"], playerLimit: 2, joinMode: "invite" });
   assert.equal(result.matchId, MATCH_ID);
   assert.deepEqual(db.calls.find(call => call.name === "gather_uno_create").params, {
     p_conversation_id: null,
     p_join_mode: "invite",
     p_invited_user_ids: ["player"],
-    p_max_players: 4
+    p_max_players: 2
   });
 });
 
