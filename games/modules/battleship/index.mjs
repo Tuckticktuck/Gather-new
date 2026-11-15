@@ -9,7 +9,7 @@ function privateStateView(value){
 }
 function legacyGameView(match){
  return Object.freeze({id:match.id,game_type:match.gameType,status:match.status,created_by:match.hostId,conversation_id:match.conversationId,
- player_one_id:match.playerOneId,player_two_id:match.playerTwoId,turn_user_id:match.turnUserId,state:match.state,
+ player_one_id:match.playerOneId,player_two_id:match.playerTwoId,player_one_ready:match.playerOneReady===true,player_two_ready:match.playerTwoReady===true,\n turn_user_id:match.turnUserId,started_at:match.startedAt,state:match.state,
  winner_id:match.winnerId,result:match.result,revision:match.revision,created_at:match.createdAt,updated_at:match.updatedAt});
 }
 function validateIntent(action,payload){
