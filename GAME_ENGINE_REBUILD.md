@@ -352,3 +352,18 @@ Added `games/modules/ludo/index.mjs` and moved the standalone multiplayer `ludo.
 - Legacy two-player Ludo remains on its separate `gather_ludo_action` path and is not routed through the multiplayer module.
 - The existing Ludo UI and board logic are retained. The board now uses a dark neon playfield, glowing player colors, illuminated safe spaces, and a neon dice/control treatment.
 - Added module and screen-integration regression tests; updated service-worker cache and asset versions. No production schema or live RPC definitions were changed.
+
+
+## Phase 8 — Chess and Checkers module migration
+
+Added `games/modules/legacy-turn-based/index.mjs` and registered Chess and Checkers with the shared game-module registry.
+
+- Both games now use the shared legacy lifecycle adapter for canonical match reads, lobby lifecycle operations, and match-scoped Realtime invalidation.
+- Chess and Checkers submit typed move intents through their module action boundary. The module checks the viewer's joined-player role and current match phase before invoking the existing JWT-verified `gather-board-game-action` Edge Function with the latest canonical revision.
+- Chess move payloads validate algebraic board-square coordinates and promotion choices; Checkers payloads validate integer board indices. The Edge Function remains authoritative for legal moves, mandatory captures, promotion, multi-jump continuation, check/checkmate, and game outcomes.
+- Existing Chess and Checkers board rendering, selection, move history, promotion UI, lobby presentation, and saved match rows are retained.
+- No database schema, production RPC, Edge Function rule logic, or existing match data was changed.
+- Added module tests for registration, lifecycle wiring, typed intent dispatch, malformed intent rejection, and offline cache inclusion.
+- Advanced the service-worker cache to `gather-shell-v125`.
+
+**Verification boundary:** automated tests validate the module contract and client wiring. A signed-in two-account browser match and observer/reconnect regression is still required before declaring full release hardening complete.
