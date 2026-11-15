@@ -39,13 +39,13 @@ async function ensureEngineModule(){
   }
   return engineModulePromise;
 }
-function acceptLoadedSnapshot(loaded){
+function acceptLoadedSnapshot(loaded,shouldRender=true){
   const previous=currentTurn();
   snapshot=loaded;
   const ids=(snapshot.your_hand||[]).map(t=>t.id);
   handOrder=[...handOrder.filter(x=>ids.includes(x)),...ids.filter(x=>!handOrder.includes(x))];
   if(previous&&previous!==currentTurn()&&currentTurn()===uid())sound("turn");
-  if(isOpen){renderGame();if(state().phase==="playing"&&isJoined())showTutorialOnce();}
+  if(shouldRender&&isOpen){renderGame();if(state().phase==="playing"&&isJoined())showTutorialOnce();}
 }
 async function startEngineWatch(id){
   try{
@@ -189,7 +189,7 @@ async function drawUntilPlayable(){
       if(!updatedSnapshot?.game?.state||!Array.isArray(updatedSnapshot.your_hand)){
         throw new Error("The updated hand could not be loaded. Please try again.");
       }
-      acceptLoadedSnapshot(updatedSnapshot);
+      acceptLoadedSnapshot(updatedSnapshot,false);
       const after=state();
       if(after.phase!=="playing"||after.turn_user_id!==uid())break;
       if((snapshot.your_hand||[]).some(t=>playable(t,after)))break;
