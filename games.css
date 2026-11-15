@@ -1051,3 +1051,21 @@
   .games-lobby-directory-actions{justify-content:flex-start;width:100%}
   .games-lobby-directory-actions button{flex:1 1 auto}
 }
+
+
+/* Lobby content must remain scrollable inside the full-screen game shell.
+   The board shell intentionally clips game boards; without this exception,
+   tall waiting rooms hide their Ready / Start / Cancel controls on phones. */
+.games-overlay:has(.games-board-area) .games-board-area:has(.gather-shared-lobby){
+  justify-content:flex-start;
+  align-items:stretch;
+  overflow-x:hidden;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  padding:2px 0 calc(20px + env(safe-area-inset-bottom));
+  scrollbar-width:thin;
+}
+.games-overlay:has(.games-board-area) .games-board-area:has(.gather-shared-lobby)>.gather-shared-lobby{
+  flex:0 0 auto;
+}
