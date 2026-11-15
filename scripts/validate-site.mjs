@@ -78,7 +78,12 @@ assert.ok(gamesClient.includes("module.action(game.id, action, payload)"), "Batt
 assert.doesNotMatch(gamesClient, /ctx\.db\.rpc\("gather_game_battleship_(?:private_state|action)"/, "Battleship screen must not bypass the module for private state or actions");
 assert.ok(battleshipModule.includes("canPerformMatchCommand") && battleshipModule.includes("loadPrivateState") && battleshipModule.includes("driver.action"), "Battleship module must use shared permission and dedicated action boundaries");
 assert.equal((serviceWorker.match(/"\.\/games\/modules\/battleship\/index\.mjs"/g) || []).length, 2, "Battleship module must be present in both offline cache lists");
-assert.ok(html.includes("games.js?v=20261115-battleship-shared-engine-1") && serviceWorker.includes("./games.js?v=20261115-battleship-shared-engine-1"), "Battleship client asset versions must align");
+assert.ok(html.includes("games.js?v=20261115-unified-game-picker-1") && serviceWorker.includes("./games.js?v=20261115-unified-game-picker-1"), "Unified game picker client asset versions must align");
+assert.ok(html.includes("games.css?v=20261115-unified-game-picker-1") && serviceWorker.includes("./games.css?v=20261115-unified-game-picker-1"), "Unified game picker styles must be versioned in the offline cache");
+const unifiedGameTypes = [...gamesClient.matchAll(/data-game-type="([^"]+)"/g)].map(match => match[1]);
+assert.deepEqual(unifiedGameTypes, ["chess", "checkers", "tic_tac_toe", "connect_four", "battleship", "uno", "ludo", "dominoes"], "New Game must show all games in one unified catalog");
+assert.doesNotMatch(gamesClient, /games-choose-two-player|games-choose-multiplayer|games-multiplayer-chooser/, "New Game must not split the catalog into player-count sections");
+assert.ok(gamesClient.includes("openCreateModal(undefined, gameType)") && gamesClient.includes("openMultiplayerGame(gameType)"), "Each selected game must launch its appropriate setup automatically");
 assert.ok(boardGameModules.includes('createModule("tic_tac_toe"'), "Tic-Tac-Toe must have its own game module");
 assert.ok(boardGameModules.includes('createModule("connect_four"'), "Connect Four must have its own game module");
 assert.ok(boardGameModules.includes("apiVersion: 1"), "Migrated modules must use the versioned module contract");
