@@ -72,13 +72,33 @@ test("service validates create options against the game registry", async () => {
   await assert.rejects(service.create("unknown_game", {}), /not registered/);
 });
 
-test("Dominoes only accepts two-player free-for-all setup", async () => {
-  const { service } = setup();
+test("Dominoes supports two-to-four-player free-for-all and four-player teams", async () => {
+  const { service, calls } = setup();
+  await service.create("dominoes", {
+    invitedUserIds: ["p2", "p3", "p4"], playerLimit: 4, mode: "teams", preset: "classic"
+  });
+  assert.equal(calls[0][1].invitedUserIds.length, 3);
   await assert.rejects(service.create("dominoes", {
-    invitedUserIds: ["player"], playerLimit: 2, mode: "teams", preset: "classic"
-  }), /two-player free-for-all only/);
+    invitedUserIds: ["p2"], playerLimit: 4, mode: "teams", preset: "classic"
+  }), /four players/);
+  await assert.rejects(service.create("dominoes", {
+    invitedUserIds: ["p2", "p3", "p4"], playerLimit: 2, mode: "free_for_all", preset: "classic"
+  }), /exceed the selected player limit/);
 });
 
+test("UNO and Ludo creation accept their game-specific multiplayer limits", async () => {
+  const uno = setup({ gameType: "uno" });
+  await uno.service.create("uno", {
+    invitedUserIds: ["p2", "p3", "p4", "p5", "p6", "p7", "p8", "p9", "p10"], playerLimit: 10
+  });
+  assert.equal(uno.calls[0][1].playerLimit, 10);
+
+  const ludo = setup({ gameType: "ludo" });
+  await ludo.service.create("ludo", {
+    invitedUserIds: ["p2", "p3", "p4"], playerLimit: 4
+  });
+  assert.equal(ludo.calls[0][1].playerLimit, 4);
+});
 test("the legacy two-player driver can create with a single opponent", async () => {
   const calls = [];
   const service = createLobbyService({
