@@ -953,3 +953,22 @@
 .uno-in-match .uno-card-count-value{display:grid;place-items:center;min-width:21px;height:21px;padding:0 5px;border-radius:7px;background:var(--accent,#40826d);color:white;font-size:11px;font-weight:900}
 .uno-in-match .uno-card-count-label{color:var(--muted,#aaa);font-size:10px}
 @media(max-width:600px){.uno-in-match .uno-card-count-player{min-height:28px;padding:4px 7px;font-size:10px}.uno-in-match .uno-card-count-name{max-width:88px}}
+
+/* Shared two-player lobby used by every Gather game. */
+.gather-shared-lobby{display:grid;gap:18px;width:100%;max-width:720px;margin:0 auto;padding:clamp(16px,3vw,26px);border:1px solid var(--line);border-radius:22px;background:var(--panel);box-shadow:var(--shadow)}
+.gather-shared-lobby-header{display:grid;gap:7px}
+.gather-shared-lobby-title{margin:0;font-size:clamp(22px,4vw,30px);line-height:1.15}
+.gather-shared-lobby-players{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.gather-shared-player-card{position:relative;display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:10px;min-width:0;padding:14px;border:1px solid var(--line);border-radius:16px;background:var(--surface,rgba(0,0,0,.12))}
+.gather-shared-player-avatar{display:grid;place-items:center;width:44px;height:44px;border-radius:14px;background:var(--accent-surface);border:1px solid var(--accent-border);color:var(--accent);font-weight:800;font-size:18px}
+.gather-shared-player-copy{display:grid;gap:4px;min-width:0}
+.gather-shared-player-copy strong{overflow-wrap:anywhere;font-size:14px}
+.gather-shared-player-copy small{font-size:11px;color:var(--muted)}
+.gather-shared-ready-pill{grid-column:1/-1;justify-self:start;padding:5px 9px;border-radius:999px;background:var(--surface);border:1px solid var(--line);font-size:11px;color:var(--muted)}
+.gather-shared-ready-pill.is-ready{color:var(--accent);border-color:var(--accent-border);background:var(--accent-surface)}
+.gather-shared-host-tag{position:absolute;right:10px;top:10px;font-size:9px;letter-spacing:.12em;font-weight:800;color:var(--accent)}
+.gather-shared-lobby-settings{padding:13px 15px;border:1px solid var(--line);border-radius:14px;background:var(--surface,rgba(0,0,0,.08))}
+.gather-shared-lobby-settings p{margin:5px 0 0;font-size:13px}
+.gather-shared-lobby-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:10px}
+.gather-shared-lobby-status{margin:0;text-align:center;color:var(--muted);font-size:12px}
+@media(max-width:480px){.gather-shared-lobby{border-radius:17px;padding:14px}.gather-shared-lobby-players{gap:8px}.gather-shared-player-card{grid-template-columns:1fr;justify-items:start;padding:11px}.gather-shared-player-avatar{width:38px;height:38px}.gather-shared-player-copy strong{font-size:12px}.gather-shared-host-tag{right:8px;top:8px}.gather-shared-lobby-actions>*{flex:1 1 130px}}
