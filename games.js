@@ -512,7 +512,7 @@
       dominoes: () => window.GatherDominoes?.openGame?.(gameId)
     };
     if (typeof launchers[gameType] !== "function") return;
-    launchers[gameType]();
+    return launchers[gameType]();
   }
 
   function openGameTypeChooser() {
