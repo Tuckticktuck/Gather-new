@@ -173,7 +173,7 @@ assert.match(retiredSnakeFunction, /status: 410/, "Retired Snake endpoint must r
 assert.match(retiredGamesMigration, /REVOKE ALL PRIVILEGES ON FUNCTION/i, "Retired Tag/Snake RPCs must no longer be callable by client roles");
 assert.match(retiredGamesMigration, /gather_tag_|gather_snake_/, "Retirement migration must cover both game RPC families");
 
-assert.match(ludoClient, /rpc\("gather_ludo_cancel"/, "Ludo must expose a host action to close the entire lobby");
+assert.ok(ludoClient.includes("module.cancel(game.id)"), "Ludo host lobby cancellation must route through the shared module");
 assert.match(ludoClient, /if \(isHost\(\)\) root\.append\(closeLobby\(\)\)/, "Ludo host must be able to close an active match lobby");
 assert.match(ludoCloseMigration, /v_game\.created_by <> auth\.uid\(\)/, "Only the Ludo host may close the lobby");
 assert.match(ludoCloseMigration, /status = 'cancelled'/, "Ludo cancellation must close the lobby for all members");
