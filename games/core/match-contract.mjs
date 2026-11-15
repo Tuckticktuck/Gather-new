@@ -1,7 +1,7 @@
 const HOST_ONLY_ACTIONS = new Set(["start", "cancel", "change-settings", "end"]);
 const MUTATING_ACTIONS = new Set(["ready", "start", "cancel", "change-settings", "action", "end"]);
-const MEMBER_STATUSES = new Set(["joined", "invited", "spectating", "left", "declined"]);
-const TOP_LEVEL_STATUSES = new Set(["active", "completed", "cancelled"]);
+const MEMBER_STATUSES = new Set(["joined", "invited", "spectating", "left", "declined", "eliminated"]);
+const TOP_LEVEL_STATUSES = new Set(["pending", "active", "completed", "cancelled", "declined"]);
 const DEFAULT_MAX_PUBLIC_STATE_BYTES = 32768;
 
 function isPlainObject(value) {
@@ -101,6 +101,7 @@ export function getViewerMembership(snapshot, viewerId) {
     : status === "joined" ? "player"
     : status === "invited" ? "invited"
     : status === "spectating" ? "spectator"
+    : status === "eliminated" ? "eliminated"
     : "visitor";
   return Object.freeze({
     role,
@@ -108,7 +109,8 @@ export function getViewerMembership(snapshot, viewerId) {
     isHost,
     isJoined: status === "joined",
     isSpectator: status === "spectating",
-    isInvited: status === "invited"
+    isInvited: status === "invited",
+    isEliminated: status === "eliminated"
   });
 }
 
@@ -121,18 +123,24 @@ export function canPerformMatchCommand(snapshot, viewerId, command) {
   const { match } = snapshot;
   const viewer = getViewerMembership(snapshot, viewerId);
   const phase = typeof match.state.phase === "string" ? match.state.phase : null;
-  const isLobby = match.status === "active" && (phase === "lobby" || (!phase && match.state.started !== true));
+  const isLobby = match.status === "pending" || (match.status === "active" && (phase === "lobby" || (!phase && match.state.started !== true)));
 
   if (command === "read") {
     return viewer.status && ["joined", "invited", "spectating"].includes(viewer.status)
       ? { ok: true } : { ok: false, reason: "not-a-match-member" };
   }
   if (command === "join") {
-    return match.status === "active" && !viewer.status
+    const invitedPending = match.status === "pending" && viewer.isInvited;
+    const openLobby = match.status === "active" && match.joinMode === "open" && !viewer.status;
+    return invitedPending || openLobby
       ? { ok: true } : { ok: false, reason: "cannot-join" };
   }
+  if (command === "decline") {
+    return viewer.isInvited && ["pending", "active"].includes(match.status)
+      ? { ok: true } : { ok: false, reason: "cannot-decline" };
+  }
   if (command === "leave") {
-    return ["joined", "invited", "spectating"].includes(viewer.status)
+    return ["joined", "invited", "spectating", "eliminated"].includes(viewer.status)
       ? { ok: true } : { ok: false, reason: "not-a-member" };
   }
   if (command === "spectate") {
@@ -149,7 +157,7 @@ export function canPerformMatchCommand(snapshot, viewerId, command) {
   }
   if (command === "end") {
     if (match.status !== "active") return { ok: false, reason: "match-not-active" };
-    return viewer.isHost ? { ok: true } : { ok: false, reason: "host-only" };
+    return viewer.isJoined ? { ok: true } : { ok: false, reason: "not-joined" };
   }
   if (command === "action") {
     return match.status === "active" && viewer.isJoined && phase !== "lobby" && phase !== "completed"
