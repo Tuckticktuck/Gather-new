@@ -76,20 +76,23 @@
 .games-connect-disc{width:80%;height:80%;border-radius:50%;background:#7774;box-shadow:inset 0 2px 5px #0005}
 .games-connect-disc.red{background:#e76e73}
 .games-connect-disc.yellow{background:#f1cc5c}
-.games-checkers-board,.games-chess-board{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));width:min(100%,500px);aspect-ratio:1;border:1px solid #0005;border-radius:5px;overflow:hidden}
+.games-checkers-board,.games-chess-board,.games-checkers-board{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));width:min(100%,500px);aspect-ratio:1;border:1px solid #0005;border-radius:7px;overflow:hidden;box-shadow:0 8px 24px #00000018}
 .games-checkers-cell,.games-chess-cell{position:relative;display:grid;place-items:center;min-width:0;min-height:0;padding:0;border:0;border-radius:0}
-.games-checkers-cell.light,.games-chess-cell.light{background:#ead9b8}
-.games-checkers-cell.dark,.games-chess-cell.dark{background:#967052}
+.games-chess-cell.light{background:#f0d9b5}
+.games-chess-cell.dark{background:#b58863}
+.games-checkers-cell.light{background:#f2e8d5}
+.games-checkers-cell.dark{background:#8b3038}
 .games-chess-cell.selected,.games-checkers-cell.selected{box-shadow:inset 0 0 0 4px #e9d34e}
 .games-chess-cell.legal-target:after,.games-checkers-cell.legal-target:after{content:"";position:absolute;width:25%;height:25%;border-radius:50%;background:#266e45b8}
 .games-chess-cell.legal-capture:after{content:"";position:absolute;inset:5%;border:4px solid #266e45b8;border-radius:50%}
 .games-chess-piece{position:relative;z-index:1;font-family:"Segoe UI Symbol","DejaVu Sans",serif;font-size:clamp(24px,6vw,49px);line-height:1}
 .games-chess-piece.white{color:#fffdf3;text-shadow:0 1px 2px #161616,0 0 2px #161616}
 .games-chess-piece.black{color:#151515;text-shadow:0 1px 1px #fff8}
-.games-checker-piece{display:grid;place-items:center;width:76%;height:76%;border:2px solid #ffffff88;border-radius:50%;font-size:clamp(17px,4.2vw,31px);box-shadow:inset 0 2px 5px #ffffff35,0 2px 4px #0006}
-.games-checker-piece.white{color:#f8f5ed;background:#f4f0e5;border-color:#b2a68e}
-.games-checker-piece.black{color:#fff;background:#23252a;border-color:#65666b}
-.games-checker-piece.king{box-shadow:inset 0 2px 5px #ffffff35,0 2px 4px #0006, inset 0 0 0 3px #d4b84d}
+.games-checker-piece{position:relative;display:grid;place-items:center;width:76%;height:76%;border:2px solid #ffffff88;border-radius:50%;font-size:0;box-shadow:inset 0 3px 5px #ffffff35,0 3px 5px #0007}
+.games-checker-piece.white{color:#f8f5ed;background:linear-gradient(145deg,#fffdf5,#ded7c8 72%);border-color:#b2a68e}
+.games-checker-piece.black{color:#fff;background:linear-gradient(145deg,#45474d,#17181c 72%);border-color:#65666b}
+.games-checker-piece.king{box-shadow:inset 0 2px 5px #ffffff35,0 3px 5px #0007,inset 0 0 0 3px #d4b84d}
+.games-checker-piece.king:after{content:"♛";position:absolute;inset:0;display:grid;place-items:center;color:#d7b653;font-family:"Segoe UI Symbol","DejaVu Sans",serif;font-size:clamp(17px,4vw,29px);line-height:1;text-shadow:0 1px 2px #0009}
 .games-chess-history{width:min(100%,500px);margin:0;color:var(--muted);font-size:10px;line-height:1.5}
 .games-promotion-choices{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;margin-top:12px}
 .games-promotion-choices button{width:auto;padding:8px 12px}
@@ -1069,3 +1072,10 @@
 .games-overlay:has(.games-board-area) .games-board-area:has(.gather-shared-lobby)>.gather-shared-lobby{
   flex:0 0 auto;
 }
+
+/* Separate classic icon identities for Chess and Checkers. */
+.games-catalog-mark-chess{display:flex;flex-wrap:wrap;align-content:center;justify-content:center;gap:0 2px;font-family:"Segoe UI Symbol","DejaVu Sans",serif;font-size:17px;letter-spacing:-2px}
+.games-catalog-mark-checkers{gap:2px;font-size:21px;letter-spacing:-2px}
+.games-type-choice-icon-chess{display:flex;flex-direction:column;justify-content:center;gap:0;font-family:"Segoe UI Symbol","DejaVu Sans",serif;font-size:15px;line-height:1.05;letter-spacing:-1px}
+.games-type-choice-icon-chess small{font-size:12px;line-height:1.05}
+.games-type-choice-icon-checkers{font-size:23px;letter-spacing:-3px}
