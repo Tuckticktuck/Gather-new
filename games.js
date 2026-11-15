@@ -1068,6 +1068,32 @@
     battleshipDraft = { gameId: null, ships: [], selected: "carrier", orientation: "horizontal", message: "" };
   }
 
+  async function setLegacyGameReady(game) {
+    if (busy || !game?.id) return;
+    busy = true;
+    try {
+      const runtime = await ensureSharedBoardRuntime();
+      await runtime.lobbyService.setReady(game.game_type, game.id, !(game.game_type === "chess"
+        ? (game.player_one_id === userId() ? game.player_one_ready : game.player_two_ready)
+        : (game.player_one_id === userId() ? game.player_one_ready : game.player_two_ready)));
+      await refreshGames(false);
+    } catch (error) {
+      toast(error?.message || "Your ready status could not be updated.");
+    } finally { busy = false; }
+  }
+
+  async function startLegacyGame(game) {
+    if (busy || !game?.id) return;
+    busy = true;
+    try {
+      const runtime = await ensureSharedBoardRuntime();
+      await runtime.lobbyService.start(game.game_type, game.id);
+      await refreshGames(false);
+    } catch (error) {
+      toast(error?.message || "The match could not be started.");
+    } finally { busy = false; }
+  }
+
   function renderBoardModal() {
     const game = activeGame;
     if (!game) return;
@@ -1084,6 +1110,30 @@
     const player = isPlayer(game);
     const isTurn = game.turn_user_id === userId();
     const isSpectator = !player;
+    if (game.status === "pending" || (game.status === "active" && !game.started_at)) {
+      const roster = [
+        { user_id: game.player_one_id, status: "joined", ready: game.player_one_ready === true },
+        { user_id: game.player_two_id, status: game.status === "pending" ? "invited" : "joined", ready: game.player_two_ready === true }
+      ];
+      window.GatherSharedLobby?.render({
+        root: boardArea,
+        gameName: gameName(game.game_type),
+        game,
+        players: roster,
+        viewerId: userId(),
+        getName: memberName,
+        settingsSummary: "Two players · standard rules",
+        onJoin: () => gameAction("gather_game_accept", game),
+        onDecline: () => gameAction("gather_game_decline", game),
+        onReady: () => setLegacyGameReady(game),
+        onStart: () => startLegacyGame(game),
+        onCancel: () => gameAction(game.status === "pending" ? "gather_game_cancel" : "gather_game_end", game),
+        onLeave: () => gameAction("gather_game_end", game)
+      });
+      status.textContent = "";
+      hint.textContent = "";
+      return;
+    }
     const gameModule = sharedBoardRuntime?.modules.get(game.game_type) || null;
     if (gameModule && gameModule.renderLobby({
       game, status, boardArea, hint, player, isSpectator, viewerId: userId()
