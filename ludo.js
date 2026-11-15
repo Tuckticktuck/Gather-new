@@ -557,21 +557,49 @@
   function renderCreate() {
     panelView = "create";
     syncGameMenuTrigger();
-    const root=$("ludo-content");root.replaceChildren();root.append(el("p","eyebrow","NEW LUDO LOBBY"));
-    const title=el("h2","ludo-title","Set up your lobby");title.id="ludo-dialog-title";
-    root.append(title,el("p","muted tiny ludo-intro","Choose friends to invite. Game invitations do not create a group conversation."));
-    const form=el("form","ludo-form tag-form"),selected=[];
-    const choose=el("button","outline","Choose people");choose.type="button";const summary=el("small","muted tiny","No people selected");
-    const people=el("section","ludo-people-picker tag-people-picker");people.append(choose,summary);form.append(people);
-    form.append(el("p","muted tiny","Every Gather match has exactly two player seats. Invite one opponent."));
-    const color=el("select");COLORS.forEach(item=>{const o=el("option","",item.label);o.value=item.hex;color.append(o);});form.append(makeField("Your color",color));
-    const actions=el("div","ludo-actions tag-actions");actions.append(btn("Back","secondary-action",renderLobbyList));
-    const submit=btn("Create lobby","primary",()=>{});submit.type="submit";actions.append(submit);form.append(actions);
-    form.addEventListener("submit",async event=>{event.preventDefault();if(busy)return;if(selected.length!==1){toast("Choose exactly one opponent to invite.");return;}
-      busy=true;submit.disabled=true;try{const module=await getLudoModule();const result=await module.create({conversationId:null,joinMode:"invite",invitedUserIds:selected.slice(),playerLimit:2,color:color.value});activeGameId=result.matchId;panelView="game";await loadGame();}
-      catch(error){toast(error?.message||"Could not create the Ludo lobby.");}finally{busy=false;submit.disabled=false;}
+    const root = $("ludo-content");
+    root.replaceChildren();
+    root.append(el("p", "eyebrow", "NEW LUDO LOBBY"));
+    const title = el("h2", "ludo-title", "Set up your lobby");
+    title.id = "ludo-dialog-title";
+    root.append(title, el("p", "muted tiny ludo-intro", "Ludo supports two to four players. Invite enough people to fill the seats you choose."));
+    const form = el("form", "ludo-form tag-form"), selected = [];
+    const limit = el("select");
+    [2,3,4].forEach(value => {
+      const option=el("option","",value+" players");
+      option.value=String(value);option.selected=value===4;limit.append(option);
     });
-    root.append(form);window.GatherPeoplePicker?.create({db:ctx.db,button:choose,summary,onChange:ids=>selected.splice(0,selected.length,...ids)});
+    form.append(makeField("Player limit",limit));
+    const choose = el("button", "outline", "Choose people");
+    choose.type = "button";
+    const summary = el("small", "muted tiny", "No people selected");
+    const people = el("section", "ludo-people-picker tag-people-picker");
+    people.append(choose, summary);
+    form.append(people);
+    const color = el("select");
+    COLORS.forEach(item => {
+      const option=el("option","",item.label);option.value=item.hex;color.append(option);
+    });
+    form.append(makeField("Your color",color));
+    const actions=el("div","ludo-actions tag-actions");
+    actions.append(btn("Back","secondary-action",renderLobbyList));
+    const submit=btn("Create lobby","primary",()=>{});submit.type="submit";actions.append(submit);form.append(actions);
+    let picker=null;
+    limit.addEventListener("change",()=>picker?.setMax(Number(limit.value)-1));
+    form.addEventListener("submit",async event=>{
+      event.preventDefault();if(busy)return;
+      const playerLimit=Number(limit.value);
+      if(selected.length<1||selected.length>playerLimit-1){toast("Invite between 1 and "+(playerLimit-1)+" other players.");return;}
+      busy=true;submit.disabled=true;
+      try{
+        const module=await getLudoModule();
+        const result=await module.create({conversationId:null,joinMode:"invite",invitedUserIds:selected.slice(),playerLimit,color:color.value});
+        activeGameId=result.matchId;panelView="game";await loadGame();
+      }catch(error){toast(error?.message||"Could not create the Ludo lobby.");}
+      finally{busy=false;submit.disabled=false;}
+    });
+    root.append(form);
+    picker=window.GatherPeoplePicker?.create({db:ctx.db,button:choose,summary,max:3,onChange:ids=>selected.splice(0,selected.length,...ids)});
   }
 
   function renderGamePanel() {
@@ -593,7 +621,7 @@
         String(players.find(player => player.user_id === game.created_by)?.color || "").toLowerCase())?.label || "Default";
       window.GatherSharedLobby?.render({
         root,gameName:"Ludo",game,players,viewerId:uid(),getName:name,
-        settingsSummary:"Two players · neon board · host color: "+hostColor,
+        settingsSummary:(game.settings?.max_players||4)+" players max · neon board · host color: "+hostColor,
         onJoin:()=>joinGame(availableColor),
         onDecline:async()=>{await (await getLudoModule()).decline(game.id);await refresh();},
         onReady:async()=>{await (await getLudoModule()).setReady(game.id,!me?.ready);await loadGame();},
