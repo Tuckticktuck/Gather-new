@@ -348,8 +348,8 @@
       return;
     }
     const members = (party.members || []).filter(m => m.status === "joined");
-    if (members.length < 2) {
-      toast("At least two party members need to join before starting a game.");
+    if (members.length !== 2) {
+      toast("Gather Quick Play matches currently support exactly two players.");
       return;
     }
     const options = supportedGames(party);
@@ -379,7 +379,7 @@
         gameId = response.data?.id || response.data?.[0]?.id;
         if (gameId) window.GatherGames?.openInvitation?.(gameId);
       } else if (type === "uno") {
-        if (members.length > 10) throw new Error("UNO supports up to 10 players. Remove some players from this Quick Play group.");
+        if (members.length !== 2) throw new Error("UNO matches are limited to two players.");
         const existing = await ctx.db.from("gather_multiplayer_games")
           .select("id").eq("created_by", uid()).eq("game_type", "uno").eq("status", "active")
           .limit(1).maybeSingle();
@@ -389,7 +389,7 @@
           p_conversation_id: null,
           p_join_mode: "invite",
           p_invited_user_ids: otherIds,
-          p_max_players: members.length
+          p_max_players: 2
         });
         if (response.error) throw response.error;
         gameId = response.data?.id;
