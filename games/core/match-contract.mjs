@@ -132,8 +132,15 @@ export function canPerformMatchCommand(snapshot, viewerId, command) {
   if (command === "join") {
     const invitedPending = match.status === "pending" && viewer.isInvited;
     const invitedActive = match.status === "active" && viewer.isInvited && match.state.finished !== true;
+    // UNO's authoritative join RPC intentionally supports a returning player
+    // from left/spectating status so they can rejoin an unfinished match.
+    const returningPlayer = match.gameType === "uno" &&
+      match.status === "active" &&
+      ["left", "spectating"].includes(viewer.status) &&
+      match.state.finished !== true &&
+      match.state.winner_id == null;
     const openLobby = isLobby && match.joinMode === "open" && !viewer.status;
-    return invitedPending || invitedActive || openLobby
+    return invitedPending || invitedActive || returningPlayer || openLobby
       ? { ok: true } : { ok: false, reason: "cannot-join" };
   }
   if (command === "decline") {
