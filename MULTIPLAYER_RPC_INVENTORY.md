@@ -27,7 +27,7 @@ Do not treat a same-named game in two families as the same runtime. In particula
 | `games.js` | Battleship | `gather_game_create`, `gather_game_battleship_private_state`, `gather_game_battleship_action` | Legacy game row + private fleet table |
 | `games.js` | Legacy Ludo | `gather_game_create`, `gather_ludo_action` | Legacy turn-based |
 | `games.js` | Legacy Ludo (alternate multiplayer module) | Client code contains `gather_ludo_multiplayer_action` path in multiplayer module; verify which UI path is mounted before changing | Shared multiplayer |
-| `uno.js` | UNO lobby and match | `gather_uno_create/join/ready/start/get_state/action/leave/end/decline/done/request_rematch/respond_rematch`; reads shared game/player rows; Realtime subscriptions | Shared multiplayer + private UNO state |
+| `games/modules/uno/index.mjs` + `uno.js` | UNO lobby and match | Shared lobby service and match-scoped Realtime; dedicated `gather_uno_*` RPCs for private state, card intents, house rules, recap, and rematches | Shared multiplayer module + private UNO state |
 | `ludo.js` | Standalone multiplayer Ludo | `gather_ludo_create/join/ready/start/multiplayer_action/leave/cancel/decline`; reads shared game/player rows; Realtime subscriptions | Shared multiplayer |
 | `snake.js` | Snake Arena | `gather_snake_create/join/decline/ready/set_settings/start/leave/end/rematch/spectate`; `gather-snake-action` Edge Function for direction input and authoritative tick | Shared multiplayer + private input table |
 | `tag.js` | Tag lobby and round | `gather_tag_create/join/ready/set_mode/customize/start_round/return_lobby/leave/decline/finish_expired/move`; reads Tag lobby/player rows; Realtime subscriptions | Dedicated Tag |
@@ -132,3 +132,8 @@ Live inspection shows the relevant public RPCs are executable by `authenticated`
 - Temporary chat: the private game chat list/send helpers now recognize snake_arena; existing game-chat cleanup trigger still removes temporary messages when the match is completed/cancelled.
 - Frontend: snake.js and snake.css provide lobby settings, invite/open joining, readiness, fullscreen Canvas board, keyboard/touch direction controls, player scores, recap, rematch, and temporary chat. The Games hub, central notifications, Party Quick Play, app module lifecycle, and service-worker shell include Snake.
 - Tests: deterministic engine tests are in tests/snake-engine.test.mjs; they cover tick timing, direction rules, growth, wall/obstacle/self/player/head-swap collisions, timeout scoring, and finished-state immutability. These are automated unit tests, not an authenticated multi-account browser test.
+
+
+## Shared game-engine migration update — UNO
+
+The UNO screen now delegates shared lobby lifecycle and canonical match loading to `games/modules/uno/index.mjs`. The game module still uses the dedicated, server-authoritative UNO RPC family for card actions, player-specific hands, house rules, completion confirmations, and rematch state. It does not use the generic shared full-state update helper.
