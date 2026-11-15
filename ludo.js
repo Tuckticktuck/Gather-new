@@ -585,6 +585,23 @@
     const started = !!game.state?.started;
     const me = currentPlayer();
     const joined = me?.status === "joined";
+    if (!started && game.status === "active") {
+      const availableColor = COLORS.find(color => !players.some(player =>
+        player.status === "joined" && String(player.color || "").toLowerCase() === color.hex.toLowerCase()
+      ))?.hex || "#D85A60";
+      window.GatherSharedLobby?.render({
+        root,gameName:"Ludo",game,players,viewerId:uid(),getName:name,
+        settingsSummary:"Two players · neon board · standard Ludo rules",
+        onJoin:()=>joinGame(availableColor),
+        onDecline:async()=>{await (await getLudoModule()).decline(game.id);await refresh();},
+        onReady:async()=>{await (await getLudoModule()).setReady(game.id,!me?.ready);await loadGame();},
+        onStart:async()=>{await (await getLudoModule()).start(game.id);await loadGame();},
+        onCancel:async()=>{await (await getLudoModule()).cancel(game.id);await loadGame();},
+        onLeave:async()=>{await (await getLudoModule()).leave(game.id);await refresh();}
+      });
+      if(joined)window.GatherGameChat?.attach(root,ctx.db,"ludo",game.id,uid(),name);
+      return;
+    }
     const top = el("div", "ludo-game-top");
     const heading = el("div", "ludo-game-heading");
     const dialogTitle = el("h2", "ludo-title", started ? "Ludo match" : "Ludo lobby");
