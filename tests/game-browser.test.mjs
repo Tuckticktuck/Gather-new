@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const gamesClient = await readFile(new URL("../games.js", import.meta.url), "utf8");
+const gamesStyles = await readFile(new URL("../games.css", import.meta.url), "utf8");
 const migration = await readFile(new URL("../supabase/migrations/20261115151000_add_friend_open_game_lobby_directory.sql", import.meta.url), "utf8");
 const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const serviceWorker = await readFile(new URL("../service-worker.js", import.meta.url), "utf8");
@@ -41,9 +42,21 @@ test("Open lobby actions use authoritative game lifecycle RPCs", () => {
 });
 
 test("Game browser assets are versioned consistently in the page and offline shell", () => {
-  assert.match(html, /games\.js\?v=20261115-chess-checkers-modules-1/);
-  assert.match(html, /games\.css\?v=20261115-game-browser-1/);
-  assert.match(serviceWorker, /games\.js\?v=20261115-game-browser-1/);
-  assert.match(serviceWorker, /games\.css\?v=20261115-game-browser-1/);
-  assert.match(serviceWorker, /gather-shell-v125/);
+  assert.match(html, /games\.js\?v=20261115-chess-checkers-classic-themes-1/);
+  assert.match(html, /games\.css\?v=20261115-chess-checkers-theme-1/);
+  assert.match(serviceWorker, /games\.js\?v=20261115-chess-checkers-classic-themes-1/);
+  assert.match(serviceWorker, /games\.css\?v=20261115-chess-checkers-theme-1/);
+  assert.match(serviceWorker, /gather-shell-v126/);
+});
+
+test("Chess and Checkers use their separately selected classic visual themes", () => {
+  assert.match(gamesClient, /mark: "♔♕♖"/);
+  assert.match(gamesClient, /mark: "●○"/);
+  assert.match(gamesClient, /games-catalog-mark-" \\+ gameType/);
+  assert.match(gamesClient, /games-type-choice-icon-chess/);
+  assert.match(gamesClient, /games-type-choice-icon-checkers/);
+  assert.match(gamesClient, /checker\\.textContent = "●"/);
+  assert.match(gamesStyles, /\\.games-chess-cell\\.light\\{background:#f0d9b5\\}/);
+  assert.match(gamesStyles, /\\.games-checkers-cell\\.dark\\{background:#8b3038\\}/);
+  assert.match(gamesStyles, /\\.games-checker-piece\\.king:after/);
 });
