@@ -4,7 +4,7 @@ import { createUnoModule } from "../games/modules/uno/index.mjs";
 
 const MATCH_ID = "11111111-1111-4111-8111-111111111111";
 
-function fakeDb() {
+function fakeDb({ inviteeStatus = "joined", started = true } = {}) {
   const calls = [];
   const game = {
     id: MATCH_ID,
@@ -16,12 +16,11 @@ function fakeDb() {
     settings: { max_players: 4, house_rules: { starting_hand_size: 7 } },
     state: {
       version: 1,
-      started: true,
+      started,
       top_card: { id: "top", color: "green", value: 5, kind: "number" },
       current_color: "green",
       turn_user_id: "host",
-      deck_count: 20,
-      players: [{ user_id: "host", card_count: 2 }, { user_id: "player", card_count: 5 }]
+      deck_count: 20
     },
     revision: 7,
     created_at: "2026-11-14T00:00:00Z",
@@ -29,27 +28,27 @@ function fakeDb() {
   };
   const roster = [
     { game_id: MATCH_ID, user_id: "host", status: "joined", ready: true },
-    { game_id: MATCH_ID, user_id: "player", status: "joined", ready: true }
+    { game_id: MATCH_ID, user_id: "player", status: inviteeStatus, ready: true }
   ];
   const privateResponse = () => ({
     game: { ...game },
     public_state: { ...game.state },
     players: [
       { user_id: "host", status: "joined", ready: true, card_count: 2 },
-      { user_id: "player", status: "joined", ready: true, card_count: 5 }
+      { user_id: "player", status: inviteeStatus, ready: true, card_count: 5 }
     ],
     hand: [{ id: "my-card", color: "green", value: 5, kind: "number" }],
     drawn_card_id: null,
-    started: true,
+    started,
     spectating: false,
     rematch_pending: false
   });
 
-  const db = {
+  return {
     calls,
     async rpc(name, params) {
       calls.push({ type: "rpc", name, params });
-      if (name === "gather_uno_get_state" || name === "gather_uno_action" || name === "gather_uno_start" || name === "gather_uno_host_rematch") {
+      if (["gather_uno_get_state", "gather_uno_action", "gather_uno_start", "gather_uno_host_rematch"].includes(name)) {
         return { data: privateResponse(), error: null };
       }
       if (name === "gather_uno_create") return { data: { id: MATCH_ID }, error: null };
@@ -57,10 +56,9 @@ function fakeDb() {
       return { data: true, error: null };
     },
     from(table) {
-      const filters = [];
       const query = {
         select() { return query; },
-        eq(column, value) { filters.push([column, value]); return query; },
+        eq() { return query; },
         maybeSingle() {
           return Promise.resolve({ data: table === "gather_multiplayer_games" ? game : null, error: null });
         },
@@ -83,7 +81,6 @@ function fakeDb() {
     },
     removeChannel(channel) { channel.removed = true; return Promise.resolve("ok"); }
   };
-  return db;
 }
 
 test("UNO module composes the shared canonical match with only the viewer's private hand", async () => {
@@ -96,6 +93,7 @@ test("UNO module composes the shared canonical match with only the viewer's priv
   assert.deepEqual(snapshot.hand.map(card => card.id), ["my-card"]);
   assert.equal(snapshot.players.find(player => player.user_id === "player").card_count, 5);
   assert.equal(Object.hasOwn(snapshot, "deck"), false);
+  assert.equal(Object.hasOwn(snapshot.game.state, "hands"), false);
 });
 
 test("UNO lobby creation uses shared registry validation and the dedicated create RPC", async () => {
@@ -111,21 +109,28 @@ test("UNO lobby creation uses shared registry validation and the dedicated creat
   });
 });
 
-test("UNO common lifecycle and stop-spectating use the appropriate drivers", async () => {
-  const db = fakeDb();
+test("UNO host readiness and start operations use the shared lobby service", async () => {
+  const db = fakeDb({ started: false });
   const { module } = createUnoModule({ db, getViewerId: () => "host" });
-  await module.join(MATCH_ID);
   await module.setReady(MATCH_ID, true);
   await module.start(MATCH_ID);
+  assert.deepEqual(db.calls.filter(call => call.type === "rpc").map(call => call.name), [
+    "gather_uno_ready",
+    "gather_uno_get_state",
+    "gather_uno_start",
+    "gather_uno_get_state"
+  ]);
+});
+
+test("UNO invitation, spectating, stop-spectating, and decline paths preserve their dedicated rules", async () => {
+  const db = fakeDb({ inviteeStatus: "invited" });
+  const { module } = createUnoModule({ db, getViewerId: () => "player" });
+  await module.join(MATCH_ID);
   await module.spectate(MATCH_ID);
   await module.stopSpectating(MATCH_ID);
   await module.decline(MATCH_ID);
   assert.deepEqual(db.calls.filter(call => call.type === "rpc").map(call => call.name), [
     "gather_uno_join",
-    "gather_uno_ready",
-    "gather_uno_get_state",
-    "gather_uno_start",
-    "gather_uno_get_state",
     "gather_uno_spectate",
     "gather_uno_stop_spectating",
     "gather_uno_decline"
