@@ -59,6 +59,7 @@ const STATIC_PATHS = new Set([
   "./games/core/supabase-adapters.mjs",
   "./games/modules/legacy-board-modules.mjs",
   "./games/modules/dominoes/index.mjs",
+  "./games/modules/uno/index.mjs",
   "./game-people-picker.js",
   "./party.js",
   "./game-chat.js",
