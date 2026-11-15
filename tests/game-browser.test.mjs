@@ -45,5 +45,5 @@ test("Game browser assets are versioned consistently in the page and offline she
   assert.match(html, /games\.css\?v=20261115-game-browser-1/);
   assert.match(serviceWorker, /games\.js\?v=20261115-game-browser-1/);
   assert.match(serviceWorker, /games\.css\?v=20261115-game-browser-1/);
-  assert.match(serviceWorker, /gather-shell-v124/);
+  assert.match(serviceWorker, /gather-shell-v125/);
 });
