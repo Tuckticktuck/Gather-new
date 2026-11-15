@@ -1054,3 +1054,108 @@ select:focus {
     transition: none !important;
   }
 }
+
+
+/* Game dialogs are mounted at document level, outside #app. Apply the same
+   card and action rules there as on the Games home screen. */
+:is(.ludo-modal, .uno-modal, .dominoes-modal) :is(.ludo-lobby-card, .uno-lobby-card, .dominoes-lobby-card) {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--g-ui-border);
+  border-radius: var(--g-ui-radius-card);
+  background: var(--g-ui-surface-raised);
+  color: var(--g-ui-text);
+  box-shadow: 0 5px 18px rgba(0, 0, 0, .10);
+}
+
+:is(.ludo-modal, .uno-modal, .dominoes-modal) :is(.ludo-lobby-card, .uno-lobby-card, .dominoes-lobby-card):hover {
+  border-color: var(--g-ui-border-strong);
+  transform: translateY(-1px);
+}
+
+:is(.ludo-modal, .uno-modal, .dominoes-modal) :is(.ludo-lobby-info strong, .uno-lobby-info strong, .dominoes-lobby-copy strong) {
+  color: var(--g-ui-text);
+  font-size: 12px;
+  font-weight: 760;
+  line-height: 1.35;
+}
+
+:is(.ludo-modal, .uno-modal, .dominoes-modal) :is(.ludo-lobby-info small, .uno-lobby-info small, .dominoes-lobby-copy small) {
+  color: var(--g-ui-muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+:is(.games-overlay, .uno-overlay, .ludo-overlay, .dominoes-overlay) :is(
+  .games-card-actions button,
+  .games-form-actions button,
+  .games-invitation-actions button,
+  .games-end-actions button,
+  .games-rematch-actions button,
+  .games-party-header-actions button,
+  .games-party-card-actions button,
+  .ludo-actions button,
+  .uno-actions button,
+  .dominoes-actions button,
+  .dominoes-tool-button,
+  .dominoes-stats-tabs button
+) {
+  min-height: var(--g-ui-control-height);
+  border-radius: var(--g-ui-radius-control);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 740;
+  padding: 9px 13px;
+}
+
+:is(.games-overlay, .uno-overlay, .ludo-overlay, .dominoes-overlay) :is(.primary, .outline, .secondary-action, .danger-action, .dominoes-tool-button, .dominoes-stats-tabs button) {
+  border-radius: var(--g-ui-radius-control);
+}
+
+:is(.games-overlay, .uno-overlay, .ludo-overlay, .dominoes-overlay) :is(.ludo-section-title, .uno-section-title, .dominoes-section-title) {
+  color: var(--g-ui-text);
+  font-size: 13px;
+  font-weight: 760;
+  line-height: 1.35;
+}
+
+:is(.games-overlay, .uno-overlay, .ludo-overlay, .dominoes-overlay) :is(.ludo-empty, .uno-empty, .dominoes-empty) {
+  border-color: var(--g-ui-border);
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--g-ui-surface-raised) 55%, transparent);
+  color: var(--g-ui-muted);
+  line-height: 1.55;
+}
+
+:is(.games-overlay, .uno-overlay, .ludo-overlay, .dominoes-overlay) :is(.ludo-player-row, .uno-player-row) {
+  border-color: var(--g-ui-border);
+  border-radius: 12px;
+  background: var(--g-ui-surface-raised);
+}
+
+:is(.games-overlay, .uno-overlay, .ludo-overlay, .dominoes-overlay) :is(.ludo-people-picker, .uno-people-picker, .dominoes-picker) {
+  border-color: var(--g-ui-border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--accent-surface) 38%, var(--g-ui-surface));
+}
+
+:is(.games-overlay, .uno-overlay, .ludo-overlay, .dominoes-overlay) :is(.ludo-invite-option, .uno-invite-option, .tag-invite-option) {
+  border-color: var(--g-ui-border);
+  border-radius: 11px;
+  background: var(--g-ui-surface-raised);
+  color: var(--g-ui-text);
+}
+
+@media (max-width: 720px) {
+  :is(.ludo-modal, .uno-modal, .dominoes-modal) :is(.ludo-lobby-card, .uno-lobby-card, .dominoes-lobby-card) {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  :is(.ludo-modal, .uno-modal, .dominoes-modal) :is(.ludo-lobby-card, .uno-lobby-card, .dominoes-lobby-card) > button,
+  :is(.ludo-modal, .uno-modal, .dominoes-modal) .uno-lobby-card-actions {
+    width: 100%;
+  }
+}
