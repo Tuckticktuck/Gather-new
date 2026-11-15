@@ -52,6 +52,7 @@ test("UNO, Ludo, and Dominoes drivers use their dedicated lifecycle RPCs", async
   await drivers.byGame.uno.setReady("uno-1", true);
   await drivers.byGame.uno.start("uno-1");
   await drivers.byGame.uno.spectate("uno-1");
+  await drivers.byGame.uno.stopSpectating("uno-1");
 
   await drivers.byGame.ludo.create({ invitedUserIds: ["p2", "p3"], playerLimit: 4, color: "#38BDF8" });
   await assert.rejects(drivers.byGame.ludo.join("ludo-1"), /Ludo player color/);
@@ -64,7 +65,7 @@ test("UNO, Ludo, and Dominoes drivers use their dedicated lifecycle RPCs", async
   await drivers.byGame.dominoes.loadPrivateState("dominoes-1");
 
   assert.deepEqual(db.calls.map(x => x.name), [
-    "gather_uno_create", "gather_uno_join", "gather_uno_ready", "gather_uno_start", "gather_uno_spectate",
+    "gather_uno_create", "gather_uno_join", "gather_uno_ready", "gather_uno_start", "gather_uno_spectate", "gather_uno_stop_spectating",
     "gather_ludo_create", "gather_ludo_join", "gather_ludo_decline", "gather_ludo_cancel",
     "gather_dominoes_create", "gather_dominoes_ready", "gather_dominoes_get_state"
   ]);
