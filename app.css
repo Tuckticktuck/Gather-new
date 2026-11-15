@@ -4134,3 +4134,38 @@ html[data-theme="light"] .offline-status{color:#59421d;background:#fff4d8;border
 }
 
 .message-group-avatar-spacer{visibility:hidden;pointer-events:none}
+
+
+/* Restore the standard Gather composer theme after the temporary black treatment. */
+.chat:not(.chat-appearance-custom) .composer{
+  box-sizing:border-box;padding:10px 11px 8px;
+  border:1px solid var(--line) !important;border-radius:15px !important;
+  background:var(--accent-panel) !important;box-shadow:0 7px 24px #00000016 !important;
+}
+.chat:not(.chat-appearance-custom) .composer:focus-within{
+  border-color:var(--accent-chat-border) !important;background:var(--accent-panel) !important;
+  box-shadow:0 7px 24px #00000016 !important;
+}
+.chat:not(.chat-appearance-custom) .composer .composer-main-row textarea{
+  color:var(--text) !important;background:var(--accent-input) !important;
+  border:1px solid var(--line) !important;border-radius:11px !important;box-shadow:none !important;
+}
+.chat:not(.chat-appearance-custom) .composer .composer-main-row textarea:focus{
+  border-color:var(--accent-outline) !important;background:var(--accent-input) !important;
+  box-shadow:0 0 0 3px var(--accent-surface) !important;
+}
+.chat:not(.chat-appearance-custom) .composer .composer-main-row .composer-more-trigger{
+  color:var(--accent-text) !important;background:var(--accent-surface) !important;
+  border:1px solid var(--accent-outline-soft) !important;border-radius:10px !important;
+}
+.chat:not(.chat-appearance-custom) .composer .composer-main-row .composer-more-trigger:hover,
+.chat:not(.chat-appearance-custom) .composer .composer-main-row .composer-more-trigger[aria-expanded="true"]{
+  background:var(--accent-hover) !important;border-color:var(--accent-outline) !important;
+}
+@media(max-width:720px){.chat:not(.chat-appearance-custom) .composer{width:calc(100% - 16px);margin:0 auto max(7px,env(safe-area-inset-bottom));padding:8px 9px 7px;border-radius:14px !important}}
+/* Fixed-width avatar gutter on every incoming group-chat message. */
+.message-group-avatar-spacer{
+  display:block !important;box-sizing:border-box;flex:0 0 23px !important;
+  width:23px !important;min-width:23px !important;height:23px;margin:0 0 3px;
+  align-self:flex-end;visibility:hidden;pointer-events:none;
+}
