@@ -32,6 +32,11 @@ test("UNO module composes public match state with the authenticated viewer's pri
 });
 
 test("UNO uses the shared lobby with configurable 2–10 player capacity", () => { assert.match(client, /GatherSharedLobby\?\.render/); assert.match(client, /n<=10/); assert.match(client, /p_max_players:maxPlayers/); assert.match(client, /up to ".+max_players/); });
+test("UNO spectators use the dedicated stop-spectating lifecycle action", () => {
+  assert.match(client, /spectating\?"gather_uno_stop_spectating":"gather_uno_leave"/);
+  assert.match(client, /module\.stopSpectating\(id\)/);
+});
+
 test("UNO module and current client version are available from the service-worker cache", () => {
   assert.match(html, /uno\.js\?v=20261115-multiplayer-capacities-1/);
   assert.match(worker, /uno\.js\?v=20261115-multiplayer-capacities-1/);
