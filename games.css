@@ -972,3 +972,8 @@
 .gather-shared-lobby-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:10px}
 .gather-shared-lobby-status{margin:0;text-align:center;color:var(--muted);font-size:12px}
 @media(max-width:480px){.gather-shared-lobby{border-radius:17px;padding:14px}.gather-shared-lobby-players{gap:8px}.gather-shared-player-card{grid-template-columns:1fr;justify-items:start;padding:11px}.gather-shared-player-avatar{width:38px;height:38px}.gather-shared-player-copy strong{font-size:12px}.gather-shared-host-tag{right:8px;top:8px}.gather-shared-lobby-actions>*{flex:1 1 130px}}
+
+.games-game-settings{display:grid;gap:10px;margin:0;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--surface,rgba(0,0,0,.08))}
+.games-setting-field{display:grid;gap:7px;font-size:13px;font-weight:650}
+.games-setting-field select{width:100%;min-height:44px;padding:9px 12px;border:1px solid var(--line);border-radius:11px;background:var(--panel);color:var(--text)}
+.games-setting-note{margin:0;line-height:1.5}
