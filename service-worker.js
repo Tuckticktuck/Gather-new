@@ -13,7 +13,7 @@ const SHELL_URLS = [
   "./uno.css?v=20261114-adaptive-table-1",
   "./design-system.css?v=20261114-interface-sync-5",
   "./games/shared/lobby-ui.js?v=20261115-multiplayer-capacities-1",
-  "./games.js?v=20261115-game-browser-1",
+  "./games.js?v=20261115-chess-checkers-modules-1",
   "./games/core/index.mjs",
   "./games/core/game-registry.mjs",
   "./games/core/match-contract.mjs",
