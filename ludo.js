@@ -563,12 +563,12 @@
     const form=el("form","ludo-form tag-form"),selected=[];
     const choose=el("button","outline","Choose people");choose.type="button";const summary=el("small","muted tiny","No people selected");
     const people=el("section","ludo-people-picker tag-people-picker");people.append(choose,summary);form.append(people);
-    const max=el("select");[2,3,4].forEach(v=>{const o=el("option","",v+" players");o.value=String(v);if(v===4)o.selected=true;max.append(o);});form.append(makeField("Player limit",max));
+    form.append(el("p","muted tiny","Every Gather match has exactly two player seats. Invite one opponent."));
     const color=el("select");COLORS.forEach(item=>{const o=el("option","",item.label);o.value=item.hex;color.append(o);});form.append(makeField("Your color",color));
     const actions=el("div","ludo-actions tag-actions");actions.append(btn("Back","secondary-action",renderLobbyList));
     const submit=btn("Create lobby","primary",()=>{});submit.type="submit";actions.append(submit);form.append(actions);
-    form.addEventListener("submit",async event=>{event.preventDefault();if(busy)return;if(!selected.length){toast("Choose at least one person to invite.");return;}if(selected.length+1>Number(max.value)){toast("The player limit must include you and everyone you invite.");return;}
-      busy=true;submit.disabled=true;try{const module=await getLudoModule();const result=await module.create({conversationId:null,joinMode:"invite",invitedUserIds:selected.slice(),playerLimit:Number(max.value),color:color.value});activeGameId=result.matchId;panelView="game";await loadGame();}
+    form.addEventListener("submit",async event=>{event.preventDefault();if(busy)return;if(selected.length!==1){toast("Choose exactly one opponent to invite.");return;}
+      busy=true;submit.disabled=true;try{const module=await getLudoModule();const result=await module.create({conversationId:null,joinMode:"invite",invitedUserIds:selected.slice(),playerLimit:2,color:color.value});activeGameId=result.matchId;panelView="game";await loadGame();}
       catch(error){toast(error?.message||"Could not create the Ludo lobby.");}finally{busy=false;submit.disabled=false;}
     });
     root.append(form);window.GatherPeoplePicker?.create({db:ctx.db,button:choose,summary,onChange:ids=>selected.splice(0,selected.length,...ids)});
