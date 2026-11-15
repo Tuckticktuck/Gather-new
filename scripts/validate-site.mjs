@@ -141,7 +141,7 @@ assert.ok(unoMatchLock >= 0 && unoOfferLock > unoMatchLock, "UNO rematch respons
 assert.match(unoRecapLeaveMigration, /status='joined'[\s\S]*joined_count<>cardinality\(o\.participants\)/i, "UNO rematch start must revalidate that all original participants are still joined");
 
 const partyClient = readFileSync(join(root, "party.js"), "utf8");
-assert.ok(partyClient.includes("members.length > 10") && partyClient.includes("p_max_players: members.length"), "UNO Quick Play must enforce the 10-player maximum");
+assert.ok(partyClient.includes("members.length !== 2") && partyClient.includes("p_max_players: 2"), "Party Quick Play must enforce two-player matches");
 assert.ok(unoClient.includes("joined.some(p=>!p.ready)") && unoClient.includes("start.disabled"), "UNO start must remain disabled until every joined player, including the host, is ready");
 const appClient = readFileSync(join(root, "app.js"), "utf8");
 const ludoClient = readFileSync(join(root, "ludo.js"), "utf8");
