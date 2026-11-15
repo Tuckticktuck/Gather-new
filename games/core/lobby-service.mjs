@@ -44,12 +44,15 @@ function validateCreateOptions(definition, driver, options, viewerId) {
     throw fail("Invite at least one person to create this lobby.");
   }
 
-  const totalSelected = invitedUserIds.length + 1;
+  if (driver.family === "legacy-two-player" && joinMode !== "invite") {
+    throw fail("Two-player conversation games use invitations, not open lobbies.");
+  }
+  const totalSelected = driver.family === "legacy-two-player" ? 2 : invitedUserIds.length + 1;
   const playerLimit = options.playerLimit ?? definition.maxPlayers;
   if (!Number.isSafeInteger(playerLimit) || playerLimit < definition.minPlayers || playerLimit > definition.maxPlayers) {
     throw fail("The selected player limit is outside this game's supported range.");
   }
-  if (totalSelected < definition.minPlayers) throw fail("Invite enough players for this game.");
+  if (joinMode === "invite" && totalSelected < definition.minPlayers) throw fail("Invite enough players for this game.");
   if (totalSelected > playerLimit) throw fail("The invitations exceed the selected player limit.");
   if (totalSelected > definition.maxPlayers) throw fail("This game has reached its player limit.");
 
