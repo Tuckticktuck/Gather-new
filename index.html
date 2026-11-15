@@ -14,7 +14,7 @@
 <title>Gather</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg?v=20261111-1">
 <link rel="stylesheet" href="app.css?v=20261114-group-avatar-left-8">
-<link rel="stylesheet" href="games.css?v=20261115-unified-game-picker-1">
+<link rel="stylesheet" href="games.css?v=20261115-shared-two-player-lobby-1">
 <link rel="stylesheet" href="party.css?v=20261114-party-hub-2">
 <link rel="stylesheet" href="ludo.css?v=20261114-neon-board-1">
 <link rel="stylesheet" href="dominoes.css?v=20261114-dominoes-draw-fix-1">
@@ -27,15 +27,15 @@ if (!window.supabase?.createClient) {
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
 <script defer src="games/shared/lobby-ui.js?v=20261115-shared-lobby-1"></script>
-<script defer src="games.js?v=20261115-unified-game-picker-1"></script>
+<script defer src="games.js?v=20261115-shared-two-player-lobby-1"></script>
 <script defer src="game-people-picker.js?v=20261114-selection-limit-1"></script>
 <script defer src="party.js?v=20261114-uno-ready-3"></script>
 <script defer src="game-chat.js?v=20261114-gather-chat-icon-2"></script>
 <link rel="stylesheet" href="uno.css?v=20261114-adaptive-table-1">
 <link rel="stylesheet" href="design-system.css?v=20261114-interface-sync-5">
-<script defer src="uno.js?v=20261114-shared-engine-1"></script>
-<script defer src="ludo.js?v=20261114-shared-engine-1"></script>
-<script defer src="dominoes.js?v=20261114-shared-engine-1"></script>
+<script defer src="uno.js?v=20261115-shared-two-player-lobby-1"></script>
+<script defer src="ludo.js?v=20261115-shared-two-player-lobby-1"></script>
+<script defer src="dominoes.js?v=20261115-shared-two-player-lobby-1"></script>
 <script defer src="app.js?v=20261114-dominoes-live-hub-2" onerror="const s=document.getElementById('auth-status');if(s){s.textContent='Gather could not load its app script. Check your connection and reload the page.';s.classList.add('error');}"></script>
 </head>
 <body>
