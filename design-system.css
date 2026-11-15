@@ -1,0 +1,384 @@
+/* Gather — shared interface foundation.
+   Loaded after feature stylesheets so common components stay visually consistent. */
+
+:root {
+  --g-radius-sm: 10px;
+  --g-radius-control: 12px;
+  --g-radius-card: 17px;
+  --g-radius-modal: 22px;
+  --g-border-soft: color-mix(in srgb, var(--accent-outline-soft, #ffffff22) 70%, #ffffff 3%);
+  --g-shadow-soft: 0 10px 28px rgba(0, 0, 0, .16);
+  --g-shadow-raised: 0 16px 42px rgba(0, 0, 0, .23);
+  --g-shadow-modal: 0 28px 80px rgba(0, 0, 0, .42);
+  --g-motion: 160ms cubic-bezier(.2, .7, .2, 1);
+}
+
+html {
+  scroll-behavior: smooth;
+  scrollbar-color: color-mix(in srgb, var(--accent) 35%, #555) transparent;
+}
+
+body {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: var(--accent-deep, #11131a);
+}
+
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
+}
+
+button,
+input,
+textarea,
+select,
+a {
+  transition:
+    color var(--g-motion),
+    background-color var(--g-motion),
+    border-color var(--g-motion),
+    box-shadow var(--g-motion),
+    opacity var(--g-motion),
+    transform var(--g-motion);
+}
+
+:where(button, input, textarea, select, a, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent, #b6a9ff);
+  outline-offset: 2px;
+}
+
+button:disabled,
+input:disabled,
+textarea:disabled,
+select:disabled {
+  cursor: not-allowed;
+}
+
+::selection {
+  color: var(--accent-ink, #211d35);
+  background: var(--accent, #b6a9ff);
+}
+
+/* Consistent app chrome. */
+#app .topbar {
+  position: relative;
+  z-index: 20;
+  background: color-mix(in srgb, var(--accent-panel, #191b25) 90%, #07080b);
+  border-bottom-color: var(--g-border-soft);
+  box-shadow: 0 5px 22px rgba(0, 0, 0, .15);
+}
+
+#app .topbar .brand {
+  letter-spacing: -.035em;
+}
+
+#app .topbar .brand-icon {
+  overflow: hidden;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+#app .topbar-actions {
+  gap: 8px;
+}
+
+#app .topbar-actions .home-button,
+#app .profile-pill {
+  min-height: 38px;
+  border-radius: var(--g-radius-control);
+  border-color: var(--g-border-soft);
+  background: color-mix(in srgb, var(--accent-panel-raised, #20222d) 88%, transparent);
+}
+
+#app .topbar-actions .home-button:hover,
+#app .profile-pill:hover {
+  border-color: var(--accent-outline, #ffffff44);
+  background: var(--accent-hover, #292b39);
+}
+
+#layout .sidebar {
+  background: color-mix(in srgb, var(--accent-panel, #191b25) 94%, #050608);
+  border-right-color: var(--g-border-soft);
+}
+
+#layout .side-title {
+  margin-bottom: 5px;
+}
+
+#layout .side-title h2 {
+  letter-spacing: -.025em;
+}
+
+#layout .main {
+  background: var(--accent-deep, #11131a);
+}
+
+/* Navigation, lists, and workspace panels. */
+.new-chat-action,
+.requests-button,
+.home-button,
+.secondary-action,
+.outline,
+.folder-tab,
+.tab {
+  border-radius: var(--g-radius-control);
+}
+
+.new-chat-action,
+.requests-button,
+.secondary-action,
+.outline {
+  border-color: var(--g-border-soft);
+}
+
+.new-chat-actions {
+  gap: 8px;
+}
+
+.new-chat-action {
+  min-height: 42px;
+  padding: 11px 13px;
+}
+
+.requests-button {
+  min-height: 40px;
+}
+
+.chat-item {
+  border-radius: 12px;
+}
+
+.chat-item.active {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.home-workspace {
+  gap: 19px;
+  padding: clamp(20px, 3.2vw, 40px);
+}
+
+.workspace-header {
+  padding-bottom: 19px;
+  border-bottom-color: var(--g-border-soft);
+}
+
+.workspace-header h1 {
+  line-height: 1.12;
+  letter-spacing: -.045em;
+}
+
+.workspace-subtitle {
+  line-height: 1.65;
+}
+
+.workspace-folder,
+.workspace-group-section,
+.home-announcement-card {
+  border: 1px solid var(--g-border-soft);
+  border-radius: var(--g-radius-card);
+  background: color-mix(in srgb, var(--accent-panel, #191b25) 96%, transparent);
+  box-shadow: var(--g-shadow-soft);
+}
+
+.workspace-folder,
+.workspace-group-section {
+  padding: 16px;
+}
+
+.workspace-tabs,
+.folder-tabs {
+  border: 1px solid var(--g-border-soft);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--accent-deep, #11131a) 90%, #000);
+}
+
+.workspace-tabs .folder-tab,
+.folder-tabs .folder-tab {
+  min-height: 37px;
+  border-radius: 10px;
+}
+
+.chat-row,
+.request-item,
+.person,
+.group-member-row,
+.notification-center-item {
+  border-radius: 13px;
+  border-color: var(--g-border-soft);
+}
+
+.chat-row {
+  background: color-mix(in srgb, var(--accent-panel-raised, #20222d) 85%, transparent);
+}
+
+.chat-row .chat-item {
+  border-radius: 10px;
+}
+
+/* Conversation surface and composer. */
+.chat-head {
+  border-bottom-color: var(--g-border-soft);
+  background: color-mix(in srgb, var(--accent-panel, #191b25) 96%, #08090c);
+}
+
+.chat-head .chat-title strong {
+  letter-spacing: -.015em;
+}
+
+.composer {
+  border-color: var(--g-border-soft);
+  border-radius: 16px;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, .13);
+}
+
+.composer:focus-within {
+  border-color: var(--accent-outline, #ffffff55);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 9%, transparent), 0 8px 26px rgba(0, 0, 0, .13);
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+textarea,
+select {
+  border-radius: var(--g-radius-control);
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus,
+textarea:focus,
+select:focus {
+  border-color: var(--accent-outline, #ffffff55);
+}
+
+/* Dialogs and feedback surfaces. */
+.overlay {
+  padding: 14px;
+  background: color-mix(in srgb, var(--accent-deep, #11131a) 82%, #000);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.modal {
+  border-color: var(--g-border-soft);
+  border-radius: var(--g-radius-modal);
+  background: color-mix(in srgb, var(--accent-panel, #191b25) 97%, #fff 1%);
+  box-shadow: var(--g-shadow-modal);
+}
+
+.close {
+  border-radius: 10px;
+}
+
+.notifications-list,
+.feedback-sidebar,
+.feedback-content {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--accent) 30%, #555) transparent;
+}
+
+.notification-center-item {
+  background: var(--accent-panel-raised, #20222d);
+}
+
+.notification-center-item.unread {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+/* Keep scrollbars quiet and consistent across the app. */
+.home-workspace,
+.sidebar,
+.messages,
+.modal,
+.notifications-list,
+.workspace-chat-list,
+.in-chat-sidebar-scroll,
+.in-chat-conversation-list {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--accent) 28%, #555) transparent;
+}
+
+.home-workspace::-webkit-scrollbar,
+.sidebar::-webkit-scrollbar,
+.messages::-webkit-scrollbar,
+.modal::-webkit-scrollbar,
+.notifications-list::-webkit-scrollbar,
+.workspace-chat-list::-webkit-scrollbar,
+.in-chat-sidebar-scroll::-webkit-scrollbar,
+.in-chat-conversation-list::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.home-workspace::-webkit-scrollbar-thumb,
+.sidebar::-webkit-scrollbar-thumb,
+.messages::-webkit-scrollbar-thumb,
+.modal::-webkit-scrollbar-thumb,
+.notifications-list::-webkit-scrollbar-thumb,
+.workspace-chat-list::-webkit-scrollbar-thumb,
+.in-chat-sidebar-scroll::-webkit-scrollbar-thumb,
+.in-chat-conversation-list::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--accent) 26%, #555);
+  background-clip: padding-box;
+}
+
+/* Small-screen spacing and touch targets. */
+@media (max-width: 720px) {
+  #app .topbar-actions {
+    gap: 5px;
+  }
+
+  .home-workspace {
+    gap: 14px;
+    padding: 16px 12px max(20px, env(safe-area-inset-bottom));
+  }
+
+  .workspace-header {
+    gap: 14px;
+    padding-bottom: 15px;
+  }
+
+  .workspace-header h1 {
+    letter-spacing: -.035em;
+  }
+
+  .workspace-folder,
+  .workspace-group-section {
+    padding: 12px;
+    border-radius: 15px;
+  }
+
+  .workspace-actions button,
+  .home-button,
+  .requests-button,
+  .new-chat-action {
+    min-height: 40px;
+  }
+
+  .overlay {
+    padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom));
+  }
+
+  .modal {
+    max-height: calc(100dvh - 20px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
