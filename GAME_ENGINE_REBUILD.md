@@ -1,6 +1,6 @@
 # Gather Game Engine Rebuild
 
-Status: Core contracts, compatibility services, Tic-Tac-Toe / Connect Four pilot, and Dominoes module migration integrated  
+Status: Core contracts, compatibility services, Tic-Tac-Toe / Connect Four pilot, Dominoes integration, and UNO integration committed; CI verification pending  
 Repository: \`Tuckticktuck/Gather-new\`  
 Frontend hosting: GitHub Pages  
 Backend: Supabase  
@@ -313,3 +313,19 @@ The existing Dominoes board, tile selection/placement, draw-until-playable loop,
 The service worker precaches the module and recognizes it as a static asset so the module can be loaded from the offline app shell. The old broad Realtime channel now only refreshes the lobby list; open-match synchronization is handled by the shared match-sync service.
 
 This phase changes the client integration but does not alter the production database schema or any existing game rows.
+
+
+## Phase 5 — UNO module migration
+
+Added `games/modules/uno/index.mjs` and connected the existing `uno.js` screen to it.
+
+- Lobby creation, join, decline, readiness, start, leave, end, spectate, and stop-spectating are routed through the shared lobby facade and typed UNO adapter.
+- Active-match loading uses the shared canonical match/roster repository and the dedicated `gather_uno_get_state` RPC.
+- The module composes only the signed-in viewer's returned hand with public match state and public player card counts. It does not read or expose the private deck or other players' hands.
+- Active match synchronization uses match-scoped Realtime subscriptions and cleans them up when leaving the match view.
+- Card actions (`play`, `draw`, `pass`, `call_uno`), host house rules, done confirmations, and rematch operations remain on their existing game-specific server RPCs. They are not client-authored state replacements.
+- The existing UNO lobby, table, fan hand, card-selection controls, house-rule UI, spectators, recap, score display, and rematch UI remain in `uno.js`.
+- The module and client are included in the service-worker shell and static path list; the UNO script asset version was advanced to invalidate stale cached UI.
+- Added dedicated module tests and screen-integration assertions. No production schema, game rows, private-state data, or existing UNO RPC definitions were changed.
+
+The shared game engine now has two complex multiplayer client integrations: Dominoes and UNO. The remaining migration sequence is multiplayer Ludo, Battleship, Chess, and Checkers, with additional regression testing across the two older turn-based games as required.
