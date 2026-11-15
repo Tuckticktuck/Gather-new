@@ -73,6 +73,7 @@ const gamesClient = readFileSync(join(root, "games.js"), "utf8");
 const battleshipModule = readFileSync(join(root, "games/modules/battleship/index.mjs"), "utf8");
 const sharedLobbyUi = readFileSync(join(root, "games/shared/lobby-ui.js"), "utf8");
 const multiplayerCapacityMigration = readFileSync(join(root, "supabase/migrations/20261115144745_restore_multiplayer_game_capacities_20261115160000.sql"), "utf8");
+const gameBrowserMigration = readFileSync(join(root, "supabase/migrations/20261115151000_add_friend_open_game_lobby_directory.sql"), "utf8");
 const unoLobbyClient = readFileSync(join(root, "uno.js"), "utf8");
 const ludoLobbyClient = readFileSync(join(root, "ludo.js"), "utf8");
 const dominoesLobbyClient = readFileSync(join(root, "dominoes.js"), "utf8");
@@ -94,8 +95,8 @@ assert.ok(gamesClient.includes("module.action(game.id, action, payload)"), "Batt
 assert.doesNotMatch(gamesClient, /ctx\.db\.rpc\("gather_game_battleship_(?:private_state|action)"/, "Battleship screen must not bypass the module for private state or actions");
 assert.ok(battleshipModule.includes("canPerformMatchCommand") && battleshipModule.includes("loadPrivateState") && battleshipModule.includes("driver.action"), "Battleship module must use shared permission and dedicated action boundaries");
 assert.equal((serviceWorker.match(/"\.\/games\/modules\/battleship\/index\.mjs"/g) || []).length, 2, "Battleship module must be present in both offline cache lists");
-assert.ok(html.includes("games.js?v=20261115-multiplayer-capacities-1") && serviceWorker.includes("./games.js?v=20261115-multiplayer-capacities-1"), "Unified game picker client asset versions must align");
-assert.ok(html.includes("games.css?v=20261115-multiplayer-capacities-1") && serviceWorker.includes("./games.css?v=20261115-multiplayer-capacities-1"), "Unified game picker styles must be versioned in the offline cache");
+assert.ok(html.includes("games.js?v=20261115-game-browser-1") && serviceWorker.includes("./games.js?v=20261115-game-browser-1"), "Unified game picker client asset versions must align");
+assert.ok(html.includes("games.css?v=20261115-game-browser-1") && serviceWorker.includes("./games.css?v=20261115-game-browser-1"), "Unified game picker styles must be versioned in the offline cache");
 const unifiedGameTypes = [...gamesClient.matchAll(/data-game-type="([^"]+)"/g)].map(match => match[1]);
 assert.deepEqual(unifiedGameTypes, ["chess", "checkers", "tic_tac_toe", "connect_four", "battleship", "uno", "ludo", "dominoes"], "New Game must show all games in one unified catalog");
 assert.ok(gamesClient.includes("<strong>UNO</strong><small>2–10 players</small>"), "UNO picker must show its 2–10 player capacity");
@@ -108,6 +109,18 @@ assert.match(multiplayerCapacityMigration, /drop trigger if exists gather_multip
 assert.match(multiplayerCapacityMigration, /supports between two and ten players/i);
 assert.match(multiplayerCapacityMigration, /supports between two and four players/i);
 assert.match(multiplayerCapacityMigration, /Team mode needs four players/i);
+assert.match(gamesClient, /games-catalog-grid/, "The Games homepage must show the full game catalog");
+assert.match(gamesClient, /gather_public_game_lobbies/, "The game browser must load open lobbies through the restricted directory RPC");
+assert.match(gamesClient, /gather_public_lobby_action/, "Joining or spectating a discovered lobby must use the server-validated action RPC");
+assert.match(gamesClient, /Open to friends/, "Multiplayer lobby creation must support open-to-friends visibility");
+assert.match(gameBrowserMigration, /private\.is_blocked_between/, "Open lobby discovery and actions must respect user blocks");
+assert.match(gameBrowserMigration, /public\.friendships/, "Open lobby discovery and actions must be limited to accepted friends");
+assert.match(gameBrowserMigration, /revoke all on function public\.gather_public_game_lobbies\(text\) from public,anon/i, "The open lobby directory must not be callable anonymously");
+assert.match(gameBrowserMigration, /grant execute on function public\.gather_public_game_lobbies\(text\) to authenticated/i, "Only signed-in users may browse open lobbies");
+assert.match(gameBrowserMigration, /gather_ludo_join/, "The open lobby action must join Ludo through its authoritative RPC");
+assert.match(gameBrowserMigration, /gather_uno_spectate/, "The open lobby action must spectate UNO through its authoritative RPC");
+assert.match(gameBrowserMigration, /gather_dominoes_spectate/, "The open lobby action must spectate Dominoes through its authoritative RPC");
+
 assert.match(gamesClient, /GatherSharedLobby\?\.render/);
 assert.match(unoLobbyClient, /GatherSharedLobby\?\.render/);
 assert.match(ludoLobbyClient, /GatherSharedLobby\?\.render/);
@@ -190,7 +203,7 @@ assert.match(unoClient, /visibilitychange",refreshOnReturn/, "UNO must catch up 
 assert.doesNotMatch(unoClient, /setInterval/, "UNO must not poll on a timer");
 assert.match(unoClient, /if\(activeGameId!==gameId\)return/, "UNO must ignore stale responses from a previously opened lobby");
 assert.match(unoClient, /playerToggle.hidden=!started/, "UNO player controls must not show an inactive Players button in the waiting room");
-assert.ok(html.includes("uno.js?v=20261115-multiplayer-capacities-1") && serviceWorker.includes("./uno.js?v=20261115-multiplayer-capacities-1"), "UNO shared-engine client changes must invalidate the cached asset");
+assert.ok(html.includes("uno.js?v=20261115-game-browser-1") && serviceWorker.includes("./uno.js?v=20261115-game-browser-1"), "UNO shared-engine client changes must invalidate the cached asset");
 assert.ok(html.includes("uno.css?v=20261114-adaptive-table-1") && serviceWorker.includes("./uno.css?v=20261114-adaptive-table-1"), "UNO arcade theme changes must invalidate the cached stylesheet");
 const unoModule = readFileSync(join(root, "games/modules/uno/index.mjs"), "utf8");
 assert.ok(unoClient.includes('import("./games/modules/uno/index.mjs")'), "UNO client must load its registered game module");
@@ -224,7 +237,7 @@ assert.ok(ludoClient.includes("getLudoModule()).cancel(game.id)"), "Ludo host lo
 assert.match(ludoClient, /if \(isHost\(\)\) root\.append\(closeLobby\(\)\)/, "Ludo host must be able to close an active match lobby");
 assert.match(ludoCloseMigration, /v_game\.created_by <> auth\.uid\(\)/, "Only the Ludo host may close the lobby");
 assert.match(ludoCloseMigration, /status = 'cancelled'/, "Ludo cancellation must close the lobby for all members");
-assert.ok(html.includes("ludo.js?v=20261115-multiplayer-capacities-1") && serviceWorker.includes("./ludo.js?v=20261115-multiplayer-capacities-1"), "Ludo shared-engine asset versions must match");
+assert.ok(html.includes("ludo.js?v=20261115-game-browser-1") && serviceWorker.includes("./ludo.js?v=20261115-game-browser-1"), "Ludo shared-engine asset versions must match");
 assert.ok(html.includes("ludo.css?v=20261114-neon-board-1") && serviceWorker.includes("./ludo.css?v=20261114-neon-board-1"), "Ludo neon board stylesheet versions must match");
 assert.ok(ludoClient.includes('import("./games/modules/ludo/index.mjs")') && ludoClient.includes("module.load(gameId)") && ludoClient.includes("module.mount("), "Ludo reads and synchronizes active matches through its module");
 assert.ok(ludoClient.includes("module.action(gameId, action") && ludoClient.includes("module.create("), "Ludo actions and lobby creation route through the module");
