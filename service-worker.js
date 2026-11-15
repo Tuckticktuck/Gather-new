@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "gather-shell-v116";
+const CACHE_NAME = "gather-shell-v117";
 const APP_BASE = new URL("./", self.registration.scope);
 const SHELL_URLS = [
   "./",
@@ -12,7 +12,7 @@ const SHELL_URLS = [
   "./dominoes.css?v=20261114-dominoes-draw-fix-1",
   "./uno.css?v=20261114-adaptive-table-1",
   "./design-system.css?v=20261114-interface-sync-5",
-  "./games.js?v=20261114-shared-board-pilot-1",
+  "./games.js?v=20261115-battleship-shared-engine-1",
   "./games/core/index.mjs",
   "./games/core/game-registry.mjs",
   "./games/core/match-contract.mjs",
@@ -25,6 +25,7 @@ const SHELL_URLS = [
   "./games/modules/dominoes/index.mjs",
   "./games/modules/uno/index.mjs",
   "./games/modules/ludo/index.mjs",
+  "./games/modules/battleship/index.mjs",
   "./game-people-picker.js?v=20261114-selection-limit-1",
   "./party.js?v=20261114-uno-ready-3",
   "./game-chat.js?v=20261114-gather-chat-icon-2",
@@ -62,6 +63,7 @@ const STATIC_PATHS = new Set([
   "./games/modules/dominoes/index.mjs",
   "./games/modules/uno/index.mjs",
   "./games/modules/ludo/index.mjs",
+  "./games/modules/battleship/index.mjs",
   "./game-people-picker.js",
   "./party.js",
   "./game-chat.js",
