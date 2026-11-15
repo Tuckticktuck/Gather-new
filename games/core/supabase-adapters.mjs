@@ -124,6 +124,9 @@ function createUnoDriver(rpc) {
     async spectate(matchId) {
       return rpc("gather_uno_spectate", { p_game_id: requiredString(matchId, "matchId") });
     },
+    async stopSpectating(matchId) {
+      return rpc("gather_uno_stop_spectating", { p_game_id: requiredString(matchId, "matchId") });
+    },
     async loadPrivateState(matchId) {
       return rpc("gather_uno_get_state", { p_game_id: requiredString(matchId, "matchId") });
     }
