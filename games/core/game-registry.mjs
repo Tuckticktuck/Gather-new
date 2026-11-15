@@ -96,9 +96,9 @@ export const GATHER_GAME_DEFINITIONS = Object.freeze([
   { id: "tic_tac_toe", name: "Tic-Tac-Toe", description: "A quick three-in-a-row match.", category: "board", interactionModel: "turn-based", minPlayers: 2, maxPlayers: 2, tags: ["quick", "classic"] },
   { id: "connect_four", name: "Connect Four", description: "Drop four discs in a row to win.", category: "board", interactionModel: "turn-based", minPlayers: 2, maxPlayers: 2, tags: ["quick", "classic"] },
   { id: "battleship", name: "Battleship", description: "Place your fleet, then find and hit every ship square.", category: "board", interactionModel: "turn-based", minPlayers: 2, maxPlayers: 2, tags: ["strategy", "hidden-information"] },
-  { id: "ludo", name: "Ludo", description: "Race tokens around the board and into home.", category: "board", interactionModel: "turn-based", minPlayers: 2, maxPlayers: 2, tags: ["family", "dice"] },
-  { id: "uno", name: "UNO", description: "Play cards, use action cards, and race to empty your hand.", category: "card", interactionModel: "turn-based", minPlayers: 2, maxPlayers: 2, tags: ["cards", "party", "hidden-information"] },
-  { id: "dominoes", name: "Dominoes", description: "Draw, match, and score your way to the target.", category: "tabletop", interactionModel: "turn-based", minPlayers: 2, maxPlayers: 2, tags: ["tabletop", "strategy", "hidden-information"] }
+  { id: "ludo", name: "Ludo", description: "Race tokens around the board and into home.", category: "board", interactionModel: "turn-based", minPlayers: 2, maxPlayers: 4, tags: ["family", "dice", "multiplayer"] },
+  { id: "uno", name: "UNO", description: "Play cards, use action cards, and race to empty your hand.", category: "card", interactionModel: "turn-based", minPlayers: 2, maxPlayers: 10, tags: ["cards", "party", "hidden-information", "multiplayer"] },
+  { id: "dominoes", name: "Dominoes", description: "Draw, match, and score your way to the target.", category: "tabletop", interactionModel: "turn-based", minPlayers: 2, maxPlayers: 4, tags: ["tabletop", "strategy", "hidden-information", "multiplayer"] }
 ]);
 
 export const GatherGameRegistry = createGameRegistry(GATHER_GAME_DEFINITIONS);
