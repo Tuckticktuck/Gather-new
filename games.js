@@ -38,6 +38,7 @@
   let hubFilter = "all";
   let selectedGameConversationId = null;
   let selectedDraftGameType = "chess";
+  let gameTypeChooserConversationId = null;
   let draftSelectedInvitees = [];
   let hubSearchQuery = "";
   let selectedBrowseGameType = null;
@@ -166,7 +167,7 @@
       const launch = button("Play a game", "composer-menu-item", () => {
         composerMenu.hidden = true;
         $("composer-more-trigger")?.setAttribute("aria-expanded", "false");
-        if (activeChat?.id) openCreateModal(activeChat.id);
+        if (activeChat?.id) openGameTypeChooser(activeChat.id);
         else showHub();
       });
       launch.id = "chat-games-open";
@@ -184,7 +185,7 @@
       const head = node("div", "games-chat-tray-head");
       head.append(node("strong", "", "Games in this conversation"));
       head.append(button("＋ Start", "games-tray-start", () => {
-        if (activeChat?.id) openCreateModal(activeChat.id);
+        if (activeChat?.id) openGameTypeChooser(activeChat.id);
       }));
       const list = node("div", "games-chat-tray-list");
       list.id = "games-chat-tray-list";
@@ -223,7 +224,8 @@
         if (!choice) return;
         const gameType = choice.dataset.gameType;
         closeGameTypeChooser();
-        openCreateModal(undefined, gameType);
+        const conversationId = gameTypeChooserConversationId;
+        openCreateModal(conversationId, gameType);
       });
     }
 
@@ -524,8 +526,9 @@
     return launchers[gameType]();
   }
 
-  function openGameTypeChooser() {
+  function openGameTypeChooser(conversationId = null) {
     if (!ctx || !userId()) return;
+    gameTypeChooserConversationId = conversationId;
     $("games-type-chooser").hidden = false;
   }
 
@@ -687,6 +690,7 @@
   function closeGameTypeChooser() {
     const overlay = $("games-type-chooser");
     if (overlay) overlay.hidden = true;
+    gameTypeChooserConversationId = null;
   }
 
   function openCreateModal(defaultConversationId, gameType = "chess") {
@@ -694,6 +698,10 @@
     const eligible = chatList().filter(chat => (chat.members || []).some(member => member.user_id === userId()) && (chat.members || []).some(member => member.user_id !== userId()));
     const requestedType = TYPES[gameType] ? gameType : "chess";
     const canCreateOpen = ["uno", "ludo", "dominoes"].includes(requestedType);
+    if (defaultConversationId && !eligible.some(chat => chat.id === defaultConversationId)) {
+      toast("This conversation is no longer available for starting a game.");
+      return;
+    }
     if (!eligible.length && !canCreateOpen) {
       toast("Start or join a conversation before creating this game lobby.");
       return;
@@ -702,6 +710,8 @@
     const select = $("games-conversation");
     select.replaceChildren();
     appendSortedChatOptions(select, eligible);
+    select.disabled = !!defaultConversationId;
+    select.title = defaultConversationId ? "This game will be created in the conversation you selected." : "";
     const chosen = eligible.find(chat => chat.id === defaultConversationId) || eligible[0];
     if (chosen) select.value = chosen.id;
     draftSelectedInvitees = [];
