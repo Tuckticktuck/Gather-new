@@ -44,7 +44,8 @@ test("shared lobby renders each participant and computes variable-capacity readi
       { user_id: "p3", status: "invited", ready: false }
     ],
     viewerId: "host",
-    getName: id => id
+    getName: id => id,
+    onStart() {}
   });
 
   assert.equal(result.joinedCount, 2);
