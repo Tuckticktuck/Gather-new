@@ -72,3 +72,15 @@ test("Dominoes client supports tap selection, drag placement and reduced motion"
   assert.match(client, /dominoes-reduced-motion/);
   assert.match(client, /dominoes-tutorial/);
 });
+
+
+test("Dominoes delegates lifecycle and private-state loading to the shared game module", () => {
+  assert.match(client, /import\("\.\/games\/modules\/dominoes\/index\.mjs"\)/);
+  assert.match(client, /module\.create\(/);
+  assert.match(client, /module\.join\(/);
+  assert.match(client, /module\.setReady\(/);
+  assert.match(client, /module\.start\(/);
+  assert.match(client, /module\.load\(/);
+  assert.match(client, /module\.unmount\(/);
+  assert.match(worker, /games\/modules\/dominoes\/index\.mjs/);
+});
