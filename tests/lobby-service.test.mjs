@@ -66,7 +66,7 @@ test("service validates create options against the game registry", async () => {
   }), /Duplicate invitees/);
 
   await assert.rejects(service.create("dominoes", {
-    invitedUserIds: ["player", "third", "fourth"], playerLimit: 4
+    invitedUserIds: ["player", "third", "fourth", "fifth"], playerLimit: 4
   }), /exceed the selected player limit/);
 
   await assert.rejects(service.create("unknown_game", {}), /not registered/);
@@ -119,20 +119,20 @@ test("a spectator or invitee cannot change readiness", async () => {
     ]
   });
   const { service, calls } = setup({ viewerId: "spectator", snapshot });
-  await assert.rejects(service.setReady("dominoes", "match-1", true), /permission-denied/);
+  await assert.rejects(service.setReady("dominoes", "match-1", true), error => error.code === "permission-denied");
   assert.equal(calls.length, 0);
 });
 
 test("only the host can start or cancel a lobby", async () => {
   const snapshot = snapshotFor("dominoes");
   const { service } = setup({ viewerId: "player", snapshot });
-  await assert.rejects(service.start("dominoes", "match-1"), /permission-denied/);
-  await assert.rejects(service.cancel("dominoes", "match-1"), /permission-denied/);
+  await assert.rejects(service.start("dominoes", "match-1"), error => error.code === "permission-denied");
+  await assert.rejects(service.cancel("dominoes", "match-1"), error => error.code === "permission-denied");
 });
 
 test("host-only end policy is enforced before calling a game driver", async () => {
   const { service, calls } = setup({ viewerId: "player" });
-  await assert.rejects(service.end("dominoes", "match-1"), /permission-denied/);
+  await assert.rejects(service.end("dominoes", "match-1"), error => error.code === "permission-denied");
   assert.equal(calls.length, 0);
 });
 
