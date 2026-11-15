@@ -81,6 +81,6 @@ test("Dominoes delegates lifecycle and private-state loading to the shared game 
   assert.match(client, /module\.setReady\(/);
   assert.match(client, /module\.start\(/);
   assert.match(client, /module\.load\(/);
-  assert.match(client, /module\.unmount\(/);
+  assert.match(client, /engineModule\?\.unmount\?\.\(/);
   assert.match(worker, /games\/modules\/dominoes\/index\.mjs/);
 });

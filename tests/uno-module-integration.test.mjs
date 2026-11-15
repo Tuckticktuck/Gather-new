@@ -17,7 +17,7 @@ test("UNO client routes shared lifecycle and view loading through its game modul
   assert.match(client, /module\.start\(/);
   assert.match(client, /module\.load\(/);
   assert.match(client, /module\.mount\(/);
-  assert.match(client, /module\.unmount\(/);
+  assert.match(client, /engineModule\?\.unmount\?\.\(/);
   assert.match(client, /case "gather_uno_action": return module\.action/);
   assert.doesNotMatch(client, /ctx\.db\.rpc\("gather_uno_(?:get_state|action|create|join|ready|start|leave|end|spectate)"/);
 });
@@ -35,5 +35,5 @@ test("UNO module and current client version are available from the service-worke
   assert.match(html, /uno\.js\?v=20261114-shared-engine-1/);
   assert.match(worker, /uno\.js\?v=20261114-shared-engine-1/);
   assert.equal(worker.split('"./games/modules/uno/index.mjs"').length - 1, 2);
-  assert.match(worker, /gather-shell-v115/);
+  assert.match(worker, /gather-shell-v116/);
 });

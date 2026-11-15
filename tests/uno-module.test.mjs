@@ -116,7 +116,6 @@ test("UNO host readiness and start operations use the shared lobby service", asy
   await module.start(MATCH_ID);
   assert.deepEqual(db.calls.filter(call => call.type === "rpc").map(call => call.name), [
     "gather_uno_ready",
-    "gather_uno_get_state",
     "gather_uno_start",
     "gather_uno_get_state"
   ]);
@@ -148,7 +147,6 @@ test("UNO action intents and specialized host/result operations keep their dedic
   const response = await module.respondToRematch("22222222-2222-4222-8222-222222222222", true);
   assert.equal(response.status, "accepted_waiting");
   assert.deepEqual(db.calls.filter(call => call.type === "rpc").map(call => call.name), [
-    "gather_uno_get_state",
     "gather_uno_action",
     "gather_uno_get_state",
     "gather_uno_set_house_rules",
