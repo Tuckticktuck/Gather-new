@@ -16,3 +16,5 @@ export {
 export { createMatchSync } from "./match-sync.mjs";
 export { createActionDispatcher } from "./action-dispatcher.mjs";
 export { createGameModuleRegistry, validateGameModule } from "./game-module-contract.mjs";
+export { createLobbyService } from "./lobby-service.mjs";
+export { createSupabaseGameDrivers, createSupabaseMatchRepository } from "./supabase-adapters.mjs";
