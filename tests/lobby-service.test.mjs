@@ -12,7 +12,7 @@ const snapshotFor = (gameType, options = {}) => ({
     join_mode: options.joinMode || "invite",
     settings: {},
     revision: 1,
-    state: options.state || { phase: "lobby", started: false, finished: false }
+    player_one_id: options.playerOneId || null,\n    player_two_id: options.playerTwoId || null,\n    started_at: options.startedAt ?? null,\n    state: options.state || { phase: "lobby", started: false, finished: false }
   },
   players: options.players || [
     { user_id: "host", status: "joined", ready: true },
@@ -24,7 +24,7 @@ function setup({ gameType = "dominoes", viewerId = "host", snapshot = snapshotFo
   const calls = [];
   const driver = {
     id: gameType,
-    family: "shared-multiplayer",
+    family: driverOverrides.family || "shared-multiplayer",
     endPolicy: "host-only",
     async create(options) { calls.push(["create", options]); return { id: "new-match" }; },
     async join(id, extra) { calls.push(["join", id, extra]); return true; },
@@ -183,7 +183,24 @@ test("an any-player legacy game end policy permits either joined player", async 
   assert.equal(calls[0][0], "end");
 });
 
-test("watch uses canonical snapshots and disposes the realtime subscription", async () => {
+
+test("Battleship placement phase remains a lobby until started_at is set", async () => {
+  const snapshot = snapshotFor("battleship", {
+    playerOneId: "host", playerTwoId: "player", startedAt: null,
+    state: { phase: "placement", placed: { p1: false, p2: false } },
+    players: [
+      { user_id: "host", status: "joined", ready: false },
+      { user_id: "player", status: "joined", ready: false }
+    ]
+  });
+  const { service, calls } = setup({
+    gameType: "battleship", snapshot,
+    driverOverrides: { family: "legacy-two-player", endPolicy: "any-joined-player" }
+  });
+  await service.setReady("battleship", "match-1", true);
+  assert.deepEqual(calls[0], ["setReady", "match-1", true]);
+});
+\ntest("watch uses canonical snapshots and disposes the realtime subscription", async () => {
   const { service, calls } = setup();
   const received = [];
   const sync = service.watch("dominoes", "match-1", snapshot => received.push(snapshot.match.id), { debounceMs: 1 });
