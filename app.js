@@ -5910,11 +5910,12 @@ function wire(){
   window.visualViewport?.addEventListener("resize",syncGatherVisualViewport);
   document.addEventListener("focusin",event=>{
     if(event.target?.id!=="message")return;
-    requestAnimationFrame(()=>{
-      window.scrollTo({top:0,left:0,behavior:"instant"});
-      syncGatherVisualViewport();
-    });
+    // Do not force-scroll the document to the top: iOS Safari can move the
+    // visual viewport independently when its keyboard opens. Let the chat
+    // remain anchored and size it from the live visual viewport instead.
+    requestAnimationFrame(syncGatherVisualViewport);
   });
+  window.visualViewport?.addEventListener("scroll",syncGatherVisualViewport);
   // Capture the shared-media back action before other modal or delegated handlers.
   // This keeps the navigation working even if other composer/modal handlers stop bubbling.
   document.addEventListener("click",event=>{
