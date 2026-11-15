@@ -24,7 +24,7 @@ Do not treat a same-named game in two families as the same runtime. In particula
 | `games.js` | Checkers | `gather_game_create`, `gather_game_accept`, `gather-board-game-action` Edge Function, `gather_game_end` | Legacy turn-based + server validator |
 | `games.js` | Tic-Tac-Toe | `gather_game_create`, `gather_game_accept`, `gather-board-game-action` Edge Function, `gather_game_end` | Legacy turn-based + server validator |
 | `games.js` | Connect Four | `gather_game_create`, `gather_game_accept`, `gather-board-game-action` Edge Function, `gather_game_end` | Legacy turn-based + server validator |
-| `games.js` | Battleship | `gather_game_create`, `gather_game_battleship_private_state`, `gather_game_battleship_action` | Legacy game row + private fleet table |
+| `games/modules/battleship/index.mjs` + `games.js` | Battleship | Shared legacy lifecycle + canonical match repository + match-scoped Realtime; dedicated private-state and typed action RPCs | Legacy game row + private fleet table through shared module |
 | `games.js` | Legacy Ludo | `gather_game_create`, `gather_ludo_action` | Legacy turn-based |
 | `games.js` | Legacy Ludo (alternate multiplayer module) | Client code contains `gather_ludo_multiplayer_action` path in multiplayer module; verify which UI path is mounted before changing | Shared multiplayer |
 | `games/modules/uno/index.mjs` + `uno.js` | UNO lobby and match | Shared lobby service and match-scoped Realtime; dedicated `gather_uno_*` RPCs for private state, card intents, house rules, recap, and rematches | Shared multiplayer module + private UNO state |
@@ -49,10 +49,11 @@ Do not treat a same-named game in two families as the same runtime. In particula
 
 ### Battleship
 
-- Client submits intent (`place_fleet` or `fire`) and payload to `gather_game_battleship_action`.
-- Live RPC validates fleet count, lengths, contiguous geometry, overlap, board bounds, turn, and shot target; fleet data is stored separately in `gather_battleship_fleets`.
-- `gather_game_battleship_private_state` returns only the caller's fleet state for a player; non-player conversation members receive a non-player response.
-- This is the strongest existing example of intent-based, server-computed game transitions in the legacy family.
+- `games/modules/battleship/index.mjs` delegates creation, invitation lifecycle, ending, canonical reads, and match-scoped Realtime to the shared legacy two-player services.
+- Private fleet data is read only through `gather_game_battleship_private_state`, which returns the caller's own fleet to a player and an empty non-player response to conversation spectators.
+- The client submits only `place_fleet` or `fire` intent and payload to `gather_game_battleship_action`; it never submits a replacement match state.
+- The live action RPC validates fleet count, lengths, contiguous geometry, overlap, board bounds, turn ownership, and shot target. Fleet data is stored separately and hit/miss plus winner are computed by the database.
+- The existing Battleship UI remains the module's rendering implementation while lifecycle and synchronization use shared services.
 
 ### Legacy Ludo
 
