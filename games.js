@@ -202,7 +202,7 @@
       const chooser = node("div", "overlay games-overlay");
       chooser.id = "games-type-chooser";
       chooser.hidden = true;
-      chooser.innerHTML = '<section class="modal games-create-modal games-type-chooser-modal" role="dialog" aria-modal="true" aria-labelledby="games-type-chooser-title"><button id="games-type-chooser-close" class="close" type="button" aria-label="Close">×</button><p class="eyebrow">START PLAYING</p><h2 id="games-type-chooser-title">New game</h2><p class="muted tiny">Choose a game. The right setup will open automatically.</p><div class="games-type-chooser-options"><button class="games-type-choice" data-game-type="chess" type="button"><span class="games-type-choice-icon" aria-hidden="true">♟</span><span><strong>Chess</strong><small>2 players</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button><button class="games-type-choice" data-game-type="checkers" type="button"><span class="games-type-choice-icon" aria-hidden="true">◉</span><span><strong>Checkers</strong><small>2 players</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button><button class="games-type-choice" data-game-type="tic_tac_toe" type="button"><span class="games-type-choice-icon" aria-hidden="true">⊞</span><span><strong>Tic-Tac-Toe</strong><small>2 players</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button><button class="games-type-choice" data-game-type="connect_four" type="button"><span class="games-type-choice-icon" aria-hidden="true">●</span><span><strong>Connect Four</strong><small>2 players</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button><button class="games-type-choice" data-game-type="battleship" type="button"><span class="games-type-choice-icon" aria-hidden="true">⚓</span><span><strong>Battleship</strong><small>2 players</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button><button class="games-type-choice" data-game-type="uno" type="button"><span class="games-type-choice-icon" aria-hidden="true">▦</span><span><strong>UNO</strong><small>Multiplayer</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button><button class="games-type-choice" data-game-type="ludo" type="button"><span class="games-type-choice-icon" aria-hidden="true">◉</span><span><strong>Ludo</strong><small>Multiplayer</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button><button class="games-type-choice" data-game-type="dominoes" type="button"><span class="games-type-choice-icon" aria-hidden="true">▰</span><span><strong>Dominoes</strong><small>Multiplayer</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button></div></section>';
+      chooser.innerHTML = '<section class="modal games-create-modal games-type-chooser-modal" role="dialog" aria-modal="true" aria-labelledby="games-type-chooser-title"><button id="games-type-chooser-close" class="close" type="button" aria-label="Close">×</button><p class="eyebrow">START PLAYING</p><h2 id="games-type-chooser-title">New game</h2><p class="muted tiny">Choose a game. The right setup will open automatically.</p><div class="games-type-chooser-options"><button class="games-type-choice" data-game-type="chess" type="button"><span class="games-type-choice-icon" aria-hidden="true">♟</span><span><strong>Chess</strong><small>2 players</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button><button class="games-type-choice" data-game-type="checkers" type="button"><span class="games-type-choice-icon" aria-hidden="true">◉</span><span><strong>Checkers</strong><small>2 players</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button><button class="games-type-choice" data-game-type="tic_tac_toe" type="button"><span class="games-type-choice-icon" aria-hidden="true">⊞</span><span><strong>Tic-Tac-Toe</strong><small>2 players</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button><button class="games-type-choice" data-game-type="connect_four" type="button"><span class="games-type-choice-icon" aria-hidden="true">●</span><span><strong>Connect Four</strong><small>2 players</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button><button class="games-type-choice" data-game-type="battleship" type="button"><span class="games-type-choice-icon" aria-hidden="true">⚓</span><span><strong>Battleship</strong><small>2 players</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button><button class="games-type-choice" data-game-type="uno" type="button"><span class="games-type-choice-icon" aria-hidden="true">▦</span><span><strong>UNO</strong><small>2 players</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button><button class="games-type-choice" data-game-type="ludo" type="button"><span class="games-type-choice-icon" aria-hidden="true">◉</span><span><strong>Ludo</strong><small>Multiplayer</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button><button class="games-type-choice" data-game-type="dominoes" type="button"><span class="games-type-choice-icon" aria-hidden="true">▰</span><span><strong>Dominoes</strong><small>Multiplayer</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button></div></section>';
       document.body.append(chooser);
       $("games-type-chooser-close").addEventListener("click", closeGameTypeChooser);
       chooser.addEventListener("click", event => {
@@ -614,9 +614,11 @@
     }
     closeCreateModal();
     if (game?.id) {
-      selectedGameConversationId = game.conversation_id || conversationId;
-      games = [game, ...games.filter(item => item.id !== game.id)];
-      renderAll();
+      if (!["uno", "ludo", "dominoes"].includes(gameType)) {
+        selectedGameConversationId = game.conversation_id || conversationId;
+        games = [game, ...games.filter(item => item.id !== game.id)];
+        renderAll();
+      }
     }
     await refreshGames(false);
     toast(gameName(gameType) + " lobby created. Waiting for " + memberName(opponentId) + ".");
@@ -1073,9 +1075,8 @@
     busy = true;
     try {
       const runtime = await ensureSharedBoardRuntime();
-      await runtime.lobbyService.setReady(game.game_type, game.id, !(game.game_type === "chess"
-        ? (game.player_one_id === userId() ? game.player_one_ready : game.player_two_ready)
-        : (game.player_one_id === userId() ? game.player_one_ready : game.player_two_ready)));
+      const viewerReady = game.player_one_id === userId() ? game.player_one_ready : game.player_two_ready;
+      await runtime.lobbyService.setReady(game.game_type, game.id, !viewerReady);
       await refreshGames(false);
     } catch (error) {
       toast(error?.message || "Your ready status could not be updated.");
