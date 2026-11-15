@@ -53,7 +53,7 @@ test("Dominoes keeps move and round history and includes preset variants", () =>
 });
 
 test("Dominoes uses Gather's multiplayer launcher, lifecycle and notifications", () => {
-  assert.match(games, /games-multiplayer-dominoes/);
+  assert.match(games, /data-game-type="dominoes"/);
   assert.match(games, /GatherDominoes\?\.open/);
   assert.match(app, /GatherDominoes\?\.init/);
   assert.match(app, /GatherDominoes\?\.shutdown/);
