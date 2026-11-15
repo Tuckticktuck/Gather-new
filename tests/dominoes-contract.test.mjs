@@ -2,13 +2,14 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
-const [migration, client, games, app, html, worker] = await Promise.all([
+const [migration, client, games, app, html, worker, lobbyMigration] = await Promise.all([
   readFile(new URL("../supabase/migrations/20261114193000_add_dominoes_multiplayer.sql", import.meta.url), "utf8"),
   readFile(new URL("../dominoes.js", import.meta.url), "utf8"),
   readFile(new URL("../games.js", import.meta.url), "utf8"),
   readFile(new URL("../app.js", import.meta.url), "utf8"),
   readFile(new URL("../index.html", import.meta.url), "utf8"),
-  readFile(new URL("../service-worker.js", import.meta.url), "utf8")
+  readFile(new URL("../service-worker.js", import.meta.url), "utf8"),
+  readFile(new URL("../supabase/migrations/20261115135203_unified_two_player_game_lobbies.sql", import.meta.url), "utf8")
 ]);
 
 test("Dominoes stores hands and boneyard in RLS-protected tables", () => {
@@ -37,7 +38,7 @@ test("Dominoes actions validate the turn and selected hand tile on the server", 
   assert.match(body, /That tile does not match the right end/i);
 });
 
-test("Dominoes lobby enforces player counts and four seats for teams", () => {
+test("Historical Dominoes migration retains its original four-player schema contract", () => {
   assert.match(migration, /Dominoes supports up to four players including the host/i);
   assert.match(migration, /Team mode needs exactly four players/i);
   assert.match(migration, /'starting_hand',7/i);
@@ -50,6 +51,13 @@ test("Dominoes keeps move and round history and includes preset variants", () =>
   assert.match(migration, /p_preset not in \('quick','classic','marathon'\)/i);
   assert.match(client, /Full match history/);
   assert.match(client, /Move history/);
+});
+
+test("New Dominoes matches are two-player and use the shared lobby", () => {
+  assert.match(lobbyMigration, /Dominoes matches are two-player free-for-all only/);
+  assert.match(lobbyMigration, /p_mode<>'free_for_all'/);
+  assert.match(client, /GatherSharedLobby\?\.render/);
+  assert.match(client, /selected\.length!==1/);
 });
 
 test("Dominoes uses Gather's multiplayer launcher, lifecycle and notifications", () => {
