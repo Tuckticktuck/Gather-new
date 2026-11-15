@@ -121,6 +121,7 @@ Supabase
 - Serializes this browser's mutation requests per match.
 - Reads the latest canonical revision immediately before dispatch.
 - Sends a standard intent envelope containing match ID, action, payload, expected revision, and request ID.
+- Accepts a caller-supplied request ID so a retry can reuse the same idempotency key after an uncertain network result.
 - Does not claim that local queuing is a substitute for server-side idempotency or atomic revision checks.
 
 ### `games/core/game-module-contract.mjs`
@@ -235,6 +236,8 @@ A separate authenticated browser suite must exercise at least two player account
 - [x] Added canonical match snapshot and player-role contract.
 - [x] Added shared UI affordance checks for lifecycle operations.
 - [x] Added realtime invalidation / canonical snapshot coordinator.
+- [x] Added ordered, revision-aware action dispatcher with stable request-ID support.
+- [x] Added versioned game-module adapter contract and registry.
 - [x] Added backward-compatible exports for previous match-contract imports.
 - [x] Added registry, contract, and synchronization test files.
 
