@@ -131,8 +131,9 @@ export function canPerformMatchCommand(snapshot, viewerId, command) {
   }
   if (command === "join") {
     const invitedPending = match.status === "pending" && viewer.isInvited;
-    const openLobby = match.status === "active" && match.joinMode === "open" && !viewer.status;
-    return invitedPending || openLobby
+    const invitedActive = match.status === "active" && viewer.isInvited && match.state.finished !== true;
+    const openLobby = isLobby && match.joinMode === "open" && !viewer.status;
+    return invitedPending || invitedActive || openLobby
       ? { ok: true } : { ok: false, reason: "cannot-join" };
   }
   if (command === "decline") {
