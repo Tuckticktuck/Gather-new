@@ -854,6 +854,10 @@
       if (conversationSelect.closest("label")) conversationSelect.closest("label").hidden = openLobby;
     }
     submit.textContent = openLobby ? "Create open lobby" : "Invite players";
+    const subtitle = $("games-create-subtitle");
+    if (subtitle) subtitle.textContent = openLobby
+      ? "Create an open lobby that your accepted friends can discover and join or spectate."
+      : "Choose the player seats and invite people. Everyone readies up in the same lobby before the host starts.";
     submit.disabled = inviteeCount < required || inviteeCount > capacity || (!openLobby && inviteeCount > available);
   }
 
