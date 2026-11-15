@@ -1074,8 +1074,7 @@
 }
 
 /* Separate classic icon identities for Chess and Checkers. */
-.games-catalog-mark-chess{display:flex;flex-wrap:wrap;align-content:center;justify-content:center;gap:0 2px;font-family:"Segoe UI Symbol","DejaVu Sans",serif;font-size:17px;letter-spacing:-2px}
+.games-catalog-mark-chess{border:0;border-radius:14px;background:linear-gradient(145deg,#8ee34a,#58cc02);color:#fff;font-family:"Segoe UI Symbol","DejaVu Sans",serif;font-size:27px;line-height:1;text-shadow:0 2px 0 #389b00,0 3px 5px #245b1640;box-shadow:inset 0 -3px 0 #389b00,0 2px 4px #00000018}
 .games-catalog-mark-checkers{gap:2px;font-size:21px;letter-spacing:-2px}
-.games-type-choice-icon-chess{display:flex;flex-direction:column;justify-content:center;gap:0;font-family:"Segoe UI Symbol","DejaVu Sans",serif;font-size:15px;line-height:1.05;letter-spacing:-1px}
-.games-type-choice-icon-chess small{font-size:12px;line-height:1.05}
+.games-type-choice-icon-chess{display:grid;place-items:center;border:0;border-radius:13px;background:linear-gradient(145deg,#8ee34a,#58cc02);color:#fff;font-family:"Segoe UI Symbol","DejaVu Sans",serif;font-size:31px;line-height:1;text-shadow:0 2px 0 #389b00,0 3px 5px #245b1640;box-shadow:inset 0 -3px 0 #389b00,0 2px 4px #00000018}
 .games-type-choice-icon-checkers{font-size:23px;letter-spacing:-3px}
