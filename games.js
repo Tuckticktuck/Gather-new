@@ -2,14 +2,14 @@
   "use strict";
 
   const TYPES = {
-    chess: { name: "Chess", description: "Classic chess with legal moves, castling, en passant and promotion.", mark: "♞" },
-    checkers: { name: "Checkers", description: "Jump, capture and crown your pieces.", mark: "◈" },
-    tic_tac_toe: { name: "Tic-Tac-Toe", description: "A quick three-in-a-row match.", mark: "×○" },
-    connect_four: { name: "Connect Four", description: "Drop four discs in a row to win.", mark: "●" },
-    battleship: { name: "Battleship", description: "Place your fleet, then find and hit every ship square.", mark: "⚓" },
-    ludo: { name: "Ludo", description: "Race all four tokens around the board and into home. Roll a six to leave base.", mark: "●" },
-    dominoes: { name: "Dominoes", description: "Draw and match neon tiles around the table.", mark: "▰" },
-    uno: { name: "UNO", description: "Play cards and race to empty your hand.", mark: "▦" }
+    chess: { name: "Chess", description: "Classic chess with legal moves, castling, en passant and promotion.", mark: "♞", players: "2 players" },
+    checkers: { name: "Checkers", description: "Jump, capture and crown your pieces.", mark: "◈", players: "2 players" },
+    tic_tac_toe: { name: "Tic-Tac-Toe", description: "A quick three-in-a-row match.", mark: "×○", players: "2 players" },
+    connect_four: { name: "Connect Four", description: "Drop four discs in a row to win.", mark: "●", players: "2 players" },
+    battleship: { name: "Battleship", description: "Place your fleet, then find and hit every ship square.", mark: "⚓", players: "2 players" },
+    ludo: { name: "Ludo", description: "Race all four tokens around the board and into home. Roll a six to leave base.", mark: "●", players: "2–4 players" },
+    dominoes: { name: "Dominoes", description: "Draw and match neon tiles around the table.", mark: "▰", players: "2–4 players" },
+    uno: { name: "UNO", description: "Play cards and race to empty your hand.", mark: "▦", players: "2–10 players" }
   };
   const PIECES = {
     K: "♔", Q: "♕", R: "♖", B: "♗", N: "♘", P: "♙",
@@ -40,6 +40,11 @@
   let selectedDraftGameType = "chess";
   let draftSelectedInvitees = [];
   let hubSearchQuery = "";
+  let selectedBrowseGameType = null;
+  let browseLobbies = [];
+  let browseLoading = false;
+  let browseError = "";
+  let browseRequest = 0;
   let sharedBoardRuntime = null;
   let sharedBoardRuntimePromise = null;
   const multiplayerLobbyModules = new Map();
@@ -146,10 +151,12 @@
       const hub = node("section", "games-workspace");
       hub.id = "games-workspace";
       hub.hidden = true;
-      hub.innerHTML = '<header class="games-hub-header"><div><p class="eyebrow">PLAY TOGETHER</p><h1>Gather Games</h1><p class="muted games-hub-subtitle">Your game conversations, invitations and matches — all in one place.</p></div><button id="games-new" class="primary games-new-button" type="button">＋ New game</button></header><section class="games-invitations-panel games-live-panel" aria-labelledby="games-invitations-title"><header class="games-invitations-head"><div><h2 id="games-invitations-title">Live games</h2><p class="muted tiny">Your current matches and invitations, together in one place.</p></div><span id="games-invitations-count" class="games-status-section-count">0</span></header><section class="games-live-subsection" aria-labelledby="games-live-current-title"><header class="games-live-subhead"><h3 id="games-live-current-title">Currently playing</h3><span id="games-current-count" class="games-status-section-count">0</span></header><div id="games-current-list" class="games-invitations-list"><p class="games-empty muted">Loading live games…</p></div></section><section class="games-live-subsection" aria-labelledby="games-live-invites-title"><header class="games-live-subhead"><h3 id="games-live-invites-title">Invitations</h3><span id="games-invites-count" class="games-status-section-count">0</span></header><div id="games-invitations-list" class="games-invitations-list"><p class="games-empty muted">Loading invitations…</p></div></section></section><section class="games-inbox-layout"><aside class="games-inbox-sidebar"><div class="games-inbox-sidebar-head"><h2>Game conversations</h2><p class="muted tiny">People and groups you have played with.</p></div><label class="games-search-wrap"><span class="sr-only">Search game conversations</span><input id="games-search" type="search" autocomplete="off" placeholder="Search people or groups…"></label><div id="games-list" class="games-conversation-list"></div></aside><section class="games-conversation-detail"><header class="games-detail-header"><div><p class="eyebrow">GAME HISTORY</p><h2 id="games-conversation-title">Choose a conversation</h2><p id="games-conversation-subtitle" class="muted tiny">Open a game conversation to see its history.</p></div><button id="games-refresh" class="outline" type="button">Refresh</button></header><p id="games-hub-status" class="status" role="status"></p><div id="games-conversation-games" class="games-list"></div></section></section>';
+      hub.innerHTML = '<header class="games-hub-header"><div><p class="eyebrow">PLAY TOGETHER</p><h1>Gather Games</h1><p class="muted games-hub-subtitle">Your game conversations, invitations and matches — all in one place.</p></div><button id="games-new" class="primary games-new-button" type="button">＋ New game</button></header><section class="games-invitations-panel games-live-panel" aria-labelledby="games-invitations-title"><header class="games-invitations-head"><div><h2 id="games-invitations-title">Live games</h2><p class="muted tiny">Your current matches and invitations, together in one place.</p></div><span id="games-invitations-count" class="games-status-section-count">0</span></header><section class="games-live-subsection" aria-labelledby="games-live-current-title"><header class="games-live-subhead"><h3 id="games-live-current-title">Currently playing</h3><span id="games-current-count" class="games-status-section-count">0</span></header><div id="games-current-list" class="games-invitations-list"><p class="games-empty muted">Loading live games…</p></div></section><section class="games-live-subsection" aria-labelledby="games-live-invites-title"><header class="games-live-subhead"><h3 id="games-live-invites-title">Invitations</h3><span id="games-invites-count" class="games-status-section-count">0</span></header><div id="games-invitations-list" class="games-invitations-list"><p class="games-empty muted">Loading invitations…</p></div></section></section><section id="games-catalog-panel" class="games-catalog-panel" aria-labelledby="games-catalog-title"><header class="games-catalog-heading"><div><h2 id="games-catalog-title">Browse games</h2><p class="muted tiny">Choose a game to find open tables and matches you can watch.</p></div></header><div id="games-catalog-grid" class="games-catalog-grid"></div></section><section id="games-lobby-browser" class="games-lobby-browser" hidden aria-labelledby="games-browser-title"><header class="games-browser-heading"><div><button id="games-browser-back" class="games-browser-back" type="button">← All games</button><p class="eyebrow">LOBBY DIRECTORY</p><h2 id="games-browser-title">Game lobbies</h2><p id="games-browser-subtitle" class="muted tiny"></p></div><button id="games-browser-refresh" class="outline" type="button">Refresh</button></header><p id="games-browser-status" class="status" role="status"></p><div id="games-lobby-list" class="games-lobby-list"></div></section><section class="games-inbox-layout"><aside class="games-inbox-sidebar"><div class="games-inbox-sidebar-head"><h2>Game conversations</h2><p class="muted tiny">People and groups you have played with.</p></div><label class="games-search-wrap"><span class="sr-only">Search game conversations</span><input id="games-search" type="search" autocomplete="off" placeholder="Search people or groups…"></label><div id="games-list" class="games-conversation-list"></div></aside><section class="games-conversation-detail"><header class="games-detail-header"><div><p class="eyebrow">GAME HISTORY</p><h2 id="games-conversation-title">Choose a conversation</h2><p id="games-conversation-subtitle" class="muted tiny">Open a game conversation to see its history.</p></div><button id="games-refresh" class="outline" type="button">Refresh</button></header><p id="games-hub-status" class="status" role="status"></p><div id="games-conversation-games" class="games-list"></div></section></section>';
       const chat = $("chat");
       main.insertBefore(hub, chat || null);
       $("games-new").addEventListener("click", () => openGameTypeChooser());
+      $("games-browser-back").addEventListener("click", closeGameBrowser);
+      $("games-browser-refresh").addEventListener("click", () => { if (selectedBrowseGameType) void loadGameBrowser(selectedBrowseGameType); });
       $("games-refresh").addEventListener("click", () => refreshGames(true));
       $("games-search").addEventListener("input", event => { hubSearchQuery = event.target.value.trim().toLocaleLowerCase(); renderHub(); });
     }
@@ -513,6 +520,161 @@
     $("games-type-chooser").hidden = false;
   }
 
+  const isPublicLobbyGame = gameType => ["uno", "ludo", "dominoes"].includes(gameType);
+
+  function renderGameCatalog() {
+    const root = $("games-catalog-grid");
+    if (!root) return;
+    root.replaceChildren();
+    Object.entries(TYPES).forEach(([gameType, info]) => {
+      const card = button("", "games-catalog-card", () => openGameBrowser(gameType));
+      const mark = node("span", "games-catalog-mark", info.mark);
+      const copy = node("span", "games-catalog-copy");
+      copy.append(node("strong", "", info.name));
+      copy.append(node("small", "games-catalog-capacity", info.players || "2 players"));
+      copy.append(node("span", "games-catalog-description", info.description));
+      card.append(mark, copy, node("span", "games-catalog-arrow", "›"));
+      card.setAttribute("aria-label", "Browse " + info.name + " lobbies");
+      root.append(card);
+    });
+  }
+
+  function openGameBrowser(gameType) {
+    if (!TYPES[gameType]) return;
+    selectedBrowseGameType = gameType;
+    browseLobbies = [];
+    browseError = "";
+    browseLoading = true;
+    renderHub();
+    void loadGameBrowser(gameType);
+  }
+
+  function closeGameBrowser() {
+    selectedBrowseGameType = null;
+    browseLobbies = [];
+    browseError = "";
+    browseRequest++;
+    renderHub();
+  }
+
+  async function loadGameBrowser(gameType) {
+    if (!ctx || !userId() || !TYPES[gameType]) return;
+    const request = ++browseRequest;
+    browseLoading = true;
+    browseError = "";
+    renderGameBrowser();
+    try {
+      if (isPublicLobbyGame(gameType)) {
+        const response = await ctx.db.rpc("gather_public_game_lobbies", { p_game_type: gameType });
+        if (response.error) throw response.error;
+        browseLobbies = response.data || [];
+      } else {
+        const conversationIds = new Set(chatList().map(chat => chat.id));
+        browseLobbies = games.filter(game =>
+          game.game_type === gameType &&
+          ["pending", "active"].includes(game.status) &&
+          conversationIds.has(game.conversation_id)
+        ).sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at));
+      }
+    } catch (error) {
+      browseError = error?.message || "Open lobbies could not be loaded.";
+      browseLobbies = [];
+    } finally {
+      if (request === browseRequest && selectedBrowseGameType === gameType) {
+        browseLoading = false;
+        renderGameBrowser();
+      }
+    }
+  }
+
+  function renderGameBrowser() {
+    const root = $("games-lobby-list");
+    if (!root || !selectedBrowseGameType) return;
+    root.replaceChildren();
+    const gameType = selectedBrowseGameType;
+    const publicDirectory = isPublicLobbyGame(gameType);
+    $("games-browser-title").textContent = gameName(gameType) + " lobbies";
+    $("games-browser-subtitle").textContent = publicDirectory
+      ? "Open lobbies from your accepted friends. Join a waiting table or spectate a match already in progress."
+      : "Matches in conversations you belong to. Group members can watch active matches.";
+    $("games-browser-status").textContent = browseLoading
+      ? "Loading lobbies…"
+      : browseError
+        ? browseError
+        : browseLobbies.length + " available " + (browseLobbies.length === 1 ? "lobby" : "lobbies") + ".";
+
+    if (browseLoading) {
+      root.append(node("p", "games-empty muted", "Finding available lobbies…"));
+      return;
+    }
+    if (browseError) {
+      root.append(node("p", "games-empty muted", browseError));
+      return;
+    }
+    if (!browseLobbies.length) {
+      root.append(node("p", "games-empty muted", publicDirectory
+        ? "No open " + gameName(gameType) + " lobbies right now. Create one with “Open to friends” and it will appear here."
+        : "No " + gameName(gameType) + " matches are currently available in your conversations."));
+      return;
+    }
+
+    browseLobbies.forEach(game => {
+      const card = node("article", "games-lobby-directory-card");
+      const copy = node("div", "games-lobby-directory-copy");
+      const actions = node("div", "games-lobby-directory-actions");
+      if (publicDirectory) {
+        const host = game.host_name || memberName(game.host_id);
+        const status = game.is_started ? "In progress" : "Waiting for players";
+        const details = game.game_type === "dominoes"
+          ? (game.settings?.mode === "teams" ? "Teams" : "Free-for-all") + " · "
+          : "";
+        copy.append(node("strong", "", host + "’s " + gameName(gameType) + " lobby"));
+        copy.append(node("small", "muted", status + " · " + game.player_count + "/" + game.max_players + " players · " + game.open_seats + " seats open · " + game.spectator_count + " watching"));
+        if (details) copy.append(node("small", "muted", details.trim()));
+        if (game.viewer_status === "joined") {
+          actions.append(button("Open game", "primary", () => openCreatedMultiplayerGame(gameType, game.game_id)));
+        } else if (game.viewer_status === "spectating") {
+          actions.append(button("Continue watching", "primary", () => openCreatedMultiplayerGame(gameType, game.game_id)));
+        }
+        if (game.can_join) {
+          actions.append(button(game.viewer_status === "spectating" ? "Join as player" : "Join lobby", "primary", () => openPublicLobby(gameType, game, "join")));
+        }
+        if (game.can_spectate && game.viewer_status !== "spectating" && game.viewer_status !== "joined") {
+          actions.append(button("Spectate", "outline", () => openPublicLobby(gameType, game, "spectate")));
+        }
+        if (!actions.childElementCount) actions.append(node("span", "games-lobby-full", "No available seats"));
+      } else {
+        const invited = game.status === "pending" && game.player_two_id === userId();
+        const spectator = !isPlayer(game);
+        copy.append(node("strong", "", conversationName(game.conversation_id)));
+        copy.append(node("small", "muted", (game.status === "pending" ? "Waiting for invitation response" : "In progress") + " · " + gameName(gameType)));
+        actions.append(button(invited ? "Accept invitation" : spectator ? "Spectate" : "Open game", invited || !spectator ? "primary" : "outline", () => openGame(game)));
+      }
+      card.append(copy, actions);
+      root.append(card);
+    });
+  }
+
+  async function openPublicLobby(gameType, game, action) {
+    if (busy) return;
+    busy = true;
+    try {
+      const color = gameType === "uno" ? "#40826D" : game.available_colors?.[0] || null;
+      const response = await ctx.db.rpc("gather_public_lobby_action", {
+        p_game_id: game.game_id,
+        p_action: action,
+        p_color: color
+      });
+      if (response.error) throw response.error;
+      await openCreatedMultiplayerGame(gameType, game.game_id);
+      await loadGameBrowser(gameType);
+    } catch (error) {
+      toast(error?.message || "That lobby could not be opened.");
+    } finally {
+      busy = false;
+    }
+  }
+
   function closeGameTypeChooser() {
     const overlay = $("games-type-chooser");
     if (overlay) overlay.hidden = true;
@@ -557,6 +719,18 @@
       return control;
     };
 
+    if (["uno", "ludo", "dominoes"].includes(gameType)) {
+      const joinMode = node("select");
+      joinMode.id = "games-join-mode";
+      [["invite", "Invite-only"], ["open", "Open to friends"]].forEach(([value, title]) => {
+        const option = node("option", "", title);
+        option.value = value;
+        joinMode.append(option);
+      });
+      addField("Lobby access", joinMode);
+      joinMode.addEventListener("change", updateOpponentOptions);
+    }
+
     if (gameType === "uno" || gameType === "ludo") {
       const maximum = gameType === "uno" ? 10 : 4;
       const limit = node("select");
@@ -580,7 +754,10 @@
         mode.append(option);
       });
       addField("Game mode", mode);
-      mode.addEventListener("change", updateOpponentOptions);
+      mode.addEventListener("change", () => {
+        if (mode.value === "teams" && $("games-join-mode")) $("games-join-mode").value = "invite";
+        updateOpponentOptions();
+      });
 
       const preset = node("select");
       preset.id = "games-dominoes-preset";
@@ -630,6 +807,7 @@
   }
 
   function draftRequiredInvitees() {
+    if ($("games-join-mode")?.value === "open") return 0;
     return selectedDraftGameType === "dominoes" && $("games-dominoes-mode")?.value === "teams" ? 3 : 1;
   }
 
@@ -654,7 +832,7 @@
     const summary = $("games-draft-seat-summary");
     if (summary) {
       summary.textContent = count + "/" + seats + " seats reserved · " + open + " open" +
-        (draftRequiredInvitees() > 1 ? " · team mode needs all four players" : "");
+        ($("games-join-mode")?.value === "open" ? " · Open to accepted friends" : draftRequiredInvitees() > 1 ? " · team mode needs all four players" : "");
     }
   }
 
@@ -662,11 +840,18 @@
     const submit = $("games-create-submit");
     if (!submit) return;
     const chat = chatList().find(item => item.id === $("games-conversation")?.value);
+    const openLobby = $("games-join-mode")?.value === "open";
     const inviteeCount = draftSelectedInvitees.length;
     const required = draftRequiredInvitees();
     const capacity = draftPlayerLimit() - 1;
     const available = (chat?.members || []).filter(member => member.user_id !== userId()).length;
-    submit.disabled = inviteeCount < required || inviteeCount > capacity || inviteeCount > available;
+    const conversationSelect = $("games-conversation");
+    if (conversationSelect) {
+      conversationSelect.required = !openLobby;
+      if (conversationSelect.closest("label")) conversationSelect.closest("label").hidden = openLobby;
+    }
+    submit.textContent = openLobby ? "Create open lobby" : "Invite players";
+    submit.disabled = inviteeCount < required || inviteeCount > capacity || (!openLobby && inviteeCount > available);
   }
 
   function updateOpponentOptions() {
@@ -674,6 +859,9 @@
     const chat = chatList().find(item => item.id === conversationId);
     const list = $("games-opponent-list");
     if (!list) return;
+    const openLobby = $("games-join-mode")?.value === "open";
+    if (openLobby) draftSelectedInvitees = [];
+    if (list.closest("label")) list.closest("label").hidden = openLobby;
     const people = (chat?.members || []).filter(member => member.user_id !== userId())
       .slice().sort((a, b) => byName(memberName(a.user_id), memberName(b.user_id)));
     const availableIds = new Set(people.map(member => member.user_id));
@@ -712,9 +900,11 @@
     }
 
     const otherMembers = Math.max(0, (chat?.members?.length || 1) - 1 - draftSelectedInvitees.length);
-    $("games-spectator-note").textContent = chat?.kind === "group"
-      ? otherMembers + " other group member" + (otherMembers === 1 ? " can" : "s can") + " spectate. Invitees fill player seats."
-      : "Private games use the selected player seats only.";
+    $("games-spectator-note").textContent = openLobby
+      ? "Accepted friends can find this lobby in Browse Games and choose to join or spectate once the match starts."
+      : chat?.kind === "group"
+        ? otherMembers + " other group member" + (otherMembers === 1 ? " can" : "s can") + " spectate. Invitees fill player seats."
+        : "Private games use the selected player seats only.";
     updateDraftRoster();
     updateDraftSubmitState();
   }
@@ -727,21 +917,23 @@
     const gameType = selectedDraftGameType;
     const playerLimit = draftPlayerLimit();
     const mode = $("games-dominoes-mode")?.value || "free_for_all";
+    const joinMode = $("games-join-mode")?.value || "invite";
+    const openLobby = joinMode === "open";
     const required = draftRequiredInvitees();
-    if (!conversationId || !TYPES[gameType] || inviteeIds.length < required || inviteeIds.length > playerLimit - 1) {
+    if ((!openLobby && !conversationId) || !TYPES[gameType] || inviteeIds.length < required || inviteeIds.length > playerLimit - 1 || (openLobby && inviteeIds.length !== 0)) {
       $("games-create-status").textContent = gameType === "dominoes" && mode === "teams"
         ? "Team mode needs exactly three invitees plus the host."
         : "Invite between 1 and " + (playerLimit - 1) + " other players.";
       return;
     }
-    if (gameType === "dominoes" && mode === "teams" && inviteeIds.length !== 3) {
+    if (gameType === "dominoes" && mode === "teams" && (joinMode === "open" || inviteeIds.length !== 3)) {
       $("games-create-status").textContent = "Team mode needs exactly four players.";
       return;
     }
     busy = true;
     const submit = $("games-create-submit");
     submit.disabled = true;
-    $("games-create-status").textContent = "Creating your lobby and sending invitations…";
+    $("games-create-status").textContent = openLobby ? "Creating your open lobby…" : "Creating your lobby and sending invitations…";
     let game = null;
     let createError = null;
     try {
@@ -755,9 +947,9 @@
       } else if (["uno", "ludo", "dominoes"].includes(gameType)) {
         const module = await ensureMultiplayerLobbyModule(gameType);
         const mutation = await module.create({
-          conversationId,
-          joinMode: "invite",
-          invitedUserIds: inviteeIds,
+          conversationId: openLobby ? null : conversationId,
+          joinMode,
+          invitedUserIds: openLobby ? [] : inviteeIds,
           playerLimit,
           mode,
           preset: $("games-dominoes-preset")?.value || "classic",
@@ -788,7 +980,9 @@
     }
     await refreshGames(false);
     const invitedNames = inviteeIds.map(memberName);
-    toast(gameName(gameType) + " lobby created · invited " + invitedNames.join(", ") + ".");
+    toast(openLobby
+      ? gameName(gameType) + " open lobby created. Accepted friends can find it in Browse Games."
+      : gameName(gameType) + " lobby created · invited " + invitedNames.join(", ") + ".");
     if (["uno", "ludo", "dominoes"].includes(gameType)) await openCreatedMultiplayerGame(gameType, game.id);
     else if (game?.id) openGame(game);
     if (activeChat?.id === conversationId) renderChatTray();
@@ -856,6 +1050,7 @@
       if (game) externalLiveGames.push({ kind: "ludo", game });
     });
     renderAll();
+    if (selectedBrowseGameType) void loadGameBrowser(selectedBrowseGameType);
     if (typeof ctx.onGamesUpdated === "function") ctx.onGamesUpdated();
   }
 
@@ -878,6 +1073,13 @@
     conversationList.replaceChildren();
     gameList.replaceChildren();
     renderCentralInvitations();
+    renderGameCatalog();
+    const browsing = !!selectedBrowseGameType;
+    $("games-catalog-panel").hidden = browsing;
+    $("games-lobby-browser").hidden = !browsing;
+    const inbox = $("games-workspace")?.querySelector(".games-inbox-layout");
+    if (inbox) inbox.hidden = browsing;
+    if (browsing) renderGameBrowser();
 
     const sorted = [...games].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
     const groups = new Map();
