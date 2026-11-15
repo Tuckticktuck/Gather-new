@@ -85,6 +85,7 @@ export function normalizeMatchSnapshot(input) {
     playerOneId: typeof game.player_one_id === "string" ? game.player_one_id : null,
     playerTwoId: typeof game.player_two_id === "string" ? game.player_two_id : null,
     turnUserId: typeof game.turn_user_id === "string" ? game.turn_user_id : null,
+    startedAt: game.started_at || game.startedAt || null,
     winnerId: typeof game.winner_id === "string" ? game.winner_id : null,
     result: typeof game.result === "string" ? game.result : null,
     settings: freezeJson(settings),
@@ -129,7 +130,12 @@ export function canPerformMatchCommand(snapshot, viewerId, command) {
   const { match } = snapshot;
   const viewer = getViewerMembership(snapshot, viewerId);
   const phase = typeof match.state.phase === "string" ? match.state.phase : null;
-  const isLobby = match.status === "pending" || (match.status === "active" && (phase === "lobby" || (!phase && match.state.started !== true)));
+  // Legacy two-seat games use started_at as the lifecycle authority. Their
+  // state.phase describes gameplay phases (e.g. Battleship "placement"),
+  // so it must not make an unstarted lobby appear closed.
+  const isLegacyTwoPlayer = !!match.playerOneId && !!match.playerTwoId;
+  const isLobby = match.status === "pending" || (match.status === "active" &&
+    (isLegacyTwoPlayer ? !match.startedAt : (phase === "lobby" || (!phase && match.state.started !== true))));
 
   if (command === "read") {
     return viewer.status && ["joined", "invited", "spectating", "eliminated"].includes(viewer.status)
