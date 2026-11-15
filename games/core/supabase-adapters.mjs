@@ -95,7 +95,7 @@ function createUnoDriver(rpc) {
     async create(options = {}) {
       const invitedUserIds = uniqueUserIds(options.invitedUserIds);
       const joinMode = options.joinMode || "invite";
-      const maxPlayers = options.playerLimit ?? 10;
+      const maxPlayers = 2;
       return rpc("gather_uno_create", {
         p_conversation_id: options.conversationId ?? null,
         p_join_mode: joinMode,
