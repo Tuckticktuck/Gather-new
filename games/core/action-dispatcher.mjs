@@ -21,7 +21,7 @@ export function createActionDispatcher(options) {
 
   function dispatch(command) {
     if (!command || typeof command !== "object") return Promise.reject(new TypeError("Action command is required."));
-    const { matchId, action, payload = {} } = command;
+    const { matchId, action, payload = {}, requestId: suppliedRequestId } = command;
     if (typeof matchId !== "string" || !matchId.trim()) {
       return Promise.reject(new TypeError("matchId is required."));
     }
@@ -38,7 +38,7 @@ export function createActionDispatcher(options) {
       const expectedRevision = getRevision(current);
       if (expectedRevision === null) throw new Error("A valid canonical match revision is required.");
 
-      const requestId = createRequestId();
+      const requestId = suppliedRequestId ?? createRequestId();
       if (typeof requestId !== "string" || !requestId.trim() || requestId.length > 128) {
         throw new Error("createRequestId must return a non-empty string of at most 128 characters.");
       }
