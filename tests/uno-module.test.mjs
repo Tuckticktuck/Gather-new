@@ -13,7 +13,7 @@ function fakeDb({ inviteeStatus = "joined", started = true } = {}) {
     created_by: "host",
     join_mode: "invite",
     conversation_id: null,
-    settings: { max_players: 4, house_rules: { starting_hand_size: 7 } },
+    settings: { max_players: 2, house_rules: { starting_hand_size: 7 } },
     state: {
       version: 1,
       started,
