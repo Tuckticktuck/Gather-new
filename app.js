@@ -3890,7 +3890,14 @@ function renderMessages(preserveScroll=false){
       bubble.append(pick);
       row.classList.toggle("selected",S.selectedMessageIds.has(m.id));
     }
-    if(senderAvatar)row.append(senderAvatar);
+    if(showSenderNames&&!mine){
+      if(senderAvatar)row.append(senderAvatar);
+      else{
+        const avatarSpacer=el("span","message-group-avatar message-group-avatar-spacer");
+        avatarSpacer.setAttribute("aria-hidden","true");
+        row.append(avatarSpacer);
+      }
+    }
     row.append(bubble);
     list.append(row);
     if(!S.selectingMessages){
