@@ -668,10 +668,26 @@ async function markConversationNotificationsRead(chatId){
 async function markConversationRead(chatId){
   if(!S.user||!chatId)return false;
   const requestingUserId=S.user.id;
+  const wasActive=S.active===chatId;
+  const shouldRetryReadRequest=error=>{
+    const code=String(error?.code||"");
+    const message=String(error?.message||"");
+    const status=Number(error?.status||0);
+    return status>=500
+      || /^08|^57P|^PGRST000|^PGRST001|^PGRST002|^PGRST003/.test(code)
+      || /failed to fetch|network|timeout|connection reset|temporarily unavailable/i.test(message);
+  };
   try{
-    const result=await db.rpc("mark_conversation_read",{p_conversation_id:chatId});
+    let result=await db.rpc("mark_conversation_read",{p_conversation_id:chatId});
+    // Read receipts are idempotent. Retry only transient transport/server errors,
+    // not membership, authorization, or validation failures.
+    if(result.error&&shouldRetryReadRequest(result.error)){
+      await new Promise(resolve=>setTimeout(resolve,450));
+      if(S.user?.id!==requestingUserId)return false;
+      result=await db.rpc("mark_conversation_read",{p_conversation_id:chatId});
+    }
     if(result.error){
-      console.warn("Conversation read status could not be saved:",result.error.message);
+      console.warn("Conversation read status could not be saved:",result.error);
       if(wasActive&&S.active===chatId)toast("Messages could not be marked as seen. Please try again.");
       return false;
     }
@@ -693,8 +709,8 @@ async function markConversationRead(chatId){
     renderChats();
     return true;
   }catch(error){
-    console.warn("Conversation read status could not be saved:",error?.message||error);
-    if(S.active===chatId)toast("Messages could not be marked as seen. Please try again.");
+    console.warn("Conversation read status could not be saved:",error);
+    if(wasActive&&S.active===chatId)toast("Messages could not be marked as seen. Please try again.");
     return false;
   }
 }
