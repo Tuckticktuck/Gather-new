@@ -1,6 +1,6 @@
 # Gather Game Engine Rebuild
 
-Status: Core contracts, Tic-Tac-Toe / Connect Four pilot, Dominoes, UNO, and multiplayer Ludo integrations committed; CI verification pending  
+Status: Core contracts, Tic-Tac-Toe / Connect Four pilot, Dominoes, UNO, multiplayer Ludo, and Battleship integrations committed; CI verification pending  
 Repository: \`Tuckticktuck/Gather-new\`  
 Frontend hosting: GitHub Pages  
 Backend: Supabase  
@@ -328,7 +328,18 @@ Added `games/modules/uno/index.mjs` and connected the existing `uno.js` screen t
 - The module and client are included in the service-worker shell and static path list; the UNO script asset version was advanced to invalidate stale cached UI.
 - Added dedicated module tests and screen-integration assertions. No production schema, game rows, private-state data, or existing UNO RPC definitions were changed.
 
-The shared game engine now has three complex multiplayer client integrations: Dominoes, UNO, and multiplayer Ludo. The remaining migration sequence is Battleship, Chess, and Checkers, with additional regression testing across the two older turn-based games as required.
+The shared game engine now has four complex game integrations: Dominoes, UNO, multiplayer Ludo, and Battleship. The remaining migration sequence is Chess and Checkers, with regression coverage continuing across the legacy turn-based games.
+
+## Phase 7 — Battleship module migration
+
+Added `games/modules/battleship/index.mjs` and connected the Battleship screen in `games.js` to the shared game engine.
+
+- Battleship creation, accept/decline, cancellation, ending, canonical match reads, and match-scoped Realtime use the shared legacy two-player services.
+- The shared legacy snapshot now retains public player IDs, turn owner, winner, and result metadata needed by Battleship's existing UI.
+- Private fleet data remains behind `gather_game_battleship_private_state`; the RPC returns only the signed-in player's own fleet and an empty non-player response for conversation spectators.
+- The browser submits only `place_fleet` or `fire` intent through `gather_game_battleship_action`. Fleet geometry, overlap, board limits, turn ownership, repeated shots, hit detection, and winner calculation remain server-validated.
+- The existing fleet placement UI, player boards, hit/miss marks, and spectator view are retained and rendered through the registered Battleship module.
+- Added driver, module, and screen-integration tests; advanced the service-worker cache and games.js asset version. No production schema, RPC definition, fleet table, or existing match row was changed.
 
 ## Phase 6 — Multiplayer Ludo module migration
 
