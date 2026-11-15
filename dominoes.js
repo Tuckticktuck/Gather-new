@@ -183,13 +183,13 @@ async function drawUntilPlayable(){
       });
       if(drawResult.error)throw drawResult.error;
       draws++;
-      const stateResult=await ctx.db.rpc("gather_dominoes_get_state",{p_game_id:id});
-      if(stateResult.error)throw stateResult.error;
+      const module=await ensureEngineModule();
+      const updatedSnapshot=await module.load(id);
       if(gameId!==id)return;
-      if(!stateResult.data?.game?.state||!Array.isArray(stateResult.data.your_hand)){
+      if(!updatedSnapshot?.game?.state||!Array.isArray(updatedSnapshot.your_hand)){
         throw new Error("The updated hand could not be loaded. Please try again.");
       }
-      snapshot=stateResult.data;
+      acceptLoadedSnapshot(updatedSnapshot);
       const after=state();
       if(after.phase!=="playing"||after.turn_user_id!==uid())break;
       if((snapshot.your_hand||[]).some(t=>playable(t,after)))break;
