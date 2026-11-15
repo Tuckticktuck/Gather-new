@@ -179,6 +179,22 @@ function renderGame(){
   const rules={starting_hand_size:7,draw_until_playable:false,wild4_anytime:false,...(g.settings?.house_rules||pub.house_rules||{})};
   const ruleSummary=rules.starting_hand_size+" cards · "+(rules.draw_until_playable?"Draw until playable":"Draw 1")+" · "+(rules.wild4_anytime?"Wild +4 unrestricted":"Wild +4 standard");
   const finished=!!(pub.finished||pub.winner_id||g.status==="completed");
+  if(!started&&!finished&&g.status==="active"){
+    const me=players.find(player=>player.user_id===uid());
+    window.GatherSharedLobby?.render({
+      root,gameName:"UNO",game:g,players,viewerId:uid(),
+      getName:id=>id===uid()?"You":name(id),
+      settingsSummary:ruleSummary+" · two players",
+      onJoin:()=>enter(g.id),
+      onDecline:async()=>{await call("gather_uno_decline",{p_game_id:g.id});await refresh();},
+      onReady:async()=>{await call("gather_uno_ready",{p_game_id:g.id,p_ready:!me?.ready});await loadGame();},
+      onStart:async()=>{await call("gather_uno_start",{p_game_id:g.id});await loadGame();},
+      onCancel:async()=>{await call("gather_uno_end",{p_game_id:g.id});await loadGame();},
+      onLeave:async()=>{await call("gather_uno_leave",{p_game_id:g.id});await refresh();}
+    });
+    if(joined.some(player=>player.user_id===uid()))window.GatherGameChat?.attach(root,ctx.db,"uno",g.id,uid(),name);
+    return;
+  }
   if(lastCountGameId!==g.id){lastCountGameId=g.id;lastCardCounts.clear();}
   root.classList.toggle("uno-in-match",started&&!finished);applyPlayerPrefs();
   const top=el("div","uno-game-top"),heading=el("div","uno-game-heading");
