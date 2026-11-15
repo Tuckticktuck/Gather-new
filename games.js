@@ -200,17 +200,20 @@
       const chooser = node("div", "overlay games-overlay");
       chooser.id = "games-type-chooser";
       chooser.hidden = true;
-      chooser.innerHTML = '<section class="modal games-create-modal games-type-chooser-modal" role="dialog" aria-modal="true" aria-labelledby="games-type-chooser-title"><button id="games-type-chooser-close" class="close" type="button" aria-label="Close">×</button><p class="eyebrow">START PLAYING</p><h2 id="games-type-chooser-title">New game</h2><p class="muted tiny">Choose the kind of match you want to start.</p><div class="games-type-chooser-options"><button id="games-choose-two-player" class="games-type-choice" type="button"><span class="games-type-choice-icon" aria-hidden="true">♟</span><span><strong>2-player games</strong><small>Head-to-head games with one opponent.</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button><button id="games-choose-multiplayer" class="games-type-choice" type="button"><span class="games-type-choice-icon" aria-hidden="true">◎</span><span><strong>Multiplayer</strong><small>Group games with more than two players.</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button></div></section>';
+      chooser.innerHTML = '<section class="modal games-create-modal games-type-chooser-modal" role="dialog" aria-modal="true" aria-labelledby="games-type-chooser-title"><button id="games-type-chooser-close" class="close" type="button" aria-label="Close">×</button><p class="eyebrow">START PLAYING</p><h2 id="games-type-chooser-title">New game</h2><p class="muted tiny">Choose a game. The right setup will open automatically.</p><div class="games-type-chooser-options"><button class="games-type-choice" data-game-type="chess" type="button"><span class="games-type-choice-icon" aria-hidden="true">♟</span><span><strong>Chess</strong><small>2 players</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button><button class="games-type-choice" data-game-type="checkers" type="button"><span class="games-type-choice-icon" aria-hidden="true">◉</span><span><strong>Checkers</strong><small>2 players</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button><button class="games-type-choice" data-game-type="tic_tac_toe" type="button"><span class="games-type-choice-icon" aria-hidden="true">⊞</span><span><strong>Tic-Tac-Toe</strong><small>2 players</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button><button class="games-type-choice" data-game-type="connect_four" type="button"><span class="games-type-choice-icon" aria-hidden="true">●</span><span><strong>Connect Four</strong><small>2 players</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button><button class="games-type-choice" data-game-type="battleship" type="button"><span class="games-type-choice-icon" aria-hidden="true">⚓</span><span><strong>Battleship</strong><small>2 players</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button><button class="games-type-choice" data-game-type="uno" type="button"><span class="games-type-choice-icon" aria-hidden="true">▦</span><span><strong>UNO</strong><small>Multiplayer</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button><button class="games-type-choice" data-game-type="ludo" type="button"><span class="games-type-choice-icon" aria-hidden="true">◉</span><span><strong>Ludo</strong><small>Multiplayer</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button><button class="games-type-choice" data-game-type="dominoes" type="button"><span class="games-type-choice-icon" aria-hidden="true">▰</span><span><strong>Dominoes</strong><small>Multiplayer</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button></div></section>';
       document.body.append(chooser);
       $("games-type-chooser-close").addEventListener("click", closeGameTypeChooser);
-      chooser.addEventListener("click", event => { if (event.target === chooser) closeGameTypeChooser(); });
-      $("games-choose-two-player").addEventListener("click", () => {
+      chooser.addEventListener("click", event => {
+        if (event.target === chooser) {
+          closeGameTypeChooser();
+          return;
+        }
+        const choice = event.target.closest("[data-game-type]");
+        if (!choice) return;
+        const gameType = choice.dataset.gameType;
         closeGameTypeChooser();
-        openCreateModal();
-      });
-      $("games-choose-multiplayer").addEventListener("click", () => {
-        closeGameTypeChooser();
-        openMultiplayerChooser();
+        if (["uno", "ludo", "dominoes"].includes(gameType)) openMultiplayerGame(gameType);
+        else openCreateModal(undefined, gameType);
       });
     }
 
@@ -468,30 +471,19 @@
     $("workspace-messages-tab")?.setAttribute("aria-pressed", "true");
   }
 
-  function openMultiplayerChooser() {
+  function openMultiplayerGame(gameType) {
     if (!ctx || !userId()) return;
-    let overlay = $("games-multiplayer-chooser");
-    if (!overlay) {
-      overlay = node("div", "overlay games-overlay");
-      overlay.id = "games-multiplayer-chooser";
-      overlay.innerHTML = '<section class="modal games-create-modal games-type-chooser-modal" role="dialog" aria-modal="true" aria-labelledby="games-multiplayer-title"><button id="games-multiplayer-close" class="close" type="button" aria-label="Close">×</button><p class="eyebrow">MULTIPLAYER</p><h2 id="games-multiplayer-title">Choose a game</h2><p class="muted tiny">Pick a turn-based game for your group.</p><div class="games-type-chooser-options"><button id="games-multiplayer-uno" class="games-type-choice" type="button"><span class="games-type-choice-icon" aria-hidden="true">▦</span><span><strong>UNO</strong><small>Play cards with your group.</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button><button id="games-multiplayer-ludo" class="games-type-choice" type="button"><span class="games-type-choice-icon" aria-hidden="true">◉</span><span><strong>Ludo</strong><small>Take turns racing your tokens around the board.</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button><button id="games-multiplayer-dominoes" class="games-type-choice" type="button"><span class="games-type-choice-icon" aria-hidden="true">▰</span><span><strong>Dominoes</strong><small>Draw, match, and score with 2–4 players.</small></span><span class="games-type-choice-arrow" aria-hidden="true">→</span></button></div></section>';
-      document.body.append(overlay);
-      $("games-multiplayer-close").addEventListener("click", () => { overlay.hidden = true; });
-      overlay.addEventListener("click", event => { if (event.target === overlay) overlay.hidden = true; });
-      $("games-multiplayer-uno").addEventListener("click", () => {
-        overlay.hidden = true;
-        window.GatherUno?.open?.();
-      });
-      $("games-multiplayer-ludo").addEventListener("click", () => {
-        overlay.hidden = true;
-        window.GatherLudo?.open?.();
-      });
-      $("games-multiplayer-dominoes").addEventListener("click", () => {
-        overlay.hidden = true;
-        window.GatherDominoes?.open?.();
-      });
+    const launchers = {
+      uno: () => window.GatherUno?.open?.(),
+      ludo: () => window.GatherLudo?.open?.(),
+      dominoes: () => window.GatherDominoes?.open?.()
+    };
+    const launch = launchers[gameType];
+    if (!launch) {
+      toast("That multiplayer game is not available yet.");
+      return;
     }
-    overlay.hidden = false;
+    launch();
   }
 
   function openGameTypeChooser() {
@@ -504,7 +496,7 @@
     if (overlay) overlay.hidden = true;
   }
 
-  function openCreateModal(defaultConversationId) {
+  function openCreateModal(defaultConversationId, gameType = "chess") {
     if (!ctx || !userId()) return;
     const eligible = chatList().filter(chat => (chat.members || []).some(member => member.user_id === userId()) && (chat.members || []).some(member => member.user_id !== userId()));
     if (!eligible.length) {
@@ -517,7 +509,7 @@
     const chosen = eligible.find(chat => chat.id === defaultConversationId) || eligible[0];
     select.value = chosen.id;
     updateOpponentOptions();
-    $("games-type").value = "chess";
+    $("games-type").value = TYPES[gameType] ? gameType : "chess";
     $("games-create-status").textContent = "";
     $("games-create-submit").disabled = false;
     $("games-create-overlay").hidden = false;
