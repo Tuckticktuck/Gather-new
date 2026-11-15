@@ -69,12 +69,16 @@ function field(label,control){const l=el("label","dominoes-field");l.append(el("
 function createForm(){
   const root=$("dominoes-content");
   root.replaceChildren();
-  root.append(header("Set up your table","NEW DOMINOES LOBBY","Invite one opponent. Every Gather match has two player seats."));
+  root.append(header("Set up your table","NEW DOMINOES LOBBY","Invite one to three people. Free-for-all supports 2–4 players; team mode requires four."));
   const form=el("form","dominoes-form"),selected=[];
-  const choose=btn("Choose opponent","outline"),summary=el("small","muted","No opponent selected");
-  const picker=el("section","dominoes-picker");
-  picker.append(choose,summary);
-  form.append(picker,el("p","dominoes-hint","Free-for-all · seven tiles each · untimed turns."));
+  const choose=btn("Choose people","outline"),summary=el("small","muted","No people selected");
+  const picker=el("section","dominoes-picker");picker.append(choose,summary);
+  form.append(picker);
+  const mode=el("select");
+  [["free_for_all","Free-for-all · 2–4 players"],["teams","Teams · exactly 4 players"]].forEach(([value,label])=>{
+    const option=el("option","",label);option.value=value;mode.append(option);
+  });
+  form.append(field("Game mode",mode),el("p","dominoes-hint","Seven tiles each · untimed turns."));
   const preset=el("select");
   [["quick","Quick · 50 points"],["classic","Classic · 100 points"],["marathon","Marathon · 150 points"]].forEach(([value,label])=>{
     const option=el("option","",label);option.value=value;if(value==="classic")option.selected=true;preset.append(option);
@@ -83,20 +87,24 @@ function createForm(){
   const actions=el("div","dominoes-actions");
   actions.append(btn("Back","secondary-action",renderList));
   const submit=btn("Create lobby","primary");submit.type="submit";actions.append(submit);form.append(actions);
+  mode.addEventListener("change",()=>{summary.textContent=selected.length?selected.length+" people selected":"No people selected";});
   form.onsubmit=async event=>{
-    event.preventDefault();
-    if(busy)return;
-    if(selected.length!==1){toast("Choose exactly one opponent to invite.");return;}
+    event.preventDefault();if(busy)return;
+    const required=mode.value==="teams"?3:1;
+    if(selected.length<required||selected.length>3){
+      toast(mode.value==="teams"?"Team mode needs exactly three invitees plus you.":"Invite between one and three people.");
+      return;
+    }
     busy=true;submit.disabled=true;
     try{
       const module=await ensureEngineModule();
-      const created=await module.create({joinMode:"invite",invitedUserIds:selected.slice(),playerLimit:2,mode:"free_for_all",preset:preset.value});
+      const created=await module.create({joinMode:"invite",invitedUserIds:selected.slice(),playerLimit:4,mode:mode.value,preset:preset.value});
       gameId=created.matchId;await loadGame();void startEngineWatch(gameId);await refresh();
     }catch(error){toast(error.message||"Could not create the Dominoes lobby.");}
     finally{busy=false;submit.disabled=false;}
   };
   root.append(form);
-  window.GatherPeoplePicker?.create({db:ctx.db,button:choose,summary,maxSelected:1,onChange:ids=>selected.splice(0,selected.length,...ids)});
+  window.GatherPeoplePicker?.create({db:ctx.db,button:choose,summary,max:3,onChange:ids=>selected.splice(0,selected.length,...ids)});
   applyPrefs();
 }
 async function rpc(fn,args){
@@ -137,7 +145,7 @@ function renderGame(){const root=$("dominoes-content");if(!root||!snapshot)retur
   const lobbyPlayers=(snapshot.players||[]).filter(player=>["joined","invited","spectating"].includes(player.status));
   window.GatherSharedLobby?.render({
     root,gameName:"Dominoes",game:g,players:lobbyPlayers,viewerId:uid(),getName:name,
-    settingsSummary:"Two players · free-for-all · seven tiles each · first to "+(s.target_score||g.settings?.target_score||100)+" points",
+    settingsSummary:"Up to four players · "+(s.mode==="teams"?"four-player teams":"free-for-all")+" · seven tiles each · first to "+(s.target_score||g.settings?.target_score||100)+" points",
     onJoin:()=>join(),
     onDecline:async()=>{await rpc("gather_dominoes_leave",{p_game_id:g.id});await refresh();},
     onReady:async()=>{await rpc("gather_dominoes_ready",{p_game_id:g.id,p_ready:!m?.ready});await loadGame();},
@@ -148,7 +156,7 @@ function renderGame(){const root=$("dominoes-content");if(!root||!snapshot)retur
   if(m?.status==="joined")window.GatherGameChat?.attach(root,ctx.db,"dominoes",g.id,uid(),name);
   applyPrefs();return;
 }if(phase==="playing"){scoreboard(root);seats(root);board(root);boneyard(root);hand(root);history(root);if(isHost())root.append(btn("End match","secondary-action dominoes-end-match",end));root.append(btn("Leave match","outline dominoes-leave-match",leave));networkNotice();applyPrefs();}}
-function roster(root){const box=el("section","dominoes-roster");box.append(el("h3","dominoes-section-title","Players · "+joined().length+"/2"));[...joined(),...invited(),...(snapshot.players||[]).filter(p=>p.status==="spectating")].forEach(p=>{const row=el("div","dominoes-roster-row"),sw=el("span","dominoes-player-swatch");sw.style.background=p.color||"var(--domino-accent)";const copy=el("div","dominoes-player-copy");copy.append(el("strong","",name(p.user_id)+(p.user_id===uid()?" (you)":"")),el("small","muted",p.status==="invited"?"Invited":p.status==="spectating"?"Spectator":p.ready?"Ready":"Not ready"));row.append(sw,copy);if(p.user_id===game().created_by)row.append(el("span","dominoes-host-pill","HOST"));box.append(row);});root.append(box);}
+function roster(root){const box=el("section","dominoes-roster");box.append(el("h3","dominoes-section-title","Players · "+joined().length+"/"+(game().settings?.max_players||4)));[...joined(),...invited(),...(snapshot.players||[]).filter(p=>p.status==="spectating")].forEach(p=>{const row=el("div","dominoes-roster-row"),sw=el("span","dominoes-player-swatch");sw.style.background=p.color||"var(--domino-accent)";const copy=el("div","dominoes-player-copy");copy.append(el("strong","",name(p.user_id)+(p.user_id===uid()?" (you)":"")),el("small","muted",p.status==="invited"?"Invited":p.status==="spectating"?"Spectator":p.ready?"Ready":"Not ready"));row.append(sw,copy);if(p.user_id===game().created_by)row.append(el("span","dominoes-host-pill","HOST"));box.append(row);});root.append(box);}
 function scoreboard(root){const s=state(),scores=s.scores||{},box=el("section","dominoes-scoreboard");box.append(el("div","dominoes-scoreboard-heading","SCOREBOARD"));if(s.mode==="teams"){["team_a","team_b"].forEach(t=>{const r=el("div","dominoes-score-row");r.append(el("span","",t==="team_a"?"Team A":"Team B"),el("strong","",Number(scores[t]||0)+" / "+(s.target_score||100)));box.append(r);});}else(s.turn_order||[]).forEach(id=>{const r=el("div","dominoes-score-row");r.append(el("span","",name(id)),el("strong","",Number(scores[id]||0)+" / "+(s.target_score||100)));box.append(r);});root.append(box);}
 function seats(root){const s=state(),box=el("section","dominoes-seats");(s.seat_order||s.turn_order||[]).forEach((id,i)=>{const p=(snapshot.players||[]).find(x=>x.user_id===id);if(!p)return;const row=el("div","dominoes-seat"+(id===currentTurn()?" is-turn":"")+(id===uid()?" is-you":""));row.dataset.seat=String(i);row.append(el("span","dominoes-seat-dot"),el("strong","",name(id)+(id===uid()?" · You":"")),el("small","",(s.mode==="teams"?(s.teams?.[id]==="team_a"?"Team A":"Team B"):"Player")+" · "+(s.tile_counts?.[id]??0)+" tiles"));if(id===currentTurn())row.append(el("em","","YOUR TURN"));box.append(row);});root.append(box);}
 function tileNode(t){const node=el("span","dominoes-tile"+(t.a===t.b?" is-double":""));node.setAttribute("aria-label",t.a+" and "+t.b);[Number(t.a),Number(t.b)].forEach(v=>{const half=el("span","dominoes-half"),spots={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]}[v]||[];for(let i=0;i<9;i++){const pip=el("i","dominoes-pip"+(spots.includes(i)?" is-on":""));pip.style.gridArea=(Math.floor(i/3)+1)+" / "+(i%3+1);if(prefs.pip==="star"&&spots.includes(i)){pip.textContent="✦";pip.classList.add("is-star");}half.append(pip);}node.append(half);});return node;}
@@ -268,7 +276,7 @@ async function rematch(){
   busy=true;
   try{
     const module=await ensureEngineModule();
-    const created=await module.create({joinMode:"invite",invitedUserIds:ids,playerLimit:2,mode:state().mode,preset:game().settings?.preset||"classic"});
+    const created=await module.create({joinMode:"invite",invitedUserIds:ids,playerLimit:Number(game().settings?.max_players)||4,mode:state().mode||game().settings?.mode||"free_for_all",preset:game().settings?.preset||"classic"});
     engineModule?.unmount?.();
     gameId=created.matchId;
     await loadGame();
