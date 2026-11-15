@@ -82,7 +82,7 @@ test("UNO, Ludo, and Dominoes drivers use their dedicated lifecycle RPCs", async
     p_max_players: 4,
     p_creator_color: "#38BDF8"
   });
-  assert.deepEqual(db.calls[11].params, {
+  assert.deepEqual(db.calls[10].params, {
     p_join_mode: "invite",
     p_invited_user_ids: ["p2"],
     p_mode: "free_for_all",
