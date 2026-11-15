@@ -14,3 +14,5 @@ export {
 } from "./match-contract.mjs";
 
 export { createMatchSync } from "./match-sync.mjs";
+export { createActionDispatcher } from "./action-dispatcher.mjs";
+export { createGameModuleRegistry, validateGameModule } from "./game-module-contract.mjs";
