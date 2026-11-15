@@ -72,11 +72,11 @@ test("service validates create options against the game registry", async () => {
   await assert.rejects(service.create("unknown_game", {}), /not registered/);
 });
 
-test("team Dominoes requires exactly four participants", async () => {
+test("Dominoes only accepts two-player free-for-all setup", async () => {
   const { service } = setup();
   await assert.rejects(service.create("dominoes", {
-    invitedUserIds: ["player"], playerLimit: 4, mode: "teams", preset: "classic"
-  }), /exactly four players/);
+    invitedUserIds: ["player"], playerLimit: 2, mode: "teams", preset: "classic"
+  }), /two-player free-for-all only/);
 });
 
 test("the legacy two-player driver can create with a single opponent", async () => {
