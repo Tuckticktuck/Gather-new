@@ -1,6 +1,6 @@
 # Gather Game Engine Rebuild
 
-Status: Core contracts and Phase 2 compatibility services implemented; game-client migration has not started  
+Status: Core contracts, compatibility services, Tic-Tac-Toe / Connect Four pilot, and Dominoes module migration integrated  
 Repository: \`Tuckticktuck/Gather-new\`  
 Frontend hosting: GitHub Pages  
 Backend: Supabase  
@@ -298,3 +298,18 @@ Added `games/modules/dominoes/index.mjs` as the first complex multiplayer game-m
 - Added `tests/dominoes-module.test.mjs` for module registration, private-state separation, shared lobby creation, and watcher cleanup.
 
 **Migration boundary:** this commit adds and tests the Dominoes module adapter, but the existing `dominoes.js` screen still owns its current UI and direct lifecycle call sites. The next cutover step is to inject this module into that screen and remove its duplicate lobby/realtime lifecycle code. The live gameplay UI is intentionally unchanged until that integration is verified end-to-end.
+
+
+### Dominoes screen cutover
+
+The Dominoes client now imports and uses `games/modules/dominoes/index.mjs` for:
+- shared lobby creation and invitation validation;
+- join, decline, readiness, start, leave, end, and spectate lifecycle operations;
+- canonical match snapshot loading and private-hand retrieval through the dedicated Dominoes state RPC;
+- match-scoped Realtime invalidation and cleanup when the match view closes or unmounts.
+
+The existing Dominoes board, tile selection/placement, draw-until-playable loop, scoring, recap, achievements, team seating, pause/replacement controls, and game-specific server actions remain in the Dominoes client. Game moves and specialized round/departure actions continue to use their dedicated server RPCs; they are not submitted as browser-authored full-state replacements.
+
+The service worker precaches the module and recognizes it as a static asset so the module can be loaded from the offline app shell. The old broad Realtime channel now only refreshes the lobby list; open-match synchronization is handled by the shared match-sync service.
+
+This phase changes the client integration but does not alter the production database schema or any existing game rows.
