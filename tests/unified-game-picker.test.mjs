@@ -27,11 +27,13 @@ test("New Game presents every supported game in one shared catalog", () => {
 test("Selecting a game automatically opens the matching player-count setup", () => {
   assert.match(games, /function openCreateModal\(defaultConversationId, gameType = "chess"\)/);
   assert.match(games, /openCreateModal\(undefined, gameType\)/);
-  assert.match(games, /function openMultiplayerGame\(gameType\)/);
-  assert.match(games, /if \(\["uno", "ludo", "dominoes"\]\.includes\(gameType\)\) openMultiplayerGame\(gameType\)/);
-  assert.match(games, /uno: \(\) => window\.GatherUno\?\.open\?\.\(\)/);
-  assert.match(games, /ludo: \(\) => window\.GatherLudo\?\.open\?\.\(\)/);
-  assert.match(games, /dominoes: \(\) => window\.GatherDominoes\?\.open\?\.\(\)/);
+  assert.match(games, /const choice = event\.target\.closest\("\[data-game-type\]"\)/);
+  assert.match(games, /openCreateModal\(undefined, gameType\)/);
+  assert.match(games, /function renderGameSetupSettings\(gameType\)/);
+  assert.match(games, /id = "games-player-limit"/);
+  assert.match(games, /gameType === "uno" \? 10 : 4/);
+  assert.match(games, /id = "games-join-mode"/);
+  assert.match(games, /joinMode,\s+invitedUserIds: openLobby \? \[\] : inviteeIds/);
 });
 
 test("Unified game catalog uses a responsive, scrollable card grid", () => {
