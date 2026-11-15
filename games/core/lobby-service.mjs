@@ -59,11 +59,8 @@ function validateCreateOptions(definition, driver, options, viewerId) {
   if (definition.id === "dominoes") {
     const mode = options.mode || "free_for_all";
     const preset = options.preset || "classic";
-    if (!["free_for_all", "teams"].includes(mode)) throw fail("Choose a supported Dominoes mode.");
+    if (mode !== "free_for_all") throw fail("Gather Dominoes matches support two-player free-for-all only.");
     if (!["quick", "classic", "marathon"].includes(preset)) throw fail("Choose a supported Dominoes rule preset.");
-    if (mode === "teams" && totalSelected !== 4) {
-      throw fail("Team Dominoes requires exactly four players.");
-    }
   }
 
   if (driver.family === "legacy-two-player") {
