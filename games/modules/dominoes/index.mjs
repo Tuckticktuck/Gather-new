@@ -24,8 +24,7 @@ export function createDominoesModule(options = {}) {
     registry: GatherGameRegistry,
     drivers: drivers.byGame,
     repository,
-    getViewerId,
-    onSnapshot
+    getViewerId
   });
 
   let activeMatchId = null;
