@@ -126,7 +126,7 @@ export function canPerformMatchCommand(snapshot, viewerId, command) {
   const isLobby = match.status === "pending" || (match.status === "active" && (phase === "lobby" || (!phase && match.state.started !== true)));
 
   if (command === "read") {
-    return viewer.status && ["joined", "invited", "spectating"].includes(viewer.status)
+    return viewer.status && ["joined", "invited", "spectating", "eliminated"].includes(viewer.status)
       ? { ok: true } : { ok: false, reason: "not-a-match-member" };
   }
   if (command === "join") {
