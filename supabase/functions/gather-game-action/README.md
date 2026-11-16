@@ -31,7 +31,7 @@ Adapters throw `GameRuleError` for an illegal move. The gateway returns 422 for 
 The first registered production game is `uno`.
 
 - 2–20 accepted players, seven cards dealt to each player.
-- Classic 108-card deck: four colors, number cards, Skip, Reverse, Draw Two, Wild, and Wild Draw Four.
+- Classic 108-card ruleset: four colors, number cards, Skip, Reverse, Draw Two, Wild, and Wild Draw Four. A second copy is added for larger groups when needed to deal seven cards to every player (up to 20).
 - A Wild card requires a chosen color. Wild Draw Four is checked against the current color and can be challenged.
 - Draw Two and Wild Draw Four penalties are resolved by the server; stacking is not enabled in this initial ruleset.
 - A normal draw is one card. The player may play that drawn card or pass; if played, only that drawn card may be selected.
