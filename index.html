@@ -13,11 +13,7 @@
 <meta name="description" content="Private direct and group conversations.">
 <title>Gather</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg?v=20261111-1">
-<link rel="stylesheet" href="app.css?v=20261115-gather-composer-group-indent-2">
-<link rel="stylesheet" href="games.css?v=20261115-chess-simple-icon-1">
-<link rel="stylesheet" href="party.css?v=20261114-party-hub-2">
-<link rel="stylesheet" href="ludo.css?v=20261114-neon-board-1">
-<link rel="stylesheet" href="dominoes.css?v=20261114-dominoes-draw-fix-1">
+<link rel="stylesheet" href="app.css?v=20261116-game-reset-1">
 <script src="https://unpkg.com/@supabase/supabase-js@2.118.0"></script>
 <script>
 if (!window.supabase?.createClient) {
@@ -25,18 +21,8 @@ if (!window.supabase?.createClient) {
 }
 </script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
-<script defer src="games/shared/lobby-ui.js?v=20261115-multiplayer-capacities-1"></script>
-<script defer src="games.js?v=20261115-conversation-game-picker-1"></script>
-<script defer src="game-people-picker.js?v=20261114-selection-limit-1"></script>
-<script defer src="party.js?v=20261115-party-quickplay-multiplayer-1"></script>
-<script defer src="game-chat.js?v=20261114-gather-chat-icon-2"></script>
-<link rel="stylesheet" href="uno.css?v=20261114-adaptive-table-1">
-<link rel="stylesheet" href="design-system.css?v=20261114-interface-sync-5">
-<script defer src="uno.js?v=20261115-multiplayer-capacities-1"></script>
-<script defer src="ludo.js?v=20261115-multiplayer-capacities-1"></script>
-<script defer src="dominoes.js?v=20261115-multiplayer-capacities-1"></script>
-<script defer src="app.js?v=20261115-read-receipt-retry-1" onerror="const s=document.getElementById('auth-status');if(s){s.textContent='Gather could not load its app script. Check your connection and reload the page.';s.classList.add('error');}"></script>
+<link rel="stylesheet" href="design-system.css?v=20261116-game-reset-1">
+<script defer src="app.js?v=20261116-game-reset-1" onerror="const s=document.getElementById('auth-status');if(s){s.textContent='Gather could not load its app script. Check your connection and reload the page.';s.classList.add('error');}"></script>
 </head>
 <body>
 <section id="auth" class="auth-shell">
@@ -296,7 +282,6 @@ if (!window.supabase?.createClient) {
       <label class="settings-select-label">Private messages<select data-notification-sound-type="private"><option value="off">Off</option><option value="soft">Soft</option><option value="chime">Chime</option></select></label>
       <label class="settings-select-label">Group messages<select data-notification-sound-type="group"><option value="off">Off</option><option value="soft">Soft</option><option value="chime">Chime</option></select></label>
       <label class="settings-select-label">Requests<select data-notification-sound-type="requests"><option value="off">Off</option><option value="soft">Soft</option><option value="chime">Chime</option></select></label>
-      <label class="settings-select-label">Game invitations<select data-notification-sound-type="games"><option value="off">Off</option><option value="soft">Soft</option><option value="chime">Chime</option></select></label>
       <label class="settings-select-label">Other updates<select data-notification-sound-type="updates"><option value="off">Off</option><option value="soft">Soft</option><option value="chime">Chime</option></select></label>
     </div><small class="muted">Choose a sound separately for each notification type.</small></section>
   <section class="settings-section"><h3>Message requests</h3><label class="settings-select-label">Who can send you private chat requests<select id="direct-message-requests-mode"><option value="everyone">Everyone who meets Gather's messaging rules</option><option value="friends_only">Friends only</option></select><small class="muted">Gather still checks blocks, age groups, and admin-approved cross-group permissions.</small></label></section>
