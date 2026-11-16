@@ -115,7 +115,7 @@ test("supports 20 players with a second deck and rejects 21", async () => {
   });
   assert.equal(twenty.nextState.playerOrder.length, 20);
   assert.equal(twenty.nextPrivateState.drawPile.length, 75);
-  await assert.rejects(unoEngine.applyAction({
+  assert.throws(() => unoEngine.applyAction({
     state: {}, privateState: null, action: { type: "initialize" },
     actorId: manyPlayers[0].user_id, players: manyPlayers, serverSeed: seed,
   }), /maximum of 20/);
