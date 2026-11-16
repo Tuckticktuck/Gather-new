@@ -7,7 +7,7 @@ Gather is a static Progressive Web App powered by **GitHub Pages** and **Supabas
 - **GitHub** (Tuckticktuck/Gather-new) stores the source code and publishes the frontend through the GitHub Pages workflow in .github/workflows/pages.yml.
 - **Supabase** provides authentication, Postgres, Row Level Security, storage, and realtime features.
 
-The frontend has no framework build step. GitHub Actions runs the application tests, checks the JavaScript syntax, validates the static site assets, and publishes the repository root to GitHub Pages whenever changes are pushed to main.
+The frontend has no framework build step. GitHub Actions checks the JavaScript syntax, validates the static site assets, and publishes the repository root to GitHub Pages whenever changes are pushed to main.
 
 The current release is focused on the core messaging experience. The previous game clients, game engine, game-only database objects, and game-specific frontend assets have been retired. A new game foundation will be designed and implemented separately.
 
