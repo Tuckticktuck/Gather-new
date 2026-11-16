@@ -1,4 +1,5 @@
 import { createGameEngineRegistry } from "./engine.mjs";
+import { unoEngine } from "./uno.mjs";
 
-// Game-specific adapters are registered here only after their rules and tests are complete.
-export const gameEngines = createGameEngineRegistry([]);
+// Production adapters are registered only after their rule tests pass.
+export const gameEngines = createGameEngineRegistry([unoEngine]);
