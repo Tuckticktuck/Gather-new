@@ -165,7 +165,8 @@ Deno.serve(async (request: Request) => {
         p_payload: transition.eventPayload,
         p_next_state: transition.nextState,
         p_next_turn_user_id: transition.nextTurnUserId,
-        p_next_status: transition.nextStatus,\n        p_private_state: transition.nextPrivateState ?? null,
+        p_next_status: transition.nextStatus,
+        p_private_state: transition.nextPrivateState ?? null,
       }),
     });
 
