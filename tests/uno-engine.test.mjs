@@ -82,12 +82,18 @@ test("initializes a private 7-card hand for each accepted player", async () => {
   assert.equal("drawPile" in result.nextState, false);
 });
 
-test("rejects initialization beyond the 20-player limit", async () => {
+test("supports 20 players with a second deck and rejects 21", async () => {
   const manyPlayers = Array.from({ length: UNO_MAX_PLAYERS + 1 }, (_, index) => ({
     user_id: `00000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
     response: "accepted",
     player_order: index,
   }));
+  const twenty = await unoEngine.applyAction({
+    state: {}, privateState: null, action: { type: "initialize" },
+    actorId: manyPlayers[0].user_id, players: manyPlayers.slice(0, 20), serverSeed: seed,
+  });
+  assert.equal(twenty.nextState.playerOrder.length, 20);
+  assert.equal(twenty.nextPrivateState.drawPile.length, 75);
   await assert.rejects(unoEngine.applyAction({
     state: {}, privateState: null, action: { type: "initialize" },
     actorId: manyPlayers[0].user_id, players: manyPlayers, serverSeed: seed,
