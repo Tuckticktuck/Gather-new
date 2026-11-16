@@ -54,7 +54,7 @@ The `gather-game-view` Edge Function returns the shared public snapshot plus onl
 
 ## Conversation UI
 
-The Gather client adds a Play a game option to the conversation composer, a persistent UNO invitation message card with accept/decline actions, and a full-screen overlay that returns to the same conversation when closed. The card reflects invitation state, participants, current turn, and match completion. The overlay uses the player-scoped game-view endpoint and submits moves only through the trusted action endpoint. There is no separate Games workspace, public lobby, spectator mode, or in-game chat.
+The Gather client adds a Play a game option to the conversation composer, a persistent UNO invitation message card with accept/decline actions, and a full-screen overlay that returns to the same conversation when closed. The card reflects invitation state, participants, current turn, and match completion. A database trigger creates a notification for the next player whenever a turn begins, including when the invitation first becomes active. The overlay uses the player-scoped game-view endpoint and submits moves only through the trusted action endpoint. There is no separate Games workspace, public lobby, spectator mode, or in-game chat.
 
 ## Deployment
 
