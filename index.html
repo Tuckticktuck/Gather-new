@@ -243,6 +243,7 @@ if (!window.supabase?.createClient) {
       <div id="composer-more-menu" class="composer-more-menu" role="menu" hidden>
         <label class="composer-menu-item" for="message-image-file">＋ Add photo</label>
         <button id="message-create-poll" class="composer-menu-item" type="button" role="menuitem">Create a poll</button>
+        <button id="game-picker-open" class="composer-menu-item" type="button" role="menuitem">Play a game</button>
         <button id="schedule-message-open" class="composer-menu-item" type="button" role="menuitem">Schedule message…</button>
         <button id="scheduled-messages-open" class="composer-menu-item" type="button" role="menuitem">Scheduled messages</button>
       </div>
@@ -710,5 +711,35 @@ if (!window.supabase?.createClient) {
 <div id="offline-status" class="offline-status" role="status" hidden>You’re offline. Gather can open its saved app shell, but signing in, sending messages, and syncing conversations require an internet connection.</div>
 <div id="toast" class="toast" role="status"></div>
 <div id="message-notifications" class="message-notifications" role="status" aria-live="polite" aria-atomic="false" hidden></div>
+
+<div id="game-picker-modal" class="overlay" hidden>
+  <section class="modal game-picker-modal" role="dialog" aria-modal="true" aria-labelledby="game-picker-title">
+    <button class="close" data-close aria-label="Close">×</button>
+    <p class="eyebrow">PLAY TOGETHER</p>
+    <h2 id="game-picker-title">Choose a game</h2>
+    <p class="muted tiny">Your invitation will appear in this conversation. Everyone in the conversation can respond.</p>
+    <button id="game-picker-uno" class="game-picker-tile" type="button">
+      <span class="game-picker-uno-icon" aria-hidden="true"><span>U</span><span>N</span><span>O</span></span>
+      <span><strong>UNO</strong><small>Classic card game · 2–20 players</small></span>
+      <span class="game-picker-arrow" aria-hidden="true">→</span>
+    </button>
+    <p id="game-picker-status" class="status" role="status" aria-live="polite"></p>
+  </section>
+</div>
+
+<div id="game-overlay" class="game-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="uno-game-title">
+  <div class="game-overlay-shell">
+    <header class="game-overlay-header">
+      <div class="game-overlay-heading">
+        <p class="eyebrow">GATHER · CONVERSATION GAME</p>
+        <h2 id="uno-game-title">UNO</h2>
+        <p id="uno-game-status" class="game-overlay-status" aria-live="polite">Loading match…</p>
+      </div>
+      <button id="game-overlay-close" class="game-overlay-close" type="button" aria-label="Return to conversation">×</button>
+    </header>
+    <main id="uno-game-content" class="uno-game-content" aria-live="polite"></main>
+  </div>
+</div>
+
 </body>
 </html>
