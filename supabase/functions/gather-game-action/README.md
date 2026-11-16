@@ -9,7 +9,7 @@ This is the trusted server-side move pipeline for Game Foundation v2. It deliber
 3. The server loads the match and participants using its private service credential.
 4. It requires an active match, matching optimistic version, an accepted participant, and current membership in the originating conversation.
 5. The registered server-side adapter validates the game-specific action and computes the next state.
-6. The server calls the service-role-only commit_validated_game_transition RPC. Postgres locks the match, rechecks version, status, accepted-player status, current conversation membership, turn ownership, and next-turn membership, then updates the snapshot and appends the event atomically.
+6. The server calls the service-role-only commit_validated_game_transition RPC. Postgres locks the match, rechecks version, status, accepted-player status, current conversation membership, turn ownership, and next-turn membership, then updates the snapshot, lifecycle status, and appends the event atomically. A completed match is terminal and cannot receive further actions.
 
 The browser never sends a trusted next-state snapshot and cannot call the commit RPC.
 
@@ -21,6 +21,7 @@ A registered adapter has a unique key and an applyAction({ state, action, actorI
 - eventType: a lowercase event identifier.
 - eventPayload: a JSON object describing the accepted action.
 - nextTurnUserId: an accepted participant ID, or null when the game has no assigned turn.
+- nextStatus: active by default, or completed when the validated ruleset ends the match. Completed matches must clear the current turn.
 
 Adapters throw GameRuleError for an illegal move. The gateway returns 422 for rejected rules, 409 for stale versions or inactive matches, and 403 for authorization failures.
 
