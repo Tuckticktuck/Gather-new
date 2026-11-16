@@ -81,6 +81,7 @@ test("applies a valid server adapter transition", async () => {
   assert.equal(result.nextState.board[1], "X");
   assert.equal(result.nextTurnUserId, other);
   assert.equal(result.eventType, "piece_placed");
+  assert.equal(result.nextStatus, "active");
   assert.equal(match.state.board[1], null, "input snapshot must not be mutated");
 });
 
@@ -92,6 +93,31 @@ test("rejects non-player and out-of-turn actions before engine execution", async
   await assert.rejects(resolveGameAction({
     engine, match, actorId: other, players, action: {},
   }), /turn/);
+});
+
+test("supports completed matches and rejects invalid completion turn", async () => {
+  const completed = await resolveGameAction({
+    engine: { applyAction: () => ({
+      nextState: { winner: actor }, eventPayload: { winner: actor },
+      eventType: "match_completed", nextTurnUserId: null, nextStatus: "completed",
+    }) },
+    match, actorId: actor, players, action: {},
+  });
+  assert.equal(completed.nextStatus, "completed");
+  assert.equal(completed.nextTurnUserId, null);
+  await assert.rejects(resolveGameAction({
+    engine: { applyAction: () => ({
+      nextState: {}, eventPayload: {}, eventType: "match_completed",
+      nextTurnUserId: other, nextStatus: "completed",
+    }) },
+    match, actorId: actor, players, action: {},
+  }), /completed match cannot have a current turn/);
+  await assert.rejects(resolveGameAction({
+    engine: { applyAction: () => ({
+      nextState: {}, eventPayload: {}, eventType: "bad_status", nextStatus: "cancelled",
+    }) },
+    match, actorId: actor, players, action: {},
+  }), /only keep a match active or complete it/);
 });
 
 test("rejects illegal adapter output and unaccepted next player", async () => {
