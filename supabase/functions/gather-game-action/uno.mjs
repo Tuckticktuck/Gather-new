@@ -5,19 +5,22 @@ export const UNO_MAX_PLAYERS = 20;
 const VALUES = Object.freeze(["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "skip", "reverse", "draw2"]);
 const isRecord = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
 
-function makeDeck() {
+function makeDeck(copies = 1) {
   const deck = [];
-  for (const color of UNO_COLORS) {
-    deck.push({ id: `${color}:0:0`, color, value: "0" });
-    for (const value of ["1", "2", "3", "4", "5", "6", "7", "8", "9", "skip", "reverse", "draw2"]) {
-      for (let copy = 0; copy < 2; copy++) {
-        deck.push({ id: `${prefix}${color}:${value}:${copy}`, color, value });
+  for (let deckCopy = 0; deckCopy < copies; deckCopy++) {
+    const prefix = `${deckCopy}:`;
+    for (const color of UNO_COLORS) {
+      deck.push({ id: `${prefix}${color}:0:0`, color, value: "0" });
+      for (const value of ["1", "2", "3", "4", "5", "6", "7", "8", "9", "skip", "reverse", "draw2"]) {
+        for (let copy = 0; copy < 2; copy++) {
+          deck.push({ id: `${prefix}${color}:${value}:${copy}`, color, value });
+        }
       }
     }
-  }
-  for (let copy = 0; copy < 4; copy++) {
-    deck.push({ id: `wild:wild:${copy}`, color: null, value: "wild" });
-    deck.push({ id: `wild:wild4:${copy}`, color: null, value: "wild4" });
+    for (let copy = 0; copy < 4; copy++) {
+      deck.push({ id: `${prefix}wild:wild:${copy}`, color: null, value: "wild" });
+      deck.push({ id: `${prefix}wild:wild4:${copy}`, color: null, value: "wild4" });
+    }
   }
   return deck;
 }
