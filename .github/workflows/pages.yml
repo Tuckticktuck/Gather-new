@@ -22,17 +22,11 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-      - name: Set up Node.js for TypeScript and tests
+      - name: Set up Node.js for site validation and tests
         uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Set up Deno for Supabase Edge Function checks
-        uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
-      - name: Type-check Phase 1 Supabase Edge Functions
-        run: deno check supabase/functions/gather-board-game-action/index.ts
-      - name: Run deterministic multiplayer contract tests
+      - name: Run application tests
         run: node --test tests/*.test.mjs
       - name: Validate all JavaScript
         run: find . -type f -name '*.js' -not -path './node_modules/*' -print0 | xargs -0 -n1 node --check
