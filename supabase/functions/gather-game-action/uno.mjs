@@ -174,6 +174,7 @@ function applyUnoAction({ state, privateState, action, actorId, players, serverS
         cardsPerPlayer: 7,
       },
       nextTurnUserId: initialized.publicState.currentPlayerId,
+      nextStatus: "active",
     };
   }
 
