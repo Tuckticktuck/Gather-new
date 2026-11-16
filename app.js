@@ -3314,7 +3314,7 @@ async function toggleMessageReaction(messageId,emoji){
 }
 
 
-const GAME_MESSAGE_PATTERN = /^\\[GATHER_GAME_V2:([0-9a-f-]{36})\\]$/i;
+const GAME_MESSAGE_PATTERN = /^\[GATHER_GAME_V2:([0-9a-f-]{36})\]$/i;
 function gameMatchIdFromMessage(message){
   const match=GAME_MESSAGE_PATTERN.exec(String(message?.body||"").trim());
   return match?.[1]||null;
