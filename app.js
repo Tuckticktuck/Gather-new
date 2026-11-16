@@ -1829,7 +1829,7 @@ function renderNotificationBadge(){
   const markAll=$("notifications-mark-all");if(markAll)markAll.disabled=regularUnread===0;
 }
 function notificationKindLabel(kind){
-  return ({message:"New message",friend_request:"Friend request",chat_request:"Chat request",feedback_reply:"Feedback update",report:"Safety report",announcement:"Official admin announcement"})[kind]||"Gather update";
+  return ({message:"New message",game_turn:"Game turn",friend_request:"Friend request",chat_request:"Chat request",feedback_reply:"Feedback update",report:"Safety report",announcement:"Official admin announcement"})[kind]||"Gather update";
 }
 function notificationDisplayItems(items){
   if(!S.preferences.groupUnreadMessages)return items.map(item=>({notification:item,items:[item]}));
@@ -1867,7 +1867,7 @@ function renderNotifications(){
     const card=el("button","notification-center-item"+(unread?" unread":""));
     card.type="button";card.dataset.createdAt=String(Date.parse(item.created_at||0)||0);
     const chat=item.kind==="message"&&item.conversation_id?S.chats.find(candidate=>candidate.id===item.conversation_id):null;
-    const icon=el("span","notification-center-icon",item.kind==="message"?"✉":item.kind==="friend_request"?"＋":item.kind==="chat_request"?"↗":item.kind==="report"?"⚑":item.kind==="announcement"?"◎":"•");
+    const icon=el("span","notification-center-icon",item.kind==="message"?"✉":item.kind==="game_turn"?"🎮":item.kind==="friend_request"?"＋":item.kind==="chat_request"?"↗":item.kind==="report"?"⚑":item.kind==="announcement"?"◎":"•");
     const copy=el("span","notification-center-copy");
     const sender=S.profiles[item.actor_id]?.display_name||item.title||"Gather member";
     const groupName=chat?.kind==="group"?chatTitle(chat):"";
@@ -1984,6 +1984,9 @@ async function openNotification(entry){
   if(item.kind==="message"){
     if(item.conversation_id&&S.chats.some(chat=>chat.id===item.conversation_id))await openChat(item.conversation_id);
     else toast("That conversation is no longer available.");
+  }else if(item.kind==="game_turn"){
+    if(item.conversation_id&&S.chats.some(chat=>chat.id===item.conversation_id))await openChat(item.conversation_id);
+    else toast("That UNO conversation is no longer available.");
   }else if(item.kind==="friend_request")await openFriends();
   else if(item.kind==="chat_request")await openRequests();
   else if(item.kind==="feedback_reply")await openFeedback(isFeedbackAdmin(S.user));
