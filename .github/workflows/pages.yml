@@ -29,7 +29,7 @@ jobs:
       - name: Validate game engine modules
         run: find games-v2 supabase/functions -type f -name '*.mjs' -print0 | xargs -0 -n1 node --check
       - name: Test universal game foundation contracts
-        run: node --test tests/game-foundation-v2.test.mjs tests/game-action-engine.test.mjs
+        run: node --test tests/game-foundation-v2.test.mjs tests/game-action-engine.test.mjs tests/uno-engine.test.mjs
       - name: Validate site assets, HTML IDs, CSS structure, and service-worker cache
         run: node scripts/validate-site.mjs
 

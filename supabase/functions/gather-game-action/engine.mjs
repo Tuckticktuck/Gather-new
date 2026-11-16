@@ -54,7 +54,7 @@ export function createGameEngineRegistry(engines = []) {
   });
 }
 
-export async function resolveGameAction({ engine, match, actorId, players, action }) {
+export async function resolveGameAction({ engine, match, actorId, players, action, serverSeed }) {
   if (!engine || typeof engine.applyAction !== "function") {
     throw new TypeError("No server-side engine is registered for this game.");
   }
@@ -73,10 +73,12 @@ export async function resolveGameAction({ engine, match, actorId, players, actio
 
   const result = await engine.applyAction({
     state: structuredClone(match.state),
+    privateState: isRecord(match.private_state) ? structuredClone(match.private_state) : null,
     action: structuredClone(action),
     actorId,
     players: players.map((player) => ({ ...player })),
     currentTurnUserId: match.current_turn_user_id,
+    serverSeed,
   });
 
   if (!isRecord(result) || !isRecord(result.nextState) ||
@@ -87,6 +89,10 @@ export async function resolveGameAction({ engine, match, actorId, players, actio
   if (byteLength(result.nextState) > MAX_STATE_BYTES ||
       byteLength(result.eventPayload) > MAX_ACTION_BYTES) {
     throw new RangeError("The game engine returned an oversized transition.");
+  }
+  if (result.nextPrivateState !== undefined &&
+      (!isRecord(result.nextPrivateState) || byteLength(result.nextPrivateState) > MAX_STATE_BYTES)) {
+    throw new TypeError("The game engine returned an invalid or oversized private state.");
   }
   const nextStatus = result.nextStatus ?? "active";
   if (nextStatus !== "active" && nextStatus !== "completed") {
@@ -104,6 +110,8 @@ export async function resolveGameAction({ engine, match, actorId, players, actio
     eventType: result.eventType,
     eventPayload: structuredClone(result.eventPayload),
     nextState: structuredClone(result.nextState),
+    ...(result.nextPrivateState !== undefined
+      ? { nextPrivateState: structuredClone(result.nextPrivateState) } : {}),
     nextTurnUserId,
     nextStatus,
   };

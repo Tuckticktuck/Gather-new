@@ -30,7 +30,7 @@ function normalizeChatSettings(raw){
   });
   return {pinned,muted,drafts,appearance};
 }
-const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", inChatFilterType:"all", inChatMessageMatches:new Set(), inChatSearchRequestId:0, inChatSearchTimer:null, editingMessageId:null, editDraft:"", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], favoriteFriendIds:new Set(), archivedConversationIds:new Set(), blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), deletedConversationId:null, selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingUndoSend:null, undoSendTimer:null, undoCountdownInterval:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, homeSearchQuery:"", homeSearchTab:"messages", homeSearchMessages:[], homeSearchProfiles:[], homeSearchLoading:false, homeSearchErrors:{messages:"",profiles:""}, homeSearchTimer:null, homeSearchRequestId:0, directStatus:null, directStatusCache:new Map(), directStatusChecks:new Map(), groupMessageStatus:null, ageStatus:null, ageChangeStatus:null, ageRequestChannel:null, messageRestriction:null, messageRestrictionLoaded:false, messageRestrictionError:"", messageRestrictionChannel:null, messageRestrictionTimer:null, active:null, messages:[], initialChatScrollLockId:null, channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), friendPresenceRetryTimers:new Map(), friendPresenceRetryAttempts:new Map(), ownPresenceChannel:null, ownPresenceRetryTimer:null, ownPresenceRetryAttempt:0, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],intergroupRequests:[],ageChangeRequests:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
+const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", inChatFilterType:"all", inChatMessageMatches:new Set(), inChatSearchRequestId:0, inChatSearchTimer:null, editingMessageId:null, editDraft:"", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], favoriteFriendIds:new Set(), archivedConversationIds:new Set(), blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), deletedConversationId:null, selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingUndoSend:null, undoSendTimer:null, undoCountdownInterval:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, homeSearchQuery:"", homeSearchTab:"messages", homeSearchMessages:[], homeSearchProfiles:[], homeSearchLoading:false, homeSearchErrors:{messages:"",profiles:""}, homeSearchTimer:null, homeSearchRequestId:0, directStatus:null, directStatusCache:new Map(), directStatusChecks:new Map(), groupMessageStatus:null, ageStatus:null, ageChangeStatus:null, ageRequestChannel:null, messageRestriction:null, messageRestrictionLoaded:false, messageRestrictionError:"", messageRestrictionChannel:null, messageRestrictionTimer:null, active:null, messages:[], gameMatches:{}, gameMatchPlayers:{}, gameChannel:null, gameCardsLoading:false, gameCardsRefreshPending:false, activeGameId:null, activeGameView:null, gameViewRequest:0, unoInitializing:false, unoCallPending:false, unoSelectedCardId:null, initialChatScrollLockId:null, channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), friendPresenceRetryTimers:new Map(), friendPresenceRetryAttempts:new Map(), ownPresenceChannel:null, ownPresenceRetryTimer:null, ownPresenceRetryAttempt:0, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],intergroupRequests:[],ageChangeRequests:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function appendSafeText(parent,value){
@@ -1829,7 +1829,7 @@ function renderNotificationBadge(){
   const markAll=$("notifications-mark-all");if(markAll)markAll.disabled=regularUnread===0;
 }
 function notificationKindLabel(kind){
-  return ({message:"New message",friend_request:"Friend request",chat_request:"Chat request",feedback_reply:"Feedback update",report:"Safety report",announcement:"Official admin announcement"})[kind]||"Gather update";
+  return ({message:"New message",game_turn:"Game turn",friend_request:"Friend request",chat_request:"Chat request",feedback_reply:"Feedback update",report:"Safety report",announcement:"Official admin announcement"})[kind]||"Gather update";
 }
 function notificationDisplayItems(items){
   if(!S.preferences.groupUnreadMessages)return items.map(item=>({notification:item,items:[item]}));
@@ -1867,7 +1867,7 @@ function renderNotifications(){
     const card=el("button","notification-center-item"+(unread?" unread":""));
     card.type="button";card.dataset.createdAt=String(Date.parse(item.created_at||0)||0);
     const chat=item.kind==="message"&&item.conversation_id?S.chats.find(candidate=>candidate.id===item.conversation_id):null;
-    const icon=el("span","notification-center-icon",item.kind==="message"?"✉":item.kind==="friend_request"?"＋":item.kind==="chat_request"?"↗":item.kind==="report"?"⚑":item.kind==="announcement"?"◎":"•");
+    const icon=el("span","notification-center-icon",item.kind==="message"?"✉":item.kind==="game_turn"?"🎮":item.kind==="friend_request"?"＋":item.kind==="chat_request"?"↗":item.kind==="report"?"⚑":item.kind==="announcement"?"◎":"•");
     const copy=el("span","notification-center-copy");
     const sender=S.profiles[item.actor_id]?.display_name||item.title||"Gather member";
     const groupName=chat?.kind==="group"?chatTitle(chat):"";
@@ -1984,6 +1984,9 @@ async function openNotification(entry){
   if(item.kind==="message"){
     if(item.conversation_id&&S.chats.some(chat=>chat.id===item.conversation_id))await openChat(item.conversation_id);
     else toast("That conversation is no longer available.");
+  }else if(item.kind==="game_turn"){
+    if(item.conversation_id&&S.chats.some(chat=>chat.id===item.conversation_id))await openChat(item.conversation_id);
+    else toast("That UNO conversation is no longer available.");
   }else if(item.kind==="friend_request")await openFriends();
   else if(item.kind==="chat_request")await openRequests();
   else if(item.kind==="feedback_reply")await openFeedback(isFeedbackAdmin(S.user));
@@ -3162,6 +3165,9 @@ async function openChat(id){
   closeTypingChannel();
   if(S.readChannel){db.removeChannel(S.readChannel);S.readChannel=null;}
   if(S.pollChannel){db.removeChannel(S.pollChannel);S.pollChannel=null;}
+  if(S.gameChannel){db.removeChannel(S.gameChannel);S.gameChannel=null;}
+  if(S.activeGameId)closeUnoGame();
+  S.gameMatches={};S.gameMatchPlayers={};S.gameCardsLoading=false;
   clearPendingMessageImage();
   // Conversation entry is an immediate state change, not a full-screen transition.
   // Avoids expensive Safari view-transition snapshots and stacked entrance animations.
@@ -3174,6 +3180,8 @@ async function openChat(id){
   subscribeTyping(id);
   await loadMessages(id);
   if(S.active!==id)return;
+  subscribeGameMatches(id);
+  void loadGameCards(id);
   // Opening the conversation marks its existing incoming messages as seen.
   // Do not wait for the read update before displaying the conversation.
   void markConversationRead(id);
@@ -3309,7 +3317,312 @@ async function toggleMessageReaction(messageId,emoji){
 }
 
 
-function messagePreviewText(m){return m?.body||(m?.attachment_path?"Photo":"Message");}
+const GAME_MESSAGE_PATTERN = /^\[GATHER_GAME_V2:([0-9a-f-]{36})\]$/i;
+function gameMatchIdFromMessage(message){
+  const match=GAME_MESSAGE_PATTERN.exec(String(message?.body||"").trim());
+  return match?.[1]||null;
+}
+function gamePlayerName(userId,index){
+  const profile=S.profiles[userId];
+  return profile?.display_name||profile?.username||("Player "+(index+1));
+}
+async function loadGameCards(conversationId){
+  if(!S.user||S.active!==conversationId)return;
+  if(S.gameCardsLoading){S.gameCardsRefreshPending=true;return;}
+  const ids=[...new Set(S.messages.map(gameMatchIdFromMessage).filter(Boolean))];
+  if(!ids.length){S.gameMatches={};S.gameMatchPlayers={};return;}
+  S.gameCardsLoading=true;
+  try{
+    const matchResult=await db.from("game_matches")
+      .select("id,message_id,conversation_id,game_key,status,state,version,current_turn_user_id,created_by")
+      .eq("conversation_id",conversationId).in("id",ids);
+    if(matchResult.error)throw matchResult.error;
+    const matches=matchResult.data||[];
+    const matchIds=matches.map(match=>match.id);
+    let playerRows=[];
+    if(matchIds.length){
+      const playersResult=await db.from("game_match_players")
+        .select("match_id,user_id,response,player_order")
+        .in("match_id",matchIds).order("player_order",{ascending:true});
+      if(playersResult.error)throw playersResult.error;
+      playerRows=playersResult.data||[];
+    }
+    if(S.active!==conversationId)return;
+    S.gameMatches=Object.fromEntries(matches.map(match=>[match.id,match]));
+    S.gameMatchPlayers={};
+    playerRows.forEach(player=>{
+      (S.gameMatchPlayers[player.match_id]||(S.gameMatchPlayers[player.match_id]=[])).push(player);
+    });
+    renderMessages(true);
+  }catch(error){
+    console.warn("Game invitations could not be refreshed:",error?.message||error);
+  }finally{
+    S.gameCardsLoading=false;
+    if(S.gameCardsRefreshPending&&S.active===conversationId){S.gameCardsRefreshPending=false;void loadGameCards(conversationId);}
+  }
+}
+function subscribeGameMatches(conversationId){
+  if(S.gameChannel){db.removeChannel(S.gameChannel);S.gameChannel=null;}
+  S.gameChannel=db.channel("gather-game-matches-"+conversationId)
+    .on("postgres_changes",{event:"*",schema:"public",table:"game_matches",filter:"conversation_id=eq."+conversationId},()=>{
+      void loadGameCards(conversationId);
+      if(S.activeGameId&&S.active===conversationId)void loadUnoGameView();
+    })
+    .subscribe();
+}
+function renderGameMessageCard(message){
+  const matchId=gameMatchIdFromMessage(message);
+  const match=matchId?S.gameMatches[matchId]:null;
+  const players=matchId?(S.gameMatchPlayers[matchId]||[]):[];
+  const me=players.find(player=>player.user_id===S.user?.id);
+  const card=el("section","gather-game-message");
+  const heading=el("div","gather-game-message-heading");
+  const mark=el("span","gather-game-message-mark","U");
+  const copy=el("div","gather-game-message-copy");
+  copy.append(el("strong","","UNO"),el("small","","Conversation game"));
+  heading.append(mark,copy);
+  card.append(heading);
+  if(!match){
+    card.append(el("p","gather-game-message-status","Loading invitation details…"));
+    if(!S.gameCardsLoading)void loadGameCards(S.active);
+    return card;
+  }
+  const names=players.map((player,index)=>gamePlayerName(player.user_id,index));
+  card.append(el("p","gather-game-message-players",names.length?names.join(" · "):"Conversation members"));
+  let statusText="Invitation pending";
+  if(match.status==="active")statusText=match.current_turn_user_id===S.user?.id?"Your turn to start":"Waiting for "+gamePlayerName(match.current_turn_user_id,0);
+  else if(match.status==="completed")statusText="Game completed";
+  else if(match.status==="cancelled")statusText="Invitation closed";
+  card.append(el("p","gather-game-message-status",statusText));
+  const actions=el("div","gather-game-message-actions");
+  if(match.status==="invited"&&me?.response==="invited"){
+    const accept=el("button","game-card-action primary","Accept");
+    accept.type="button";accept.addEventListener("click",event=>{event.stopPropagation();void respondToUnoInvitation(match.id,"accepted");});
+    const decline=el("button","game-card-action secondary","Decline");
+    decline.type="button";decline.addEventListener("click",event=>{event.stopPropagation();void respondToUnoInvitation(match.id,"declined");});
+    actions.append(accept,decline);
+  }else if(match.status==="invited"){
+    actions.append(el("span","gather-game-waiting","Waiting for everyone to respond"));
+  }else if(match.status==="active"&&me?.response==="accepted"){
+    const open=el("button","game-card-action primary","Open UNO");
+    open.type="button";open.addEventListener("click",event=>{event.stopPropagation();void openUnoGame(match.id);});
+    actions.append(open);
+  }else if(match.status==="completed"){
+    const winner=match.state?.winnerId;
+    actions.append(el("span","gather-game-waiting",winner?"Winner: "+gamePlayerName(winner,0):"Match finished"));
+  }else{
+    actions.append(el("span","gather-game-waiting","This invitation is no longer available"));
+  }
+  card.append(actions);
+  return card;
+}
+function openGamePicker(){
+  if(!S.active){toast("Open a conversation before starting a game.");return;}
+  closeComposerMoreMenu();
+  status("game-picker-status","");
+  $("game-picker-modal").hidden=false;
+}
+async function createUnoInvitation(){
+  if(!S.active)return;
+  const button=$("game-picker-uno");
+  button.disabled=true;
+  status("game-picker-status","Sending the UNO invitation…");
+  const result=await db.rpc("create_game_invitation",{p_conversation_id:S.active,p_game_key:"uno"});
+  button.disabled=false;
+  if(result.error){
+    status("game-picker-status",result.error.message,"error");
+    return;
+  }
+  $("game-picker-modal").hidden=true;
+  toast("UNO invitation sent to the conversation.");
+  await loadMessages(S.active);
+  await loadGameCards(S.active);
+}
+async function respondToUnoInvitation(matchId,responseValue){
+  const result=await db.rpc("respond_to_game_invitation",{p_match_id:matchId,p_response:responseValue});
+  if(result.error){toast("Your UNO response could not be saved: "+result.error.message);return;}
+  await loadGameCards(S.active);
+  if(responseValue==="accepted"&&result.data?.status==="active")void openUnoGame(matchId);
+  else toast(responseValue==="accepted"?"You accepted the UNO invitation.":"You declined the UNO invitation.");
+}
+function closeUnoGame(){
+  $("game-overlay").hidden=true;
+  S.activeGameId=null;S.activeGameView=null;S.unoCallPending=false;S.unoSelectedCardId=null;S.unoInitializing=false;
+}
+async function openUnoGame(matchId){
+  S.activeGameId=matchId;S.activeGameView=null;S.unoCallPending=false;S.unoSelectedCardId=null;
+  $("game-overlay").hidden=false;
+  $("uno-game-title").textContent="UNO";
+  $("uno-game-status").textContent="Loading match…";
+  $("uno-game-content").replaceChildren(el("p","muted","Loading your game…"));
+  await loadUnoGameView();
+}
+async function loadUnoGameView(){
+  const matchId=S.activeGameId;
+  if(!matchId||!S.user)return;
+  const requestId=++S.gameViewRequest;
+  $("uno-game-status").textContent="Syncing match…";
+  const result=await db.functions.invoke("gather-game-view",{body:{matchId}});
+  if(S.activeGameId!==matchId||requestId!==S.gameViewRequest)return;
+  if(result.error||!result.data){
+    $("uno-game-status").textContent="Game service unavailable";
+    $("uno-game-content").replaceChildren(el("p","game-service-error","The UNO game service is not available yet. The match and invitation remain saved in this conversation."));
+    return;
+  }
+  S.activeGameView=result.data;
+  renderUnoGame();
+  const view=result.data;
+  if(view.status==="active"&&!view.initialized&&view.currentTurnUserId===S.user.id&&!S.unoInitializing){
+    S.unoInitializing=true;
+    const started=await db.functions.invoke("gather-game-action",{
+      body:{matchId,expectedVersion:Number(view.version),action:{type:"initialize"}}
+    });
+    S.unoInitializing=false;
+    if(S.activeGameId!==matchId)return;
+    if(started.error){
+      $("uno-game-status").textContent="Could not start the match";
+      $("uno-game-content").append(el("p","game-service-error",started.error.message||"The match could not be initialized."));
+    }else{
+      await loadUnoGameView();
+    }
+  }
+}
+async function performUnoAction(action){
+  const view=S.activeGameView,matchId=S.activeGameId;
+  if(!view||!matchId||view.currentTurnUserId!==S.user.id)return;
+  const content=$("uno-game-content");
+  content.querySelectorAll("button").forEach(button=>button.disabled=true);
+  const result=await db.functions.invoke("gather-game-action",{
+    body:{matchId,expectedVersion:Number(view.version),action}
+  });
+  if(result.error){
+    toast(result.error.message||"That UNO move could not be saved.");
+    await loadUnoGameView();
+    return;
+  }
+  S.unoSelectedCardId=null;S.unoCallPending=false;
+  await loadUnoGameView();
+  if(S.active)await loadGameCards(S.active);
+}
+function unoCardLabel(card){
+  if(card.value==="skip")return "⊘";
+  if(card.value==="reverse")return "↻";
+  if(card.value==="draw2")return "+2";
+  if(card.value==="wild")return "WILD";
+  if(card.value==="wild4")return "+4";
+  return card.value;
+}
+function renderUnoGame(){
+  const view=S.activeGameView,content=$("uno-game-content");
+  content.replaceChildren();
+  if(!view){content.append(el("p","muted","Loading your game…"));return;}
+  if(view.status==="invited"){
+    $("uno-game-status").textContent="Waiting for players";
+    content.append(el("p","uno-waiting-title","Waiting for everyone to respond"));
+    content.append(el("p","muted","The match will begin once all invited conversation members have responded."));
+    return;
+  }
+  if(view.status==="cancelled"){
+    $("uno-game-status").textContent="Invitation closed";
+    content.append(el("p","uno-waiting-title","This UNO invitation was closed."));
+    return;
+  }
+  if(!view.initialized){
+    $("uno-game-status").textContent="Preparing match";
+    const current= view.currentTurnUserId===S.user.id;
+    content.append(el("p","uno-waiting-title",current?"Starting your UNO match…":"Waiting for the first player to start"));
+    return;
+  }
+  const state=view.publicState||{};
+  const order=Array.isArray(state.playerOrder)?state.playerOrder:[];
+  const current=view.currentTurnUserId===S.user.id;
+  const winner=state.winnerId;
+  $("uno-game-status").textContent=view.status==="completed"?"Match complete":current?"Your turn":"Waiting for "+gamePlayerName(view.currentTurnUserId,0);
+  const players=el("div","uno-player-strip");
+  order.forEach((userId,index)=>{
+    const player=el("div","uno-player-chip"+(userId===view.currentTurnUserId?" is-current":"")+(userId===S.user.id?" is-you":""));
+    player.append(el("strong","",gamePlayerName(userId,index)),el("small","",(state.handCounts?.[userId]??0)+" cards"));
+    players.append(player);
+  });
+  content.append(players);
+  if(view.status==="completed"){
+    content.append(el("div","uno-result-panel",winner?gamePlayerName(winner,order.indexOf(winner))+" won the match!":"The match is complete."));
+    const close=el("button","game-card-action primary","Return to conversation");
+    close.type="button";close.addEventListener("click",closeUnoGame);content.append(close);return;
+  }
+  const table=el("div","uno-table");
+  const pile=el("div","uno-pile-area");
+  const draw=el("div","uno-pile-back");draw.append(el("strong","","UNO"),el("small","",String(view.drawPileCount??0)+" left"));
+  const discard=el("div","uno-pile-discard");
+  const top=state.discardTop;
+  if(top){
+    const topCard=el("div","uno-card uno-card-face uno-card-"+(top.color||"wild"));
+    topCard.append(el("span","uno-card-corner",unoCardLabel(top)),el("strong","uno-card-center",unoCardLabel(top)));
+    discard.append(topCard);
+  }
+  pile.append(draw,discard);
+  table.append(pile);
+  table.append(el("div","uno-current-color","Current color: "+String(state.currentColor||"—").toUpperCase()));
+  content.append(table);
+  const hand=Array.isArray(view.hand)?view.hand:[];
+  const controls=el("div","uno-action-controls");
+  if(state.pendingUnoPlayerId&&state.pendingUnoPlayerId!==S.user.id&&current){
+    const catchButton=el("button","game-card-action secondary","Catch UNO · draw 2");
+    catchButton.type="button";catchButton.addEventListener("click",()=>void performUnoAction({type:"catch_uno"}));controls.append(catchButton);
+  }
+  if(current&&state.pendingDraw){
+    const drawButton=el("button","game-card-action primary","Draw "+state.pendingDraw.amount+" cards");
+    drawButton.type="button";drawButton.addEventListener("click",()=>void performUnoAction({type:"draw"}));controls.append(drawButton);
+    if(state.pendingDraw.kind==="wild4"){
+      const challenge=el("button","game-card-action secondary","Challenge +4");
+      challenge.type="button";challenge.addEventListener("click",()=>void performUnoAction({type:"challenge"}));controls.append(challenge);
+    }
+  }else if(current&&view.drawnCardId){
+    const pass=el("button","game-card-action secondary","Pass turn");
+    pass.type="button";pass.addEventListener("click",()=>void performUnoAction({type:"pass"}));controls.append(pass);
+  }else if(current){
+    const drawButton=el("button","game-card-action primary","Draw a card");
+    drawButton.type="button";drawButton.addEventListener("click",()=>void performUnoAction({type:"draw"}));controls.append(drawButton);
+  }
+  if(current&&hand.length===2){
+    const call=el("button","game-card-action"+(S.unoCallPending?" primary":" secondary"),S.unoCallPending?"UNO called ✓":"Call UNO");
+    call.type="button";call.addEventListener("click",()=>{S.unoCallPending=!S.unoCallPending;renderUnoGame();});controls.append(call);
+  }
+  if(S.unoSelectedCardId){
+    const colors=el("div","uno-color-picker");
+    colors.append(el("span","tiny muted","Choose a color"));
+    ["red","yellow","green","blue"].forEach(color=>{
+      const choose=el("button","uno-color-choice uno-color-choice-"+color,color);
+      choose.type="button";choose.setAttribute("aria-label","Choose "+color);
+      choose.addEventListener("click",()=>void performUnoAction({
+        type:"play",cardId:S.unoSelectedCardId,chosenColor:color,callUno:S.unoCallPending
+      }));
+      colors.append(choose);
+    });
+    controls.append(colors);
+  }
+  content.append(controls);
+  const handSection=el("section","uno-hand-section");
+  handSection.append(el("div","uno-hand-heading","Your hand"));
+  const cards=el("div","uno-hand");
+  hand.forEach(card=>{
+    const playable=current&&!state.pendingDraw&&(!view.drawnCardId||view.drawnCardId===card.id);
+    const button=el("button","uno-card uno-card-hand uno-card-"+(card.color||"wild"),unoCardLabel(card));
+    button.type="button";button.disabled=!playable;
+    button.setAttribute("aria-label",card.value+" card"+(card.color?" "+card.color:""));
+    if(view.drawnCardId===card.id)button.classList.add("is-drawn");
+    button.addEventListener("click",()=>{
+      if(card.value==="wild"||card.value==="wild4"){
+        S.unoSelectedCardId=card.id;renderUnoGame();
+      }else void performUnoAction({type:"play",cardId:card.id,callUno:S.unoCallPending});
+    });
+    cards.append(button);
+  });
+  handSection.append(cards);
+  content.append(handSection);
+}
+
+function messagePreviewText(m){const gameId=gameMatchIdFromMessage(m);return gameId?"UNO game invitation":(m?.body||(m?.attachment_path?"Photo":"Message"));}
 async function loadMessagePolls(cid,ids){
   ids=[...new Set((ids||[]).filter(Boolean))];if(!S.user||S.active!==cid||!ids.length)return;
   const p=await db.from("message_polls").select("id,message_id,conversation_id,created_by,question,created_at").eq("conversation_id",cid).in("message_id",ids);
@@ -3572,7 +3885,7 @@ function renderMessages(preserveScroll=false){
     return;
   }
   S.messages.forEach((m,index)=>{
-    const mine=m.sender_id===S.user.id,p=S.profiles[m.sender_id];
+    const mine=m.sender_id===S.user.id,p=S.profiles[m.sender_id],gameMessageId=gameMatchIdFromMessage(m);
     const previousMessage=S.messages[index-1],nextMessage=S.messages[index+1];
     const gapFromPrevious=previousMessage?new Date(m.created_at).getTime()-new Date(previousMessage.created_at).getTime():0;
     const gapToNext=nextMessage?new Date(nextMessage.created_at).getTime()-new Date(m.created_at).getTime():0;
@@ -3628,11 +3941,11 @@ function renderMessages(preserveScroll=false){
       };
       addAction("Reply",()=>beginReply(m));
       addAction("Add reaction",()=>{S.openReactionPickerMessageId=m.id;renderMessages(true);});
-      if(mine&&m.body&&!m.is_admin_message&&S.messageRestrictionLoaded&&!activeMessageRestriction())addAction("Edit",()=>editOwnMessage(m));
+      if(mine&&m.body&&!gameMessageId&&!m.is_admin_message&&S.messageRestrictionLoaded&&!activeMessageRestriction())addAction("Edit",()=>editOwnMessage(m));
       if(m.edited_at)addAction("View edit history",()=>openMessageEditHistory(m));
       if(mine&&m._undoExpiresAt>Date.now())addAction("Undo send",()=>undoSendMessage(m));
       addAction("Copy message",()=>copyMessage(m));
-      if(S.messageRestrictionLoaded&&!activeMessageRestriction())addAction("Forward message",()=>openForwardMessage(m));
+      if(!gameMessageId&&S.messageRestrictionLoaded&&!activeMessageRestriction())addAction("Forward message",()=>openForwardMessage(m));
       addAction(S.pinnedMessages.some(x=>x.message_id===m.id)?"Unpin message":"Pin message",()=>togglePinnedMessage(m));
       addAction(S.savedMessageIds.has(m.id)?"Remove saved message":"Save message",()=>toggleSavedMessage(m));
       if(!mine&&m.sender_id)addAction("Report",()=>openReport(m.sender_id,m.id));
@@ -3649,7 +3962,7 @@ function renderMessages(preserveScroll=false){
       const quoteName=target?.is_admin_message?"Gather Admin":(target?.sender_id?(target.sender_id===S.user.id?"You":(S.profiles[target.sender_id]?.display_name||"Member")):"Reply");
       if(showSenderNames)quote.append(el("strong","",quoteName));
       const quoteText=el("span");
-      if(target?.body)appendFormattedMessageText(quoteText,target.body);
+      if(target?.body)appendFormattedMessageText(quoteText,messagePreviewText(target));
       else quoteText.textContent=target?.attachment_path?"Sent an image":"Original message unavailable.";
       quote.append(quoteText);
       bubble.append(quote);
@@ -3678,6 +3991,8 @@ function renderMessages(preserveScroll=false){
       const cancel=el("button","outline","Cancel");cancel.type="button";cancel.addEventListener("click",cancelInlineMessageEdit);
       const save=el("button","primary","Save");save.type="button";save.addEventListener("click",()=>saveInlineMessageEdit(m));
       controls.append(cancel,save);editor.append(field,controls);bubble.append(editor);
+    }else if(gameMessageId){
+      bubble.append(renderGameMessageCard(m));
     }else if(m.body&&!S.messagePolls[m.id]){
       const bodyText=el("div","body-text");
       appendFormattedMessageText(bodyText,m.body);
@@ -5926,7 +6241,8 @@ document.querySelectorAll("[data-folder]").forEach(b=>b.addEventListener("click"
   $("send-form").addEventListener("submit",sendMessage);
   $("message-undo").addEventListener("click",undoLastSend);
   $("message-undo-bar").addEventListener("click",dismissUndoNotice,true);
-  $("message-image-file").addEventListener("change",handleMessageImageFile);$("composer-more-trigger").addEventListener("click",event=>{event.stopPropagation();toggleComposerMoreMenu();});$("composer-more-menu").addEventListener("click",event=>event.stopPropagation());$("message-create-poll").addEventListener("click",openPollComposer);$("poll-form").addEventListener("submit",submitPoll);$("poll-add-option").addEventListener("click",addPollOptionInput);$("poll-cancel").addEventListener("click",()=>$("poll-create-modal").hidden=true);$("saved-messages-open").addEventListener("click",openSavedMessages);document.addEventListener("click",event=>{const wrap=$("composer-more-wrap");if(wrap&&!wrap.contains(event.target))closeComposerMoreMenu();if(S.openReactionPickerMessageId&&!event.target.closest(".message-reaction-area")){S.openReactionPickerMessageId=null;if(S.active)renderMessages(true);}});
+  $("message-image-file").addEventListener("change",handleMessageImageFile);$("composer-more-trigger").addEventListener("click",event=>{event.stopPropagation();toggleComposerMoreMenu();});
+  $("game-picker-open").addEventListener("click",openGamePicker);$("game-picker-uno").addEventListener("click",createUnoInvitation);$("game-overlay-close").addEventListener("click",closeUnoGame);$("composer-more-menu").addEventListener("click",event=>event.stopPropagation());$("message-create-poll").addEventListener("click",openPollComposer);$("poll-form").addEventListener("submit",submitPoll);$("poll-add-option").addEventListener("click",addPollOptionInput);$("poll-cancel").addEventListener("click",()=>$("poll-create-modal").hidden=true);$("saved-messages-open").addEventListener("click",openSavedMessages);document.addEventListener("click",event=>{const wrap=$("composer-more-wrap");if(wrap&&!wrap.contains(event.target))closeComposerMoreMenu();if(S.openReactionPickerMessageId&&!event.target.closest(".message-reaction-area")){S.openReactionPickerMessageId=null;if(S.active)renderMessages(true);}});
   $("message").addEventListener("input",e=>{e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,120)+"px";updateLocalTyping();saveActiveChatDraft();updateComposerSendState();});
   $("message").addEventListener("blur",()=>stopTyping(true));
   $("conversation-sidebar-collapse").addEventListener("click",()=>{
