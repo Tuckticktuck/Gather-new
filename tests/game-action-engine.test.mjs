@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   createGameEngineRegistry,
+  GameRuleError,
   resolveGameAction,
   validateGameActionRequest,
 } from "../supabase/functions/gather-game-action/engine.mjs";
@@ -59,7 +60,7 @@ test("applies a valid server adapter transition", async () => {
       if (action.type !== "place" || !Number.isInteger(action.index) ||
           action.index < 0 || action.index >= state.board.length ||
           state.board[action.index] !== null) {
-        throw new Error("Illegal placement.");
+        throw new GameRuleError("Illegal placement.");
       }
       state.board[action.index] = "X";
       return {
