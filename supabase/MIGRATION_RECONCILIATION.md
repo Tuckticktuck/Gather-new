@@ -65,6 +65,8 @@ The following records exist in the connected database but do not have a matching
 | 20261113123738 | harden_invited_game_join_checks |
 | 20261113124436 | fix_standalone_uno_start_access |
 
+| 20261116214413 | remove_legacy_game_systems |
+
 ## Repository migrations without a matching applied migration name
 
 - `harden_game_invitable_people`
@@ -74,7 +76,7 @@ The following records exist in the connected database but do not have a matching
 - `fix_standalone_uno_actions`
 - `fix_standalone_uno_done_confirmation`
 
-These may have been applied through direct SQL, superseded by another migration, or left pending. They must be checked against the live function definitions before any action.
+These are historical migration files without matching applied migration names. The active game-specific tables and RPCs have since been removed by `20261116214413_remove_legacy_game_systems`; do not replay these historical migrations.
 
 ## Audit corrective migrations applied
 
@@ -92,4 +94,4 @@ Do not replay, delete, or mark historical migrations as applied based only on fi
 
 To fully reconcile the missing sources, recover the original SQL from a trusted repository backup or deployment artifact, or create a reviewed schema baseline from a database dump. Compare each recovered migration with the live schema before changing migration history.
 
-No production data was reset or deleted during this audit.
+The later `remove_legacy_game_systems` migration intentionally removed game-only data and schema while preserving conversations, messages, accounts, and other core messaging data.
