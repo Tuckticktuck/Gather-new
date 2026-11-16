@@ -242,7 +242,7 @@ function applyUnoAction({ state, privateState, action, actorId, players, serverS
   } else if (action.type === "play") {
     clearPendingUno();
     if (typeof action.cardId !== "string") throw new GameRuleError("Choose a card from your hand.");
-    const cardIndex = hand.findIndex((card) => card.id === action.cardId);
+    if (action.callUno !== undefined && typeof action.callUno !== "boolean") {\n      throw new GameRuleError("callUno must be true or false.");\n    }\n    if (action.callUno === true && hand.length !== 2) {\n      throw new GameRuleError("Call UNO only when this play leaves you with one card.");\n    }\n    const cardIndex = hand.findIndex((card) => card.id === action.cardId);
     if (cardIndex < 0) throw new GameRuleError("That card is not in your hand.");
     const card = hand[cardIndex];
     if (nextPrivateState.drawnCardId && card.id !== nextPrivateState.drawnCardId) {
