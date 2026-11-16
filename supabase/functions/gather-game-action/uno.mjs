@@ -11,7 +11,7 @@ function makeDeck() {
     deck.push({ id: `${color}:0:0`, color, value: "0" });
     for (const value of ["1", "2", "3", "4", "5", "6", "7", "8", "9", "skip", "reverse", "draw2"]) {
       for (let copy = 0; copy < 2; copy++) {
-        deck.push({ id: `${color}:${value}:${copy}`, color, value });
+        deck.push({ id: `${prefix}${color}:${value}:${copy}`, color, value });
       }
     }
   }
@@ -109,7 +109,7 @@ function createInitialState(players, actorId, serverSeed) {
     challengeWasIllegal: null,
     rngState: parseSeed(serverSeed),
   };
-  privateState.drawPile = shuffle(makeDeck(), privateState);
+  const deckCopies = Math.max(1, Math.ceil((playerOrder.length * 7 + 1) / 108));\n  privateState.drawPile = shuffle(makeDeck(deckCopies), privateState);
 
   for (let card = 0; card < 7; card++) {
     for (const userId of playerOrder) {
