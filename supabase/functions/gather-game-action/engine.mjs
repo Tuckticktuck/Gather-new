@@ -88,16 +88,23 @@ export async function resolveGameAction({ engine, match, actorId, players, actio
       byteLength(result.eventPayload) > MAX_ACTION_BYTES) {
     throw new RangeError("The game engine returned an oversized transition.");
   }
-  if (result.nextTurnUserId !== null &&
-      result.nextTurnUserId !== undefined &&
-      !acceptedIds.includes(result.nextTurnUserId)) {
+  const nextStatus = result.nextStatus ?? "active";
+  if (nextStatus !== "active" && nextStatus !== "completed") {
+    throw new TypeError("A game action may only keep a match active or complete it.");
+  }
+  const nextTurnUserId = result.nextTurnUserId ?? null;
+  if (nextTurnUserId !== null && !acceptedIds.includes(nextTurnUserId)) {
     throw new TypeError("The next turn must belong to an accepted player.");
+  }
+  if (nextStatus === "completed" && nextTurnUserId !== null) {
+    throw new TypeError("A completed match cannot have a current turn.");
   }
 
   return {
     eventType: result.eventType,
     eventPayload: structuredClone(result.eventPayload),
     nextState: structuredClone(result.nextState),
-    nextTurnUserId: result.nextTurnUserId ?? null,
+    nextTurnUserId,
+    nextStatus,
   };
 }
