@@ -14,7 +14,7 @@ const ACCENTS = {
 };
 const FONT_SCALES = {small:"0.9",normal:"1",large:"1.15"};
 const MESSAGE_REACTION_EMOJIS = ["👍","❤️","😂","🔥","😢","🎉"];
-const DEFAULT_PREFERENCES = {accent:"lavender",fontSize:"normal",theme:"dark",messageNotificationMode:"temporary",notificationSound:"off",notificationSounds:{private:"off",group:"off",requests:"off",games:"off",updates:"off"},directMessageRequests:"everyone",groupUnreadMessages:false,shareOnlineStatus:true,quietHoursEnabled:false,quietHoursStart:"22:00",quietHoursEnd:"07:00"};
+const DEFAULT_PREFERENCES = {accent:"lavender",fontSize:"normal",theme:"dark",messageNotificationMode:"temporary",notificationSound:"off",notificationSounds:{private:"off",group:"off",requests:"off",updates:"off"},directMessageRequests:"everyone",groupUnreadMessages:false,shareOnlineStatus:true,quietHoursEnabled:false,quietHoursStart:"22:00",quietHoursEnd:"07:00"};
 const DEFAULT_CHAT_SETTINGS = {pinned:[],muted:{},drafts:{},appearance:{}};
 const CHAT_BACKGROUNDS = {default:null,slate:"#202a37",forest:"#1d302b",plum:"#302438",sand:"#40382d"};
 function normalizeChatSettings(raw){
@@ -28,8 +28,7 @@ function normalizeChatSettings(raw){
     if(!value||typeof value!=="object"||id.length>80)return;
     appearance[id]={accent:ACCENTS[value.accent]?value.accent:"default",background:Object.hasOwn(CHAT_BACKGROUNDS,value.background)?value.background:"default"};
   });
-  const dismissedGameNotifications=[...new Set((Array.isArray(raw?.dismissedGameNotifications)?raw.dismissedGameNotifications:[]).filter(value=>typeof value==="string"&&value.length<=180))].slice(-250);
-  return {pinned,muted,drafts,appearance,dismissedGameNotifications};
+  return {pinned,muted,drafts,appearance};
 }
 const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", inChatFilterType:"all", inChatMessageMatches:new Set(), inChatSearchRequestId:0, inChatSearchTimer:null, editingMessageId:null, editDraft:"", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], favoriteFriendIds:new Set(), archivedConversationIds:new Set(), blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), deletedConversationId:null, selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingUndoSend:null, undoSendTimer:null, undoCountdownInterval:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, homeSearchQuery:"", homeSearchTab:"messages", homeSearchMessages:[], homeSearchProfiles:[], homeSearchLoading:false, homeSearchErrors:{messages:"",profiles:""}, homeSearchTimer:null, homeSearchRequestId:0, directStatus:null, directStatusCache:new Map(), directStatusChecks:new Map(), groupMessageStatus:null, ageStatus:null, ageChangeStatus:null, ageRequestChannel:null, messageRestriction:null, messageRestrictionLoaded:false, messageRestrictionError:"", messageRestrictionChannel:null, messageRestrictionTimer:null, active:null, messages:[], initialChatScrollLockId:null, channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), friendPresenceRetryTimers:new Map(), friendPresenceRetryAttempts:new Map(), ownPresenceChannel:null, ownPresenceRetryTimer:null, ownPresenceRetryAttempt:0, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],intergroupRequests:[],ageChangeRequests:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
 
@@ -97,7 +96,7 @@ function loadUIPreferences(saved){
     theme:saved?.theme==="light"?"light":"dark",
     messageNotificationMode:saved?.messageNotificationMode==="persistent"?"persistent":"temporary",
     notificationSound:["off","soft","chime"].includes(saved?.notificationSound)?saved.notificationSound:"off",
-    notificationSounds:Object.fromEntries(["private","group","requests","games","updates"].map(type=>[type,["off","soft","chime"].includes(saved?.notificationSounds?.[type])?saved.notificationSounds[type]:(["off","soft","chime"].includes(saved?.notificationSound)?saved.notificationSound:"off")])),
+    notificationSounds:Object.fromEntries(["private","group","requests","updates"].map(type=>[type,["off","soft","chime"].includes(saved?.notificationSounds?.[type])?saved.notificationSounds[type]:(["off","soft","chime"].includes(saved?.notificationSound)?saved.notificationSound:"off")])),
     directMessageRequests:saved?.directMessageRequests==="friends_only"?"friends_only":"everyone",
     groupUnreadMessages:saved?.groupUnreadMessages===true,
     shareOnlineStatus:saved?.shareOnlineStatus!==false,
@@ -735,11 +734,6 @@ function markChatRead(chatId,through=null){
   saveReadState();
 }
 function showAuth() {
-  window.GatherParty?.shutdown();
-  window.GatherGames?.shutdown();
-  window.GatherUno?.shutdown();
-  window.GatherLudo?.shutdown();
-  window.GatherDominoes?.shutdown();
   saveActiveChatDraft();clearUnreadDividerState();
   closeTypingChannel();
   stopOnlinePresence();
@@ -1131,11 +1125,6 @@ async function signedIn(user,retry=false){
     subscribeRequests();
     const loaded=await loadChats();
     if(!loaded)throw new Error(S.loadError||"Please check your connection and try again.");
-    window.GatherGames?.init({db,user:()=>S.user,chats:()=>S.chats,activeChatId:()=>S.active,profiles:()=>S.profiles,toast,onGamesUpdated:()=>{renderNotificationBadge();if(S.notificationView==="games"||S.notificationView==="all")renderNotifications();}});
-    window.GatherParty?.init({db,user:()=>S.user,chats:()=>S.chats,profiles:()=>S.profiles,toast});
-    window.GatherUno?.init({db,user:()=>S.user,chats:()=>S.chats,profiles:()=>S.profiles,toast,onGamesUpdated:()=>{renderNotificationBadge();if(S.notificationView==="games"||S.notificationView==="all")renderNotifications();}});
-    window.GatherLudo?.init({db,user:()=>S.user,chats:()=>S.chats,profiles:()=>S.profiles,toast,onGamesUpdated:()=>{renderNotificationBadge();if(S.notificationView==="games"||S.notificationView==="all")renderNotifications();}});
-    window.GatherDominoes?.init({db,user:()=>S.user,chats:()=>S.chats,profiles:()=>S.profiles,toast,onGamesUpdated:()=>{window.GatherGames?.refreshLiveCards?.();renderNotificationBadge();if(S.notificationView==="games"||S.notificationView==="all")renderNotifications();}});
     subscribeMessages();
     // Start friend data immediately after chats are ready, in parallel with secondary home data.
     const friendsLoad=loadFriends();
@@ -1823,8 +1812,6 @@ async function openAnnouncement(id){
 
 function notificationItemsForCenter(){
   return S.notifications.filter(item=>
-    item.kind!=="uno_invite"&&
-    item.kind!=="uno_rematch"&&
     !(item.kind==="message"&&item.conversation_id&&item.conversation_id===S.active)&&
     !(item.kind==="message"&&item.conversation_id&&S.chatSettings.muted[item.conversation_id])
   );
@@ -1833,15 +1820,7 @@ function notificationItemsForView(){
   return notificationItemsForCenter().sort((a,b)=>Date.parse(b.created_at||0)-Date.parse(a.created_at||0));
 }
 function notificationUnreadCount(){
-  const notificationUnread=notificationItemsForCenter().filter(item=>!item.read_at).length;
-  const dismissed=S.chatSettings.dismissedGameNotifications||[];
-  const gameInvites=(window.GatherGames?.getPendingInvitations?.()||[]).filter(game=>!dismissed.includes("classic:"+game.id)).length;
-  const unoRematches=new Set(S.notifications.filter(item=>item.kind==="uno_rematch"&&!item.read_at).map(item=>item.body)).size;
-  const moduleUno=(window.GatherUno?.getInvitations?.()||[]).filter(game=>!dismissed.includes("uno:"+game.id)).length;
-  const legacyUno=S.notifications.filter(item=>item.kind==="uno_invite"&&!item.read_at).length;
-  const unoInvites=Math.max(moduleUno,legacyUno);
-  const ludoInvites=(window.GatherLudo?.getInvitations?.()||[]).filter(game=>!dismissed.includes("ludo:"+game.id)).length;
-  return notificationUnread+gameInvites+unoRematches+unoInvites+ludoInvites;
+  return notificationItemsForCenter().filter(item=>!item.read_at).length;
 }
 function renderNotificationBadge(){
   const badge=$("notification-badge");if(!badge)return;
@@ -1850,7 +1829,7 @@ function renderNotificationBadge(){
   const markAll=$("notifications-mark-all");if(markAll)markAll.disabled=regularUnread===0;
 }
 function notificationKindLabel(kind){
-  return ({message:"New message",friend_request:"Friend request",chat_request:"Chat request",feedback_reply:"Feedback update",report:"Safety report",announcement:"Official admin announcement",uno_invite:"UNO lobby invitation",uno_rematch:"UNO rematch request",uno_rematch_result:"UNO rematch update",ludo_invite:"Ludo lobby invitation"})[kind]||"Gather update";
+  return ({message:"New message",friend_request:"Friend request",chat_request:"Chat request",feedback_reply:"Feedback update",report:"Safety report",announcement:"Official admin announcement"})[kind]||"Gather update";
 }
 function notificationDisplayItems(items){
   if(!S.preferences.groupUnreadMessages)return items.map(item=>({notification:item,items:[item]}));
@@ -1872,162 +1851,15 @@ function notificationDisplayItems(items){
   return display;
 }
 function setNotificationView(view){
-  if(!["all","admin","messages","games"].includes(view))return;
+  if(!["all","admin","messages"].includes(view))return;
   S.notificationView=view;
   renderNotifications();
 }
-function renderGameNotificationCards(list){
-  // Active games and invites share the chronological notification feed.
-  const liveClassic=window.GatherGames?.getLiveGames?.()||[];
-  liveClassic.forEach(game=>{
-    const card=el("article","notification-center-item notification-game-item");
-    card.dataset.createdAt=String(Date.parse(game.updated_at||game.created_at)||0);
-    const icon=el("span","notification-center-icon","🎮");
-    const copy=el("span","notification-center-copy");
-    const names={chess:"Chess",checkers:"Checkers",tic_tac_toe:"Tic-Tac-Toe",connect_four:"Connect Four",battleship:"Battleship"};
-    const opponentId=game.player_one_id===S.user?.id?game.player_two_id:game.player_one_id;
-    const opponent=S.profiles[opponentId]?.display_name||S.profiles[opponentId]?.username||"Your opponent";
-    copy.append(el("strong","",names[game.game_type]||"Game"),el("small","", "In progress · "+opponent),el("time","",dateLabel(game.updated_at||game.created_at)));
-    card.append(icon,copy);
-    const actions=el("span","notification-game-actions");
-    const open=el("button","primary","Open");open.type="button";open.addEventListener("click",()=>{$("notifications-modal").hidden=true;window.GatherGames?.openInvitation?.(game.id);});
-    actions.append(open);card.append(actions);list.append(card);
-  });
-  const liveUno=window.GatherUno?.getLiveGames?.()||[];
-  liveUno.forEach(game=>{
-    const card=el("article","notification-center-item notification-game-item");
-    card.dataset.createdAt=String(Date.parse(game.updated_at||game.created_at)||0);
-    const icon=el("span","notification-center-icon","UNO");
-    const copy=el("span","notification-center-copy");
-    copy.append(el("strong","","UNO"),el("small","","In progress · "+(game.settings?.title||"UNO match")),el("time","",dateLabel(game.updated_at||game.created_at)));
-    card.append(icon,copy);
-    const actions=el("span","notification-game-actions");
-    const open=el("button","primary","Open");open.type="button";open.addEventListener("click",()=>{$("notifications-modal").hidden=true;window.GatherUno?.openGame?.(game.id);});
-    actions.append(open);card.append(actions);list.append(card);
-  });
-  const liveLudo=window.GatherLudo?.getLiveGames?.()||[];
-  liveLudo.forEach(game=>{
-    const card=el("article","notification-center-item notification-game-item");
-    card.dataset.createdAt=String(Date.parse(game.updated_at||game.created_at)||0);
-    const icon=el("span","notification-center-icon","◉");
-    const copy=el("span","notification-center-copy");
-    const status=game.state?.started?"In progress":"Waiting room";
-    copy.append(el("strong","","Ludo"),el("small","",status+" · "+(game.settings?.title||"Ludo match")),el("time","",dateLabel(game.updated_at||game.created_at)));
-    card.append(icon,copy);
-    const actions=el("span","notification-game-actions");
-    const open=el("button","primary","Open");open.type="button";
-    open.addEventListener("click",()=>{$("notifications-modal").hidden=true;window.GatherLudo?.openGame?.(game.id);});
-    actions.append(open);card.append(actions);list.append(card);
-  });
-  const liveDominoes=window.GatherDominoes?.getLiveGames?.()||[];
-  liveDominoes.forEach(game=>{
-    const card=el("article","notification-center-item notification-game-item");
-    card.dataset.createdAt=String(Date.parse(game.updated_at||game.created_at)||0);
-    const icon=el("span","notification-center-icon","▰");
-    const copy=el("span","notification-center-copy");
-    copy.append(el("strong","","Dominoes"),el("small","",game.state?.started?"In progress · "+(S.profiles[game.state?.turn_user_id]?.display_name||"Player")+"'s turn":"Waiting room"),el("time","",dateLabel(game.updated_at||game.created_at)));
-    card.append(icon,copy);
-    const actions=el("span","notification-game-actions");
-    const open=el("button","primary","Open");open.type="button";
-    open.addEventListener("click",()=>{$("notifications-modal").hidden=true;window.GatherDominoes?.openGame?.(game.id);});
-    actions.append(open);card.append(actions);list.append(card);
-  });
-  const dominoesInvites=(S.notifications||[]).filter(item=>!item.read_at&&(item.kind==="dominoes_invite"||item.kind==="dominoes_spectate"));
-  dominoesInvites.forEach(item=>{
-    const spectator=item.kind==="dominoes_spectate";
-    const card=el("article","notification-center-item notification-game-item unread");
-    card.dataset.createdAt=String(Date.parse(item.created_at)||0);
-    const icon=el("span","notification-center-icon","▰");
-    const copy=el("span","notification-center-copy");
-    const sender=S.profiles[item.actor_id]?.display_name||S.profiles[item.actor_id]?.username||"A Gather member";
-    copy.append(el("strong","",spectator?"Dominoes spectator invitation":"Dominoes lobby invitation"),el("small","",sender+(spectator?" invited you to watch a match.":" invited you to play.")),el("time","",dateLabel(item.created_at)));
-    card.append(icon,copy);
-    const actions=el("span","notification-game-actions");
-    const view=el("button","primary",spectator?"Watch":"View");view.type="button";
-    view.addEventListener("click",async()=>{
-      $("notifications-modal").hidden=true;
-      await window.GatherDominoes?.openInvitation?.(item.body,spectator);
-      await db.from("notifications").delete().eq("id",item.id).eq("recipient_id",S.user.id);
-      await loadNotifications();
-    });
-    const dismiss=el("button","outline","Dismiss");dismiss.type="button";
-    dismiss.addEventListener("click",async()=>{
-      dismiss.disabled=true;
-      await db.from("notifications").delete().eq("id",item.id).eq("recipient_id",S.user.id);
-      await loadNotifications();
-    });
-    actions.append(view,dismiss);card.append(actions);list.append(card);
-  });
-  const unoInvites=(window.GatherUno?.getInvitations?.()||[]).filter(game=>!isGameNotificationDismissed("uno:"+game.id));
-  unoInvites.forEach(game=>{
-    const card=el("article","notification-center-item notification-game-item unread");
-    card.dataset.createdAt=String(Date.parse(game.created_at)||0);
-    const icon=el("span","notification-center-icon","UNO");
-    const copy=el("span","notification-center-copy");
-    const sender=S.profiles[game.created_by]?.display_name||S.profiles[game.created_by]?.username||"A Gather member";
-    copy.append(el("strong","","UNO lobby invitation"),el("small","",sender+" invited you to an UNO lobby."),el("time","",dateLabel(game.created_at)));
-    card.append(icon,copy);
-    const actions=el("span","notification-game-actions");
-    const join=el("button","primary","Join");join.type="button";
-    join.addEventListener("click",async()=>{join.disabled=true;dismissGameNotification("uno:"+game.id);$("notifications-modal").hidden=true;await window.GatherUno?.openInvitation?.(game.id);await loadNotifications();});
-    actions.append(join);card.append(actions);list.append(card);
-  });
-  const ludoInvites=(window.GatherLudo?.getInvitations?.()||[]).filter(game=>!isGameNotificationDismissed("ludo:"+game.id));
-  ludoInvites.forEach(game=>{
-    const card=el("article","notification-center-item notification-game-item unread");
-    card.dataset.createdAt=String(Date.parse(game.created_at)||0);
-    const icon=el("span","notification-center-icon","◉");
-    const copy=el("span","notification-center-copy");
-    const sender=S.profiles[game.created_by]?.display_name||S.profiles[game.created_by]?.username||"A Gather member";
-    copy.append(el("strong","","Ludo lobby invitation"),el("small","",sender+" invited you to a Ludo lobby."),el("time","",dateLabel(game.created_at)));
-    card.append(icon,copy);
-    const actions=el("span","notification-game-actions");
-    const join=el("button","primary","Join");join.type="button";
-    join.addEventListener("click",async()=>{join.disabled=true;dismissGameNotification("ludo:"+game.id);$("notifications-modal").hidden=true;await window.GatherLudo?.openInvitation?.(game.id);await loadNotifications();});
-    actions.append(join);card.append(actions);list.append(card);
-  });
-  const invitations=(window.GatherGames?.getPendingInvitations?.()||[]).filter(game=>!isGameNotificationDismissed("classic:"+game.id));
-  invitations.forEach(game=>{
-    const card=el("article","notification-center-item notification-game-item unread");
-    card.dataset.createdAt=String(Date.parse(game.created_at)||0);
-    const icon=el("span","notification-center-icon","🎮");
-    const copy=el("span","notification-center-copy");
-    const gameNames={chess:"Chess",checkers:"Checkers",tic_tac_toe:"Tic-Tac-Toe",connect_four:"Connect Four",battleship:"Battleship"};
-    const opponent=S.profiles[game.player_one_id]?.display_name||S.profiles[game.player_one_id]?.username||"A Gather member";
-    copy.append(el("strong","",gameNames[game.game_type]||"Game invitation"),el("small","",opponent+" invited you to play."),el("time","",dateLabel(game.created_at)));
-    card.append(icon,copy);
-    const actions=el("span","notification-game-actions");
-    const view=el("button","outline","View");view.type="button";view.addEventListener("click",()=>{dismissGameNotification("classic:"+game.id);$("notifications-modal").hidden=true;window.GatherGames?.openInvitation?.(game.id);});
-    const accept=el("button","primary","Accept");accept.type="button";accept.addEventListener("click",async()=>{$("notifications-modal").hidden=true;dismissGameNotification("classic:"+game.id);await window.GatherGames?.respondToInvitation?.(game.id,true);renderNotifications();});
-    const decline=el("button","outline","Decline");decline.type="button";decline.addEventListener("click",async()=>{decline.disabled=true;dismissGameNotification("classic:"+game.id);await window.GatherGames?.respondToInvitation?.(game.id,false);renderNotifications();});
-    actions.append(view,accept,decline);card.append(actions);list.append(card);
-  });
-  const rematchOffers=new Map();
-  S.notifications.filter(item=>item.kind==="uno_rematch"&&!item.read_at).forEach(item=>{if(item.body)rematchOffers.set(item.body,item);});
 
-  rematchOffers.forEach((item,offerId)=>{
-    const card=el("article","notification-center-item notification-game-item unread");
-    card.dataset.createdAt=String(Date.parse(item.created_at)||0);
-    const icon=el("span","notification-center-icon","🃏");
-    const copy=el("span","notification-center-copy");
-    const sender=S.profiles[item.actor_id]?.display_name||S.profiles[item.actor_id]?.username||"A Gather player";
-    copy.append(el("strong","","UNO rematch request"),el("small","",sender+" wants another round. Would you like to play again?"),el("time","",dateLabel(item.created_at)));
-    card.append(icon,copy);
-    const actions=el("span","notification-game-actions");
-    const accept=el("button","primary","Accept");accept.type="button";
-    const decline=el("button","outline","Decline");decline.type="button";
-    accept.addEventListener("click",async()=>{accept.disabled=true;decline.disabled=true;await window.GatherUno?.respondToRematch?.(offerId,true);await markNotificationRead(item.id);await loadNotifications();});
-    decline.addEventListener("click",async()=>{decline.disabled=true;accept.disabled=true;await window.GatherUno?.respondToRematch?.(offerId,false);await markNotificationRead(item.id);await loadNotifications();});
-    actions.append(accept,decline);card.append(actions);list.append(card);
-  });
-  return liveClassic.length+liveUno.length+liveLudo.length+liveDominoes.length+liveSnake.length+unoInvites.length+ludoInvites.length+dominoesInvites.length+snakeInvites.length+invitations.length+rematchOffers.size;
-}
 function renderNotifications(){
   const list=$("notifications-list");if(!list)return;
   list.replaceChildren();
   const sectionItems=notificationItemsForView();
-  const gameBuffer=el("div","notification-game-buffer");
-  const gameCount=renderGameNotificationCards(gameBuffer);
   const rows=[];
   notificationDisplayItems(sectionItems).forEach(entry=>{
     const item=entry.notification,items=entry.items;
@@ -2046,11 +1878,11 @@ function renderNotifications(){
     card.addEventListener("click",async()=>{await openNotification(entry);});
     rows.push(card);
   });
-  const ordered=[...Array.from(gameBuffer.children),...rows].sort((x,y)=>Number(y.dataset.createdAt||0)-Number(x.dataset.createdAt||0));
+  const ordered=rows.sort((x,y)=>Number(y.dataset.createdAt||0)-Number(x.dataset.createdAt||0));
   if(ordered.length)list.append(...ordered);
   else list.append(el("p","muted tiny","You're all caught up. New messages, requests, and invitations will appear here."));
   const unread=sectionItems.filter(item=>!item.read_at).length;
-  $("notifications-summary").textContent=(unread+gameCount)+" unread · "+(sectionItems.length+gameCount)+" updates";
+  $("notifications-summary").textContent=unread+" unread · "+sectionItems.length+" updates";
   renderNotificationBadge();
 }
 async function loadNotifications(){
@@ -2082,7 +1914,7 @@ function subscribeNotifications(){
       if(item&&!activeConversationMessage&&!mutedMessage){
         const chat=item.kind==="message"?S.chats.find(candidate=>candidate.id===item.conversation_id):null;
         const soundType=item.kind==="message"?(chat?.kind==="group"?"group":"private"):
-          (["friend_request","chat_request"].includes(item.kind)?"requests":/(invite|rematch|spectate)/i.test(item.kind)?"games":"updates");
+          (["friend_request","chat_request"].includes(item.kind)?"requests":"updates");
         if(item.kind!=="message")playNotificationSound(soundType);
         if(item.kind!=="message"&&$("notifications-modal")?.hidden)toast(item.title||"You have a new Gather notification.");
       }
@@ -2819,12 +2651,6 @@ function updateComposerSendState(){
   if(!field||!button)return;
   button.disabled=field.disabled||!(field.value.trim()||S.pendingImageFile);
 }
-function isGameNotificationDismissed(key){return (S.chatSettings.dismissedGameNotifications||[]).includes(key);}
-function dismissGameNotification(key){
-  if(!key||isGameNotificationDismissed(key))return;
-  S.chatSettings.dismissedGameNotifications=[...(S.chatSettings.dismissedGameNotifications||[]),key].slice(-250);
-  saveChatSettings();renderNotifications();
-}
 function renderInChatSidebar(){
   const pinnedSection=$("in-chat-pinned-section");
   const pinnedList=$("in-chat-pinned-list");
@@ -2929,13 +2755,10 @@ async function unblockUser(userId){
 }
 function renderActive(){
   const c=S.chats.find(x=>x.id===S.active);
-  window.GatherGames?.setActiveChat(c||null);
-  const gamesOpen=!!$("games-workspace")&&!$("games-workspace").hidden&&!c;
-  const switcher=$("workspace-switcher");if(switcher)switcher.hidden=!!c;
   $("message-create-poll").hidden=c?.kind!=="group";
   renderUndoSend();
   $("layout").classList.toggle("direct-chat",c?.kind==="direct");
-  $("empty").hidden=!!c||gamesOpen;if(c&&$("games-workspace"))$("games-workspace").hidden=true;$("chat").hidden=!c;
+  $("empty").hidden=!!c;$("chat").hidden=!c;
   $("layout").classList.toggle("in-chat-mode",!!c);
   $("sidebar-home-content").hidden=!!c;
   $("in-chat-sidebar").hidden=!c;
@@ -2945,8 +2768,7 @@ function renderActive(){
   const avatarImage=c?.kind==="group"?c.avatar_data:peerProfile?.avatar_data;
   paintAvatar($("chat-avatar"),chatTitle(c||{kind:"direct",members:[]}),avatarImage);
   $("layout").classList.toggle("show-chat",!!c);
-  $("layout").classList.toggle("show-home",!c&&!gamesOpen);
-  $("layout").classList.toggle("show-games",gamesOpen);
+  $("layout").classList.toggle("show-home",!c);
   $("home-open").hidden=!c;
   $("leave-chat").hidden=!c||c.kind!=="group";
   if(!c){
@@ -5637,10 +5459,7 @@ function goHome(){
   closeTypingChannel();
   runScreenTransition(()=>{
     clearPendingMessageImage();closeModals(true);S.active=null;S.messages=[];S.messageReads={};S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.replyTo=null;S.hasOlderMessages=false;S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;renderReplyComposer();
-    $("games-workspace")?.setAttribute("hidden", "");
-    $("layout").classList.remove("show-chat", "show-games");$("layout").classList.add("show-home");
-    $("workspace-games-tab")?.classList.remove("active");$("workspace-games-tab")?.setAttribute("aria-pressed","false");
-    $("workspace-messages-tab")?.classList.add("active");$("workspace-messages-tab")?.setAttribute("aria-pressed","true");
+    $("layout").classList.remove("show-chat");$("layout").classList.add("show-home");
     renderChats();renderActive();
   });
 }
