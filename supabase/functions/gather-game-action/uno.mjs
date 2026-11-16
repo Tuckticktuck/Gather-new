@@ -25,13 +25,21 @@ function makeDeck(copies = 1) {
   return deck;
 }
 
+function rotateLeft(value, count) {
+  return ((value << count) | (value >>> (32 - count))) >>> 0;
+}
+
 function randomIndex(privateState, maxExclusive) {
-  let x = privateState.rngState >>> 0;
-  x ^= x << 13;
-  x ^= x >>> 17;
-  x ^= x << 5;
-  privateState.rngState = x >>> 0;
-  return privateState.rngState % maxExclusive;
+  const state = privateState.rngState;
+  const result = Math.imul(rotateLeft(Math.imul(state[1], 5) >>> 0, 7), 9) >>> 0;
+  const t = (state[1] << 9) >>> 0;
+  state[2] = (state[2] ^ state[0]) >>> 0;
+  state[3] = (state[3] ^ state[1]) >>> 0;
+  state[1] = (state[1] ^ state[2]) >>> 0;
+  state[0] = (state[0] ^ state[3]) >>> 0;
+  state[2] = (state[2] ^ t) >>> 0;
+  state[3] = rotateLeft(state[3], 11);
+  return result % maxExclusive;
 }
 
 function shuffle(deck, privateState) {
@@ -46,8 +54,9 @@ function parseSeed(seed) {
   if (typeof seed !== "string" || !/^[0-9a-f]{64}$/i.test(seed)) {
     throw new GameRuleError("The server could not initialize a secure UNO shuffle.");
   }
-  const parsed = Number.parseInt(seed.slice(0, 8), 16) >>> 0;
-  return parsed || 0x9e3779b9;
+  const words = seed.match(/.{8}/g).slice(0, 4).map((word) => Number.parseInt(word, 16) >>> 0);
+  if (words.every((word) => word === 0)) words[0] = 0x9e3779b9;
+  return words;
 }
 
 function orderedPlayers(players) {
