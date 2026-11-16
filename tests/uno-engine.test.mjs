@@ -82,6 +82,27 @@ test("initializes a private 7-card hand for each accepted player", async () => {
   assert.equal("drawPile" in result.nextState, false);
 });
 
+test("resolves UNO initialization through the shared engine contract", async () => {
+  const result = await resolveGameAction({
+    engine: unoEngine,
+    match: {
+      status: "active",
+      state: {},
+      private_state: null,
+      version: 1,
+      current_turn_user_id: actor,
+    },
+    actorId: actor,
+    players,
+    action: { type: "initialize" },
+    serverSeed: seed,
+  });
+  assert.equal(result.eventType, "uno_started");
+  assert.equal(result.nextState.handCounts[actor], 7);
+  assert.equal(result.nextPrivateState.hands[actor].length, 7);
+  assert.equal(result.nextTurnUserId, actor);
+});
+
 test("supports 20 players with a second deck and rejects 21", async () => {
   const manyPlayers = Array.from({ length: UNO_MAX_PLAYERS + 1 }, (_, index) => ({
     user_id: `00000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
