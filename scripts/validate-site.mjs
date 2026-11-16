@@ -7,11 +7,11 @@ const html = readFileSync(join(root, "index.html"), "utf8");
 const serviceWorker = readFileSync(join(root, "service-worker.js"), "utf8");
 const app = readFileSync(join(root, "app.js"), "utf8");
 
-assert.match(html, /app\\.css\\?v=/, "Gather app stylesheet must be loaded");
-assert.match(html, /design-system\\.css\\?v=/, "Gather shared design system must be loaded");
-assert.match(html, /app\\.js\\?v=/, "Gather application script must be loaded");
-assert.doesNotMatch(html, /games\\.js|uno\\.js|ludo\\.js|dominoes\\.js|party\\.js|game-chat\\.js|game-people-picker|chess\\.js|games\\//i, "Legacy game assets must not be loaded");
-assert.doesNotMatch(serviceWorker, /games\\.js|uno\\.js|ludo\\.js|dominoes\\.js|party\\.js|game-chat\\.js|game-people-picker|chess\\.js|games\\//i, "The service worker must not cache legacy game assets");
+assert.match(html, /app\.css\?v=/, "Gather app stylesheet must be loaded");
+assert.match(html, /design-system\.css\?v=/, "Gather shared design system must be loaded");
+assert.match(html, /app\.js\?v=/, "Gather application script must be loaded");
+assert.doesNotMatch(html, /games\.js|uno\.js|ludo\.js|dominoes\.js|party\.js|game-chat\.js|game-people-picker|chess\.js|games\//i, "Legacy game assets must not be loaded");
+assert.doesNotMatch(serviceWorker, /games\.js|uno\.js|ludo\.js|dominoes\.js|party\.js|game-chat\.js|game-people-picker|chess\.js|games\//i, "The service worker must not cache legacy game assets");
 assert.doesNotMatch(app, /Gather(?:Games|Party|Uno|Ludo|Dominoes)|games-workspace|workspace-switcher|renderGameNotificationCards|uno_invite|uno_rematch|dominoes_invite|notification-game/i, "The core chat client must not retain legacy game integration");
 
 for (const match of html.matchAll(/(?:src|href)="([^"]+)"/g)) {
