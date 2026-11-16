@@ -7,7 +7,7 @@ const MAX_BODY_BYTES = 16 * 1024;
 
 function response(status: number, body: Record<string, unknown>, origin = "") {
   const allowedOrigin = origin === ALLOWED_ORIGIN ? origin : ALLOWED_ORIGIN;
-  return new Response(JSON.stringify(body), {
+  return new Response(status === 204 ? null : JSON.stringify(body), {
     status,
     headers: {
       "Access-Control-Allow-Origin": allowedOrigin,
@@ -145,6 +145,7 @@ Deno.serve(async (request: Request) => {
       match: {
         status: String(match.status),
         state: match.state,
+        private_state: privateState,
         version: Number(match.version),
         current_turn_user_id: typeof match.current_turn_user_id === "string"
           ? match.current_turn_user_id : null,
@@ -152,6 +153,10 @@ Deno.serve(async (request: Request) => {
       actorId,
       players,
       action: input.action,
+      serverSeed: input.action.type === "initialize" && match.game_key === "uno"
+        ? Array.from(crypto.getRandomValues(new Uint8Array(32)))
+          .map((byte) => byte.toString(16).padStart(2, "0")).join("")
+        : undefined,
     });
 
     const rpcResponse = await fetch(`${supabaseUrl}/rest/v1/rpc/commit_validated_game_transition`, {
