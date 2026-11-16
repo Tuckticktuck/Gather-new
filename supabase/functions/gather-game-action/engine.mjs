@@ -3,6 +3,13 @@ const EVENT_PATTERN = /^[a-z][a-z0-9_]{0,63}$/;
 const MAX_ACTION_BYTES = 8 * 1024;
 const MAX_STATE_BYTES = 64 * 1024;
 
+export class GameRuleError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "GameRuleError";
+  }
+}
+
 function isRecord(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
