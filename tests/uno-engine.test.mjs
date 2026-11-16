@@ -38,7 +38,7 @@ function fixture(actorHand, otherHand, overrides = {}) {
     discardPile: [publicState.discardTop],
     drawnCardId: null,
     challengeWasIllegal: null,
-    rngState: 0x12345678,
+    rngState: [0x12345678, 0x9abcdef0, 0x13579bdf, 0x2468ace0],
     ...overrides.privateState,
   };
   return { state: publicState, privateState };
