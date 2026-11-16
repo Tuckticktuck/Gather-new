@@ -1,7 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { GameRuleError, resolveGameAction } from "../supabase/functions/gather-game-action/engine.mjs";
-import { unoEngine, unoInternals, UNO_COLORS, UNO_MAX_PLAYERS } from "../supabase/functions/gather-game-action/uno.mjs";\n\nconst UNO_COLORS_FOR_TEST = UNO_COLORS;
+import { unoEngine, unoInternals, UNO_COLORS, UNO_MAX_PLAYERS } from "../supabase/functions/gather-game-action/uno.mjs";
+
+const UNO_COLORS_FOR_TEST = UNO_COLORS;
 
 const actor = "11111111-1111-4111-8111-111111111111";
 const other = "22222222-2222-4222-8222-222222222222";
@@ -56,7 +58,8 @@ async function apply(f, actorId, action) {
 test("builds a classic 108-card deck with unique identities", () => {
   const deck = unoInternals.makeDeck();
   assert.equal(deck.length, 108);
-  assert.equal(new Set(deck.map((item) => item.id)).size, 108);\n  assert.equal(unoInternals.makeDeck(2).length, 216);
+  assert.equal(new Set(deck.map((item) => item.id)).size, 108);
+  assert.equal(unoInternals.makeDeck(2).length, 216);
   assert.equal(deck.filter((item) => item.value === "wild").length, 4);
   assert.equal(deck.filter((item) => item.value === "wild4").length, 4);
 });
