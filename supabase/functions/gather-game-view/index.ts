@@ -130,7 +130,8 @@ Deno.serve(async (request: Request) => {
       initialized: true,
       publicState: state,
       hand,
-      drawnCardId: user.id === match.current_turn_user_id && typeof privateState.drawnCardId === "string"\n        ? privateState.drawnCardId : null,
+      drawnCardId: user.id === match.current_turn_user_id && typeof privateState.drawnCardId === "string"
+        ? privateState.drawnCardId : null,
       drawPileCount: Array.isArray(privateState.drawPile) ? privateState.drawPile.length : 0,
     }, origin);
   } catch (error) {
