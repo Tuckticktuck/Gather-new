@@ -56,7 +56,7 @@ async function apply(f, actorId, action) {
 test("builds a classic 108-card deck with unique identities", () => {
   const deck = unoInternals.makeDeck();
   assert.equal(deck.length, 108);
-  assert.equal(new Set(deck.map((item) => item.id)).size, 108);
+  assert.equal(new Set(deck.map((item) => item.id)).size, 108);\n  assert.equal(unoInternals.makeDeck(2).length, 216);
   assert.equal(deck.filter((item) => item.value === "wild").length, 4);
   assert.equal(deck.filter((item) => item.value === "wild4").length, 4);
 });
