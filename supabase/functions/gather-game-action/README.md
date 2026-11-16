@@ -52,6 +52,10 @@ The `gather-game-view` Edge Function returns the shared public snapshot plus onl
 - Resulting public/private state: 64 KiB each.
 - Event payload: 8 KiB.
 
+## Conversation UI
+
+The Gather client adds a Play a game option to the conversation composer, a persistent UNO invitation message card with accept/decline actions, and a full-screen overlay that returns to the same conversation when closed. The card reflects invitation state, participants, current turn, and match completion. The overlay uses the player-scoped game-view endpoint and submits moves only through the trusted action endpoint. There is no separate Games workspace, public lobby, spectator mode, or in-game chat.
+
 ## Deployment
 
-Keep JWT verification enabled for both Edge Functions. Configure the Supabase project server secret as `SUPABASE_SERVICE_ROLE_KEY`; it must never be placed in frontend code or GitHub Pages assets. The functions are not deployed by this PR. Deploy only after the foundation PR chain is merged and the game-view/action endpoints are reviewed.
+Keep JWT verification enabled for both Edge Functions. Configure the Supabase project server secret as `SUPABASE_SERVICE_ROLE_KEY`; it must never be placed in frontend code or GitHub Pages assets. The functions are not deployed by this PR, and the GitHub Pages deploy job is skipped for this feature branch. Deploy only after the foundation PR chain is merged and the game-view/action endpoints are reviewed.
