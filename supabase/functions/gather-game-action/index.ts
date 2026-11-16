@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { gameEngines } from "./registry.mjs";
-import { resolveGameAction, validateGameActionRequest } from "./engine.mjs";
+import { GameRuleError, resolveGameAction, validateGameActionRequest } from "./engine.mjs";
 
 const ALLOWED_ORIGIN = "https://tuckticktuck.github.io";
 const MAX_BODY_BYTES = 16 * 1024;
@@ -169,9 +169,11 @@ Deno.serve(async (request: Request) => {
     return response(200, { match: Array.isArray(savedMatch) ? savedMatch[0] : savedMatch }, origin);
   } catch (error) {
     const message = errorMessage(error);
-    if (error instanceof TypeError || error instanceof RangeError) {
-      return response(400, { error: message }, origin);
+    if (error instanceof GameRuleError) {
+      return response(422, { error: message }, origin);
     }
+    if (error instanceof RangeError) return response(413, { error: message }, origin);
+    if (error instanceof TypeError) return response(400, { error: message }, origin);
     if (message.includes("Only accepted players") || message.includes("turn")) {
       return response(403, { error: message }, origin);
     }
