@@ -3162,6 +3162,9 @@ async function openChat(id){
   closeTypingChannel();
   if(S.readChannel){db.removeChannel(S.readChannel);S.readChannel=null;}
   if(S.pollChannel){db.removeChannel(S.pollChannel);S.pollChannel=null;}
+  if(S.gameChannel){db.removeChannel(S.gameChannel);S.gameChannel=null;}
+  if(S.activeGameId)closeUnoGame();
+  S.gameMatches={};S.gameMatchPlayers={};S.gameCardsLoading=false;
   clearPendingMessageImage();
   // Conversation entry is an immediate state change, not a full-screen transition.
   // Avoids expensive Safari view-transition snapshots and stacked entrance animations.
@@ -3174,6 +3177,8 @@ async function openChat(id){
   subscribeTyping(id);
   await loadMessages(id);
   if(S.active!==id)return;
+  subscribeGameMatches(id);
+  void loadGameCards(id);
   // Opening the conversation marks its existing incoming messages as seen.
   // Do not wait for the read update before displaying the conversation.
   void markConversationRead(id);
@@ -3875,7 +3880,7 @@ function renderMessages(preserveScroll=false){
     return;
   }
   S.messages.forEach((m,index)=>{
-    const mine=m.sender_id===S.user.id,p=S.profiles[m.sender_id];
+    const mine=m.sender_id===S.user.id,p=S.profiles[m.sender_id],gameMessageId=gameMatchIdFromMessage(m);
     const previousMessage=S.messages[index-1],nextMessage=S.messages[index+1];
     const gapFromPrevious=previousMessage?new Date(m.created_at).getTime()-new Date(previousMessage.created_at).getTime():0;
     const gapToNext=nextMessage?new Date(nextMessage.created_at).getTime()-new Date(m.created_at).getTime():0;
@@ -3931,11 +3936,11 @@ function renderMessages(preserveScroll=false){
       };
       addAction("Reply",()=>beginReply(m));
       addAction("Add reaction",()=>{S.openReactionPickerMessageId=m.id;renderMessages(true);});
-      if(mine&&m.body&&!m.is_admin_message&&S.messageRestrictionLoaded&&!activeMessageRestriction())addAction("Edit",()=>editOwnMessage(m));
+      if(mine&&m.body&&!gameMessageId&&!m.is_admin_message&&S.messageRestrictionLoaded&&!activeMessageRestriction())addAction("Edit",()=>editOwnMessage(m));
       if(m.edited_at)addAction("View edit history",()=>openMessageEditHistory(m));
       if(mine&&m._undoExpiresAt>Date.now())addAction("Undo send",()=>undoSendMessage(m));
       addAction("Copy message",()=>copyMessage(m));
-      if(S.messageRestrictionLoaded&&!activeMessageRestriction())addAction("Forward message",()=>openForwardMessage(m));
+      if(!gameMessageId&&S.messageRestrictionLoaded&&!activeMessageRestriction())addAction("Forward message",()=>openForwardMessage(m));
       addAction(S.pinnedMessages.some(x=>x.message_id===m.id)?"Unpin message":"Pin message",()=>togglePinnedMessage(m));
       addAction(S.savedMessageIds.has(m.id)?"Remove saved message":"Save message",()=>toggleSavedMessage(m));
       if(!mine&&m.sender_id)addAction("Report",()=>openReport(m.sender_id,m.id));
@@ -3952,7 +3957,7 @@ function renderMessages(preserveScroll=false){
       const quoteName=target?.is_admin_message?"Gather Admin":(target?.sender_id?(target.sender_id===S.user.id?"You":(S.profiles[target.sender_id]?.display_name||"Member")):"Reply");
       if(showSenderNames)quote.append(el("strong","",quoteName));
       const quoteText=el("span");
-      if(target?.body)appendFormattedMessageText(quoteText,target.body);
+      if(target?.body)appendFormattedMessageText(quoteText,messagePreviewText(target));
       else quoteText.textContent=target?.attachment_path?"Sent an image":"Original message unavailable.";
       quote.append(quoteText);
       bubble.append(quote);
@@ -3981,6 +3986,8 @@ function renderMessages(preserveScroll=false){
       const cancel=el("button","outline","Cancel");cancel.type="button";cancel.addEventListener("click",cancelInlineMessageEdit);
       const save=el("button","primary","Save");save.type="button";save.addEventListener("click",()=>saveInlineMessageEdit(m));
       controls.append(cancel,save);editor.append(field,controls);bubble.append(editor);
+    }else if(gameMessageId){
+      bubble.append(renderGameMessageCard(m));
     }else if(m.body&&!S.messagePolls[m.id]){
       const bodyText=el("div","body-text");
       appendFormattedMessageText(bodyText,m.body);
