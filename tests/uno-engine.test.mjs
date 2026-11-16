@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { GameRuleError, resolveGameAction } from "../supabase/functions/gather-game-action/engine.mjs";
-import { unoEngine, unoInternals, UNO_MAX_PLAYERS } from "../supabase/functions/gather-game-action/uno.mjs";
+import { unoEngine, unoInternals, UNO_COLORS, UNO_MAX_PLAYERS } from "../supabase/functions/gather-game-action/uno.mjs";\n\nconst UNO_COLORS_FOR_TEST = UNO_COLORS;
 
 const actor = "11111111-1111-4111-8111-111111111111";
 const other = "22222222-2222-4222-8222-222222222222";
@@ -32,7 +32,7 @@ function fixture(actorHand, otherHand, overrides = {}) {
   };
   const privateState = {
     hands: { [actor]: structuredClone(actorHand), [other]: structuredClone(otherHand) },
-    drawPile: [card("draw:one", "yellow", "8"), card("draw:two", "blue", "3")],
+    drawPile: Array.from({ length: 20 }, (_, index) => card(`draw:${index}`, UNO_COLORS_FOR_TEST[index % 4], String((index % 9) + 1))),
     discardPile: [publicState.discardTop],
     drawnCardId: null,
     challengeWasIllegal: null,
