@@ -28,6 +28,8 @@ jobs:
           node-version: 22
       - name: Validate all JavaScript
         run: find . -type f -name '*.js' -not -path './node_modules/*' -print0 | xargs -0 -n1 node --check
+      - name: Test universal game foundation contracts
+        run: node --test tests/game-foundation-v2.test.mjs
       - name: Validate site assets, HTML IDs, CSS structure, and service-worker cache
         run: node scripts/validate-site.mjs
 
