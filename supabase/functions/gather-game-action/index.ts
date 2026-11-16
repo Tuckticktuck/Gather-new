@@ -94,6 +94,19 @@ Deno.serve(async (request: Request) => {
     const match = matches[0];
     if (!match) return response(404, { error: "Game match not found." }, origin);
 
+    let privateState: Record<string, unknown> | null = null;
+    if (match.game_key === "uno") {
+      const privateQuery = new URLSearchParams({
+        match_id: `eq.${input.matchId}`,
+        select: "state",
+        limit: "1",
+      });
+      const privateRows = await restGet<Array<{ state: Record<string, unknown> }>>(
+        supabaseUrl, serviceKey, "game_match_private_state", privateQuery,
+      );
+      privateState = privateRows[0]?.state ?? null;
+    }
+
     const playerQuery = new URLSearchParams({
       match_id: `eq.${input.matchId}`,
       select: "user_id,response,player_order",
@@ -152,7 +165,7 @@ Deno.serve(async (request: Request) => {
         p_payload: transition.eventPayload,
         p_next_state: transition.nextState,
         p_next_turn_user_id: transition.nextTurnUserId,
-        p_next_status: transition.nextStatus,
+        p_next_status: transition.nextStatus,\n        p_private_state: transition.nextPrivateState ?? null,
       }),
     });
 
