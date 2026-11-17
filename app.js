@@ -3576,7 +3576,7 @@ function unoCardLabel(card){
 }
 
 const CHESS_GLYPHS={K:"King",Q:"Queen",R:"Rook",B:"Bishop",N:"Knight",P:"Pawn",k:"King",q:"Queen",r:"Rook",b:"Bishop",n:"Knight",p:"Pawn"};
-function chessPieceMarkup(piece){
+function chessPieceMarkup(piece,forceColor=null){
   const shapes={
     k:'<path d="M46 8V25M37.5 16.5h17" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><path d="M29 31Q29 25 40 25H52Q63 25 63 36L59 48H33Z" fill="currentColor"/><path d="M27 49H65L70 59H22Z" fill="currentColor"/><path d="M18 61H74V69H18Z" fill="currentColor"/>',
     q:'<path d="M23 29L15 15L29 20L40 8L51 20L65 15L57 31L61 49H27Z" fill="currentColor"/><circle cx="15" cy="13" r="5" fill="currentColor"/><circle cx="40" cy="7" r="5" fill="currentColor"/><circle cx="65" cy="13" r="5" fill="currentColor"/><path d="M25 51H59L66 61H18Z" fill="currentColor"/><path d="M14 63H70V70H14Z" fill="currentColor"/>',
@@ -3585,7 +3585,7 @@ function chessPieceMarkup(piece){
     n:'<path d="M23 58Q17 45 26 32L17 23L33 26Q42 10 62 16L70 28L61 34L66 48L61 60Z" fill="currentColor"/><path d="M25 57H67L73 66H17Z" fill="currentColor"/><path d="M14 67H76V73H14Z" fill="currentColor"/><circle cx="53" cy="25" r="3" fill="var(--chess-piece-cutout)"/>',
     p:'<circle cx="45" cy="19" r="12" fill="currentColor"/><path d="M35 32Q45 26 55 32L61 52H29Z" fill="currentColor"/><path d="M25 54H65L71 64H19Z" fill="currentColor"/><path d="M15 66H75V72H15Z" fill="currentColor"/>'
   };
-  const kind=piece.toLowerCase(),white=piece===piece.toUpperCase();
+  const kind=piece.toLowerCase(),white=forceColor?forceColor==="white":piece===piece.toUpperCase();
   const node=el("span","chess-piece "+(white?"is-white":"is-black"));
   node.setAttribute("role","img");node.setAttribute("aria-label",(white?"White ":"Black ")+CHESS_GLYPHS[piece]);
   node.innerHTML='<svg viewBox="0 0 90 80" aria-hidden="true" focusable="false">'+shapes[kind]+'</svg>';
@@ -3684,7 +3684,7 @@ function renderChessGame(){
     const panel=el("div","chess-promotion-panel");
     panel.append(el("strong","","Promote pawn to"));
     [["q","Queen"],["r","Rook"],["b","Bishop"],["n","Knight"]].forEach(([piece,label])=>{
-      const button=el("button","chess-promotion-choice");button.append(chessPieceMarkup(piece),el("span","",label));
+      const button=el("button","chess-promotion-choice");button.append(chessPieceMarkup(piece,side.toLowerCase()),el("span","",label));
       button.type="button";button.addEventListener("click",()=>void performChessAction({type:"move",...S.chessPendingPromotion,promotion:piece}));
       panel.append(button);
     });
