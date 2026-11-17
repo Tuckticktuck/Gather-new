@@ -4025,7 +4025,7 @@ function renderUnoGame(){
   content.append(table);
   const hand=sortUnoHand(Array.isArray(view.hand)?view.hand:[]);
   const controls=el("div","uno-action-controls");
-  if(state.pendingUnoPlayerId&&state.pendingUnoPlayerId!==S.user.id&&current){
+  if(state.pendingUnoPlayerId&&state.pendingUnoPlayerId!==S.user.id){
     const catchButton=el("button","game-card-action secondary","Catch UNO · draw 2");
     catchButton.type="button";catchButton.addEventListener("click",()=>void performUnoAction({type:"catch_uno"}));controls.append(catchButton);
   }
