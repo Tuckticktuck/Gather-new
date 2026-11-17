@@ -3628,7 +3628,8 @@ async function loadActiveGameView(){
 }
 async function performUnoAction(action){
   const view=S.activeGameView,matchId=S.activeGameId;
-  if(!view||!matchId||view.currentTurnUserId!==S.user.id)return;
+  const outOfTurnUnoAction=action?.type==="call_uno"||action?.type==="catch_uno";
+  if(!view||!matchId||(view.currentTurnUserId!==S.user.id&&!outOfTurnUnoAction))return;
   const content=$("uno-game-content");
   content.querySelectorAll("button").forEach(button=>button.disabled=true);
   const result=await db.functions.invoke("gather-game-action",{
