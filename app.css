@@ -4108,7 +4108,7 @@ html[data-theme="light"] .offline-status{color:#59421d;background:#fff4d8;border
 /* Conversation-scoped UNO games. */
 .gather-game-message{display:grid;gap:10px;min-width:min(100%,250px);max-width:360px;padding:13px;border:1px solid var(--border);border-radius:15px;background:linear-gradient(145deg,var(--panel),var(--panel-soft));}
 .gather-game-message-heading{display:flex;align-items:center;gap:10px}
-.gather-game-message-mark{display:grid;place-items:center;width:38px;height:38px;border-radius:12px;color:#fff;font-weight:950;font-style:italic;background:linear-gradient(135deg,#ff4242 0 30%,#ffd33d 30% 52%,#3cbd70 52% 74%,#477bff 74%);text-shadow:0 1px 3px #222}
+.gather-game-message-mark{width:38px;height:38px;border-radius:12px}
 .gather-game-message-copy{display:grid;gap:2px}
 .gather-game-message-copy small,.gather-game-message-status,.gather-game-message-players,.gather-game-waiting{font-size:12px;color:var(--muted)}
 .gather-game-message-players{margin:0;line-height:1.45}
