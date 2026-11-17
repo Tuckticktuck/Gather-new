@@ -255,6 +255,9 @@ select:focus {
 
 /* Dialogs and feedback surfaces. */
 .overlay {
+  position: fixed;
+  z-index: 30;
+  inset: 0;
   padding: 14px;
   background: color-mix(in srgb, var(--accent-deep, #11131a) 82%, #000);
   backdrop-filter: blur(12px);
