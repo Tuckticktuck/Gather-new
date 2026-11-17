@@ -1825,7 +1825,7 @@ function notificationUnreadCount(){
 function renderNotificationBadge(){
   const badge=$("notification-badge");if(!badge)return;
   const count=notificationUnreadCount();badge.textContent=count>99?"99+":String(count);badge.hidden=count===0;
-  const regularUnread=notificationItemsForCenter().filter(item=>!item.read_at).length;
+  const regularUnread=S.notifications.filter(item=>!item.read_at).length;
   const markAll=$("notifications-mark-all");if(markAll)markAll.disabled=regularUnread===0;
 }
 function notificationKindLabel(kind){
