@@ -4331,8 +4331,8 @@ function renderMessages(preserveScroll=false){
     const previousMessage=S.messages[index-1],nextMessage=S.messages[index+1];
     const gapFromPrevious=previousMessage?new Date(m.created_at).getTime()-new Date(previousMessage.created_at).getTime():0;
     const gapToNext=nextMessage?new Date(nextMessage.created_at).getTime()-new Date(m.created_at).getTime():0;
-    const samePrevious=!!previousMessage&&previousMessage.sender_id===m.sender_id&&gapFromPrevious<60*60*1000;
-    const sameNext=!!nextMessage&&nextMessage.sender_id===m.sender_id&&gapToNext<60*60*1000;
+    const samePrevious=!!previousMessage&&previousMessage.sender_id===m.sender_id&&gapFromPrevious>=0&&gapFromPrevious<=60*1000;
+    const sameNext=!!nextMessage&&nextMessage.sender_id===m.sender_id&&gapToNext>=0&&gapToNext<=60*1000;
     const senderChanged=!!previousMessage&&previousMessage.sender_id!==m.sender_id;
     const grouping=samePrevious?(sameNext?" group-middle":" group-last"):(sameNext?" group-first":"");
     if(previousMessage){
@@ -4349,7 +4349,7 @@ function renderMessages(preserveScroll=false){
     row.dataset.messageId=m.id;
     if(!suppressEntryAnimation&&!existingMessageIds.has(String(m.id)))row.classList.add("gather-message-enter");
     const bubble=el("div","bubble"),meta=el("div","meta");
-    const showSenderAvatar=showSenderNames&&!mine&&(!previousMessage||senderChanged||gapFromPrevious>=60*60*1000);
+    const showSenderAvatar=showSenderNames&&!mine&&(!previousMessage||senderChanged||gapFromPrevious<0||gapFromPrevious>60*1000);
     let senderAvatar=null;
     if(showSenderAvatar){
       senderAvatar=avatar(p?.display_name?.trim()||p?.username||"Member",p?.avatar_data||null);
