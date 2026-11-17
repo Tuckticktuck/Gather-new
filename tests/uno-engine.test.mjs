@@ -44,13 +44,13 @@ function fixture(actorHand, otherHand, overrides = {}) {
   return { state: publicState, privateState };
 }
 
-async function apply(f, actorId, action) {
+async function apply(f, actorId, action, playerList = players) {
   return unoEngine.applyAction({
     state: f.state,
     privateState: f.privateState,
     action,
     actorId,
-    players,
+    players: playerList,
     serverSeed: seed,
   });
 }
@@ -176,6 +176,34 @@ test("calling UNO is rejected after the catch window has closed", async () => {
     other, { type: "draw" });
   await assert.rejects(apply({ state: opponentDraws.nextState, privateState: opponentDraws.nextPrivateState },
     actor, { type: "call_uno" }), /exactly one uncalled card/);
+});
+
+test("any opponent can catch an uncalled UNO before the next turn action", async () => {
+  const third = "33333333-3333-4333-8333-333333333333";
+  const threePlayers = [...players, { user_id: third, response: "accepted", player_order: 2 }];
+  const f = fixture([card("red:7", "red", "7"), card("blue:2", "blue", "2")],
+    [card("yellow:1", "yellow", "1")]);
+  f.state.playerOrder = [actor, other, third];
+  f.state.handCounts[third] = 1;
+  f.privateState.hands[third] = [card("green:3", "green", "3")];
+  const played = await apply(f, actor, { type: "play", cardId: "red:7" }, threePlayers);
+  const caught = await resolveGameAction({
+    engine: unoEngine,
+    match: {
+      status: "active",
+      state: played.nextState,
+      private_state: played.nextPrivateState,
+      version: 2,
+      current_turn_user_id: other,
+    },
+    actorId: third,
+    players: threePlayers,
+    action: { type: "catch_uno" },
+  });
+  assert.equal(caught.eventType, "uno_caught");
+  assert.equal(caught.nextState.handCounts[actor], 3);
+  assert.equal(caught.nextTurnUserId, other);
+  assert.equal(caught.nextState.currentPlayerId, other);
 });
 
 test("Wild Draw Four can be challenged when the player held the current color", async () => {
