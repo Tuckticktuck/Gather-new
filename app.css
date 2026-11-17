@@ -4200,3 +4200,10 @@ html[data-theme="light"] .offline-status{color:#59421d;background:#fff4d8;border
   -webkit-touch-callout:default;
   cursor:text;
 }
+
+
+/* Mark-all-read action in the notification center. */
+.notifications-toolbar{flex-wrap:wrap}
+.notification-mark-all{min-height:36px;padding:8px 12px;border-radius:10px;font-size:calc(10px * var(--font-scale,1));font-weight:750}
+.notification-mark-all:disabled{opacity:.48;cursor:not-allowed}
+@media(max-width:520px){.notifications-toolbar{align-items:flex-start}.notification-mark-all{order:2}.notification-feed-note{order:3;width:100%}}

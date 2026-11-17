@@ -1825,7 +1825,7 @@ function notificationUnreadCount(){
 function renderNotificationBadge(){
   const badge=$("notification-badge");if(!badge)return;
   const count=notificationUnreadCount();badge.textContent=count>99?"99+":String(count);badge.hidden=count===0;
-  const regularUnread=notificationItemsForCenter().filter(item=>!item.read_at).length;
+  const regularUnread=S.notifications.filter(item=>!item.read_at).length;
   const markAll=$("notifications-mark-all");if(markAll)markAll.disabled=regularUnread===0;
 }
 function notificationKindLabel(kind){
@@ -1946,10 +1946,19 @@ async function markAnnouncementNotificationsRead(announcementId){
 }
 async function markAllNotificationsRead(){
   if(!S.user)return;
-  const button=$("notifications-mark-all");button.disabled=true;
-  const result=await db.from("notifications").delete().eq("recipient_id",S.user.id);
-  if(result.error){toast("Notifications could not be cleared: "+result.error.message);button.disabled=false;return;}
-  S.notifications=[];renderNotifications();toast("Notifications cleared.");
+  const button=$("notifications-mark-all");
+  if(button)button.disabled=true;
+  const result=await db.from("notifications").delete()
+    .eq("recipient_id",S.user.id)
+    .is("read_at",null);
+  if(result.error){
+    console.warn("Unread notifications could not be marked as read:",result.error.message);
+    toast("Unread notifications could not be marked as read. Please try again.");
+    if(button)button.disabled=false;
+    return;
+  }
+  await loadNotifications();
+  toast("All unread notifications marked as read.");
 }
 function openNotifications(){
   $("notifications-modal").hidden=false;
@@ -6196,6 +6205,7 @@ function wire(){
   $("chat-title").addEventListener("click",()=>{const chat=S.chats.find(item=>item.id===S.active);if(chat?.kind==="direct")openPublicProfile(peerForChat(chat));});
   $("settings-open").addEventListener("click",openSettings);
   $("notifications-open").addEventListener("click",openNotifications);
+  $("notifications-mark-all").addEventListener("click",markAllNotificationsRead);
   $("admin-mode-open").addEventListener("click",openAdminMode);
   document.querySelectorAll("[data-admin-section]").forEach(button=>button.addEventListener("click",()=>setAdminModeSection(button.dataset.adminSection)));
   $("admin-quick-accounts").addEventListener("click",()=>setAdminModeSection("accounts"));
