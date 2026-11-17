@@ -4419,13 +4419,14 @@ function renderMessages(preserveScroll=false){
     const pollArea=renderPollCard(m,S.messagePolls[m.id]);if(pollArea)bubble.append(pollArea);
     const reactionArea=renderMessageReactionArea(m);
     if(reactionArea)bubble.append(reactionArea);
+    let receiptElement=null;
     if(mine&&m.id===latestOwnMessageId){
       const memberIds=new Set((activeChat?.members||[]).map(member=>member.user_id).filter(id=>id!==S.user.id));
       const readers=[...new Map((S.messageReads[m.id]||[])
         .filter(receipt=>receipt.user_id!==S.user.id&&memberIds.has(receipt.user_id))
         .map(receipt=>[receipt.user_id,receipt])).values()];
       if(activeChat?.kind==="direct"){
-        bubble.append(el("div","message-receipts"+(readers.length?" is-seen":" is-sent"),readers.length?"✓✓ Seen":"✓ Sent"));
+        receiptElement=el("div","message-receipts"+(readers.length?" is-seen":" is-sent"),readers.length?"✓✓ Seen":"✓ Sent");
       }else if(readers.length){
         const names=[...new Set(readers.map(receipt=>S.profiles[receipt.user_id]?.display_name||"Member"))];
         const receiptWrap=el("div","message-receipt-wrap");
@@ -4442,9 +4443,9 @@ function renderMessages(preserveScroll=false){
           readerList.hidden=expanded;
         });
         receiptWrap.append(seenButton,readerList);
-        bubble.append(receiptWrap);
+        receiptElement=receiptWrap;
       }else{
-        bubble.append(el("div","message-receipts is-sent","✓ Sent"));
+        receiptElement=el("div","message-receipts is-sent","✓ Sent");
       }
     }
     if(S.selectingMessages){
@@ -4470,6 +4471,7 @@ function renderMessages(preserveScroll=false){
       }
     }
     row.append(bubble);
+    if(receiptElement)row.append(receiptElement);
     if(S.textSelectionMessageId===m.id){
       row.addEventListener("click",event=>{
         if(event.target.closest(".body-text"))return;
