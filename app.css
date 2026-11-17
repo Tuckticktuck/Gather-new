@@ -4790,7 +4790,7 @@ html[data-theme="light"]{
   border:1px solid color-mix(in srgb,var(--accent) 72%,white 28%);
   border-radius:12px;
   background:var(--accent);
-  color:var(--accent-contrast);
+  color:#000;
   font-size:13px;
   font-weight:850;
   letter-spacing:.01em;
