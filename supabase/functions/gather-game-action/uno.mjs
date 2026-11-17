@@ -187,7 +187,7 @@ function applyUnoAction({ state, privateState, action, actorId, players, serverS
   const nextPrivateState = structuredClone(privateState);
   const hand = nextPrivateState.hands[actorId];
   if (!Array.isArray(hand)) throw new GameRuleError("Your UNO hand is unavailable.");
-  if (action.type !== "call_uno" && nextState.currentPlayerId !== actorId) {
+  if (!["call_uno", "catch_uno"].includes(action.type) && nextState.currentPlayerId !== actorId) {
     throw new GameRuleError("It is not your turn.");
   }
 
@@ -214,6 +214,7 @@ function applyUnoAction({ state, privateState, action, actorId, players, serverS
     }
     drawCards(nextPrivateState, targetId, 2);
     nextState.pendingUnoPlayerId = null;
+    nextTurnUserId = nextState.currentPlayerId;
     eventType = "uno_caught";
     eventPayload = { caughtPlayerId: targetId, penaltyCards: 2 };
   } else if (pendingDraw && action.type === "challenge") {
@@ -351,7 +352,9 @@ function applyUnoAction({ state, privateState, action, actorId, players, serverS
 export const unoEngine = Object.freeze({
   key: "uno",
   canActOutOfTurn({ state, action, actorId }) {
-    return action?.type === "call_uno" && state?.pendingUnoPlayerId === actorId;
+    if (action?.type === "call_uno") return state?.pendingUnoPlayerId === actorId;
+    if (action?.type === "catch_uno") return !!state?.pendingUnoPlayerId && state.pendingUnoPlayerId !== actorId;
+    return false;
   },
   applyAction: applyUnoAction,
 });
