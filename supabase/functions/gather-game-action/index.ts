@@ -95,7 +95,7 @@ Deno.serve(async (request: Request) => {
     if (!match) return response(404, { error: "Game match not found." }, origin);
 
     let privateState: Record<string, unknown> | null = null;
-    if (match.game_key === "uno") {
+    if (match.game_key === "uno" || match.game_key === "battleship") {
       const privateQuery = new URLSearchParams({
         match_id: `eq.${input.matchId}`,
         select: "state",

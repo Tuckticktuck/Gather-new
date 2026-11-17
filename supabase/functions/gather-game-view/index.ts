@@ -66,7 +66,7 @@ Deno.serve(async (request: Request) => {
     });
     const matches = await getRows<Array<Record<string, unknown>>>(supabaseUrl, serviceKey, "game_matches", matchQuery);
     const match = matches[0];
-    if (!match || !["uno", "chess"].includes(String(match.game_key))) return respond(404, { error: "Game match not found." }, origin);
+    if (!match || !["uno", "chess", "battleship"].includes(String(match.game_key))) return respond(404, { error: "Game match not found." }, origin);
 
     const membershipQuery = new URLSearchParams({
       conversation_id: `eq.${String(match.conversation_id)}`,
@@ -92,6 +92,38 @@ Deno.serve(async (request: Request) => {
     }
 
     const state = match.state && typeof match.state === "object" ? match.state as Record<string, unknown> : {};
+    if (match.game_key === "battleship" && state.started === true) {
+      const privateQuery = new URLSearchParams({
+        match_id: `eq.${matchId}`,
+        select: "state",
+        limit: "1",
+      });
+      const privateRows = await getRows<Array<{ state: Record<string, unknown> }>>(
+        supabaseUrl, serviceKey, "game_match_private_state", privateQuery,
+      );
+      const privateState = privateRows[0]?.state;
+      if (!privateState || !privateState.fleets || typeof privateState.fleets !== "object") {
+        return respond(500, { error: "Private Battleship fleet data is unavailable." }, origin);
+      }
+      const playerIds = Array.isArray(state.playerOrder) ? state.playerOrder as string[] : [];
+      const opponentId = playerIds.find((id) => id !== user.id);
+      const fleets = privateState.fleets as Record<string, unknown>;
+      const shotsByPlayer = state.shotsByPlayer && typeof state.shotsByPlayer === "object"
+        ? state.shotsByPlayer as Record<string, unknown> : {};
+      return respond(200, {
+        matchId,
+        gameKey: "battleship",
+        status: match.status,
+        version: match.version,
+        currentTurnUserId: match.current_turn_user_id,
+        initialized: true,
+        publicState: state,
+        ownFleet: Array.isArray(fleets[user.id]) ? fleets[user.id] : null,
+        incomingShots: opponentId && Array.isArray(shotsByPlayer[opponentId]) ? shotsByPlayer[opponentId] : [],
+        outgoingShots: Array.isArray(shotsByPlayer[user.id]) ? shotsByPlayer[user.id] : [],
+      }, origin);
+    }
+
     if (match.game_key === "chess") {
       return respond(200, {
         matchId,
@@ -109,7 +141,7 @@ Deno.serve(async (request: Request) => {
     if (state.started !== true) {
       return respond(200, {
         matchId,
-        gameKey: "uno",
+        gameKey: String(match.game_key),
         status: match.status,
         version: match.version,
         currentTurnUserId: match.current_turn_user_id,
