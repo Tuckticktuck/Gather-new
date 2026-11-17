@@ -4185,3 +4185,18 @@ html[data-theme="light"] .offline-status{color:#59421d;background:#fff4d8;border
   .uno-action-controls{justify-content:flex-start}
   .uno-action-controls .game-card-action{flex:1 1 auto}
 }
+
+
+/* Prevent accidental selection during message long-press; enable it only via Select. */
+.message .body-text{
+  -webkit-user-select:none;
+  user-select:none;
+  -webkit-touch-callout:none;
+}
+.message.message-text-selectable .body-text,
+.message.message-text-selectable .body-text *{
+  -webkit-user-select:text;
+  user-select:text;
+  -webkit-touch-callout:default;
+  cursor:text;
+}
