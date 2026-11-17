@@ -3391,6 +3391,30 @@ function gameTitleForKey(key){
   if(key==="battleship")return "Battleship";
   return "UNO";
 }
+function createGameCardIcon(gameKey){
+  const svg=document.createElementNS("http://www.w3.org/2000/svg","svg");
+  svg.setAttribute("viewBox","0 0 24 24");
+  svg.setAttribute("focusable","false");
+  const add=(tag,attributes)=>{
+    const node=document.createElementNS("http://www.w3.org/2000/svg",tag);
+    Object.entries(attributes).forEach(([name,value])=>node.setAttribute(name,value));
+    svg.append(node);
+  };
+  if(gameKey==="chess"){
+    add("path",{d:"M6 20h13l-1.2-4-3.2-2.1 2.7-3.1-.9-4.2-4.7-2-3.2 3.1 1.7 3.1-2.5 2.6L6 20Z"});
+    add("path",{d:"M8.5 20v-2.2M11 7.5l1.2 1.1"});
+    add("circle",{cx:"14.2",cy:"8.2",r:".7",fill:"currentColor",stroke:"none"});
+  }else if(gameKey==="battleship"){
+    add("path",{d:"M3 14.5h18l-3.1 5H7.1L3 14.5Z"});
+    add("path",{d:"M7.5 14.5V9h8l3 5.5M11.5 9V5h2v4"});
+    add("path",{d:"M4 21c1.2-.8 2.3-.8 3.5 0s2.3.8 3.5 0 2.3-.8 3.5 0 2.3.8 3.5 0 2.3-.8 3.5 0"});
+  }else{
+    add("rect",{x:"4.5",y:"5.5",width:"10.5",height:"14",rx:"2",transform:"rotate(-9 9.75 12.5)"});
+    add("rect",{x:"9",y:"4",width:"10.5",height:"14",rx:"2",transform:"rotate(8 14.25 11)"});
+    add("path",{d:"M12.2 8.5v5.2a1.8 1.8 0 0 0 3.6 0V8.5"});
+  }
+  return svg;
+}
 function renderGameMessageCard(message){
   const matchId=gameMatchIdFromMessage(message);
   const match=matchId?S.gameMatches[matchId]:null;
@@ -3400,7 +3424,8 @@ function renderGameMessageCard(message){
   const heading=el("div","gather-game-message-heading");
   const gameKey=match?.game_key||"uno";
   const gameTitle=gameTitleForKey(gameKey);
-  const mark=el("span","gather-game-message-mark",gameKey==="chess"?"♟":gameKey==="battleship"?"⚓":"U");
+  const mark=el("span","gather-game-message-mark game-picker-icon");
+  mark.append(createGameCardIcon(gameKey));
   const copy=el("div","gather-game-message-copy");
   copy.append(el("strong","",gameTitle),el("small","","Conversation game"));
   heading.append(mark,copy);
