@@ -4329,3 +4329,35 @@ html[data-theme="light"]{
 .chess-piece.is-white{color:#fff;--chess-piece-cutout:#263b31;filter:drop-shadow(0 1px 1px #17251f) drop-shadow(0 0 1px #17251f)}
 .chess-piece.is-black{color:#18251f;--chess-piece-cutout:#f4fff8;filter:drop-shadow(0 1px 1px #fff) drop-shadow(0 0 1px #fff)}
 .chess-square:focus-visible{z-index:3;outline:3px solid var(--accent);outline-offset:-3px}
+
+
+/* High-contrast controls in the full-screen game overlay */
+.game-overlay .game-overlay-close{
+  flex-basis:54px;width:54px;height:54px;
+  border:2px solid #d5ffec;
+  background:#d5ffec;color:#102a22;
+  box-shadow:0 3px 14px #0005,0 0 0 3px #d5ffec22;
+  font-size:32px;font-weight:800;
+}
+.game-overlay .game-overlay-close:hover{background:#fff;border-color:#fff;transform:scale(1.04)}
+.game-overlay .game-overlay-close:focus-visible,
+.game-overlay .game-card-action:focus-visible{
+  outline:3px solid #fff;outline-offset:4px;
+}
+.game-overlay .game-card-action.primary{
+  min-height:54px;padding:14px 20px;
+  border:2px solid #baf5d9;
+  background:linear-gradient(135deg,#baf5d9,#8fe0bc);
+  color:#102a22;
+  box-shadow:0 5px 16px #0004,0 0 0 1px #ffffff18;
+  font-size:15px;font-weight:850;
+  text-shadow:none;
+}
+.game-overlay .game-card-action.primary:hover{
+  background:#e4fff1;border-color:#fff;
+  box-shadow:0 7px 20px #0005,0 0 0 3px #baf5d944;
+}
+.game-overlay .game-card-action.secondary{
+  min-height:46px;border:1px solid #baf5d988;
+  background:#173d32;color:#f2fff8;
+}
