@@ -65,7 +65,7 @@ test("requires an explicit legal promotion choice",()=>{
   const board=Array(64).fill(null);
   board[60]="K";board[7]="k";board[8]="P";
   const state={started:true,board,turn:"w",castling:"",enPassant:null,halfmove:0,fullmove:1,moveHistory:[],whiteUserId:white,blackUserId:black};
-  assert.throws(()=>move(state,white,"a7","a8"),/promotion piece/);
+  assert.throws(()=>move(state,white,"a7","a8"),/pawn promotion/);
   const promoted=move(state,white,"a7","a8","q");
   assert.equal(promoted.nextState.board[0],"Q");
 });
