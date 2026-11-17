@@ -4588,3 +4588,136 @@ html[data-theme="light"]{
 @media(prefers-reduced-motion:reduce){
   #empty .workspace-search-controls{transition:none}
 }
+
+
+/* Compact circular homepage search launcher with an expandable search field. */
+#empty{position:relative}
+#empty .workspace-search-controls{
+  position:absolute;
+  z-index:45;
+  right:22px;
+  bottom:22px;
+  width:60px;
+  height:60px;
+  margin:0;
+  padding:0;
+  border:0;
+  border-radius:50%;
+  background:transparent;
+  box-shadow:none;
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+  transition:width 220ms cubic-bezier(.2,.75,.25,1),height 220ms ease,background 180ms ease,box-shadow 180ms ease;
+}
+#empty .home-search-toggle{
+  position:absolute;
+  z-index:2;
+  inset:0 auto auto 0;
+  display:grid;
+  place-items:center;
+  width:60px;
+  height:60px;
+  padding:0;
+  border:1px solid color-mix(in srgb,var(--accent-outline) 72%,var(--line));
+  border-radius:50%;
+  background:color-mix(in srgb,var(--accent-panel-raised) 92%,transparent);
+  color:var(--accent-text);
+  box-shadow:0 8px 24px rgba(0,0,0,.26),inset 0 1px rgba(255,255,255,.08);
+  -webkit-backdrop-filter:blur(18px) saturate(1.2);
+  backdrop-filter:blur(18px) saturate(1.2);
+  cursor:pointer;
+  transition:transform 180ms ease,background 180ms ease,border-color 180ms ease,box-shadow 180ms ease;
+}
+#empty .home-search-toggle svg{
+  width:25px;
+  height:25px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:2;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+#empty .home-search-toggle:hover{transform:translateY(-2px);box-shadow:0 11px 28px rgba(0,0,0,.3)}
+#empty .workspace-search{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  width:0;
+  height:60px;
+  overflow:hidden;
+  opacity:0;
+  margin:0;
+  padding:0;
+  border:1px solid transparent;
+  border-radius:999px;
+  background:color-mix(in srgb,var(--accent-panel-raised) 95%,transparent);
+  color:var(--text);
+  box-shadow:0 8px 28px rgba(0,0,0,.28);
+  pointer-events:none;
+  transition:width 220ms cubic-bezier(.2,.75,.25,1),opacity 150ms ease,padding 220ms ease,border-color 180ms ease;
+}
+#empty .workspace-search .search{
+  flex:1;
+  width:100%;
+  min-width:0;
+  height:44px;
+  min-height:44px;
+  margin:0;
+  padding:0 4px;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+  color:var(--text);
+  font-size:16px;
+}
+#empty .workspace-search .search:focus{outline:0;border:0;box-shadow:none;background:transparent}
+#empty .workspace-search .search::placeholder{color:var(--muted)}
+#empty .home-search-close{
+  flex:0 0 34px;
+  width:34px;
+  height:34px;
+  padding:0;
+  border:0;
+  border-radius:50%;
+  background:var(--accent-surface);
+  color:var(--accent-text);
+  font-size:25px;
+  line-height:1;
+  cursor:pointer;
+}
+#empty .workspace-search-controls.is-open{
+  width:min(350px,calc(100vw - 36px));
+  height:60px;
+  border-radius:999px;
+}
+#empty .workspace-search-controls.is-open .workspace-search{
+  width:100%;
+  opacity:1;
+  padding:0 10px 0 66px;
+  border-color:color-mix(in srgb,var(--accent-outline) 72%,var(--line));
+  pointer-events:auto;
+}
+#empty .workspace-search-controls.is-open .home-search-toggle{
+  width:60px;
+  height:60px;
+  box-shadow:none;
+  border-color:transparent;
+  background:transparent;
+  pointer-events:none;
+}
+#empty .workspace-search-controls.is-open .home-search-toggle svg{width:22px;height:22px}
+#empty .home-search-results:not([hidden]){padding-bottom:86px}
+@media(max-width:720px){
+  #empty .workspace-search-controls{right:14px;bottom:14px;width:54px;height:54px}
+  #empty .home-search-toggle{width:54px;height:54px}
+  #empty .workspace-search{height:54px}
+  #empty .workspace-search-controls.is-open{width:min(340px,calc(100vw - 28px));height:54px}
+  #empty .workspace-search-controls.is-open .workspace-search{padding-left:58px}
+  #empty .workspace-search-controls.is-open .home-search-toggle{width:54px;height:54px}
+}
+@media(prefers-reduced-motion:reduce){
+  #empty .workspace-search-controls,#empty .workspace-search,#empty .home-search-toggle{transition:none}
+}
