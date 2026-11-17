@@ -4487,3 +4487,24 @@ html[data-theme="light"]{
   .message .bubble{min-height:42px;padding:9px 13px}
   .message.group-continued .bubble{padding-top:8px;padding-bottom:8px}
 }
+
+
+/* Correct iMessage-style group tails: soften only the connecting-side corners. */
+#app .messages .message.group-first:not(.mine) .bubble {
+  border-radius:19px 19px 19px 6px !important;
+}
+#app .messages .message.group-middle:not(.mine) .bubble {
+  border-radius:6px 19px 19px 6px !important;
+}
+#app .messages .message.group-last:not(.mine) .bubble {
+  border-radius:6px 19px 19px 19px !important;
+}
+#app .messages .message.mine.group-first .bubble {
+  border-radius:19px 19px 6px 19px !important;
+}
+#app .messages .message.mine.group-middle .bubble {
+  border-radius:19px 6px 6px 19px !important;
+}
+#app .messages .message.mine.group-last .bubble {
+  border-radius:19px 6px 19px 19px !important;
+}
