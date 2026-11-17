@@ -4737,3 +4737,37 @@ html[data-theme="light"]{
 #home-search-controls.is-open #home-search-toggle{width:60px;height:60px;box-shadow:none;border-color:transparent;background:transparent;pointer-events:none}
 @media(max-width:720px){#home-search-controls{right:max(14px,env(safe-area-inset-right));bottom:calc(14px + env(safe-area-inset-bottom));width:54px;height:54px}#home-search-toggle{width:54px;height:54px}#home-search-controls .workspace-search{height:54px}#home-search-controls.is-open{width:min(340px,calc(100vw - 28px));height:54px}#home-search-controls.is-open .workspace-search{padding-left:58px}#home-search-controls.is-open #home-search-toggle{width:54px;height:54px}}
 @media(prefers-reduced-motion:reduce){#home-search-controls,#home-search-controls .workspace-search,#home-search-toggle{transition:none}}
+
+
+/* UNO hand: readable fanned stack with a clear playable / unplayable distinction. */
+.uno-hand{
+  gap:0;
+  align-items:flex-end;
+  overflow-x:auto;
+  overflow-y:visible;
+  padding:22px 10px 16px;
+  min-height:clamp(126px,20vh,150px);
+  scrollbar-width:thin;
+}
+.uno-hand .uno-card-hand{
+  position:relative;
+  flex:0 0 auto;
+  margin-left:-42px;
+  transform-origin:50% 100%;
+  box-shadow:0 5px 12px #0005;
+}
+.uno-hand .uno-card-hand:first-child{margin-left:0}
+.uno-hand .uno-card-hand.is-unplayable{
+  opacity:.48;
+  filter:saturate(.62) brightness(.9);
+  cursor:not-allowed;
+}
+.uno-hand .uno-card-hand.is-unplayable:hover{transform:none;box-shadow:0 5px 12px #0005}
+.uno-hand .uno-card-hand.is-selected{opacity:1;z-index:100!important}
+.uno-hand .uno-card-hand:not(.is-unplayable):hover,
+.uno-hand .uno-card-hand:not(.is-unplayable):focus-visible{z-index:110!important}
+@media(max-width:640px){
+  .uno-hand{padding:20px 8px 14px;min-height:122px}
+  .uno-hand .uno-card-hand{margin-left:-39px}
+  .uno-hand .uno-card-hand:first-child{margin-left:0}
+}
