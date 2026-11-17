@@ -3464,7 +3464,7 @@ function renderGameMessageCard(message){
   const actions=el("div","gather-game-message-actions");
   if(match.status==="invited"&&me?.response==="invited"){
     const accepting=S.gameRespondingIds.has(match.id);
-    const accept=el("button","game-card-action primary",accepting?"Accepting…":"Accept");
+    const accept=el("button","game-card-action primary game-card-main-action",accepting?"Accepting…":"Accept");
     accept.type="button";accept.disabled=accepting;accept.addEventListener("click",event=>{event.stopPropagation();void respondToUnoInvitation(match.id,"accepted");});
     const decline=el("button","game-card-action secondary","Decline");
     decline.type="button";decline.addEventListener("click",event=>{event.stopPropagation();void respondToUnoInvitation(match.id,"declined");});
@@ -3472,7 +3472,7 @@ function renderGameMessageCard(message){
   }else if(match.status==="invited"){
     actions.append(el("span","gather-game-waiting","Waiting for everyone to respond"));
   }else if(match.status==="active"&&me?.response==="accepted"){
-    const open=el("button","game-card-action primary","Open "+gameTitle);
+    const open=el("button","game-card-action primary game-card-main-action","Open "+gameTitle);
     open.type="button";open.addEventListener("click",event=>{event.stopPropagation();void openGameMatch(match.id);});
     actions.append(open);
   }else if(match.status==="completed"){

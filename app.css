@@ -4771,3 +4771,32 @@ html[data-theme="light"]{
   .uno-hand .uno-card-hand{margin-left:-39px}
   .uno-hand .uno-card-hand:first-child{margin-left:0}
 }
+
+
+/* Make UNO cards easier to distinguish while keeping the fanned-hand layout. */
+.uno-hand .uno-card-hand{margin-left:-28px}
+@media(max-width:640px){.uno-hand .uno-card-hand{margin-left:-25px}}
+
+/* Give the two main invitation actions a clearer visual hierarchy. */
+.gather-game-message-actions .game-card-main-action{
+  min-height:42px;
+  padding:10px 18px;
+  border:1px solid color-mix(in srgb,var(--accent) 72%,white 28%);
+  border-radius:12px;
+  background:var(--accent);
+  color:var(--accent-contrast);
+  font-size:13px;
+  font-weight:850;
+  letter-spacing:.01em;
+  box-shadow:0 3px 10px color-mix(in srgb,var(--accent) 28%,transparent);
+}
+.gather-game-message-actions .game-card-main-action:hover{
+  filter:brightness(1.08);
+  box-shadow:0 5px 14px color-mix(in srgb,var(--accent) 36%,transparent);
+  transform:translateY(-1px);
+}
+.gather-game-message-actions .game-card-main-action:focus-visible{
+  outline:3px solid var(--accent);
+  outline-offset:3px;
+}
+@media(max-width:480px){.gather-game-message-actions .game-card-main-action{flex:1 1 100%;min-height:44px}}
