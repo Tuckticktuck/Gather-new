@@ -198,7 +198,15 @@ export const chessEngine={
         whiteUserId:accepted[0].user_id,blackUserId:accepted[1].user_id,
         check:false,checkmate:false,stalemate:false,
       };
+      nextState.legalMoves=legalMoves(nextState).map(move=>({from:squareName(move.from),to:squareName(move.to),promotion:move.promotion||null}));
       return {nextState,eventType:"chess_started",eventPayload:{whiteUserId:accepted[0].user_id,blackUserId:accepted[1].user_id},nextTurnUserId:accepted[0].user_id};
+    }
+    if(action?.type==="resign"){
+      if(state?.started!==true)throw new GameRuleError("The Chess match has not started.");
+      const winnerId=actorId===state.whiteUserId?state.blackUserId:actorId===state.blackUserId?state.whiteUserId:null;
+      if(!winnerId)throw new GameRuleError("You are not a player in this Chess match.");
+      const nextState={...clone(state),winnerId,result:"resignation",checkmate:false,stalemate:false,legalMoves:[]};
+      return {nextState,eventType:"chess_resigned",eventPayload:{resignedBy:actorId,winnerId},nextTurnUserId:null,nextStatus:"completed"};
     }
     if(action?.type!=="move")throw new GameRuleError("Unsupported Chess action.");
     if(state?.started!==true||!Array.isArray(state.board)||state.board.length!==64)
@@ -223,6 +231,7 @@ export const chessEngine={
     const completed=!!(status.checkmate||status.stalemate||status.draw);
     const winnerId=status.checkmate?actorId:null;
     nextState.winnerId=winnerId;
+    nextState.legalMoves=completed?[]:legalMoves(nextState).map(item=>({from:squareName(item.from),to:squareName(item.to),promotion:item.promotion||null}));
     nextState.result=status.checkmate?"checkmate":status.stalemate?"stalemate":status.draw||null;
     return {
       nextState,eventType:completed?"chess_finished":"chess_move",
