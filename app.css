@@ -1120,7 +1120,7 @@ html[data-theme="light"] .message-poll-option{background:#f7f8fc}
 .conversation-selection-actions{display:flex;align-items:center;justify-content:flex-end;gap:9px;min-width:0}
 .conversation-selection-count{color:var(--muted);font-size:calc(10px * var(--font-scale,1));font-weight:700;white-space:nowrap}
 .conversation-selection-actions .danger-action{width:auto;min-width:150px;min-height:36px;margin:0;padding:8px 12px}
-.conversation-selection-actions .danger-action:disabled{opacity:.48;cursor:not-allowed}
+.conversation-selection-actions .danger-action:disabled{opacity:.64;cursor:not-allowed}
 .conversation-select-control{display:flex;flex:none;align-items:center;justify-content:center;width:34px;min-height:42px;padding:0 5px;cursor:pointer}
 .conversation-select-control input{width:17px;height:17px;margin:0;accent-color:var(--accent);cursor:pointer}
 .chat-row.conversation-row-selecting{border-color:var(--accent-outline-soft)}
