@@ -4310,3 +4310,24 @@ html[data-theme="light"] .offline-status{color:#59421d;background:#fff4d8;border
   .chess-resign{justify-self:start}
 }
 @media(prefers-reduced-motion:reduce){.chess-square,.chess-promotion-choice{transition:none}}
+
+/* Chess theme integration and font-independent vector pieces */
+.chess-board-wrap{border-color:color-mix(in srgb,var(--chess-frame,#355c50) 75%,transparent);background:linear-gradient(145deg,var(--chess-frame,#183b32),color-mix(in srgb,var(--chess-frame,#0b1716) 38%,#080c12));box-shadow:0 14px 36px #0005,0 0 28px color-mix(in srgb,var(--accent) 18%,transparent)}
+.chess-board{border-color:color-mix(in srgb,var(--accent) 48%,#ffffff55)}
+.chess-square.is-light{background:var(--chess-light-square,#e9edf2);color:#24313c}
+.chess-square.is-dark{background:var(--chess-dark-square,#263b4c);color:#f5f7fa}
+.chess-square.is-last-move{background:var(--chess-highlight,#c5b66a);color:#18202a}
+.chess-square.is-selected{background:var(--chess-selected,#b9f36d);box-shadow:inset 0 0 0 3px color-mix(in srgb,var(--accent) 50%,#ffffff)}
+.chess-piece{width:82%;height:82%;overflow:visible;filter:drop-shadow(0 2px 2px #0006);pointer-events:none}
+.chess-piece.is-white{color:#fffdf4;stroke:#59665f}
+.chess-piece.is-black{color:#202a32;stroke:#e1e9e5}
+.chess-player-piece{width:34px;height:34px;grid-row:1/3;display:grid;place-items:center;border-radius:10px;background:color-mix(in srgb,var(--accent) 14%,#ffffff0c)}
+.chess-player-piece.is-white{color:#fffdf4;stroke:#59665f}
+.chess-player-piece.is-black{color:#202a32;stroke:#e1e9e5}
+.chess-promotion-choice{display:inline-flex;align-items:center;gap:7px}
+.chess-promotion-piece{width:25px;height:25px;flex:none}
+.chess-promotion-piece.is-white{color:#fffdf4;stroke:#59665f}
+.chess-promotion-piece.is-black{color:#202a32;stroke:#e1e9e5}
+.chess-square,.chess-promotion-choice{transition:background-color .18s ease,box-shadow .18s ease,transform .18s ease}
+.chess-square:not(:disabled):active{transform:scale(.96)}
+@media(prefers-reduced-motion:reduce){.chess-square,.chess-promotion-choice{transition:none}}

@@ -163,6 +163,11 @@ function applyUIPreferences(){
   if(!faviconLink){faviconLink=document.createElement("link");faviconLink.rel="icon";faviconLink.type="image/svg+xml";document.head.append(faviconLink);}
   faviconLink.href="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(faviconSvg);
   root.style.setProperty("--accent",accent.accent);
+  root.style.setProperty("--chess-light-square",`color-mix(in srgb,${accent.accent} ${isLight?13:22}%,${isLight?"#ffffff":"#e9edf2"})`);
+  root.style.setProperty("--chess-dark-square",`color-mix(in srgb,${accent.strong} ${isLight?42:58}%,${isLight?"#59616d":"#121923"})`);
+  root.style.setProperty("--chess-frame",`color-mix(in srgb,${accent.accent} 34%,${isLight?"#e6eaf0":"#111820"})`);
+  root.style.setProperty("--chess-highlight",`color-mix(in srgb,${accent.accent} 68%,#f3d879)`);
+  root.style.setProperty("--chess-selected",`color-mix(in srgb,${accent.accent} 78%,#ffffff)`);
   root.style.setProperty("--brand-mark-border",`color-mix(in srgb,${accent.accent} 72%,white)`);
   root.style.setProperty("--brand-mark-shadow",`color-mix(in srgb,${accent.accent} 25%,transparent)`);
   root.style.setProperty("--accent-strong",accent.strong);
@@ -3570,7 +3575,25 @@ function unoCardLabel(card){
   return card.value;
 }
 
-const CHESS_GLYPHS={K:"♔",Q:"♕",R:"♖",B:"♗",N:"♘",P:"♙",k:"♚",q:"♛",r:"♜",b:"♝",n:"♞",p:"♟"};
+const CHESS_GLYPHS={K:"King",Q:"Queen",R:"Rook",B:"Bishop",N:"Knight",P:"Pawn",k:"King",q:"Queen",r:"Rook",b:"Bishop",n:"Knight",p:"Pawn"};
+function createChessPieceIcon(piece,className="chess-piece"){
+  const kind=piece.toLowerCase(),white=piece===piece.toUpperCase();
+  const svg=document.createElementNS("http://www.w3.org/2000/svg","svg");
+  svg.setAttribute("viewBox","0 0 64 64");svg.setAttribute("class",className+" "+(white?"is-white":"is-black"));svg.setAttribute("aria-hidden","true");svg.setAttribute("focusable","false");
+  const add=(tag,attrs)=>{const node=document.createElementNS("http://www.w3.org/2000/svg",tag);Object.entries(attrs).forEach(([key,value])=>node.setAttribute(key,String(value)));svg.append(node);};
+  const base={fill:"currentColor",stroke:white?"#64716b":"#dce5df","stroke-width":2.6,"stroke-linejoin":"round"};
+  const shapes={
+    k:[["path",{d:"M29 5h6v7h7v6h-7v6h-6v-6h-7v-6h7z"}],["path",{d:"M22 25q10 5 20 0l-3 17H25z"}]],
+    q:[["circle",{cx:15,cy:17,r:5}],["circle",{cx:32,cy:11,r:5}],["circle",{cx:49,cy:17,r:5}],["path",{d:"M16 23l5 19h22l5-19-10 8-6-14-6 14z"}]],
+    r:[["path",{d:"M14 12h9v8h6v-8h7v8h6v-8h9v15H14z"}],["path",{d:"M18 28h28l-3 14H21z"}]],
+    b:[["circle",{cx:32,cy:16,r:8}],["path",{d:"M26 25q-13 10-5 18h22q8-8-5-18z"}],["path",{d:"M26 11l12 11"}]],
+    n:[["path",{d:"M17 43q-3-10 7-17l-3-13q16 1 24 15l3 15H17z"}],["circle",{cx:35,cy:21,r:2,fill:white?"#64716b":"#dce5df",stroke:"none"}]],
+    p:[["circle",{cx:32,cy:16,r:9}],["path",{d:"M25 27q-11 9-7 17h28q4-8-7-17z"}]]
+  };
+  (shapes[kind]||shapes.p).forEach(([tag,attrs])=>add(tag,{...base,...attrs}));
+  add("path",{d:"M13 45h38l4 7H9z",...base});add("path",{d:"M7 54h50v5H7z",...base});
+  return svg;
+}
 function chessSquareName(index){return "abcdefgh"[index%8]+(8-Math.floor(index/8));}
 async function performChessAction(action){
   const view=S.activeGameView,matchId=S.activeGameId;
@@ -3613,7 +3636,7 @@ function renderChessGame(){
   const players=el("div","chess-player-strip");
   [[white,"White","♔"],[black,"Black","♚"]].forEach(([id,label,glyph])=>{
     const chip=el("div","chess-player-chip"+(id===view.currentTurnUserId?" is-current":"")+(id===S.user.id?" is-you":""));
-    chip.append(el("span","chess-player-piece",glyph),el("span","",gamePlayerName(id,id===white?0:1)),el("small","",id===view.currentTurnUserId?"To move":label));
+    chip.append(createChessPieceIcon(id===white?"K":"k","chess-player-piece"),el("span","",gamePlayerName(id,id===white?0:1)),el("small","",id===view.currentTurnUserId?"To move":label));
     players.append(chip);
   });
   content.append(players);
@@ -3637,7 +3660,7 @@ function renderChessGame(){
     if(state.lastMove&&(state.lastMove.from===square||state.lastMove.to===square))button.classList.add("is-last-move");
     if(S.chessSelectedSquare===square)button.classList.add("is-selected");
     if(legal.some(move=>move.from===S.chessSelectedSquare&&move.to===square))button.classList.add(piece?"is-capture-target":"is-legal-target");
-    if(piece)button.append(el("span","chess-piece "+(piece===piece.toUpperCase()?"is-white":"is-black"),CHESS_GLYPHS[piece]||piece));
+    if(piece)button.append(createChessPieceIcon(piece));
     if(c===0)button.append(el("span","chess-coordinate rank",String(8-Math.floor(index/8))));
     if(r===7)button.append(el("span","chess-coordinate file","abcdefgh"[index%8]));
     button.disabled=!current||view.status!=="active";
@@ -3663,9 +3686,10 @@ function renderChessGame(){
   if(S.chessPendingPromotion){
     const panel=el("div","chess-promotion-panel");
     panel.append(el("strong","","Promote pawn to"));
-    [["q","♕","Queen"],["r","♖","Rook"],["b","♗","Bishop"],["n","♘","Knight"]].forEach(([piece,glyph,label])=>{
-      const button=el("button","chess-promotion-choice",glyph+" "+label);
-      button.type="button";button.addEventListener("click",()=>void performChessAction({type:"move",...S.chessPendingPromotion,promotion:piece}));
+    [["q","Queen"],["r","Rook"],["b","Bishop"],["n","Knight"]].forEach(([piece,label])=>{
+      const button=el("button","chess-promotion-choice");
+      button.type="button";button.append(createChessPieceIcon(piece,"chess-promotion-piece"),el("span","",label));
+      button.addEventListener("click",()=>void performChessAction({type:"move",...S.chessPendingPromotion,promotion:piece}));
       panel.append(button);
     });
     const cancel=el("button","game-card-action secondary","Cancel");cancel.type="button";cancel.addEventListener("click",()=>{S.chessPendingPromotion=null;renderChessGame();});panel.append(cancel);
