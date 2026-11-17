@@ -3826,36 +3826,68 @@ function battleshipCellLabel(cell){
   return "ABCDEFGHIJ"[cell%10]+(Math.floor(cell/10)+1);
 }
 function renderBattleshipBoard(title,fleet,shots,{revealShips=false,allowFire=false}={}){
-  const section=el("section","battleship-board-panel");
-  section.append(el("strong","battleship-board-title",title));
+  const section=el("section","battleship-board-panel"+(allowFire?" is-target-board":" is-friendly-board"));
+  const shotList=Array.isArray(shots)?shots:[];
+  const hits=shotList.filter(shot=>shot.outcome==="hit").length;
+  const header=el("div","battleship-board-header");
+  const heading=el("div","battleship-board-heading");
+  heading.append(el("small","battleship-board-eyebrow",allowFire?"TARGET ACQUISITION":"FLEET STATUS"));
+  heading.append(el("strong","battleship-board-title",title));
+  const stat=el("span","battleship-board-stat",shotList.length+" "+(shotList.length===1?"SHOT":"SHOTS"));
+  header.append(heading,stat);
+  section.append(header);
+
   const grid=el("div","battleship-board");
   grid.setAttribute("role","group");
-  grid.setAttribute("aria-label",title);
+  grid.setAttribute("aria-label",title+" coordinate grid");
+  grid.append(el("span","battleship-axis battleship-axis-corner",""));
+  "ABCDEFGHIJ".split("").forEach(letter=>grid.append(el("span","battleship-axis battleship-axis-column",letter)));
+
   const shipCells=new Set((Array.isArray(fleet)?fleet:[]).flatMap(ship=>ship.cells||[]));
-  const shotMap=new Map((Array.isArray(shots)?shots:[]).map(shot=>[shot.cell,shot]));
-  for(let cell=0;cell<100;cell++){
-    const shot=shotMap.get(cell),ship=revealShips&&shipCells.has(cell);
-    const button=el("button","battleship-cell");
-    button.type="button";
-    button.setAttribute("aria-label",battleshipCellLabel(cell)+(shot?(shot.outcome==="hit"?" hit":" miss"):ship?" ship":" water"));
-    if(ship)button.classList.add("is-ship");
-    if(shot){
-      button.classList.add(shot.outcome==="hit"?"is-hit":"is-miss");
-      if(shot.shipSunk)button.classList.add("is-sunk");
-      button.textContent=shot.outcome==="hit"?"×":"·";
-      button.disabled=true;
-    }else if(allowFire){
-      button.disabled=false;
-      button.addEventListener("click",()=>void performBattleshipAction({type:"fire",cell}));
-    }else{
-      button.disabled=true;
-      if(ship)button.textContent="•";
+  const shotMap=new Map(shotList.map(shot=>[shot.cell,shot]));
+  for(let row=0;row<10;row++){
+    grid.append(el("span","battleship-axis battleship-axis-row",String(row+1)));
+    for(let col=0;col<10;col++){
+      const cell=row*10+col;
+      const shot=shotMap.get(cell),ship=revealShips&&shipCells.has(cell);
+      const button=el("button","battleship-cell");
+      button.type="button";
+      button.setAttribute("data-cell",String(cell));
+      button.setAttribute("aria-label",battleshipCellLabel(cell)+(shot?(shot.outcome==="hit"?" hit":" miss"):ship?" ship":" water"));
+      if(ship)button.classList.add("is-ship");
+      if(shot){
+        button.classList.add(shot.outcome==="hit"?"is-hit":"is-miss");
+        if(shot.shipSunk)button.classList.add("is-sunk");
+        button.textContent=shot.outcome==="hit"?"×":"•";
+        button.disabled=true;
+      }else if(allowFire){
+        button.classList.add("is-targetable");
+        button.disabled=false;
+        button.title="Fire at "+battleshipCellLabel(cell);
+        button.addEventListener("click",()=>void performBattleshipAction({type:"fire",cell}));
+      }else{
+        button.disabled=true;
+        if(ship)button.textContent="";
+      }
+      grid.append(button);
     }
-    grid.append(button);
   }
-  section.append(grid);
+  const shell=el("div","battleship-board-shell");
+  shell.append(grid);
+  section.append(shell);
+  const legend=el("div","battleship-board-legend");
+  const legendItems=allowFire
+    ? [["is-hit","Hit"],["is-miss","Miss"],["is-target","Unsearched"]]
+    : [["is-ship","Your ship"],["is-hit","Hit received"],["is-miss","Miss"]];
+  legendItems.forEach(([kind,label])=>{
+    const item=el("span","battleship-legend-item");
+    item.append(el("i","battleship-legend-swatch "+kind),el("span","",label));
+    legend.append(item);
+  });
+  section.append(legend);
   return section;
 }
+
 async function performBattleshipAction(action){
   const view=S.activeGameView,matchId=S.activeGameId;
   if(!view||!matchId)return;
@@ -3881,85 +3913,140 @@ async function performBattleshipAction(action){
 function renderBattleshipGame(){
   const view=S.activeGameView,content=$("uno-game-content");
   content.replaceChildren();
-  if(!view){content.append(el("p","muted","Loading your game…"));return;}
+  content.classList.add("battleship-mode");
+  const ui=el("div","battleship-game-ui");
+  content.append(ui);
+  if(!view){
+    ui.append(el("div","battleship-waiting-card", "Loading your fleet briefing…"));
+    return;
+  }
   if(view.status==="invited"){
     $("uno-game-status").textContent="Waiting for players";
-    content.append(el("p","uno-waiting-title","Waiting for both players to accept"));
-    content.append(el("p","muted","Battleship is a two-player conversation game."));
+    const waiting=el("section","battleship-waiting-card");
+    waiting.append(el("span","battleship-waiting-mark","⌁"),el("small","battleship-board-eyebrow","MATCH SETUP"),el("strong","","Waiting for both players to accept"),el("p","","Battleship is a two-player conversation game. Your command deck will be ready when both players join."));
+    ui.append(waiting);
     return;
   }
   if(view.status==="cancelled"){
     $("uno-game-status").textContent="Invitation closed";
-    content.append(el("p","uno-waiting-title","This Battleship invitation was closed."));
+    const waiting=el("section","battleship-waiting-card");
+    waiting.append(el("span","battleship-waiting-mark","×"),el("strong","","This Battleship invitation was closed."));
+    ui.append(waiting);
     return;
   }
   if(!view.initialized){
     $("uno-game-status").textContent="Preparing match";
-    content.append(el("p","uno-waiting-title",view.currentTurnUserId===S.user.id?"Setting up Battleship…":"Waiting for the first player to start"));
+    const waiting=el("section","battleship-waiting-card");
+    waiting.append(el("span","battleship-waiting-mark","⌁"),el("small","battleship-board-eyebrow","INITIALIZING"),el("strong","",view.currentTurnUserId===S.user.id?"Preparing your fleet…":"Waiting for the first player to start"),el("p","","The battle map is being prepared."));
+    ui.append(waiting);
     return;
   }
+
   const state=view.publicState||{};
   const order=Array.isArray(state.playerOrder)?state.playerOrder:[];
   const current=view.currentTurnUserId===S.user.id;
   const winner=state.winnerId;
-  const playerStrip=el("div","battleship-player-strip");
-  order.forEach((userId,index)=>{
-    const chip=el("div","chess-player-chip"+(userId===view.currentTurnUserId?" is-current":"")+(userId===S.user.id?" is-you":""));
-    chip.append(el("span","",gamePlayerName(userId,index)),el("small","",userId===S.user.id?"You":userId===view.currentTurnUserId?"To move":"Opponent"));
-    playerStrip.append(chip);
-  });
-  content.append(playerStrip);
-  if(view.status==="completed"){
-    content.append(el("div","chess-result-panel",winner===S.user.id?"You won the Battleship match!":"The Battleship match is over."));
-    const close=el("button","game-card-action primary","Return to conversation");
-    close.type="button";close.addEventListener("click",closeUnoGame);content.append(close);
-  }
   const incoming=Array.isArray(view.incomingShots)?view.incomingShots:[];
   const outgoing=Array.isArray(view.outgoingShots)?view.outgoingShots:[];
   const ownFleet=Array.isArray(view.ownFleet)?view.ownFleet:null;
+  const phaseName=state.stage==="placement"?"Fleet deployment":state.stage==="completed"?"Mission complete":"Battle stations";
+  const phaseDescription=state.stage==="placement"
+    ? (ownFleet?"Your fleet is deployed. Hold position while the opposing fleet finishes setup.":"Review your formation, randomize it until you are satisfied, then deploy.")
+    : state.stage==="completed"?"The engagement has ended. Review the final tactical map below.":current?"Your move. Select a coordinate in the opposing waters to launch a strike.":"Your fleet is holding position. Waiting for the opposing commander to fire.";
+
+  const phase=el("section","battleship-phase-banner"+(current&&state.stage==="battle"?" is-your-turn":""));
+  const emblem=el("div","battleship-phase-emblem","⌁");
+  const phaseCopy=el("div","battleship-phase-copy");
+  phaseCopy.append(el("small","battleship-board-eyebrow","GATHER NAVAL COMMAND"),el("strong","",phaseName),el("p","",phaseDescription));
+  const phaseBadge=el("span","battleship-phase-badge",state.stage==="placement"?(ownFleet?"DEPLOYED":"SETUP"):state.stage==="completed"?"COMPLETE":current?"YOUR TURN":"OPPONENT TURN");
+  phase.append(emblem,phaseCopy,phaseBadge);
+  ui.append(phase);
+
+  const playerStrip=el("div","battleship-player-strip");
+  order.forEach((userId,index)=>{
+    const active=userId===view.currentTurnUserId;
+    const isYou=userId===S.user.id;
+    const name=gamePlayerName(userId,index);
+    const card=el("div","battleship-player-card"+(active?" is-current":"")+(isYou?" is-you":""));
+    card.append(el("span","battleship-player-mark",String(name||"P").trim().charAt(0).toUpperCase()));
+    const details=el("span","battleship-player-details");
+    details.append(el("strong","",name),el("small","",isYou?"Your fleet":active?"Commanding turn":"Opposing fleet"));
+    card.append(details,el("span","battleship-player-state",active?(isYou?"YOUR TURN":"ACTIVE"):isYou?"YOU":"READY"));
+    playerStrip.append(card);
+  });
+  ui.append(playerStrip);
+
   if(state.stage==="placement"){
     if(ownFleet){
       $("uno-game-status").textContent="Fleet deployed · waiting for opponent";
-      content.append(el("p","battleship-hint","Your fleet is deployed. Waiting for the other player to finish their setup."));
-      content.append(renderBattleshipBoard("Your fleet",ownFleet,incoming,{revealShips:true}));
+      ui.append(renderBattleshipBoard("Your fleet",ownFleet,incoming,{revealShips:true}));
     }else{
       $("uno-game-status").textContent="Deploy your fleet";
       if(!Array.isArray(S.battleshipDraftFleet))S.battleshipDraftFleet=renderBattleshipFleetRandomly();
-      content.append(el("p","battleship-hint","Your ships are placed automatically. Randomize until you like the layout, then deploy."));
-      content.append(renderBattleshipBoard("Your fleet preview",S.battleshipDraftFleet.map((cells,index)=>({type:"draft-"+index,length:cells.length,cells})),incoming,{revealShips:true}));
+      ui.append(renderBattleshipBoard("Fleet preview",S.battleshipDraftFleet.map((cells,index)=>({type:"draft-"+index,length:cells.length,cells})),incoming,{revealShips:true}));
       const controls=el("div","battleship-controls");
-      const randomize=el("button","game-card-action secondary","Randomize fleet");
-      randomize.type="button";randomize.addEventListener("click",()=>{S.battleshipDraftFleet=renderBattleshipFleetRandomly();renderBattleshipGame();});
-      const deploy=el("button","game-card-action primary","Deploy fleet");
-      deploy.type="button";deploy.addEventListener("click",()=>void performBattleshipAction({type:"place_fleet",fleet:S.battleshipDraftFleet}));
-      controls.append(randomize,deploy);content.append(controls);
+      const randomize=el("button","game-card-action secondary battleship-control-button","↻  Randomize fleet");
+      randomize.type="button";
+      randomize.addEventListener("click",()=>{S.battleshipDraftFleet=renderBattleshipFleetRandomly();renderBattleshipGame();});
+      const deploy=el("button","game-card-action primary battleship-control-button battleship-deploy-button","Deploy fleet  →");
+      deploy.type="button";
+      deploy.addEventListener("click",()=>void performBattleshipAction({type:"place_fleet",fleet:S.battleshipDraftFleet}));
+      controls.append(randomize,deploy);
+      ui.append(controls);
     }
     const readyCount=Array.isArray(state.readyPlayerIds)?state.readyPlayerIds.length:0;
-    content.append(el("p","battleship-hint",readyCount+" of 2 fleets deployed."));
+    const progress=el("section","battleship-ready-status");
+    const progressHead=el("div","battleship-ready-head");
+    progressHead.append(el("strong","","Fleet readiness"),el("span","",readyCount+" / 2 deployed"));
+    const meter=el("div","battleship-ready-meter");
+    for(let i=0;i<2;i++)meter.append(el("span",i<readyCount?"is-filled":""));
+    progress.append(progressHead,meter);
+    ui.append(progress);
     return;
   }
+
   if(state.stage==="battle"){
     $("uno-game-status").textContent=current?"Your turn · choose a square":"Waiting for "+gamePlayerName(view.currentTurnUserId,0);
-    content.append(el("p","battleship-hint",current?"Choose one square on your opponent's board.":"Your opponent is choosing a square."));
+    const stats=el("div","battleship-stat-strip");
+    [
+      ["Shots fired",outgoing.length],
+      ["Hits landed",outgoing.filter(shot=>shot.outcome==="hit").length],
+      ["Ships sunk",state.sunkShipsByPlayer?.[S.user.id]||0]
+    ].forEach(([label,value])=>{
+      const item=el("div","battleship-stat-card");
+      item.append(el("small","",label),el("strong","",String(value)));
+      stats.append(item);
+    });
+    ui.append(stats);
     const boards=el("div","battleship-boards");
     boards.append(renderBattleshipBoard("Your fleet",ownFleet||[],incoming,{revealShips:true}));
     boards.append(renderBattleshipBoard("Opponent waters",[],outgoing,{allowFire:current}));
-    content.append(boards);
-    const controls=el("div","battleship-controls");
+    ui.append(boards);
     if(current){
-      const resign=el("button","game-card-action secondary","Resign");
-      resign.type="button";resign.addEventListener("click",()=>{if(window.confirm("Resign this Battleship match?"))void performBattleshipAction({type:"resign"});});
+      const controls=el("div","battleship-controls");
+      const resign=el("button","game-card-action secondary battleship-control-button","Resign match");
+      resign.type="button";
+      resign.addEventListener("click",()=>{if(window.confirm("Resign this Battleship match?"))void performBattleshipAction({type:"resign"});});
       controls.append(resign);
+      ui.append(controls);
     }
-    if(controls.childNodes.length)content.append(controls);
-    const sunk=state.sunkShipsByPlayer?.[S.user.id]||0;
-    content.append(el("p","battleship-hint","Ships sunk: "+sunk+" of 5."));
-  }else if(state.stage==="completed"){
+    return;
+  }
+
+  if(state.stage==="completed"||view.status==="completed"){
     $("uno-game-status").textContent=winner===S.user.id?"Victory":"Match complete";
+    const won=winner===S.user.id;
+    const result=el("section","battleship-result-banner"+(won?" is-victory":""));
+    result.append(el("small","battleship-board-eyebrow","AFTER-ACTION REPORT"),el("strong","",won?"Victory — fleet eliminated":"Engagement complete"),el("p","",winner? (won?"You outmaneuvered the opposing fleet.":"The opposing fleet won this engagement."):"The match has ended."));
+    ui.append(result);
     const boards=el("div","battleship-boards");
     boards.append(renderBattleshipBoard("Your fleet",ownFleet||[],incoming,{revealShips:true}));
     boards.append(renderBattleshipBoard("Opponent waters",[],outgoing));
-    content.append(boards);
+    ui.append(boards);
+    const close=el("button","game-card-action primary battleship-control-button","Return to conversation");
+    close.type="button";
+    close.addEventListener("click",closeUnoGame);
+    ui.append(close);
   }
 }
 
@@ -3967,6 +4054,7 @@ function renderUnoGame(){
   const view=S.activeGameView,content=$("uno-game-content");
   if(view?.gameKey==="chess"){renderChessGame();return;}
   if(view?.gameKey==="battleship"){renderBattleshipGame();return;}
+  content.classList.remove("battleship-mode");
   content.replaceChildren();
   if(!view){content.append(el("p","muted","Loading your game…"));return;}
   if(view.status==="invited"){
