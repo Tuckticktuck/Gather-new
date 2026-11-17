@@ -3377,7 +3377,7 @@ function subscribeGameMatches(conversationId){
   S.gameChannel=db.channel("gather-game-matches-"+conversationId)
     .on("postgres_changes",{event:"*",schema:"public",table:"game_matches",filter:"conversation_id=eq."+conversationId},()=>{
       void loadGameCards(conversationId);
-      if(S.activeGameId&&S.active===conversationId)void loadUnoGameView();
+      if(S.activeGameId&&S.active===conversationId)void loadActiveGameView();
     })
     .subscribe();
 }
@@ -3388,9 +3388,11 @@ function renderGameMessageCard(message){
   const me=players.find(player=>player.user_id===S.user?.id);
   const card=el("section","gather-game-message");
   const heading=el("div","gather-game-message-heading");
-  const mark=el("span","gather-game-message-mark","U");
+  const gameKey=match?.game_key||"uno";
+  const gameTitle=gameKey==="chess"?"Chess":"UNO";
+  const mark=el("span","gather-game-message-mark",gameKey==="chess"?"♟":"U");
   const copy=el("div","gather-game-message-copy");
-  copy.append(el("strong","","UNO"),el("small","","Conversation game"));
+  copy.append(el("strong","",gameTitle),el("small","","Conversation game"));
   heading.append(mark,copy);
   card.append(heading);
   if(!match){
@@ -3416,8 +3418,8 @@ function renderGameMessageCard(message){
   }else if(match.status==="invited"){
     actions.append(el("span","gather-game-waiting","Waiting for everyone to respond"));
   }else if(match.status==="active"&&me?.response==="accepted"){
-    const open=el("button","game-card-action primary","Open UNO");
-    open.type="button";open.addEventListener("click",event=>{event.stopPropagation();void openUnoGame(match.id);});
+    const open=el("button","game-card-action primary","Open "+gameTitle);
+    open.type="button";open.addEventListener("click",event=>{event.stopPropagation();void openGameMatch(match.id);});
     actions.append(open);
   }else if(match.status==="completed"){
     const winner=match.state?.winnerId;
@@ -3450,6 +3452,20 @@ async function createUnoInvitation(){
   await loadMessages(S.active);
   await loadGameCards(S.active);
 }
+async function createChessInvitation(){
+  if(!S.active)return;
+  const button=$("game-picker-chess");
+  button.disabled=true;
+  status("game-picker-status","Sending the Chess invitation…");
+  const result=await db.rpc("create_game_invitation",{p_conversation_id:S.active,p_game_key:"chess"});
+  button.disabled=false;
+  if(result.error){status("game-picker-status",result.error.message,"error");return;}
+  $("game-picker-modal").hidden=true;
+  toast("Chess invitation sent to the conversation.");
+  await loadMessages(S.active);
+  await loadGameCards(S.active);
+}
+
 async function respondToUnoInvitation(matchId,responseValue){
   if(!S.user||S.gameRespondingIds.has(matchId))return;
   const conversationId=S.active;
@@ -3462,7 +3478,7 @@ async function respondToUnoInvitation(matchId,responseValue){
     const updatedMatch=S.gameMatches[matchId];
     const isActive=updatedMatch?.status==="active"||result.data?.status==="active";
     if(responseValue==="accepted"&&isActive){
-      await openUnoGame(matchId);
+      await openGameMatch(matchId);
     }else if(responseValue==="accepted"){
       toast("UNO invitation accepted. Waiting for the other invited players to respond.");
     }else{
@@ -3479,17 +3495,17 @@ async function respondToUnoInvitation(matchId,responseValue){
 }
 function closeUnoGame(){
   $("game-overlay").hidden=true;
-  S.activeGameId=null;S.activeGameView=null;S.unoCallPending=false;S.unoSelectedCardId=null;S.unoInitializing=false;
+  S.activeGameId=null;S.activeGameView=null;S.unoCallPending=false;S.unoSelectedCardId=null;S.unoInitializing=false;S.chessSelectedSquare=null;S.chessPendingPromotion=null;
 }
-async function openUnoGame(matchId){
-  S.activeGameId=matchId;S.activeGameView=null;S.unoCallPending=false;S.unoSelectedCardId=null;
+async function openGameMatch(matchId){
+  S.activeGameId=matchId;S.activeGameView=null;S.unoCallPending=false;S.unoSelectedCardId=null;S.chessSelectedSquare=null;S.chessPendingPromotion=null;
   $("game-overlay").hidden=false;
-  $("uno-game-title").textContent="UNO";
+  $("uno-game-title").textContent=S.gameMatches[matchId]?.game_key==="chess"?"Chess":"UNO";
   $("uno-game-status").textContent="Loading match…";
   $("uno-game-content").replaceChildren(el("p","muted","Loading your game…"));
-  await loadUnoGameView();
+  await loadActiveGameView();
 }
-async function loadUnoGameView(){
+async function loadActiveGameView(){
   const matchId=S.activeGameId;
   if(!matchId||!S.user)return;
   const requestId=++S.gameViewRequest;
@@ -3502,7 +3518,8 @@ async function loadUnoGameView(){
     return;
   }
   S.activeGameView=result.data;
-  renderUnoGame();
+  $("uno-game-title").textContent=result.data.gameKey==="chess"?"Chess":"UNO";
+  if(result.data.gameKey==="chess")renderChessGame();else renderUnoGame();
   const view=result.data;
   if(view.status==="active"&&!view.initialized&&view.currentTurnUserId===S.user.id&&!S.unoInitializing){
     S.unoInitializing=true;
@@ -3515,7 +3532,7 @@ async function loadUnoGameView(){
       $("uno-game-status").textContent="Could not start the match";
       $("uno-game-content").append(el("p","game-service-error",started.error.message||"The match could not be initialized."));
     }else{
-      await loadUnoGameView();
+      await loadActiveGameView();
     }
   }
 }
@@ -3529,11 +3546,11 @@ async function performUnoAction(action){
   });
   if(result.error){
     toast(result.error.message||"That UNO move could not be saved.");
-    await loadUnoGameView();
+    await loadActiveGameView();
     return;
   }
   S.unoSelectedCardId=null;S.unoCallPending=false;
-  await loadUnoGameView();
+  await loadActiveGameView();
   if(S.active)await loadGameCards(S.active);
 }
 function unoCardLabel(card){
@@ -3544,8 +3561,128 @@ function unoCardLabel(card){
   if(card.value==="wild4")return "+4";
   return card.value;
 }
+
+const CHESS_GLYPHS={K:"♔",Q:"♕",R:"♖",B:"♗",N:"♘",P:"♙",k:"♚",q:"♛",r:"♜",b:"♝",n:"♞",p:"♟"};
+function chessSquareName(index){return "abcdefgh"[index%8]+(8-Math.floor(index/8));}
+async function performChessAction(action){
+  const view=S.activeGameView,matchId=S.activeGameId;
+  if(!view||!matchId||view.currentTurnUserId!==S.user.id)return;
+  const content=$("uno-game-content");
+  content.querySelectorAll("button").forEach(button=>button.disabled=true);
+  const result=await db.functions.invoke("gather-game-action",{body:{matchId,expectedVersion:Number(view.version),action}});
+  if(result.error){toast(result.error.message||"That Chess move could not be saved.");await loadActiveGameView();return;}
+  S.chessSelectedSquare=null;S.chessPendingPromotion=null;
+  await loadActiveGameView();
+  if(S.active)await loadGameCards(S.active);
+}
+function renderChessGame(){
+  const view=S.activeGameView,content=$("uno-game-content");
+  content.replaceChildren();
+  if(!view){content.append(el("p","muted","Loading your game…"));return;}
+  if(view.status==="invited"){
+    $("uno-game-status").textContent="Waiting for players";
+    content.append(el("p","uno-waiting-title","Waiting for everyone to respond"));
+    content.append(el("p","muted","Chess will begin once both players have accepted."));
+    return;
+  }
+  if(view.status==="cancelled"){
+    $("uno-game-status").textContent="Invitation closed";
+    content.append(el("p","uno-waiting-title","This Chess invitation was closed."));
+    return;
+  }
+  if(!view.initialized){
+    $("uno-game-status").textContent="Preparing match";
+    content.append(el("p","uno-waiting-title",view.currentTurnUserId===S.user.id?"Setting up the Chess board…":"Waiting for the first player to start"));
+    return;
+  }
+  const state=view.publicState||{};
+  const white=state.whiteUserId,black=state.blackUserId;
+  const current=view.currentTurnUserId===S.user.id;
+  const side= S.user.id===white?"White":"Black";
+  const turnSide=state.turn==="w"?"White":"Black";
+  const winner=state.winnerId;
+  $("uno-game-status").textContent=view.status==="completed"?(winner?gamePlayerName(winner,0)+" won":"Draw"):current?"Your turn · "+side:"Waiting for "+turnSide;
+  const players=el("div","chess-player-strip");
+  [[white,"White","♔"],[black,"Black","♚"]].forEach(([id,label,glyph])=>{
+    const chip=el("div","chess-player-chip"+(id===view.currentTurnUserId?" is-current":"")+(id===S.user.id?" is-you":""));
+    chip.append(el("span","chess-player-piece",glyph),el("span","",gamePlayerName(id,id===white?0:1)),el("small","",id===view.currentTurnUserId?"To move":label));
+    players.append(chip);
+  });
+  content.append(players);
+  if(view.status==="completed"){
+    const resultText=state.result==="checkmate"?"Checkmate":state.result==="stalemate"?"Stalemate":state.result==="resignation"?"Resignation":"Draw";
+    content.append(el("div","chess-result-panel",resultText+(winner?" · "+gamePlayerName(winner,0)+" wins":"")));
+    const close=el("button","game-card-action primary","Return to conversation");
+    close.type="button";close.addEventListener("click",closeUnoGame);content.append(close);return;
+  }
+  if(state.check)content.append(el("div","chess-check-banner","Check"));
+  const boardWrap=el("section","chess-board-wrap");
+  const board=el("div","chess-board");
+  const legal=Array.isArray(state.legalMoves)?state.legalMoves:[];
+  for(let r=0;r<8;r++)for(let c=0;c<8;c++){
+    const index=r*8+c,square=chessSquareName(index),piece=state.board?.[index]||null;
+    const button=el("button","chess-square "+((r+c)%2===0?"is-light":"is-dark"));
+    button.type="button";
+    button.setAttribute("aria-label",square+(piece?" "+(CHESS_GLYPHS[piece]||"piece"):" empty"));
+    if(state.lastMove&&(state.lastMove.from===square||state.lastMove.to===square))button.classList.add("is-last-move");
+    if(S.chessSelectedSquare===square)button.classList.add("is-selected");
+    if(legal.some(move=>move.from===S.chessSelectedSquare&&move.to===square))button.classList.add(piece?"is-capture-target":"is-legal-target");
+    if(piece)button.append(el("span","chess-piece "+(piece===piece.toUpperCase()?"is-white":"is-black"),CHESS_GLYPHS[piece]||piece));
+    if(c===0)button.append(el("span","chess-coordinate rank",String(8-r)));
+    if(r===7)button.append(el("span","chess-coordinate file","abcdefgh"[c]));
+    button.disabled=!current||view.status!=="active";
+    button.addEventListener("click",()=>{
+      if(!current)return;
+      if(S.chessSelectedSquare){
+        const from=S.chessSelectedSquare;
+        const choices=legal.filter(move=>move.from===from&&move.to===square);
+        if(choices.length){
+          if(choices.some(move=>move.promotion)){
+            S.chessPendingPromotion={from,to:square};renderChessGame();return;
+          }
+          void performChessAction({type:"move",from,to:square});return;
+        }
+      }
+      const own=piece&&(piece===piece.toUpperCase()?S.user.id===white:S.user.id===black);
+      S.chessSelectedSquare=own?square:null;S.chessPendingPromotion=null;renderChessGame();
+    });
+    board.append(button);
+  }
+  boardWrap.append(board);
+  content.append(boardWrap);
+  if(S.chessPendingPromotion){
+    const panel=el("div","chess-promotion-panel");
+    panel.append(el("strong","","Promote pawn to"));
+    [["q","♕","Queen"],["r","♖","Rook"],["b","♗","Bishop"],["n","♘","Knight"]].forEach(([piece,glyph,label])=>{
+      const button=el("button","chess-promotion-choice",glyph+" "+label);
+      button.type="button";button.addEventListener("click",()=>void performChessAction({type:"move",...S.chessPendingPromotion,promotion:piece}));
+      panel.append(button);
+    });
+    const cancel=el("button","game-card-action secondary","Cancel");cancel.type="button";cancel.addEventListener("click",()=>{S.chessPendingPromotion=null;renderChessGame();});panel.append(cancel);
+    content.append(panel);
+  }
+  const lower=el("div","chess-lower-panel");
+  const history=el("section","chess-history");
+  history.append(el("strong","","Move history"));
+  const moves=Array.isArray(state.moveHistory)?state.moveHistory:[];
+  if(!moves.length)history.append(el("p","muted","The game has not started moving yet."));
+  else{
+    const list=el("ol","chess-history-list");
+    moves.slice(-12).forEach(move=>list.append(el("li","",move.from+" → "+move.to+(move.promotion?" = "+move.promotion.toUpperCase():""))));
+    history.append(list);
+  }
+  lower.append(history);
+  if(current){
+    const resign=el("button","game-card-action secondary chess-resign","Resign");
+    resign.type="button";resign.addEventListener("click",()=>{if(window.confirm("Resign this Chess match?"))void performChessAction({type:"resign"});});
+    lower.append(resign);
+  }
+  content.append(lower);
+}
+
 function renderUnoGame(){
   const view=S.activeGameView,content=$("uno-game-content");
+  if(view?.gameKey==="chess"){renderChessGame();return;}
   content.replaceChildren();
   if(!view){content.append(el("p","muted","Loading your game…"));return;}
   if(view.status==="invited"){
@@ -3677,7 +3814,7 @@ function renderUnoGame(){
   content.append(handSection);
 }
 
-function messagePreviewText(m){const gameId=gameMatchIdFromMessage(m);return gameId?"UNO game invitation":(m?.body||(m?.attachment_path?"Photo":"Message"));}
+function messagePreviewText(m){const gameId=gameMatchIdFromMessage(m);return gameId?"Game invitation":(m?.body||(m?.attachment_path?"Photo":"Message"));}
 async function loadMessagePolls(cid,ids){
   ids=[...new Set((ids||[]).filter(Boolean))];if(!S.user||S.active!==cid||!ids.length)return;
   const p=await db.from("message_polls").select("id,message_id,conversation_id,created_by,question,created_at").eq("conversation_id",cid).in("message_id",ids);
@@ -6306,7 +6443,7 @@ document.querySelectorAll("[data-folder]").forEach(b=>b.addEventListener("click"
   $("message-undo").addEventListener("click",undoLastSend);
   $("message-undo-bar").addEventListener("click",dismissUndoNotice,true);
   $("message-image-file").addEventListener("change",handleMessageImageFile);$("composer-more-trigger").addEventListener("click",event=>{event.stopPropagation();toggleComposerMoreMenu();});
-  $("game-picker-open").addEventListener("click",openGamePicker);$("game-picker-uno").addEventListener("click",createUnoInvitation);$("game-overlay-close").addEventListener("click",closeUnoGame);$("composer-more-menu").addEventListener("click",event=>event.stopPropagation());$("message-create-poll").addEventListener("click",openPollComposer);$("poll-form").addEventListener("submit",submitPoll);$("poll-add-option").addEventListener("click",addPollOptionInput);$("poll-cancel").addEventListener("click",()=>$("poll-create-modal").hidden=true);$("saved-messages-open").addEventListener("click",openSavedMessages);document.addEventListener("click",event=>{const wrap=$("composer-more-wrap");if(wrap&&!wrap.contains(event.target))closeComposerMoreMenu();if(S.openReactionPickerMessageId&&!event.target.closest(".message-reaction-area")){S.openReactionPickerMessageId=null;if(S.active)renderMessages(true);}});
+  $("game-picker-open").addEventListener("click",openGamePicker);$("game-picker-uno").addEventListener("click",createUnoInvitation);$("game-picker-chess").addEventListener("click",createChessInvitation);$("game-overlay-close").addEventListener("click",closeUnoGame);$("composer-more-menu").addEventListener("click",event=>event.stopPropagation());$("message-create-poll").addEventListener("click",openPollComposer);$("poll-form").addEventListener("submit",submitPoll);$("poll-add-option").addEventListener("click",addPollOptionInput);$("poll-cancel").addEventListener("click",()=>$("poll-create-modal").hidden=true);$("saved-messages-open").addEventListener("click",openSavedMessages);document.addEventListener("click",event=>{const wrap=$("composer-more-wrap");if(wrap&&!wrap.contains(event.target))closeComposerMoreMenu();if(S.openReactionPickerMessageId&&!event.target.closest(".message-reaction-area")){S.openReactionPickerMessageId=null;if(S.active)renderMessages(true);}});
   $("message").addEventListener("input",e=>{e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,120)+"px";updateLocalTyping();saveActiveChatDraft();updateComposerSendState();});
   $("message").addEventListener("blur",()=>stopTyping(true));
   $("conversation-sidebar-collapse").addEventListener("click",()=>{
