@@ -4039,14 +4039,21 @@ function renderUnoGame(){
   const handSection=el("section","uno-hand-section");
   handSection.append(el("div","uno-hand-heading","Your hand"));
   const cards=el("div","uno-hand");
-  hand.forEach(card=>{
-    const playable=current&&!state.pendingDraw&&(!view.drawnCardId||view.drawnCardId===card.id);
+  hand.forEach((card,index)=>{
+    const matchesColor=card.color===state.currentColor;
+    const matchesValue=card.value===state.discardTop?.value;
+    const isWild=card.value==="wild";
+    const wild4Allowed=state.houseRules?.wild4Anytime===true||!hand.some(other=>other.id!==card.id&&other.color===state.currentColor);
+    const matchesRule=isWild||matchesColor||matchesValue||(card.value==="wild4"&&wild4Allowed);
+    const playable=current&&!state.pendingDraw&&(!view.drawnCardId||view.drawnCardId===card.id)&&matchesRule;
     const button=el("button","uno-card uno-card-hand uno-card-"+(card.color||"wild"));
     const label=el("span","uno-card-face-label",unoCardLabel(card));
     button.append(label);
     button.type="button";button.disabled=!playable;
-    button.setAttribute("aria-label",card.value+" card"+(card.color?" "+card.color:""));
+    button.style.zIndex=String(index+1);
+    button.setAttribute("aria-label",card.value+" card"+(card.color?" "+card.color:"")+(playable?", playable":", not playable"));
     button.setAttribute("aria-pressed",String(S.unoSelectedCardId===card.id));
+    if(!playable)button.classList.add("is-unplayable");
     if(view.drawnCardId===card.id)button.classList.add("is-drawn");
     if(S.unoSelectedCardId===card.id)button.classList.add("is-selected");
     button.addEventListener("click",()=>{
