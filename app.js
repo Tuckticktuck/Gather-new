@@ -30,7 +30,7 @@ function normalizeChatSettings(raw){
   });
   return {pinned,muted,drafts,appearance};
 }
-const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", inChatFilterType:"all", inChatMessageMatches:new Set(), inChatSearchRequestId:0, inChatSearchTimer:null, editingMessageId:null, editDraft:"", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], favoriteFriendIds:new Set(), archivedConversationIds:new Set(), blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), deletedConversationId:null, selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingUndoSend:null, undoSendTimer:null, undoCountdownInterval:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null,textSelectionMessageId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, homeSearchQuery:"", homeSearchTab:"messages", homeSearchMessages:[], homeSearchProfiles:[], homeSearchLoading:false, homeSearchErrors:{messages:"",profiles:""}, homeSearchTimer:null, homeSearchRequestId:0, directStatus:null, directStatusCache:new Map(), directStatusChecks:new Map(), groupMessageStatus:null, ageStatus:null, ageChangeStatus:null, ageRequestChannel:null, messageRestriction:null, messageRestrictionLoaded:false, messageRestrictionError:"", messageRestrictionChannel:null, messageRestrictionTimer:null, active:null, messages:[], gameMatches:{}, gameMatchPlayers:{}, gameChannel:null, gameCardsLoading:false, gameCardsRefreshPending:false, activeGameId:null, activeGameView:null, gameViewRequest:0, unoInitializing:false, unoCallPending:false, unoSelectedCardId:null, initialChatScrollLockId:null, channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), friendPresenceRetryTimers:new Map(), friendPresenceRetryAttempts:new Map(), ownPresenceChannel:null, ownPresenceRetryTimer:null, ownPresenceRetryAttempt:0, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],intergroupRequests:[],ageChangeRequests:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
+const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", inChatFilterType:"all", inChatMessageMatches:new Set(), inChatSearchRequestId:0, inChatSearchTimer:null, editingMessageId:null, editDraft:"", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], favoriteFriendIds:new Set(), archivedConversationIds:new Set(), blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), deletedConversationId:null, selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingUndoSend:null, undoSendTimer:null, undoCountdownInterval:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null,textSelectionMessageId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, homeSearchQuery:"", homeSearchTab:"messages", homeSearchMessages:[], homeSearchProfiles:[], homeSearchLoading:false, homeSearchErrors:{messages:"",profiles:""}, homeSearchTimer:null, homeSearchRequestId:0, directStatus:null, directStatusCache:new Map(), directStatusChecks:new Map(), groupMessageStatus:null, ageStatus:null, ageChangeStatus:null, ageRequestChannel:null, messageRestriction:null, messageRestrictionLoaded:false, messageRestrictionError:"", messageRestrictionChannel:null, messageRestrictionTimer:null, active:null, messages:[], gameMatches:{}, gameMatchPlayers:{}, gameRespondingIds:new Set(), gameChannel:null, gameCardsLoading:false, gameCardsRefreshPending:false, activeGameId:null, activeGameView:null, gameViewRequest:0, unoInitializing:false, unoCallPending:false, unoSelectedCardId:null, initialChatScrollLockId:null, channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), friendPresenceRetryTimers:new Map(), friendPresenceRetryAttempts:new Map(), ownPresenceChannel:null, ownPresenceRetryTimer:null, ownPresenceRetryAttempt:0, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],intergroupRequests:[],ageChangeRequests:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function appendSafeText(parent,value){
@@ -3396,8 +3396,9 @@ function renderGameMessageCard(message){
   card.append(el("p","gather-game-message-status",statusText));
   const actions=el("div","gather-game-message-actions");
   if(match.status==="invited"&&me?.response==="invited"){
-    const accept=el("button","game-card-action primary","Accept");
-    accept.type="button";accept.addEventListener("click",event=>{event.stopPropagation();void respondToUnoInvitation(match.id,"accepted");});
+    const accepting=S.gameRespondingIds.has(match.id);
+    const accept=el("button","game-card-action primary",accepting?"Accepting…":"Accept");
+    accept.type="button";accept.disabled=accepting;accept.addEventListener("click",event=>{event.stopPropagation();void respondToUnoInvitation(match.id,"accepted");});
     const decline=el("button","game-card-action secondary","Decline");
     decline.type="button";decline.addEventListener("click",event=>{event.stopPropagation();void respondToUnoInvitation(match.id,"declined");});
     actions.append(accept,decline);
@@ -3439,11 +3440,31 @@ async function createUnoInvitation(){
   await loadGameCards(S.active);
 }
 async function respondToUnoInvitation(matchId,responseValue){
-  const result=await db.rpc("respond_to_game_invitation",{p_match_id:matchId,p_response:responseValue});
-  if(result.error){toast("Your UNO response could not be saved: "+result.error.message);return;}
-  await loadGameCards(S.active);
-  if(responseValue==="accepted"&&result.data?.status==="active")void openUnoGame(matchId);
-  else toast(responseValue==="accepted"?"You accepted the UNO invitation.":"You declined the UNO invitation.");
+  if(!S.user||S.gameRespondingIds.has(matchId))return;
+  const conversationId=S.active;
+  S.gameRespondingIds.add(matchId);
+  if(conversationId)renderMessages(true);
+  try{
+    const result=await db.rpc("respond_to_game_invitation",{p_match_id:matchId,p_response:responseValue});
+    if(result.error)throw result.error;
+    if(conversationId)await loadGameCards(conversationId);
+    const updatedMatch=S.gameMatches[matchId];
+    const isActive=updatedMatch?.status==="active"||result.data?.status==="active";
+    if(responseValue==="accepted"&&isActive){
+      await openUnoGame(matchId);
+    }else if(responseValue==="accepted"){
+      toast("UNO invitation accepted. Waiting for the other invited players to respond.");
+    }else{
+      toast("You declined the UNO invitation.");
+    }
+  }catch(error){
+    console.error("UNO invitation response failed:",error);
+    toast("Your UNO response could not be saved: "+(error?.message||"Please try again."));
+    if(conversationId)await loadGameCards(conversationId);
+  }finally{
+    S.gameRespondingIds.delete(matchId);
+    if(S.active===conversationId)renderMessages(true);
+  }
 }
 function closeUnoGame(){
   $("game-overlay").hidden=true;
