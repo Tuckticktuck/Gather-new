@@ -124,11 +124,11 @@ test("supports 20 players with a second deck and rejects 21", async () => {
 test("plays a matching card and records UNO when one card remains", async () => {
   const f = fixture([card("red:7", "red", "7"), card("blue:2", "blue", "2")],
     [card("yellow:1", "yellow", "1")]);
-  const result = await apply(f, actor, { type: "play", cardId: "red:7", callUno: true });
+  const result = await apply(f, actor, { type: "play", cardId: "red:7" });
   assert.equal(result.nextState.currentPlayerId, other);
   assert.equal(result.nextState.handCounts[actor], 1);
-  assert.equal(result.nextState.pendingUnoPlayerId, null);
-  assert.equal(result.eventPayload.calledUno, true);
+  assert.equal(result.nextState.pendingUnoPlayerId, actor);
+  assert.equal(result.eventPayload.calledUno, false);
   assert.equal(result.nextPrivateState.hands[actor][0].id, "blue:2");
 });
 
@@ -144,10 +144,38 @@ test("an uncalled UNO can be caught by the next player for a two-card penalty", 
   assert.equal(caught.nextTurnUserId, other);
 });
 
-test("rejects calling UNO when the play does not leave exactly one card", async () => {
-  const f = fixture([card("red:7", "red", "7"), card("red:8", "red", "8"), card("blue:2", "blue", "2")],
+test("UNO can be called after the card is played, even though the next player owns the turn", async () => {
+  const f = fixture([card("red:7", "red", "7"), card("blue:2", "blue", "2")],
     [card("yellow:1", "yellow", "1")]);
-  await assert.rejects(apply(f, actor, { type: "play", cardId: "red:7", callUno: true }), /leaves you with one card/);
+  const played = await apply(f, actor, { type: "play", cardId: "red:7" });
+  const callFixture = { state: played.nextState, privateState: played.nextPrivateState };
+  const called = await resolveGameAction({
+    engine: unoEngine,
+    match: {
+      status: "active",
+      state: callFixture.state,
+      private_state: callFixture.privateState,
+      version: 2,
+      current_turn_user_id: other,
+    },
+    actorId: actor,
+    players,
+    action: { type: "call_uno" },
+  });
+  assert.equal(called.eventType, "uno_called");
+  assert.equal(called.nextState.pendingUnoPlayerId, null);
+  assert.equal(called.nextTurnUserId, other);
+  assert.equal(called.nextPrivateState.hands[actor].length, 1);
+});
+
+test("calling UNO is rejected after the catch window has closed", async () => {
+  const f = fixture([card("red:7", "red", "7"), card("blue:2", "blue", "2")],
+    [card("yellow:1", "yellow", "1")]);
+  const played = await apply(f, actor, { type: "play", cardId: "red:7" });
+  const opponentDraws = await apply({ state: played.nextState, privateState: played.nextPrivateState },
+    other, { type: "draw" });
+  await assert.rejects(apply({ state: opponentDraws.nextState, privateState: opponentDraws.nextPrivateState },
+    actor, { type: "call_uno" }), /exactly one uncalled card/);
 });
 
 test("Wild Draw Four can be challenged when the player held the current color", async () => {
