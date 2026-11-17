@@ -1501,7 +1501,7 @@ function subscribeRequests(){
   S.requestChannel=db.channel("requests-"+uid)
     .on("postgres_changes",{event:"UPDATE",schema:"public",table:"profiles",filter:"id=eq."+uid},payload=>{
       const next=payload.new?.preferences;if(!next)return;
-      const changed=JSON.stringify(next)!==JSON.stringify(S.preferences);
+      const changed=next.accent!==S.preferences.accent||next.fontSize!==S.preferences.fontSize||next.messageNotificationMode!==S.preferences.messageNotificationMode||next.shareOnlineStatus!==S.preferences.shareOnlineStatus||next.unoCardPlayMode!==S.preferences.unoCardPlayMode;
       if(changed){S.profile.preferences=next;loadUIPreferences(next);syncOwnPresence();}
     })
     .on("postgres_changes",{event:"INSERT",schema:"public",table:"conversation_requests",filter:"recipient_id=eq."+uid},payload=>{
