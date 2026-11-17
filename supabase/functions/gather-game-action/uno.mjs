@@ -187,7 +187,9 @@ function applyUnoAction({ state, privateState, action, actorId, players, serverS
   const nextPrivateState = structuredClone(privateState);
   const hand = nextPrivateState.hands[actorId];
   if (!Array.isArray(hand)) throw new GameRuleError("Your UNO hand is unavailable.");
-  if (nextState.currentPlayerId !== actorId) throw new GameRuleError("It is not your turn.");
+  if (!["call_uno", "catch_uno"].includes(action.type) && nextState.currentPlayerId !== actorId) {
+    throw new GameRuleError("It is not your turn.");
+  }
 
   const order = nextState.playerOrder;
   const pendingDraw = nextState.pendingDraw;
@@ -197,13 +199,22 @@ function applyUnoAction({ state, privateState, action, actorId, players, serverS
   let eventType = "";
   let eventPayload = {};
 
-  if (action.type === "catch_uno") {
+  if (action.type === "call_uno") {
+    if (nextState.pendingUnoPlayerId !== actorId || hand.length !== 1) {
+      throw new GameRuleError("You can call UNO only while you have exactly one uncalled card.");
+    }
+    nextState.pendingUnoPlayerId = null;
+    nextTurnUserId = nextState.currentPlayerId;
+    eventType = "uno_called";
+    eventPayload = { playerId: actorId, cardsRemaining: 1 };
+  } else if (action.type === "catch_uno") {
     const targetId = nextState.pendingUnoPlayerId;
     if (!targetId || targetId === actorId || nextPrivateState.hands[targetId]?.length !== 1) {
       throw new GameRuleError("There is no uncalled UNO to catch.");
     }
     drawCards(nextPrivateState, targetId, 2);
     nextState.pendingUnoPlayerId = null;
+    nextTurnUserId = nextState.currentPlayerId;
     eventType = "uno_caught";
     eventPayload = { caughtPlayerId: targetId, penaltyCards: 2 };
   } else if (pendingDraw && action.type === "challenge") {
@@ -256,12 +267,6 @@ function applyUnoAction({ state, privateState, action, actorId, players, serverS
   } else if (action.type === "play") {
     clearPendingUno();
     if (typeof action.cardId !== "string") throw new GameRuleError("Choose a card from your hand.");
-    if (action.callUno !== undefined && typeof action.callUno !== "boolean") {
-      throw new GameRuleError("callUno must be true or false.");
-    }
-    if (action.callUno === true && hand.length !== 2) {
-      throw new GameRuleError("Call UNO only when this play leaves you with one card.");
-    }
     const cardIndex = hand.findIndex((card) => card.id === action.cardId);
     if (cardIndex < 0) throw new GameRuleError("That card is not in your hand.");
     const card = hand[cardIndex];
@@ -300,10 +305,7 @@ function applyUnoAction({ state, privateState, action, actorId, players, serverS
       nextStatus = "completed";
       nextTurnUserId = null;
     } else {
-      nextState.pendingUnoPlayerId = hand.length === 1 && action.callUno !== true ? actorId : null;
-      if (action.callUno !== undefined && typeof action.callUno !== "boolean") {
-        throw new GameRuleError("callUno must be true or false.");
-      }
+      nextState.pendingUnoPlayerId = hand.length === 1 ? actorId : null;
 
       let steps = 1;
       if (card.value === "skip") steps = 2;
@@ -329,7 +331,7 @@ function applyUnoAction({ state, privateState, action, actorId, players, serverS
       card: { id: card.id, color: card.color, value: card.value },
       chosenColor,
       cardsRemaining: hand.length,
-      calledUno: action.callUno === true,
+      calledUno: false,
     };
   } else {
     throw new GameRuleError("Unsupported UNO action.");
@@ -349,6 +351,11 @@ function applyUnoAction({ state, privateState, action, actorId, players, serverS
 
 export const unoEngine = Object.freeze({
   key: "uno",
+  canActOutOfTurn({ state, action, actorId }) {
+    if (action?.type === "call_uno") return state?.pendingUnoPlayerId === actorId;
+    if (action?.type === "catch_uno") return !!state?.pendingUnoPlayerId && state.pendingUnoPlayerId !== actorId;
+    return false;
+  },
   applyAction: applyUnoAction,
 });
 

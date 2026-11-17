@@ -67,7 +67,14 @@ export async function resolveGameAction({ engine, match, actorId, players, actio
     .filter((player) => player.response === "accepted")
     .map((player) => player.user_id);
   if (!acceptedIds.includes(actorId)) throw new Error("Only accepted players may act.");
-  if (match.current_turn_user_id && match.current_turn_user_id !== actorId) {
+  const allowedOutOfTurn = typeof engine.canActOutOfTurn === "function" &&
+    engine.canActOutOfTurn({
+      state: match.state,
+      action,
+      actorId,
+      currentTurnUserId: match.current_turn_user_id,
+    });
+  if (match.current_turn_user_id && match.current_turn_user_id !== actorId && !allowedOutOfTurn) {
     throw new Error("It is not this player's turn.");
   }
 

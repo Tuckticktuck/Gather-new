@@ -30,7 +30,7 @@ function normalizeChatSettings(raw){
   });
   return {pinned,muted,drafts,appearance};
 }
-const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", inChatFilterType:"all", inChatMessageMatches:new Set(), inChatSearchRequestId:0, inChatSearchTimer:null, editingMessageId:null, editDraft:"", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], favoriteFriendIds:new Set(), archivedConversationIds:new Set(), blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), deletedConversationId:null, selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingUndoSend:null, undoSendTimer:null, undoCountdownInterval:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null,textSelectionMessageId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, homeSearchQuery:"", homeSearchTab:"messages", homeSearchMessages:[], homeSearchProfiles:[], homeSearchLoading:false, homeSearchErrors:{messages:"",profiles:""}, homeSearchTimer:null, homeSearchRequestId:0, directStatus:null, directStatusCache:new Map(), directStatusChecks:new Map(), groupMessageStatus:null, ageStatus:null, ageChangeStatus:null, ageRequestChannel:null, messageRestriction:null, messageRestrictionLoaded:false, messageRestrictionError:"", messageRestrictionChannel:null, messageRestrictionTimer:null, active:null, messages:[], gameMatches:{}, gameMatchPlayers:{}, gameRespondingIds:new Set(), gameChannel:null, gameCardsLoading:false, gameCardsRefreshPending:false, activeGameId:null, activeGameView:null, gameViewRequest:0, unoInitializing:false, chessSelectedSquare:null, chessPendingPromotion:null, battleshipDraftFleet:null, unoCallPending:false, unoSelectedCardId:null, initialChatScrollLockId:null, channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), friendPresenceRetryTimers:new Map(), friendPresenceRetryAttempts:new Map(), ownPresenceChannel:null, ownPresenceRetryTimer:null, ownPresenceRetryAttempt:0, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],intergroupRequests:[],ageChangeRequests:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
+const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", inChatFilterType:"all", inChatMessageMatches:new Set(), inChatSearchRequestId:0, inChatSearchTimer:null, editingMessageId:null, editDraft:"", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], favoriteFriendIds:new Set(), archivedConversationIds:new Set(), blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), deletedConversationId:null, selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingUndoSend:null, undoSendTimer:null, undoCountdownInterval:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null,textSelectionMessageId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, homeSearchQuery:"", homeSearchTab:"messages", homeSearchMessages:[], homeSearchProfiles:[], homeSearchLoading:false, homeSearchErrors:{messages:"",profiles:""}, homeSearchTimer:null, homeSearchRequestId:0, directStatus:null, directStatusCache:new Map(), directStatusChecks:new Map(), groupMessageStatus:null, ageStatus:null, ageChangeStatus:null, ageRequestChannel:null, messageRestriction:null, messageRestrictionLoaded:false, messageRestrictionError:"", messageRestrictionChannel:null, messageRestrictionTimer:null, active:null, messages:[], gameMatches:{}, gameMatchPlayers:{}, gameRespondingIds:new Set(), gameChannel:null, gameCardsLoading:false, gameCardsRefreshPending:false, activeGameId:null, activeGameView:null, gameViewRequest:0, unoInitializing:false, chessSelectedSquare:null, chessPendingPromotion:null, battleshipDraftFleet:null,  unoSelectedCardId:null, initialChatScrollLockId:null, channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), friendPresenceRetryTimers:new Map(), friendPresenceRetryAttempts:new Map(), ownPresenceChannel:null, ownPresenceRetryTimer:null, ownPresenceRetryAttempt:0, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],intergroupRequests:[],ageChangeRequests:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function appendSafeText(parent,value){
@@ -3583,10 +3583,10 @@ async function respondToUnoInvitation(matchId,responseValue){
 }
 function closeUnoGame(){
   $("game-overlay").hidden=true;
-  S.activeGameId=null;S.activeGameView=null;S.unoCallPending=false;S.unoSelectedCardId=null;S.unoInitializing=false;S.chessSelectedSquare=null;S.chessPendingPromotion=null;S.battleshipDraftFleet=null;
+  S.activeGameId=null;S.activeGameView=null;S.unoSelectedCardId=null;S.unoInitializing=false;S.chessSelectedSquare=null;S.chessPendingPromotion=null;S.battleshipDraftFleet=null;
 }
 async function openGameMatch(matchId){
-  S.activeGameId=matchId;S.activeGameView=null;S.unoCallPending=false;S.unoSelectedCardId=null;S.chessSelectedSquare=null;S.chessPendingPromotion=null;
+  S.activeGameId=matchId;S.activeGameView=null;S.unoSelectedCardId=null;S.chessSelectedSquare=null;S.chessPendingPromotion=null;
   $("game-overlay").hidden=false;
   $("uno-game-title").textContent=gameTitleForKey(S.gameMatches[matchId]?.game_key);
   $("uno-game-status").textContent="Loading match…";
@@ -3628,7 +3628,8 @@ async function loadActiveGameView(){
 }
 async function performUnoAction(action){
   const view=S.activeGameView,matchId=S.activeGameId;
-  if(!view||!matchId||view.currentTurnUserId!==S.user.id)return;
+  const outOfTurnUnoAction=action?.type==="call_uno"||action?.type==="catch_uno";
+  if(!view||!matchId||(view.currentTurnUserId!==S.user.id&&!outOfTurnUnoAction))return;
   const content=$("uno-game-content");
   content.querySelectorAll("button").forEach(button=>button.disabled=true);
   const result=await db.functions.invoke("gather-game-action",{
@@ -3639,9 +3640,27 @@ async function performUnoAction(action){
     await loadActiveGameView();
     return;
   }
-  S.unoSelectedCardId=null;S.unoCallPending=false;
+  S.unoSelectedCardId=null;
   await loadActiveGameView();
   if(S.active)await loadGameCards(S.active);
+}
+function unoCardSortKey(card,index){
+  const colorOrder={red:0,yellow:1,green:2,blue:3,wild:4};
+  const value=String(card?.value??"");
+  const numeric=/^\d+$/.test(value);
+  const actionOrder={skip:0,reverse:1,draw2:2};
+  const valueGroup=numeric?0:(Object.prototype.hasOwnProperty.call(actionOrder,value)?1:2);
+  const valueOrder=numeric?Number(value):(actionOrder[value]??(value==="wild"?0:value==="wild4"?1:99));
+  return [colorOrder[card?.color]??4,valueGroup,valueOrder,index];
+}
+function sortUnoHand(hand){
+  return hand.map((card,index)=>({card,index,key:unoCardSortKey(card,index)}))
+    .sort((a,b)=>{
+      for(let i=0;i<a.key.length;i++){
+        if(a.key[i]!==b.key[i])return a.key[i]-b.key[i];
+      }
+      return 0;
+    }).map(entry=>entry.card);
 }
 function unoCardLabel(card){
   if(card.value==="skip")return "⊘";
@@ -3986,7 +4005,14 @@ function renderUnoGame(){
   }
   const table=el("div","uno-table");
   const pile=el("div","uno-pile-area");
-  const draw=el("div","uno-pile-back");draw.append(el("strong","","UNO"),el("small","",String(view.drawPileCount??0)+" left"));
+  const draw=el("button","uno-pile-back uno-draw-pile");
+  draw.type="button";
+  const canDraw=current&&(!view.drawnCardId||!!state.pendingDraw);
+  draw.disabled=!canDraw;
+  draw.setAttribute("aria-label",state.pendingDraw?"Draw "+state.pendingDraw.amount+" penalty cards":"Draw a card");
+  draw.title=state.pendingDraw?"Tap to draw "+state.pendingDraw.amount+" cards":"Tap to draw a card";
+  draw.addEventListener("click",()=>void performUnoAction({type:"draw"}));
+  draw.append(el("strong","","UNO"),el("small","",String(view.drawPileCount??0)+" left"));
   const discard=el("div","uno-pile-discard");
   const top=state.discardTop;
   if(top){
@@ -3998,29 +4024,22 @@ function renderUnoGame(){
   table.append(pile);
   table.append(el("div","uno-current-color","Current color: "+String(state.currentColor||"—").toUpperCase()));
   content.append(table);
-  const hand=Array.isArray(view.hand)?view.hand:[];
+  const hand=sortUnoHand(Array.isArray(view.hand)?view.hand:[]);
   const controls=el("div","uno-action-controls");
-  if(state.pendingUnoPlayerId&&state.pendingUnoPlayerId!==S.user.id&&current){
+  if(state.pendingUnoPlayerId&&state.pendingUnoPlayerId!==S.user.id){
     const catchButton=el("button","game-card-action secondary","Catch UNO · draw 2");
     catchButton.type="button";catchButton.addEventListener("click",()=>void performUnoAction({type:"catch_uno"}));controls.append(catchButton);
   }
-  if(current&&state.pendingDraw){
-    const drawButton=el("button","game-card-action primary","Draw "+state.pendingDraw.amount+" cards");
-    drawButton.type="button";drawButton.addEventListener("click",()=>void performUnoAction({type:"draw"}));controls.append(drawButton);
-    if(state.pendingDraw.kind==="wild4"){
-      const challenge=el("button","game-card-action secondary","Challenge +4");
-      challenge.type="button";challenge.addEventListener("click",()=>void performUnoAction({type:"challenge"}));controls.append(challenge);
-    }
+  if(current&&state.pendingDraw?.kind==="wild4"){
+    const challenge=el("button","game-card-action secondary","Challenge +4");
+    challenge.type="button";challenge.addEventListener("click",()=>void performUnoAction({type:"challenge"}));controls.append(challenge);
   }else if(current&&view.drawnCardId){
     const pass=el("button","game-card-action secondary","Pass turn");
     pass.type="button";pass.addEventListener("click",()=>void performUnoAction({type:"pass"}));controls.append(pass);
-  }else if(current){
-    const drawButton=el("button","game-card-action primary","Draw a card");
-    drawButton.type="button";drawButton.addEventListener("click",()=>void performUnoAction({type:"draw"}));controls.append(drawButton);
   }
-  if(current&&hand.length===2){
-    const call=el("button","game-card-action"+(S.unoCallPending?" primary":" secondary"),S.unoCallPending?"UNO called ✓":"Call UNO");
-    call.type="button";call.addEventListener("click",()=>{S.unoCallPending=!S.unoCallPending;renderUnoGame();});controls.append(call);
+  if(state.pendingUnoPlayerId===S.user.id&&hand.length===1){
+    const call=el("button","game-card-action primary uno-call-button","UNO!");
+    call.type="button";call.addEventListener("click",()=>void performUnoAction({type:"call_uno"}));controls.append(call);
   }
   if(S.unoSelectedCardId){
     const selectedCard=hand.find(card=>card.id===S.unoSelectedCardId);
@@ -4034,7 +4053,7 @@ function renderUnoGame(){
         choose.type="button";choose.setAttribute("aria-label","Choose "+color);
         choose.title="Choose "+color;
         choose.addEventListener("click",()=>void performUnoAction({
-          type:"play",cardId:S.unoSelectedCardId,chosenColor:color,callUno:S.unoCallPending
+          type:"play",cardId:S.unoSelectedCardId,chosenColor:color
         }));
         colors.append(choose);
       });
@@ -4042,7 +4061,7 @@ function renderUnoGame(){
     }else if(selectedCard){
       const play=el("button","game-card-action primary uno-play-selected","Play selected card");
       play.type="button";
-      play.addEventListener("click",()=>void performUnoAction({type:"play",cardId:S.unoSelectedCardId,callUno:S.unoCallPending}));
+      play.addEventListener("click",()=>void performUnoAction({type:"play",cardId:S.unoSelectedCardId}));
       selection.append(play);
     }
     const clear=el("button","uno-clear-selection","Cancel");
@@ -4073,7 +4092,7 @@ function renderUnoGame(){
     button.addEventListener("click",()=>{
       if(S.preferences.unoCardPlayMode==="immediate"&&playable&&card.value!=="wild"&&card.value!=="wild4"){
         S.unoSelectedCardId=null;
-        void performUnoAction({type:"play",cardId:card.id,callUno:S.unoCallPending});
+        void performUnoAction({type:"play",cardId:card.id});
         return;
       }
       S.unoSelectedCardId=S.unoSelectedCardId===card.id?null:card.id;
