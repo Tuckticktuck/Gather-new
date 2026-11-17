@@ -3643,6 +3643,24 @@ async function performUnoAction(action){
   await loadActiveGameView();
   if(S.active)await loadGameCards(S.active);
 }
+function unoCardSortKey(card,index){
+  const colorOrder={red:0,yellow:1,green:2,blue:3,wild:4};
+  const value=String(card?.value??"");
+  const numeric=/^\d+$/.test(value);
+  const actionOrder={skip:0,reverse:1,draw2:2};
+  const valueGroup=numeric?0:(Object.prototype.hasOwnProperty.call(actionOrder,value)?1:2);
+  const valueOrder=numeric?Number(value):(actionOrder[value]??(value==="wild"?0:value==="wild4"?1:99));
+  return [colorOrder[card?.color]??4,valueGroup,valueOrder,index];
+}
+function sortUnoHand(hand){
+  return hand.map((card,index)=>({card,index,key:unoCardSortKey(card,index)}))
+    .sort((a,b)=>{
+      for(let i=0;i<a.key.length;i++){
+        if(a.key[i]!==b.key[i])return a.key[i]-b.key[i];
+      }
+      return 0;
+    }).map(entry=>entry.card);
+}
 function unoCardLabel(card){
   if(card.value==="skip")return "⊘";
   if(card.value==="reverse")return "↻";
@@ -3998,7 +4016,7 @@ function renderUnoGame(){
   table.append(pile);
   table.append(el("div","uno-current-color","Current color: "+String(state.currentColor||"—").toUpperCase()));
   content.append(table);
-  const hand=Array.isArray(view.hand)?view.hand:[];
+  const hand=sortUnoHand(Array.isArray(view.hand)?view.hand:[]);
   const controls=el("div","uno-action-controls");
   if(state.pendingUnoPlayerId&&state.pendingUnoPlayerId!==S.user.id&&current){
     const catchButton=el("button","game-card-action secondary","Catch UNO · draw 2");
