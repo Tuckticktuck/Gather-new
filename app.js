@@ -4043,8 +4043,7 @@ function renderUnoGame(){
     const matchesColor=card.color===state.currentColor;
     const matchesValue=card.value===state.discardTop?.value;
     const isWild=card.value==="wild";
-    const wild4Allowed=state.houseRules?.wild4Anytime===true||!hand.some(other=>other.id!==card.id&&other.color===state.currentColor);
-    const matchesRule=isWild||matchesColor||matchesValue||(card.value==="wild4"&&wild4Allowed);
+    const matchesRule=isWild||card.value==="wild4"||matchesColor||matchesValue;
     const playable=current&&!state.pendingDraw&&(!view.drawnCardId||view.drawnCardId===card.id)&&matchesRule;
     const button=el("button","uno-card uno-card-hand uno-card-"+(card.color||"wild"));
     const label=el("span","uno-card-face-label",unoCardLabel(card));
