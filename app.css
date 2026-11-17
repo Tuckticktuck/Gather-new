@@ -4446,3 +4446,12 @@ html[data-theme="light"]{
   .battleship-board{width:min(100%,min(52vh,490px));gap:2px;padding:4px}
   .battleship-cell{font-size:clamp(10px,3.4vw,16px)}
 }
+
+/* Delivery/read receipts sit below the sent bubble, like iMessage. */
+.message.mine{flex-direction:column;align-items:flex-end}
+.message.mine>.message-receipts,.message.mine>.message-receipt-wrap{align-self:flex-end;margin:3px 2px 0;text-align:right}
+.message.mine>.message-receipt-wrap{align-items:flex-end}
+.message.mine>.message-receipts.is-sent{color:var(--muted)}
+.message.mine>.message-receipts.is-seen,.message.mine>.message-receipt-wrap .message-receipts{color:var(--accent-text)}
+.chat.chat-appearance-custom .messages .mine>.message-receipts.is-seen,
+.chat.chat-appearance-custom .messages .mine>.message-receipt-wrap .message-receipts{color:var(--conversation-accent-ink)!important}
