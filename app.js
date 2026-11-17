@@ -6680,6 +6680,10 @@ function wire(){
   $("delete-selected-conversations").addEventListener("click",deleteSelectedConversations);$("pin-selected-conversations").addEventListener("click",toggleSelectedConversationPins);
   $("filter").addEventListener("input",handleHomeSearchInput);
   const homeSearchToggle=$("home-search-toggle"),homeSearchClose=$("home-search-close"),homeSearchControls=document.querySelector(".workspace-search-controls");
+  const homeSearchLayout=$("layout");
+  document.body.appendChild(homeSearchControls);
+  homeSearchControls.id="home-search-controls";
+  homeSearchControls.hidden=!homeSearchLayout.classList.contains("show-home");
   function setHomeSearchOpen(open){
     homeSearchControls.classList.toggle("is-open",open);
     homeSearchToggle.setAttribute("aria-expanded",String(open));
@@ -6690,6 +6694,12 @@ function wire(){
     else{$("filter").value="";handleHomeSearchInput();}
   }
   homeSearchToggle.addEventListener("click",()=>setHomeSearchOpen(!homeSearchControls.classList.contains("is-open")));
+  const homeSearchVisibilityObserver=new MutationObserver(()=>{
+    const onHome=homeSearchLayout.classList.contains("show-home");
+    homeSearchControls.hidden=!onHome;
+    if(!onHome&&homeSearchControls.classList.contains("is-open"))setHomeSearchOpen(false);
+  });
+  homeSearchVisibilityObserver.observe(homeSearchLayout,{attributes:true,attributeFilter:["class"]});
   homeSearchClose.addEventListener("click",()=>setHomeSearchOpen(false));
   document.addEventListener("keydown",event=>{if(event.key==="Escape"&&homeSearchControls.classList.contains("is-open")){setHomeSearchOpen(false);homeSearchToggle.focus();}});
   document.addEventListener("pointerdown",event=>{if(homeSearchControls.classList.contains("is-open")&&!homeSearchControls.contains(event.target)&&!event.target.closest("#home-search-results"))setHomeSearchOpen(false);});
