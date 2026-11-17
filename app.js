@@ -14,7 +14,7 @@ const ACCENTS = {
 };
 const FONT_SCALES = {small:"0.9",normal:"1",large:"1.15"};
 const MESSAGE_REACTION_EMOJIS = ["👍","❤️","😂","🔥","😢","🎉"];
-const DEFAULT_PREFERENCES = {accent:"lavender",fontSize:"normal",theme:"dark",messageNotificationMode:"temporary",notificationSound:"off",notificationSounds:{private:"off",group:"off",requests:"off",updates:"off"},directMessageRequests:"everyone",groupUnreadMessages:false,shareOnlineStatus:true,quietHoursEnabled:false,quietHoursStart:"22:00",quietHoursEnd:"07:00"};
+const DEFAULT_PREFERENCES = {accent:"lavender",fontSize:"normal",theme:"dark",messageNotificationMode:"temporary",notificationSound:"off",notificationSounds:{private:"off",group:"off",requests:"off",updates:"off"},directMessageRequests:"everyone",groupUnreadMessages:false,shareOnlineStatus:true,quietHoursEnabled:false,quietHoursStart:"22:00",quietHoursEnd:"07:00",unoCardPlayMode:"confirm"};
 const DEFAULT_CHAT_SETTINGS = {pinned:[],muted:{},drafts:{},appearance:{}};
 const CHAT_BACKGROUNDS = {default:null,slate:"#202a37",forest:"#1d302b",plum:"#302438",sand:"#40382d"};
 function normalizeChatSettings(raw){
@@ -102,7 +102,8 @@ function loadUIPreferences(saved){
     shareOnlineStatus:saved?.shareOnlineStatus!==false,
     quietHoursEnabled:saved?.quietHoursEnabled===true,
     quietHoursStart:validTime(saved?.quietHoursStart)?saved.quietHoursStart:DEFAULT_PREFERENCES.quietHoursStart,
-    quietHoursEnd:validTime(saved?.quietHoursEnd)?saved.quietHoursEnd:DEFAULT_PREFERENCES.quietHoursEnd
+    quietHoursEnd:validTime(saved?.quietHoursEnd)?saved.quietHoursEnd:DEFAULT_PREFERENCES.quietHoursEnd,
+    unoCardPlayMode:saved?.unoCardPlayMode==="immediate"?"immediate":"confirm"
   };
   applyUIPreferences();
 }
@@ -210,6 +211,7 @@ function applyUIPreferences(){
   document.querySelectorAll("[data-accent]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.accent===S.preferences.accent)));
   document.querySelectorAll("[data-font-size]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.fontSize===S.preferences.fontSize)));
   document.querySelectorAll("[data-notification-mode]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.notificationMode===S.preferences.messageNotificationMode)));
+  document.querySelectorAll("[data-uno-play-mode]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.unoPlayMode===S.preferences.unoCardPlayMode)));
   const groupUnreadControl=$("group-unread-messages");
   if(groupUnreadControl)groupUnreadControl.checked=S.preferences.groupUnreadMessages===true;
   const shareStatusControl=$("share-online-status");
@@ -1499,7 +1501,7 @@ function subscribeRequests(){
   S.requestChannel=db.channel("requests-"+uid)
     .on("postgres_changes",{event:"UPDATE",schema:"public",table:"profiles",filter:"id=eq."+uid},payload=>{
       const next=payload.new?.preferences;if(!next)return;
-      const changed=next.accent!==S.preferences.accent||next.fontSize!==S.preferences.fontSize||next.messageNotificationMode!==S.preferences.messageNotificationMode||next.shareOnlineStatus!==S.preferences.shareOnlineStatus;
+      const changed=JSON.stringify(next)!==JSON.stringify(S.preferences);
       if(changed){S.profile.preferences=next;loadUIPreferences(next);syncOwnPresence();}
     })
     .on("postgres_changes",{event:"INSERT",schema:"public",table:"conversation_requests",filter:"recipient_id=eq."+uid},payload=>{
@@ -3661,6 +3663,11 @@ function renderUnoGame(){
     if(view.drawnCardId===card.id)button.classList.add("is-drawn");
     if(S.unoSelectedCardId===card.id)button.classList.add("is-selected");
     button.addEventListener("click",()=>{
+      if(S.preferences.unoCardPlayMode==="immediate"&&playable&&card.value!=="wild"&&card.value!=="wild4"){
+        S.unoSelectedCardId=null;
+        void performUnoAction({type:"play",cardId:card.id,callUno:S.unoCallPending});
+        return;
+      }
       S.unoSelectedCardId=S.unoSelectedCardId===card.id?null:card.id;
       renderUnoGame();
     });
@@ -6317,6 +6324,10 @@ document.querySelectorAll("[data-folder]").forEach(b=>b.addEventListener("click"
     saveUIPreferences();
   });
   $("group-unread-messages").addEventListener("change",event=>setGroupUnreadMessages(event.target.checked));
+  document.querySelectorAll("[data-uno-play-mode]").forEach(button=>button.addEventListener("click",()=>{
+    S.preferences.unoCardPlayMode=button.dataset.unoPlayMode==="immediate"?"immediate":"confirm";
+    saveUIPreferences();
+  }));
   $("quiet-hours-enabled").addEventListener("change",event=>{
     S.preferences.quietHoursEnabled=!!event.target.checked;
     saveUIPreferences();
