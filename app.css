@@ -4451,3 +4451,39 @@ html[data-theme="light"]{
 .message.mine>.message-receipts.is-seen,.message.mine>.message-receipt-wrap .message-receipts{color:var(--accent-text)}
 .chat.chat-appearance-custom .messages .mine>.message-receipts.is-seen,
 .chat.chat-appearance-custom .messages .mine>.message-receipt-wrap .message-receipts{color:var(--conversation-accent-ink)!important}
+
+
+/* Message bubbles: softer iMessage-inspired grouping and balanced text placement. */
+.messages{gap:9px}
+.message{min-width:0}
+.message .bubble{
+  box-sizing:border-box;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  min-height:44px;
+  padding:10px 14px;
+  border-radius:19px 19px 19px 6px;
+}
+.message.mine .bubble{
+  border-radius:19px 19px 6px 19px;
+}
+.message .body-text{
+  display:block;
+  width:100%;
+  margin:0;
+  line-height:1.42;
+}
+.message.group-first:not(.mine) .bubble{border-radius:19px 19px 19px 6px}
+.message.group-middle:not(.mine) .bubble{border-radius:19px 19px 19px 6px}
+.message.group-last:not(.mine) .bubble{border-radius:19px 19px 6px 6px}
+.message.mine.group-first .bubble{border-radius:19px 19px 6px 19px}
+.message.mine.group-middle .bubble{border-radius:19px 19px 6px 19px}
+.message.mine.group-last .bubble{border-radius:19px 19px 6px 6px}
+.message.group-continued{margin-top:-5px}
+.message.group-continued .bubble{padding-top:9px;padding-bottom:9px}
+@media(max-width:720px){
+  .messages{gap:8px}
+  .message .bubble{min-height:42px;padding:9px 13px}
+  .message.group-continued .bubble{padding-top:8px;padding-bottom:8px}
+}

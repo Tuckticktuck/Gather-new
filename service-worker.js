@@ -1,13 +1,13 @@
 "use strict";
 
-const CACHE_NAME = "gather-shell-v149";
+const CACHE_NAME = "gather-shell-v150";
 const APP_BASE = new URL("./", self.registration.scope);
 const SHELL_URLS = [
   "./",
   "./index.html",
-  "./app.css?v=20261117-game-card-icons",
+  "./app.css?v=20261117-message-bubbles",
   "./design-system.css?v=20261117-ui-polish",
-  "./app.js?v=20261117-game-card-icons",
+  "./app.js?v=20261117-message-bubbles",
   "./favicon.svg?v=20261111-1",
   "./manifest.webmanifest?v=20261111-pwa",
   "./icons/gather-180.png",
