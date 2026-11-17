@@ -6679,6 +6679,21 @@ function wire(){
   $("toggle-conversation-select").addEventListener("click",toggleConversationSelectionMode);
   $("delete-selected-conversations").addEventListener("click",deleteSelectedConversations);$("pin-selected-conversations").addEventListener("click",toggleSelectedConversationPins);
   $("filter").addEventListener("input",handleHomeSearchInput);
+  const homeSearchToggle=$("home-search-toggle"),homeSearchClose=$("home-search-close"),homeSearchControls=document.querySelector(".workspace-search-controls");
+  function setHomeSearchOpen(open){
+    homeSearchControls.classList.toggle("is-open",open);
+    homeSearchToggle.setAttribute("aria-expanded",String(open));
+    homeSearchToggle.setAttribute("aria-label",open?"Close search":"Open search");
+    $("filter").tabIndex=open?0:-1;
+    $("filter").setAttribute("aria-hidden",String(!open));
+    if(open){requestAnimationFrame(()=>$("filter").focus());}
+    else{$("filter").value="";handleHomeSearchInput();}
+  }
+  homeSearchToggle.addEventListener("click",()=>setHomeSearchOpen(!homeSearchControls.classList.contains("is-open")));
+  homeSearchClose.addEventListener("click",()=>setHomeSearchOpen(false));
+  document.addEventListener("keydown",event=>{if(event.key==="Escape"&&homeSearchControls.classList.contains("is-open")){setHomeSearchOpen(false);homeSearchToggle.focus();}});
+  document.addEventListener("pointerdown",event=>{if(homeSearchControls.classList.contains("is-open")&&!homeSearchControls.contains(event.target)&&!event.target.closest("#home-search-results"))setHomeSearchOpen(false);});
+
   document.querySelectorAll("[data-home-search-tab]").forEach(button=>button.addEventListener("click",()=>setHomeSearchTab(button.dataset.homeSearchTab)));
   $("in-chat-filter").addEventListener("input",renderInChatSidebar);
   $("conversation-drawer-toggle").addEventListener("click",()=>setConversationDrawer(!$("layout").classList.contains("conversation-drawer-open")));
