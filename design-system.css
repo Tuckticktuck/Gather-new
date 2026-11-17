@@ -696,3 +696,222 @@ select:focus {
     width:40px;height:40px;
   }
 }
+
+
+/* -------------------------------------------------------------------------
+   Gather general interface polish — consistent depth, spacing, and feedback.
+   Keeps the existing layout and theme controls intact while refining the
+   shared app chrome, navigation, surfaces, and controls.
+   ------------------------------------------------------------------------- */
+
+:root {
+  --g-shadow-control: 0 3px 10px rgba(0, 0, 0, .12);
+  --g-shadow-hover: 0 9px 24px rgba(0, 0, 0, .18);
+  --g-ui-ease: 170ms cubic-bezier(.2, .75, .25, 1);
+}
+
+#app {
+  color: var(--g-ui-text);
+  background: var(--g-ui-surface-deep);
+}
+
+#app .topbar {
+  min-height: 66px;
+  border-bottom: 1px solid var(--g-ui-border);
+  background: color-mix(in srgb, var(--g-ui-surface) 88%, transparent);
+  -webkit-backdrop-filter: blur(18px) saturate(1.15);
+  backdrop-filter: blur(18px) saturate(1.15);
+}
+
+#app .topbar .brand {
+  font-weight: 780;
+  letter-spacing: -.045em;
+}
+
+#app .topbar .brand-icon {
+  border: 1px solid color-mix(in srgb, var(--accent) 26%, transparent);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--accent) 17%, transparent);
+}
+
+#app .topbar-actions .home-button,
+#app .profile-pill {
+  min-height: 40px;
+  box-shadow: inset 0 1px rgba(255,255,255,.025);
+}
+
+#app .topbar-actions .home-button:active,
+#app .profile-pill:active,
+#app .workspace-actions button:active,
+#app .new-chat-action:active,
+#app .requests-button:active {
+  transform: scale(.975);
+}
+
+#layout .sidebar {
+  border-right: 1px solid var(--g-ui-border);
+  background: color-mix(in srgb, var(--g-ui-surface) 92%, var(--g-ui-surface-deep));
+}
+
+#layout .side-title h2,
+#app .workspace-header h1,
+#app .chat-head .chat-title strong {
+  letter-spacing: -.04em;
+}
+
+#app .workspace-header h1 {
+  font-size: clamp(25px, 3vw, 35px);
+  line-height: 1.12;
+  font-weight: 780;
+}
+
+#app .workspace-subtitle {
+  max-width: 650px;
+  color: var(--g-ui-muted);
+  line-height: 1.7;
+}
+
+#layout .main {
+  background:
+    radial-gradient(ellipse at 88% 0%, color-mix(in srgb, var(--accent) 5%, transparent), transparent 38%),
+    var(--g-ui-surface-deep);
+}
+
+#app :is(.workspace-folder, .workspace-group-section, .home-announcement-card, .chat-row, .notification-center-item, .request-item, .person, .group-member-row) {
+  border-color: var(--g-ui-border);
+  box-shadow: var(--g-shadow-control);
+}
+
+#app :is(.workspace-folder, .workspace-group-section, .home-announcement-card) {
+  background: color-mix(in srgb, var(--g-ui-surface) 96%, transparent);
+}
+
+#app :is(.chat-item, .chat-row, .request-item, .person, .friend-list-item, .notification-center-item, .workspace-chat-card) {
+  transition:
+    background-color var(--g-ui-ease),
+    border-color var(--g-ui-ease),
+    box-shadow var(--g-ui-ease),
+    transform var(--g-ui-ease);
+}
+
+#app :is(.chat-item:hover, .chat-row:hover, .request-item:hover, .person:hover, .friend-list-item:hover, .workspace-chat-card:hover) {
+  border-color: var(--g-ui-border-strong);
+  box-shadow: var(--g-shadow-control);
+}
+
+#app :is(.primary, .secondary-action, .outline, .new-chat-action, .requests-button, .game-card-action) {
+  min-height: 40px;
+  border-radius: 12px;
+  font-weight: 720;
+  transition:
+    background-color var(--g-ui-ease),
+    border-color var(--g-ui-ease),
+    box-shadow var(--g-ui-ease),
+    transform var(--g-ui-ease),
+    opacity var(--g-ui-ease);
+}
+
+#app .primary {
+  box-shadow: 0 4px 13px color-mix(in srgb, var(--accent) 17%, transparent);
+}
+
+#app .primary:not(:disabled):hover {
+  filter: brightness(1.045);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 22%, transparent);
+  transform: translateY(-1px);
+}
+
+#app :is(.secondary-action, .outline, .new-chat-action, .requests-button):not(:disabled):hover {
+  border-color: var(--g-ui-border-strong);
+  background: var(--accent-hover, var(--g-ui-surface-raised));
+}
+
+#app :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), textarea, select) {
+  min-height: 42px;
+  border-color: var(--g-ui-border);
+  background: color-mix(in srgb, var(--accent-input, var(--g-ui-surface-deep)) 92%, transparent);
+}
+
+#app textarea {
+  line-height: 1.5;
+}
+
+#app :is(input, textarea, select):focus {
+  border-color: var(--accent-outline, var(--accent));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 11%, transparent);
+}
+
+#app .chat-head {
+  border-bottom: 1px solid var(--g-ui-border);
+  box-shadow: 0 4px 15px rgba(0,0,0,.06);
+}
+
+#app .messages {
+  scroll-behavior: smooth;
+}
+
+#app .message:not(.mine) .bubble {
+  border-radius: 5px 17px 17px 17px;
+}
+
+#app .message.mine .bubble {
+  border-radius: 17px 5px 17px 17px;
+}
+
+#app .composer .composer-main-row textarea {
+  transition: border-color var(--g-ui-ease), box-shadow var(--g-ui-ease), background-color var(--g-ui-ease);
+}
+
+#app .modal {
+  border: 1px solid var(--g-ui-border-strong);
+}
+
+#app .close {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--g-ui-border);
+  background: var(--g-ui-surface-raised);
+  color: var(--g-ui-text);
+}
+
+#app .close:hover {
+  border-color: var(--g-ui-border-strong);
+  background: var(--accent-hover, var(--g-ui-surface-raised));
+}
+
+@media (max-width: 720px) {
+  #app .topbar {
+    min-height: 58px;
+    padding-inline: 12px;
+  }
+
+  #app .topbar .brand-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+  }
+
+  #app .topbar-actions .home-button,
+  #app .profile-pill {
+    min-height: 38px;
+  }
+
+  #app .workspace-header h1 {
+    font-size: clamp(24px, 6vw, 30px);
+  }
+
+  #app .workspace-subtitle {
+    font-size: 13px;
+  }
+
+  #app :is(.workspace-folder, .workspace-group-section, .home-announcement-card) {
+    box-shadow: 0 5px 17px rgba(0,0,0,.12);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #app .messages {
+    scroll-behavior: auto;
+  }
+}
