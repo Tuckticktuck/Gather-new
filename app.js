@@ -3619,17 +3619,32 @@ function renderUnoGame(){
     call.type="button";call.addEventListener("click",()=>{S.unoCallPending=!S.unoCallPending;renderUnoGame();});controls.append(call);
   }
   if(S.unoSelectedCardId){
-    const colors=el("div","uno-color-picker");
-    colors.append(el("span","tiny muted","Choose a color"));
-    ["red","yellow","green","blue"].forEach(color=>{
-      const choose=el("button","uno-color-choice uno-color-choice-"+color,color);
-      choose.type="button";choose.setAttribute("aria-label","Choose "+color);
-      choose.addEventListener("click",()=>void performUnoAction({
-        type:"play",cardId:S.unoSelectedCardId,chosenColor:color,callUno:S.unoCallPending
-      }));
-      colors.append(choose);
-    });
-    controls.append(colors);
+    const selectedCard=hand.find(card=>card.id===S.unoSelectedCardId);
+    const selection=el("div","uno-selection-panel");
+    selection.append(el("span","uno-selection-copy",selectedCard?"Selected: "+unoCardLabel(selectedCard):"Choose a card"));
+    if(selectedCard&&(selectedCard.value==="wild"||selectedCard.value==="wild4")){
+      const colors=el("div","uno-color-picker");
+      colors.append(el("span","tiny muted","Choose a color"));
+      ["red","yellow","green","blue"].forEach(color=>{
+        const choose=el("button","uno-color-choice uno-color-choice-"+color,"");
+        choose.type="button";choose.setAttribute("aria-label","Choose "+color);
+        choose.title="Choose "+color;
+        choose.addEventListener("click",()=>void performUnoAction({
+          type:"play",cardId:S.unoSelectedCardId,chosenColor:color,callUno:S.unoCallPending
+        }));
+        colors.append(choose);
+      });
+      selection.append(colors);
+    }else if(selectedCard){
+      const play=el("button","game-card-action primary uno-play-selected","Play selected card");
+      play.type="button";
+      play.addEventListener("click",()=>void performUnoAction({type:"play",cardId:S.unoSelectedCardId,callUno:S.unoCallPending}));
+      selection.append(play);
+    }
+    const clear=el("button","uno-clear-selection","Cancel");
+    clear.type="button";clear.addEventListener("click",()=>{S.unoSelectedCardId=null;renderUnoGame();});
+    selection.append(clear);
+    controls.append(selection);
   }
   content.append(controls);
   const handSection=el("section","uno-hand-section");
@@ -3637,14 +3652,17 @@ function renderUnoGame(){
   const cards=el("div","uno-hand");
   hand.forEach(card=>{
     const playable=current&&!state.pendingDraw&&(!view.drawnCardId||view.drawnCardId===card.id);
-    const button=el("button","uno-card uno-card-hand uno-card-"+(card.color||"wild"),unoCardLabel(card));
+    const button=el("button","uno-card uno-card-hand uno-card-"+(card.color||"wild"));
+    const label=el("span","uno-card-face-label",unoCardLabel(card));
+    button.append(label);
     button.type="button";button.disabled=!playable;
     button.setAttribute("aria-label",card.value+" card"+(card.color?" "+card.color:""));
+    button.setAttribute("aria-pressed",String(S.unoSelectedCardId===card.id));
     if(view.drawnCardId===card.id)button.classList.add("is-drawn");
+    if(S.unoSelectedCardId===card.id)button.classList.add("is-selected");
     button.addEventListener("click",()=>{
-      if(card.value==="wild"||card.value==="wild4"){
-        S.unoSelectedCardId=card.id;renderUnoGame();
-      }else void performUnoAction({type:"play",cardId:card.id,callUno:S.unoCallPending});
+      S.unoSelectedCardId=S.unoSelectedCardId===card.id?null:card.id;
+      renderUnoGame();
     });
     cards.append(button);
   });
