@@ -30,7 +30,7 @@ function normalizeChatSettings(raw){
   });
   return {pinned,muted,drafts,appearance};
 }
-const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", inChatFilterType:"all", inChatMessageMatches:new Set(), inChatSearchRequestId:0, inChatSearchTimer:null, editingMessageId:null, editDraft:"", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], favoriteFriendIds:new Set(), archivedConversationIds:new Set(), blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), deletedConversationId:null, selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingUndoSend:null, undoSendTimer:null, undoCountdownInterval:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null,textSelectionMessageId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, homeSearchQuery:"", homeSearchTab:"messages", homeSearchMessages:[], homeSearchProfiles:[], homeSearchLoading:false, homeSearchErrors:{messages:"",profiles:""}, homeSearchTimer:null, homeSearchRequestId:0, directStatus:null, directStatusCache:new Map(), directStatusChecks:new Map(), groupMessageStatus:null, ageStatus:null, ageChangeStatus:null, ageRequestChannel:null, messageRestriction:null, messageRestrictionLoaded:false, messageRestrictionError:"", messageRestrictionChannel:null, messageRestrictionTimer:null, active:null, messages:[], gameMatches:{}, gameMatchPlayers:{}, gameRespondingIds:new Set(), gameChannel:null, gameCardsLoading:false, gameCardsRefreshPending:false, activeGameId:null, activeGameView:null, gameViewRequest:0, unoInitializing:false, chessSelectedSquare:null, chessPendingPromotion:null, unoCallPending:false, unoSelectedCardId:null, initialChatScrollLockId:null, channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), friendPresenceRetryTimers:new Map(), friendPresenceRetryAttempts:new Map(), ownPresenceChannel:null, ownPresenceRetryTimer:null, ownPresenceRetryAttempt:0, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],intergroupRequests:[],ageChangeRequests:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
+const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", inChatFilterType:"all", inChatMessageMatches:new Set(), inChatSearchRequestId:0, inChatSearchTimer:null, editingMessageId:null, editDraft:"", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], favoriteFriendIds:new Set(), archivedConversationIds:new Set(), blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), deletedConversationId:null, selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingUndoSend:null, undoSendTimer:null, undoCountdownInterval:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null,textSelectionMessageId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, homeSearchQuery:"", homeSearchTab:"messages", homeSearchMessages:[], homeSearchProfiles:[], homeSearchLoading:false, homeSearchErrors:{messages:"",profiles:""}, homeSearchTimer:null, homeSearchRequestId:0, directStatus:null, directStatusCache:new Map(), directStatusChecks:new Map(), groupMessageStatus:null, ageStatus:null, ageChangeStatus:null, ageRequestChannel:null, messageRestriction:null, messageRestrictionLoaded:false, messageRestrictionError:"", messageRestrictionChannel:null, messageRestrictionTimer:null, active:null, messages:[], gameMatches:{}, gameMatchPlayers:{}, gameRespondingIds:new Set(), gameChannel:null, gameCardsLoading:false, gameCardsRefreshPending:false, activeGameId:null, activeGameView:null, gameViewRequest:0, unoInitializing:false, chessSelectedSquare:null, chessPendingPromotion:null, battleshipDraftFleet:null, unoCallPending:false, unoSelectedCardId:null, initialChatScrollLockId:null, channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), friendPresenceRetryTimers:new Map(), friendPresenceRetryAttempts:new Map(), ownPresenceChannel:null, ownPresenceRetryTimer:null, ownPresenceRetryAttempt:0, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],intergroupRequests:[],ageChangeRequests:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function appendSafeText(parent,value){
@@ -3386,6 +3386,11 @@ function subscribeGameMatches(conversationId){
     })
     .subscribe();
 }
+function gameTitleForKey(key){
+  if(key==="chess")return "Chess";
+  if(key==="battleship")return "Battleship";
+  return "UNO";
+}
 function renderGameMessageCard(message){
   const matchId=gameMatchIdFromMessage(message);
   const match=matchId?S.gameMatches[matchId]:null;
@@ -3394,8 +3399,8 @@ function renderGameMessageCard(message){
   const card=el("section","gather-game-message");
   const heading=el("div","gather-game-message-heading");
   const gameKey=match?.game_key||"uno";
-  const gameTitle=gameKey==="chess"?"Chess":"UNO";
-  const mark=el("span","gather-game-message-mark",gameKey==="chess"?"♟":"U");
+  const gameTitle=gameTitleForKey(gameKey);
+  const mark=el("span","gather-game-message-mark",gameKey==="chess"?"♟":gameKey==="battleship"?"⚓":"U");
   const copy=el("div","gather-game-message-copy");
   copy.append(el("strong","",gameTitle),el("small","","Conversation game"));
   heading.append(mark,copy);
@@ -3408,7 +3413,11 @@ function renderGameMessageCard(message){
   const names=players.map((player,index)=>gamePlayerName(player.user_id,index));
   card.append(el("p","gather-game-message-players",names.length?names.join(" · "):"Conversation members"));
   let statusText="Invitation pending";
-  if(match.status==="active")statusText=match.current_turn_user_id===S.user?.id?"Your turn to start":"Waiting for "+gamePlayerName(match.current_turn_user_id,0);
+  if(match.status==="active"){
+    if(gameKey==="battleship"&&match.state?.stage==="placement")statusText="Deploying fleets";
+    else if(match.current_turn_user_id===S.user?.id)statusText="Your turn to start";
+    else statusText=match.current_turn_user_id?"Waiting for "+gamePlayerName(match.current_turn_user_id,0):"Game setup";
+  }
   else if(match.status==="completed")statusText="Game completed";
   else if(match.status==="cancelled")statusText="Invitation closed";
   card.append(el("p","gather-game-message-status",statusText));
@@ -3479,6 +3488,32 @@ async function createChessInvitation(){
   await loadGameCards(S.active);
 }
 
+async function createBattleshipInvitation(){
+  if(!S.active)return;
+  const button=$("game-picker-battleship");
+  button.disabled=true;
+  status("game-picker-status","Checking conversation size…");
+  const members=await db.from("conversation_members").select("user_id",{count:"exact",head:true}).eq("conversation_id",S.active);
+  if(members.error){
+    button.disabled=false;
+    status("game-picker-status","Could not verify the conversation members. Please try again.","error");
+    return;
+  }
+  if(members.count!==2){
+    button.disabled=false;
+    status("game-picker-status","Battleship is a two-player game. Start it in a one-to-one conversation.","error");
+    return;
+  }
+  status("game-picker-status","Sending the Battleship invitation…");
+  const result=await db.rpc("create_game_invitation",{p_conversation_id:S.active,p_game_key:"battleship"});
+  button.disabled=false;
+  if(result.error){status("game-picker-status",result.error.message,"error");return;}
+  $("game-picker-modal").hidden=true;
+  toast("Battleship invitation sent to the conversation.");
+  await loadMessages(S.active);
+  await loadGameCards(S.active);
+}
+
 async function respondToUnoInvitation(matchId,responseValue){
   if(!S.user||S.gameRespondingIds.has(matchId))return;
   const conversationId=S.active;
@@ -3493,9 +3528,9 @@ async function respondToUnoInvitation(matchId,responseValue){
     if(responseValue==="accepted"&&isActive){
       await openGameMatch(matchId);
     }else if(responseValue==="accepted"){
-      toast((S.gameMatches[matchId]?.game_key==="chess"?"Chess":"UNO")+" invitation accepted. Waiting for the other invited players to respond.");
+      toast(gameTitleForKey(S.gameMatches[matchId]?.game_key)+" invitation accepted. Waiting for the other invited players to respond.");
     }else{
-      toast("You declined the "+(S.gameMatches[matchId]?.game_key==="chess"?"Chess":"UNO")+" invitation.");
+      toast("You declined the "+gameTitleForKey(S.gameMatches[matchId]?.game_key)+" invitation.");
     }
   }catch(error){
     console.error("UNO invitation response failed:",error);
@@ -3508,12 +3543,12 @@ async function respondToUnoInvitation(matchId,responseValue){
 }
 function closeUnoGame(){
   $("game-overlay").hidden=true;
-  S.activeGameId=null;S.activeGameView=null;S.unoCallPending=false;S.unoSelectedCardId=null;S.unoInitializing=false;S.chessSelectedSquare=null;S.chessPendingPromotion=null;
+  S.activeGameId=null;S.activeGameView=null;S.unoCallPending=false;S.unoSelectedCardId=null;S.unoInitializing=false;S.chessSelectedSquare=null;S.chessPendingPromotion=null;S.battleshipDraftFleet=null;
 }
 async function openGameMatch(matchId){
   S.activeGameId=matchId;S.activeGameView=null;S.unoCallPending=false;S.unoSelectedCardId=null;S.chessSelectedSquare=null;S.chessPendingPromotion=null;
   $("game-overlay").hidden=false;
-  $("uno-game-title").textContent=S.gameMatches[matchId]?.game_key==="chess"?"Chess":"UNO";
+  $("uno-game-title").textContent=gameTitleForKey(S.gameMatches[matchId]?.game_key);
   $("uno-game-status").textContent="Loading match…";
   $("uno-game-content").replaceChildren(el("p","muted","Loading your game…"));
   await loadActiveGameView();
@@ -3531,8 +3566,10 @@ async function loadActiveGameView(){
     return;
   }
   S.activeGameView=result.data;
-  $("uno-game-title").textContent=result.data.gameKey==="chess"?"Chess":"UNO";
-  if(result.data.gameKey==="chess")renderChessGame();else renderUnoGame();
+  $("uno-game-title").textContent=gameTitleForKey(result.data.gameKey);
+  if(result.data.gameKey==="chess")renderChessGame();
+  else if(result.data.gameKey==="battleship")renderBattleshipGame();
+  else renderUnoGame();
   const view=result.data;
   if(view.status==="active"&&!view.initialized&&view.currentTurnUserId===S.user.id&&!S.unoInitializing){
     S.unoInitializing=true;
@@ -3710,9 +3747,167 @@ function renderChessGame(){
   content.append(lower);
 }
 
+function renderBattleshipFleetRandomly(){
+  const lengths=[5,4,3,3,2],occupied=new Set(),fleet=[];
+  for(const length of lengths){
+    let placed=false;
+    for(let attempt=0;attempt<600&&!placed;attempt++){
+      const horizontal=Math.random()<.5;
+      const row=horizontal?Math.floor(Math.random()*10):Math.floor(Math.random()*(11-length));
+      const col=horizontal?Math.floor(Math.random()*(11-length)):Math.floor(Math.random()*10);
+      const cells=Array.from({length},(_,offset)=>(row+(horizontal?0:offset))*10+col+(horizontal?offset:0));
+      if(cells.some(cell=>occupied.has(cell)))continue;
+      cells.forEach(cell=>occupied.add(cell));fleet.push(cells);placed=true;
+    }
+    if(!placed)throw new Error("A fleet layout could not be generated.");
+  }
+  return fleet;
+}
+function battleshipCellLabel(cell){
+  return "ABCDEFGHIJ"[cell%10]+(Math.floor(cell/10)+1);
+}
+function renderBattleshipBoard(title,fleet,shots,{revealShips=false,allowFire=false}={}){
+  const section=el("section","battleship-board-panel");
+  section.append(el("strong","battleship-board-title",title));
+  const grid=el("div","battleship-board");
+  grid.setAttribute("role","group");
+  grid.setAttribute("aria-label",title);
+  const shipCells=new Set((Array.isArray(fleet)?fleet:[]).flatMap(ship=>ship.cells||[]));
+  const shotMap=new Map((Array.isArray(shots)?shots:[]).map(shot=>[shot.cell,shot]));
+  for(let cell=0;cell<100;cell++){
+    const shot=shotMap.get(cell),ship=revealShips&&shipCells.has(cell);
+    const button=el("button","battleship-cell");
+    button.type="button";
+    button.setAttribute("aria-label",battleshipCellLabel(cell)+(shot?(shot.outcome==="hit"?" hit":" miss"):ship?" ship":" water"));
+    if(ship)button.classList.add("is-ship");
+    if(shot){
+      button.classList.add(shot.outcome==="hit"?"is-hit":"is-miss");
+      if(shot.shipSunk)button.classList.add("is-sunk");
+      button.textContent=shot.outcome==="hit"?"×":"·";
+      button.disabled=true;
+    }else if(allowFire){
+      button.disabled=false;
+      button.addEventListener("click",()=>void performBattleshipAction({type:"fire",cell}));
+    }else{
+      button.disabled=true;
+      if(ship)button.textContent="•";
+    }
+    grid.append(button);
+  }
+  section.append(grid);
+  return section;
+}
+async function performBattleshipAction(action){
+  const view=S.activeGameView,matchId=S.activeGameId;
+  if(!view||!matchId)return;
+  if(action.type==="fire"&&view.currentTurnUserId!==S.user.id)return;
+  const content=$("uno-game-content");
+  content.querySelectorAll("button").forEach(button=>button.disabled=true);
+  const result=await db.functions.invoke("gather-game-action",{
+    body:{matchId,expectedVersion:Number(view.version),action}
+  });
+  if(result.error){
+    toast(result.error.message||"That Battleship action could not be saved.");
+    await loadActiveGameView();
+    return;
+  }
+  if(action.type==="place_fleet")S.battleshipDraftFleet=null;
+  if(action.type==="fire"){
+    const outcome=result.data?.match?.state?.shotsByPlayer?.[S.user.id]?.slice(-1)[0];
+    toast(outcome?.shipSunk?"Ship sunk!":outcome?.outcome==="hit"?"Hit!":"Miss.");
+  }
+  await loadActiveGameView();
+  if(S.active)await loadGameCards(S.active);
+}
+function renderBattleshipGame(){
+  const view=S.activeGameView,content=$("uno-game-content");
+  content.replaceChildren();
+  if(!view){content.append(el("p","muted","Loading your game…"));return;}
+  if(view.status==="invited"){
+    $("uno-game-status").textContent="Waiting for players";
+    content.append(el("p","uno-waiting-title","Waiting for both players to accept"));
+    content.append(el("p","muted","Battleship is a two-player conversation game."));
+    return;
+  }
+  if(view.status==="cancelled"){
+    $("uno-game-status").textContent="Invitation closed";
+    content.append(el("p","uno-waiting-title","This Battleship invitation was closed."));
+    return;
+  }
+  if(!view.initialized){
+    $("uno-game-status").textContent="Preparing match";
+    content.append(el("p","uno-waiting-title",view.currentTurnUserId===S.user.id?"Setting up Battleship…":"Waiting for the first player to start"));
+    return;
+  }
+  const state=view.publicState||{};
+  const order=Array.isArray(state.playerOrder)?state.playerOrder:[];
+  const current=view.currentTurnUserId===S.user.id;
+  const winner=state.winnerId;
+  const playerStrip=el("div","battleship-player-strip");
+  order.forEach((userId,index)=>{
+    const chip=el("div","chess-player-chip"+(userId===view.currentTurnUserId?" is-current":"")+(userId===S.user.id?" is-you":""));
+    chip.append(el("span","",gamePlayerName(userId,index)),el("small","",userId===S.user.id?"You":userId===view.currentTurnUserId?"To move":"Opponent"));
+    playerStrip.append(chip);
+  });
+  content.append(playerStrip);
+  if(view.status==="completed"){
+    content.append(el("div","chess-result-panel",winner===S.user.id?"You won the Battleship match!":"The Battleship match is over."));
+    const close=el("button","game-card-action primary","Return to conversation");
+    close.type="button";close.addEventListener("click",closeUnoGame);content.append(close);
+  }
+  const incoming=Array.isArray(view.incomingShots)?view.incomingShots:[];
+  const outgoing=Array.isArray(view.outgoingShots)?view.outgoingShots:[];
+  const ownFleet=Array.isArray(view.ownFleet)?view.ownFleet:null;
+  if(state.stage==="placement"){
+    if(ownFleet){
+      $("uno-game-status").textContent="Fleet deployed · waiting for opponent";
+      content.append(el("p","battleship-hint","Your fleet is deployed. Waiting for the other player to finish their setup."));
+      content.append(renderBattleshipBoard("Your fleet",ownFleet,incoming,{revealShips:true}));
+    }else{
+      $("uno-game-status").textContent="Deploy your fleet";
+      if(!Array.isArray(S.battleshipDraftFleet))S.battleshipDraftFleet=renderBattleshipFleetRandomly();
+      content.append(el("p","battleship-hint","Your ships are placed automatically. Randomize until you like the layout, then deploy."));
+      content.append(renderBattleshipBoard("Your fleet preview",S.battleshipDraftFleet.map((cells,index)=>({type:"draft-"+index,length:cells.length,cells})),incoming,{revealShips:true}));
+      const controls=el("div","battleship-controls");
+      const randomize=el("button","game-card-action secondary","Randomize fleet");
+      randomize.type="button";randomize.addEventListener("click",()=>{S.battleshipDraftFleet=renderBattleshipFleetRandomly();renderBattleshipGame();});
+      const deploy=el("button","game-card-action primary","Deploy fleet");
+      deploy.type="button";deploy.addEventListener("click",()=>void performBattleshipAction({type:"place_fleet",fleet:S.battleshipDraftFleet}));
+      controls.append(randomize,deploy);content.append(controls);
+    }
+    const readyCount=Array.isArray(state.readyPlayerIds)?state.readyPlayerIds.length:0;
+    content.append(el("p","battleship-hint",readyCount+" of 2 fleets deployed."));
+    return;
+  }
+  if(state.stage==="battle"){
+    $("uno-game-status").textContent=current?"Your turn · choose a square":"Waiting for "+gamePlayerName(view.currentTurnUserId,0);
+    content.append(el("p","battleship-hint",current?"Choose one square on your opponent's board.":"Your opponent is choosing a square."));
+    const boards=el("div","battleship-boards");
+    boards.append(renderBattleshipBoard("Your fleet",ownFleet||[],incoming,{revealShips:true}));
+    boards.append(renderBattleshipBoard("Opponent waters",[],outgoing,{allowFire:current}));
+    content.append(boards);
+    const controls=el("div","battleship-controls");
+    if(current){
+      const resign=el("button","game-card-action secondary","Resign");
+      resign.type="button";resign.addEventListener("click",()=>{if(window.confirm("Resign this Battleship match?"))void performBattleshipAction({type:"resign"});});
+      controls.append(resign);
+    }
+    if(controls.childNodes.length)content.append(controls);
+    const sunk=state.sunkShipsByPlayer?.[S.user.id]||0;
+    content.append(el("p","battleship-hint","Ships sunk: "+sunk+" of 5."));
+  }else if(state.stage==="completed"){
+    $("uno-game-status").textContent=winner===S.user.id?"Victory":"Match complete";
+    const boards=el("div","battleship-boards");
+    boards.append(renderBattleshipBoard("Your fleet",ownFleet||[],incoming,{revealShips:true}));
+    boards.append(renderBattleshipBoard("Opponent waters",[],outgoing));
+    content.append(boards);
+  }
+}
+
 function renderUnoGame(){
   const view=S.activeGameView,content=$("uno-game-content");
   if(view?.gameKey==="chess"){renderChessGame();return;}
+  if(view?.gameKey==="battleship"){renderBattleshipGame();return;}
   content.replaceChildren();
   if(!view){content.append(el("p","muted","Loading your game…"));return;}
   if(view.status==="invited"){
@@ -6473,7 +6668,7 @@ document.querySelectorAll("[data-folder]").forEach(b=>b.addEventListener("click"
   $("message-undo").addEventListener("click",undoLastSend);
   $("message-undo-bar").addEventListener("click",dismissUndoNotice,true);
   $("message-image-file").addEventListener("change",handleMessageImageFile);$("composer-more-trigger").addEventListener("click",event=>{event.stopPropagation();toggleComposerMoreMenu();});
-  $("game-picker-open").addEventListener("click",openGamePicker);$("game-picker-uno").addEventListener("click",createUnoInvitation);$("game-picker-chess").addEventListener("click",createChessInvitation);$("game-overlay-close").addEventListener("click",closeUnoGame);$("composer-more-menu").addEventListener("click",event=>event.stopPropagation());$("message-create-poll").addEventListener("click",openPollComposer);$("poll-form").addEventListener("submit",submitPoll);$("poll-add-option").addEventListener("click",addPollOptionInput);$("poll-cancel").addEventListener("click",()=>$("poll-create-modal").hidden=true);$("saved-messages-open").addEventListener("click",openSavedMessages);document.addEventListener("click",event=>{const wrap=$("composer-more-wrap");if(wrap&&!wrap.contains(event.target))closeComposerMoreMenu();if(S.openReactionPickerMessageId&&!event.target.closest(".message-reaction-area")){S.openReactionPickerMessageId=null;if(S.active)renderMessages(true);}});
+  $("game-picker-open").addEventListener("click",openGamePicker);$("game-picker-uno").addEventListener("click",createUnoInvitation);$("game-picker-chess").addEventListener("click",createChessInvitation);$("game-picker-battleship").addEventListener("click",createBattleshipInvitation);$("game-overlay-close").addEventListener("click",closeUnoGame);$("composer-more-menu").addEventListener("click",event=>event.stopPropagation());$("message-create-poll").addEventListener("click",openPollComposer);$("poll-form").addEventListener("submit",submitPoll);$("poll-add-option").addEventListener("click",addPollOptionInput);$("poll-cancel").addEventListener("click",()=>$("poll-create-modal").hidden=true);$("saved-messages-open").addEventListener("click",openSavedMessages);document.addEventListener("click",event=>{const wrap=$("composer-more-wrap");if(wrap&&!wrap.contains(event.target))closeComposerMoreMenu();if(S.openReactionPickerMessageId&&!event.target.closest(".message-reaction-area")){S.openReactionPickerMessageId=null;if(S.active)renderMessages(true);}});
   $("message").addEventListener("input",e=>{e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,120)+"px";updateLocalTyping();saveActiveChatDraft();updateComposerSendState();});
   $("message").addEventListener("blur",()=>stopTyping(true));
   $("conversation-sidebar-collapse").addEventListener("click",()=>{
