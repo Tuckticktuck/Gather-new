@@ -4400,3 +4400,49 @@ html[data-theme="light"]{
     padding:5px 0 4px !important;
   }
 }
+
+
+/* Conversation Battleship */
+.game-picker-battleship-icon{
+  display:grid;place-items:center;width:46px;height:46px;
+  border:1px solid var(--accent-outline-soft);border-radius:14px;
+  background:var(--accent-surface);color:var(--accent-text);
+  font-size:27px;font-weight:800;line-height:1;
+}
+.battleship-player-strip{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.battleship-board-panel{display:grid;gap:8px;min-width:0}
+.battleship-board-title{font-size:13px;font-weight:850;color:var(--text)}
+.battleship-board{
+  display:grid;grid-template-columns:repeat(10,minmax(0,1fr));
+  width:min(100%,min(66vh,610px));aspect-ratio:1;margin:0 auto;
+  gap:2px;padding:5px;border:1px solid var(--accent-outline);
+  border-radius:13px;background:color-mix(in srgb,var(--accent) 10%,#101923);
+}
+.battleship-cell{
+  display:grid;place-items:center;min-width:0;min-height:0;
+  padding:0;border:1px solid color-mix(in srgb,var(--accent) 18%,#ffffff1c);
+  border-radius:3px;background:color-mix(in srgb,var(--accent) 13%,#1c3747);
+  color:#e8f6ff;font-size:clamp(11px,2.3vw,19px);font-weight:900;
+  line-height:1;touch-action:manipulation;
+}
+.battleship-cell.is-ship{
+  border-color:var(--accent-outline-strong);
+  background:color-mix(in srgb,var(--accent) 48%,#244b50);
+  color:#f4fff9;
+}
+.battleship-cell.is-hit{border-color:#ff8c9b;background:#8f354b;color:#fff}
+.battleship-cell.is-miss{border-color:#8bb4c8;background:#244b60;color:#cfeeff}
+.battleship-cell.is-sunk{border-color:#ffd0a7;background:#6f2332;color:#fff}
+.battleship-cell:disabled{opacity:1;cursor:default}
+.battleship-cell:not(:disabled):hover{
+  border-color:#e5fff3;background:color-mix(in srgb,var(--accent) 38%,#244b60);
+  box-shadow:inset 0 0 0 1px #ffffff45;
+}
+.battleship-boards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(10px,2vw,22px);align-items:start}
+.battleship-hint{margin:0;color:var(--muted);font-size:12px;line-height:1.5;text-align:center}
+.battleship-controls{display:flex;justify-content:center;gap:9px;flex-wrap:wrap}
+@media(max-width:700px){
+  .battleship-boards{grid-template-columns:1fr}
+  .battleship-board{width:min(100%,min(52vh,490px));gap:2px;padding:4px}
+  .battleship-cell{font-size:clamp(10px,3.4vw,16px)}
+}
