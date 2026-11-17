@@ -163,6 +163,11 @@ function applyUIPreferences(){
   if(!faviconLink){faviconLink=document.createElement("link");faviconLink.rel="icon";faviconLink.type="image/svg+xml";document.head.append(faviconLink);}
   faviconLink.href="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(faviconSvg);
   root.style.setProperty("--accent",accent.accent);
+  // Chess squares follow each member’s selected accent and light/dark theme.
+  root.style.setProperty("--chess-light-square",`color-mix(in srgb,${accent.accent} ${isLight?10:18}%,${isLight?"#f5f7fb":"#e7edf0"})`);
+  root.style.setProperty("--chess-dark-square",`color-mix(in srgb,${accent.strong} ${isLight?42:54}%,${isLight?"#657080":"#111923"})`);
+  root.style.setProperty("--chess-board-frame",`color-mix(in srgb,${accent.accent} 48%,${isLight?"#aeb8c5":"#101820"})`);
+  root.style.setProperty("--chess-highlight",`color-mix(in srgb,${accent.accent} 55%,#e8d77a)`);
   root.style.setProperty("--brand-mark-border",`color-mix(in srgb,${accent.accent} 72%,white)`);
   root.style.setProperty("--brand-mark-shadow",`color-mix(in srgb,${accent.accent} 25%,transparent)`);
   root.style.setProperty("--accent-strong",accent.strong);
@@ -3570,7 +3575,22 @@ function unoCardLabel(card){
   return card.value;
 }
 
-const CHESS_GLYPHS={K:"♔",Q:"♕",R:"♖",B:"♗",N:"♘",P:"♙",k:"♚",q:"♛",r:"♜",b:"♝",n:"♞",p:"♟"};
+const CHESS_GLYPHS={K:"King",Q:"Queen",R:"Rook",B:"Bishop",N:"Knight",P:"Pawn",k:"King",q:"Queen",r:"Rook",b:"Bishop",n:"Knight",p:"Pawn"};
+function chessPieceMarkup(piece){
+  const shapes={
+    k:'<path d="M46 8V25M37.5 16.5h17" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><path d="M29 31Q29 25 40 25H52Q63 25 63 36L59 48H33Z" fill="currentColor"/><path d="M27 49H65L70 59H22Z" fill="currentColor"/><path d="M18 61H74V69H18Z" fill="currentColor"/>',
+    q:'<path d="M23 29L15 15L29 20L40 8L51 20L65 15L57 31L61 49H27Z" fill="currentColor"/><circle cx="15" cy="13" r="5" fill="currentColor"/><circle cx="40" cy="7" r="5" fill="currentColor"/><circle cx="65" cy="13" r="5" fill="currentColor"/><path d="M25 51H59L66 61H18Z" fill="currentColor"/><path d="M14 63H70V70H14Z" fill="currentColor"/>',
+    r:'<path d="M21 12H32V23H39V12H51V23H59V12H69V32H21Z" fill="currentColor"/><path d="M27 34H63L59 54H31Z" fill="currentColor"/><path d="M23 55H67L72 64H18Z" fill="currentColor"/><path d="M14 66H76V72H14Z" fill="currentColor"/>',
+    b:'<path d="M45 7C58 18 57 30 45 39C33 30 32 18 45 7Z" fill="currentColor"/><path d="M31 43Q45 31 59 43L62 54H28Z" fill="currentColor"/><path d="M25 55H65L71 64H19Z" fill="currentColor"/><path d="M15 66H75V72H15Z" fill="currentColor"/><path d="M37 14L52 30" stroke="var(--chess-piece-cutout)" stroke-width="4" stroke-linecap="round"/>',
+    n:'<path d="M23 58Q17 45 26 32L17 23L33 26Q42 10 62 16L70 28L61 34L66 48L61 60Z" fill="currentColor"/><path d="M25 57H67L73 66H17Z" fill="currentColor"/><path d="M14 67H76V73H14Z" fill="currentColor"/><circle cx="53" cy="25" r="3" fill="var(--chess-piece-cutout)"/>',
+    p:'<circle cx="45" cy="19" r="12" fill="currentColor"/><path d="M35 32Q45 26 55 32L61 52H29Z" fill="currentColor"/><path d="M25 54H65L71 64H19Z" fill="currentColor"/><path d="M15 66H75V72H15Z" fill="currentColor"/>'
+  };
+  const kind=piece.toLowerCase(),white=piece===piece.toUpperCase();
+  const node=el("span","chess-piece "+(white?"is-white":"is-black"));
+  node.setAttribute("role","img");node.setAttribute("aria-label",(white?"White ":"Black ")+CHESS_GLYPHS[piece]);
+  node.innerHTML='<svg viewBox="0 0 90 80" aria-hidden="true" focusable="false">'+shapes[kind]+'</svg>';
+  return node;
+}
 function chessSquareName(index){return "abcdefgh"[index%8]+(8-Math.floor(index/8));}
 async function performChessAction(action){
   const view=S.activeGameView,matchId=S.activeGameId;
@@ -3611,9 +3631,9 @@ function renderChessGame(){
   const winner=state.winnerId;
   $("uno-game-status").textContent=view.status==="completed"?(winner?gamePlayerName(winner,0)+" won":"Draw"):current?"Your turn · "+side:"Waiting for "+turnSide;
   const players=el("div","chess-player-strip");
-  [[white,"White","♔"],[black,"Black","♚"]].forEach(([id,label,glyph])=>{
+  [[white,"White","K"],[black,"Black","k"]].forEach(([id,label,glyph])=>{
     const chip=el("div","chess-player-chip"+(id===view.currentTurnUserId?" is-current":"")+(id===S.user.id?" is-you":""));
-    chip.append(el("span","chess-player-piece",glyph),el("span","",gamePlayerName(id,id===white?0:1)),el("small","",id===view.currentTurnUserId?"To move":label));
+    chip.append(chessPieceMarkup(glyph),el("span","",gamePlayerName(id,id===white?0:1)),el("small","",id===view.currentTurnUserId?"To move":label));
     players.append(chip);
   });
   content.append(players);
@@ -3637,7 +3657,7 @@ function renderChessGame(){
     if(state.lastMove&&(state.lastMove.from===square||state.lastMove.to===square))button.classList.add("is-last-move");
     if(S.chessSelectedSquare===square)button.classList.add("is-selected");
     if(legal.some(move=>move.from===S.chessSelectedSquare&&move.to===square))button.classList.add(piece?"is-capture-target":"is-legal-target");
-    if(piece)button.append(el("span","chess-piece "+(piece===piece.toUpperCase()?"is-white":"is-black"),CHESS_GLYPHS[piece]||piece));
+    if(piece)button.append(chessPieceMarkup(piece));
     if(c===0)button.append(el("span","chess-coordinate rank",String(8-Math.floor(index/8))));
     if(r===7)button.append(el("span","chess-coordinate file","abcdefgh"[index%8]));
     button.disabled=!current||view.status!=="active";
@@ -3663,8 +3683,8 @@ function renderChessGame(){
   if(S.chessPendingPromotion){
     const panel=el("div","chess-promotion-panel");
     panel.append(el("strong","","Promote pawn to"));
-    [["q","♕","Queen"],["r","♖","Rook"],["b","♗","Bishop"],["n","♘","Knight"]].forEach(([piece,glyph,label])=>{
-      const button=el("button","chess-promotion-choice",glyph+" "+label);
+    [["q","Queen"],["r","Rook"],["b","Bishop"],["n","Knight"]].forEach(([piece,label])=>{
+      const button=el("button","chess-promotion-choice");button.append(chessPieceMarkup(piece),el("span","",label));
       button.type="button";button.addEventListener("click",()=>void performChessAction({type:"move",...S.chessPendingPromotion,promotion:piece}));
       panel.append(button);
     });
