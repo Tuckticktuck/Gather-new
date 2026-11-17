@@ -13,7 +13,7 @@
 <meta name="description" content="Private direct and group conversations.">
 <title>Gather</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg?v=20261111-1">
-<link rel="stylesheet" href="app.css?v=20261117-battleship">
+<link rel="stylesheet" href="app.css?v=20261117-game-icons">
 <script src="https://unpkg.com/@supabase/supabase-js@2.118.0"></script>
 <script>
 if (!window.supabase?.createClient) {
@@ -720,17 +720,35 @@ if (!window.supabase?.createClient) {
     <h2 id="game-picker-title">Choose a game</h2>
     <p class="muted tiny">Your invitation will appear in this conversation. Everyone in the conversation can respond.</p>
     <button id="game-picker-uno" class="game-picker-tile" type="button">
-      <span class="game-picker-uno-icon" aria-hidden="true"><span>U</span><span>N</span><span>O</span></span>
+      <span class="game-picker-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" focusable="false">
+          <rect x="4.5" y="5.5" width="10.5" height="14" rx="2" transform="rotate(-9 9.75 12.5)"></rect>
+          <rect x="9" y="4" width="10.5" height="14" rx="2" transform="rotate(8 14.25 11)"></rect>
+          <path d="M12.2 8.5v5.2a1.8 1.8 0 0 0 3.6 0V8.5"></path>
+        </svg>
+      </span>
       <span><strong>UNO</strong><small>Classic card game · 2–20 players</small></span>
       <span class="game-picker-arrow" aria-hidden="true">→</span>
     </button>
     <button id="game-picker-chess" class="game-picker-tile" type="button">
-      <span class="game-picker-chess-icon" aria-hidden="true">♞</span>
+      <span class="game-picker-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" focusable="false">
+          <path d="M6 20h13l-1.2-4-3.2-2.1 2.7-3.1-.9-4.2-4.7-2-3.2 3.1 1.7 3.1-2.5 2.6L6 20Z"></path>
+          <path d="M8.5 20v-2.2M11 7.5l1.2 1.1"></path>
+          <circle cx="14.2" cy="8.2" r=".7" fill="currentColor" stroke="none"></circle>
+        </svg>
+      </span>
       <span><strong>Chess</strong><small>Classic strategy · 2 players</small></span>
       <span class="game-picker-arrow" aria-hidden="true">→</span>
     </button>
     <button id="game-picker-battleship" class="game-picker-tile" type="button">
-      <span class="game-picker-battleship-icon" aria-hidden="true">▦</span>
+      <span class="game-picker-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" focusable="false">
+          <path d="M3 14.5h18l-3.1 5H7.1L3 14.5Z"></path>
+          <path d="M7.5 14.5V9h8l3 5.5M11.5 9V5h2v4"></path>
+          <path d="M4 21c1.2-.8 2.3-.8 3.5 0s2.3.8 3.5 0 2.3-.8 3.5 0 2.3.8 3.5 0 2.3-.8 3.5 0"></path>
+        </svg>
+      </span>
       <span><strong>Battleship</strong><small>Hidden fleet strategy · 2 players</small></span>
       <span class="game-picker-arrow" aria-hidden="true">→</span>
     </button>
