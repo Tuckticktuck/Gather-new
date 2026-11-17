@@ -4004,7 +4004,14 @@ function renderUnoGame(){
   }
   const table=el("div","uno-table");
   const pile=el("div","uno-pile-area");
-  const draw=el("div","uno-pile-back");draw.append(el("strong","","UNO"),el("small","",String(view.drawPileCount??0)+" left"));
+  const draw=el("button","uno-pile-back uno-draw-pile");
+  draw.type="button";
+  const canDraw=current&&(!view.drawnCardId||!!state.pendingDraw);
+  draw.disabled=!canDraw;
+  draw.setAttribute("aria-label",state.pendingDraw?"Draw "+state.pendingDraw.amount+" penalty cards":"Draw a card");
+  draw.title=state.pendingDraw?"Tap to draw "+state.pendingDraw.amount+" cards":"Tap to draw a card";
+  draw.addEventListener("click",()=>void performUnoAction({type:"draw"}));
+  draw.append(el("strong","","UNO"),el("small","",String(view.drawPileCount??0)+" left"));
   const discard=el("div","uno-pile-discard");
   const top=state.discardTop;
   if(top){
@@ -4022,23 +4029,16 @@ function renderUnoGame(){
     const catchButton=el("button","game-card-action secondary","Catch UNO · draw 2");
     catchButton.type="button";catchButton.addEventListener("click",()=>void performUnoAction({type:"catch_uno"}));controls.append(catchButton);
   }
-  if(current&&state.pendingDraw){
-    const drawButton=el("button","game-card-action primary","Draw "+state.pendingDraw.amount+" cards");
-    drawButton.type="button";drawButton.addEventListener("click",()=>void performUnoAction({type:"draw"}));controls.append(drawButton);
-    if(state.pendingDraw.kind==="wild4"){
-      const challenge=el("button","game-card-action secondary","Challenge +4");
-      challenge.type="button";challenge.addEventListener("click",()=>void performUnoAction({type:"challenge"}));controls.append(challenge);
-    }
+  if(current&&state.pendingDraw?.kind==="wild4"){
+    const challenge=el("button","game-card-action secondary","Challenge +4");
+    challenge.type="button";challenge.addEventListener("click",()=>void performUnoAction({type:"challenge"}));controls.append(challenge);
   }else if(current&&view.drawnCardId){
     const pass=el("button","game-card-action secondary","Pass turn");
     pass.type="button";pass.addEventListener("click",()=>void performUnoAction({type:"pass"}));controls.append(pass);
-  }else if(current){
-    const drawButton=el("button","game-card-action primary","Draw a card");
-    drawButton.type="button";drawButton.addEventListener("click",()=>void performUnoAction({type:"draw"}));controls.append(drawButton);
   }
-  if(current&&hand.length===2){
-    const call=el("button","game-card-action"+(S.unoCallPending?" primary":" secondary"),S.unoCallPending?"UNO called ✓":"Call UNO");
-    call.type="button";call.addEventListener("click",()=>{S.unoCallPending=!S.unoCallPending;renderUnoGame();});controls.append(call);
+  if(state.pendingUnoPlayerId===S.user.id&&hand.length===1){
+    const call=el("button","game-card-action primary uno-call-button","UNO!");
+    call.type="button";call.addEventListener("click",()=>void performUnoAction({type:"call_uno"}));controls.append(call);
   }
   if(S.unoSelectedCardId){
     const selectedCard=hand.find(card=>card.id===S.unoSelectedCardId);
@@ -4052,7 +4052,7 @@ function renderUnoGame(){
         choose.type="button";choose.setAttribute("aria-label","Choose "+color);
         choose.title="Choose "+color;
         choose.addEventListener("click",()=>void performUnoAction({
-          type:"play",cardId:S.unoSelectedCardId,chosenColor:color,callUno:S.unoCallPending
+          type:"play",cardId:S.unoSelectedCardId,chosenColor:color
         }));
         colors.append(choose);
       });
@@ -4060,7 +4060,7 @@ function renderUnoGame(){
     }else if(selectedCard){
       const play=el("button","game-card-action primary uno-play-selected","Play selected card");
       play.type="button";
-      play.addEventListener("click",()=>void performUnoAction({type:"play",cardId:S.unoSelectedCardId,callUno:S.unoCallPending}));
+      play.addEventListener("click",()=>void performUnoAction({type:"play",cardId:S.unoSelectedCardId}));
       selection.append(play);
     }
     const clear=el("button","uno-clear-selection","Cancel");
@@ -4091,7 +4091,7 @@ function renderUnoGame(){
     button.addEventListener("click",()=>{
       if(S.preferences.unoCardPlayMode==="immediate"&&playable&&card.value!=="wild"&&card.value!=="wild4"){
         S.unoSelectedCardId=null;
-        void performUnoAction({type:"play",cardId:card.id,callUno:S.unoCallPending});
+        void performUnoAction({type:"play",cardId:card.id});
         return;
       }
       S.unoSelectedCardId=S.unoSelectedCardId===card.id?null:card.id;
