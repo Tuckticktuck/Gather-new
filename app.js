@@ -3571,6 +3571,29 @@ function unoCardLabel(card){
 }
 
 const CHESS_GLYPHS={K:"♔",Q:"♕",R:"♖",B:"♗",N:"♘",P:"♙",k:"♚",q:"♛",r:"♜",b:"♝",n:"♞",p:"♟"};
+function createChessPieceElement(piece){
+  const type=String(piece||"").toLowerCase(),white=piece===String(piece).toUpperCase();
+  const wrap=el("span","chess-piece "+(white?"is-white":"is-black"));
+  const ns="http://www.w3.org/2000/svg",svg=document.createElementNS(ns,"svg");
+  svg.setAttribute("viewBox","0 0 100 100");svg.setAttribute("class","chess-piece-svg");svg.setAttribute("aria-hidden","true");svg.setAttribute("focusable","false");
+  const path=d=>{const n=document.createElementNS(ns,"path");n.setAttribute("d",d);svg.append(n);};
+  const circle=(cx,cy,r)=>{const n=document.createElementNS(ns,"circle");n.setAttribute("cx",cx);n.setAttribute("cy",cy);n.setAttribute("r",r);svg.append(n);};
+  const rect=(x,y,w,h,rx=3)=>{const n=document.createElementNS(ns,"rect");n.setAttribute("x",x);n.setAttribute("y",y);n.setAttribute("width",w);n.setAttribute("height",h);n.setAttribute("rx",rx);svg.append(n);};
+  if(type==="p"){
+    circle(50,20,12);path("M39 34 Q50 29 61 34 L67 62 Q75 68 77 79 L23 79 Q25 68 33 62 Z");rect(20,82,60,9,4);
+  }else if(type==="r"){
+    path("M23 17 H37 V29 H46 V17 H57 V29 H66 V17 H79 V40 L70 48 L75 79 H25 L30 48 L21 40 Z");rect(19,82,62,9,4);
+  }else if(type==="n"){
+    path("M25 78 Q27 61 38 48 L31 30 Q43 12 61 23 L77 43 L67 53 Q75 64 76 79 Z");circle(59,32,2.8);rect(20,82,62,9,4);
+  }else if(type==="b"){
+    path("M50 9 Q69 25 62 40 Q58 49 50 54 Q42 49 38 40 Q31 25 50 9 Z");path("M42 52 L58 52 L66 77 H34 Z");path("M45 22 L56 39");rect(22,81,56,10,4);
+  }else if(type==="q"){
+    circle(20,19,6);circle(40,12,6);circle(60,12,6);circle(80,19,6);path("M18 29 L34 43 L40 24 L50 43 L60 24 L66 43 L82 29 L72 77 H28 Z");rect(22,81,56,10,4);
+  }else{
+    path("M44 9 H56 V25 H72 V37 H56 V49 H44 V37 H28 V25 H44 Z");path("M37 52 H63 L70 78 H30 Z");rect(21,82,58,9,4);
+  }
+  wrap.append(svg);return wrap;
+}
 function chessSquareName(index){return "abcdefgh"[index%8]+(8-Math.floor(index/8));}
 async function performChessAction(action){
   const view=S.activeGameView,matchId=S.activeGameId;
@@ -3613,7 +3636,7 @@ function renderChessGame(){
   const players=el("div","chess-player-strip");
   [[white,"White","♔"],[black,"Black","♚"]].forEach(([id,label,glyph])=>{
     const chip=el("div","chess-player-chip"+(id===view.currentTurnUserId?" is-current":"")+(id===S.user.id?" is-you":""));
-    chip.append(el("span","chess-player-piece",glyph),el("span","",gamePlayerName(id,id===white?0:1)),el("small","",id===view.currentTurnUserId?"To move":label));
+    const playerPiece=createChessPieceElement(id===white?"K":"k");playerPiece.classList.add("chess-player-piece");chip.append(playerPiece,el("span","",gamePlayerName(id,id===white?0:1)),el("small","",id===view.currentTurnUserId?"To move":label));
     players.append(chip);
   });
   content.append(players);
@@ -3637,7 +3660,7 @@ function renderChessGame(){
     if(state.lastMove&&(state.lastMove.from===square||state.lastMove.to===square))button.classList.add("is-last-move");
     if(S.chessSelectedSquare===square)button.classList.add("is-selected");
     if(legal.some(move=>move.from===S.chessSelectedSquare&&move.to===square))button.classList.add(piece?"is-capture-target":"is-legal-target");
-    if(piece)button.append(el("span","chess-piece "+(piece===piece.toUpperCase()?"is-white":"is-black"),CHESS_GLYPHS[piece]||piece));
+    if(piece)button.append(createChessPieceElement(piece));
     if(c===0)button.append(el("span","chess-coordinate rank",String(8-Math.floor(index/8))));
     if(r===7)button.append(el("span","chess-coordinate file","abcdefgh"[index%8]));
     button.disabled=!current||view.status!=="active";
@@ -3663,9 +3686,9 @@ function renderChessGame(){
   if(S.chessPendingPromotion){
     const panel=el("div","chess-promotion-panel");
     panel.append(el("strong","","Promote pawn to"));
-    [["q","♕","Queen"],["r","♖","Rook"],["b","♗","Bishop"],["n","♘","Knight"]].forEach(([piece,glyph,label])=>{
-      const button=el("button","chess-promotion-choice",glyph+" "+label);
-      button.type="button";button.addEventListener("click",()=>void performChessAction({type:"move",...S.chessPendingPromotion,promotion:piece}));
+    [["q","Queen"],["r","Rook"],["b","Bishop"],["n","Knight"]].forEach(([piece,label])=>{
+      const button=el("button","chess-promotion-choice");
+      button.type="button";button.append(createChessPieceElement(piece.toUpperCase()),el("span","",label));button.addEventListener("click",()=>void performChessAction({type:"move",...S.chessPendingPromotion,promotion:piece}));
       panel.append(button);
     });
     const cancel=el("button","game-card-action secondary","Cancel");cancel.type="button";cancel.addEventListener("click",()=>{S.chessPendingPromotion=null;renderChessGame();});panel.append(cancel);
