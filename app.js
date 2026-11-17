@@ -3944,7 +3944,7 @@ function renderMessages(preserveScroll=false){
       if(mine&&m.body&&!gameMessageId&&!m.is_admin_message&&S.messageRestrictionLoaded&&!activeMessageRestriction())addAction("Edit",()=>editOwnMessage(m));
       if(m.edited_at)addAction("View edit history",()=>openMessageEditHistory(m));
       if(mine&&m._undoExpiresAt>Date.now())addAction("Undo send",()=>undoSendMessage(m));
-      if(m.body&&!gameMessageId)addAction(S.textSelectionMessageId===m.id?"Stop selecting":"Select",()=>{S.textSelectionMessageId=S.textSelectionMessageId===m.id?null:m.id;renderMessages(true);});
+      if(m.body&&!gameMessageId)addAction("Select",()=>{S.textSelectionMessageId=m.id;renderMessages(true);});
       addAction("Copy message",()=>copyMessage(m));
       if(!gameMessageId&&S.messageRestrictionLoaded&&!activeMessageRestriction())addAction("Forward message",()=>openForwardMessage(m));
       addAction(S.pinnedMessages.some(x=>x.message_id===m.id)?"Unpin message":"Pin message",()=>togglePinnedMessage(m));
@@ -4053,6 +4053,13 @@ function renderMessages(preserveScroll=false){
       }
     }
     row.append(bubble);
+    if(S.textSelectionMessageId===m.id){
+      row.addEventListener("click",event=>{
+        if(event.target.closest(".body-text"))return;
+        S.textSelectionMessageId=null;
+        renderMessages(true);
+      });
+    }
     list.append(row);
     if(!S.selectingMessages){
       let holdTimer=null;
