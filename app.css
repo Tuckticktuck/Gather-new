@@ -4207,3 +4207,59 @@ html[data-theme="light"] .offline-status{color:#59421d;background:#fff4d8;border
 .notification-mark-all{min-height:36px;padding:8px 12px;border-radius:10px;font-size:calc(10px * var(--font-scale,1));font-weight:750}
 .notification-mark-all:disabled{opacity:.48;cursor:not-allowed}
 @media(max-width:520px){.notifications-toolbar{align-items:flex-start}.notification-mark-all{order:2}.notification-feed-note{order:3;width:100%}}
+
+
+/* UNO visual refinement: expressive typography, clear card hierarchy and tactile feedback. */
+.game-overlay-shell{font-family:"Avenir Next","Segoe UI",ui-sans-serif,system-ui,sans-serif;font-feature-settings:"kern" 1,"liga" 1}
+.game-overlay-heading h2{font-weight:850;letter-spacing:.075em}
+.uno-game-content{scrollbar-width:thin;scrollbar-color:#8bd8b366 transparent}
+.uno-player-chip{transition:border-color .2s ease,background .2s ease,transform .2s ease,box-shadow .2s ease}
+.uno-player-chip.is-current{transform:translateY(-2px);box-shadow:0 0 0 1px #a4e6c455,0 7px 18px #0003}
+.uno-player-chip.is-current:before{content:"YOUR TURN";color:#b8f2d3;font-size:9px;font-weight:900;letter-spacing:.13em}
+.uno-table{position:relative;overflow:hidden;isolation:isolate}
+.uno-table:before{content:"";position:absolute;inset:-50%;z-index:-1;background:conic-gradient(from 0deg,transparent,#ffffff0c,transparent 25%);animation:uno-table-glow 12s linear infinite}
+@keyframes uno-table-glow{to{transform:rotate(1turn)}}
+.uno-pile-back,.uno-card-face{width:clamp(70px,12vw,88px);height:clamp(104px,18vw,128px);border-width:4px;border-radius:16px}
+.uno-pile-back{transition:transform .22s ease,box-shadow .22s ease}
+.uno-pile-back strong{font-family:"Avenir Next",ui-rounded,system-ui,sans-serif;font-size:clamp(17px,3vw,21px);font-weight:950;letter-spacing:-.06em}
+.uno-pile-back small{font-variant-numeric:tabular-nums;font-weight:750;letter-spacing:.035em}
+.uno-card{font-family:"Avenir Next",ui-rounded,"Arial Rounded MT Bold",system-ui,sans-serif;font-variant-numeric:tabular-nums lining-nums;letter-spacing:-.045em;line-height:1;overflow:hidden;isolation:isolate}
+.uno-card:before{content:"";position:absolute;inset:14% 8%;z-index:-1;border-radius:50%;background:#fff;opacity:.9;transform:rotate(-24deg) scale(.88,1.08)}
+.uno-card-red:before,.uno-card-green:before,.uno-card-blue:before,.uno-card-wild:before{background:#fff}
+.uno-card-yellow:before{background:#fffdf0}
+.uno-card-corner{top:7px;left:7px;max-width:calc(100% - 14px);font-size:clamp(10px,1.5vw,12px);font-weight:950;letter-spacing:-.04em;line-height:1;z-index:1}
+.uno-card-center{position:relative;z-index:1;display:grid;place-items:center;width:100%;padding:0 5px;font-size:clamp(20px,4vw,29px);font-style:normal;font-weight:1000;letter-spacing:-.07em;line-height:.95;text-align:center;overflow-wrap:anywhere}
+.uno-card-hand{width:clamp(62px,8vw,76px);height:clamp(98px,13vw,116px);padding:8px 5px;background-clip:padding-box;font:inherit;transition:transform .2s cubic-bezier(.2,.8,.2,1),filter .2s ease,box-shadow .2s ease,opacity .2s ease;touch-action:pan-x; -webkit-tap-highlight-color:transparent}
+.uno-card-face-label{position:relative;z-index:1;display:grid;place-items:center;width:100%;min-width:0;min-height:34px;padding:2px;font-family:"Avenir Next",ui-rounded,"Arial Rounded MT Bold",system-ui,sans-serif;font-size:clamp(19px,4.8vw,27px);font-weight:1000;letter-spacing:-.075em;line-height:.95;text-align:center;overflow-wrap:anywhere;word-break:normal}
+.uno-card-hand.uno-card-wild .uno-card-face-label{font-size:clamp(13px,3vw,17px);letter-spacing:-.045em}
+.uno-card-hand:disabled{filter:saturate(.48) brightness(.86)}
+.uno-card-hand:not(:disabled):hover{transform:translateY(-9px) rotate(-1deg);filter:brightness(1.08);box-shadow:0 12px 20px #0006}
+.uno-card-hand:not(:disabled):focus-visible{outline:3px solid #c2f6dc;outline-offset:3px;transform:translateY(-7px)}
+.uno-card-hand.is-selected{transform:translateY(-14px) scale(1.045);outline:3px solid #c5f5dc;outline-offset:3px;box-shadow:0 14px 24px #0008,0 0 0 6px #9de4c32b;filter:brightness(1.08)}
+.uno-card-hand.is-drawn{outline:2px solid #fff3a1;outline-offset:2px}
+.uno-card-hand.is-drawn.is-selected{outline:3px solid #c5f5dc;outline-offset:3px}
+.uno-hand{align-items:flex-end;min-height:clamp(112px,18vh,140px);padding:18px 5px 14px;scroll-snap-type:x proximity}
+.uno-hand .uno-card-hand{scroll-snap-align:center}
+.uno-hand-heading{display:flex;align-items:center;justify-content:space-between;font-size:13px;letter-spacing:.035em}
+.uno-current-color{font-variant-numeric:tabular-nums;letter-spacing:.09em}
+.uno-selection-panel{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;width:100%;padding:10px 12px;border:1px solid #b8f2d34a;border-radius:14px;background:linear-gradient(120deg,#a4e6c415,#ffffff08);animation:uno-selection-in .18s ease-out}
+.uno-selection-copy{color:#dff8eb;font-size:12px;font-weight:800;letter-spacing:.025em}
+.uno-clear-selection{padding:8px 10px;border:0;border-radius:9px;background:#ffffff12;color:#d6e8df;font:inherit;font-size:11px;font-weight:750;cursor:pointer}
+.uno-play-selected{min-height:38px}
+.uno-color-choice{width:34px;height:34px;box-shadow:0 2px 7px #0005;transition:transform .16s ease,box-shadow .16s ease}
+.uno-color-choice:hover,.uno-color-choice:focus-visible{transform:scale(1.14);box-shadow:0 0 0 3px #ffffff55}
+.uno-action-controls .game-card-action{min-height:40px;border-radius:12px;font-size:12px;letter-spacing:.015em;transition:transform .16s ease,filter .16s ease,box-shadow .16s ease}
+.uno-action-controls .game-card-action:not(:disabled):hover{filter:brightness(1.1);box-shadow:0 5px 15px #0003}
+@keyframes uno-selection-in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:640px){
+  .uno-card-hand{width:clamp(58px,16vw,68px);height:clamp(92px,25vw,104px);font-size:inherit}
+  .uno-card-hand .uno-card-face-label{font-size:clamp(18px,5.5vw,23px)}
+  .uno-card-hand.uno-card-wild .uno-card-face-label{font-size:clamp(12px,3.6vw,15px)}
+  .uno-hand{min-height:116px;gap:7px;padding-top:17px}
+  .uno-pile-back,.uno-card-face,.uno-pile-discard{width:70px;height:104px}
+  .uno-card-center{font-size:23px}
+}
+@media(prefers-reduced-motion:reduce){
+  .uno-table:before{animation:none}
+  .uno-player-chip,.uno-card-hand,.uno-selection-panel,.uno-color-choice{transition:none;animation:none}
+}
