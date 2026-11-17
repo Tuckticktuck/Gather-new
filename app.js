@@ -3456,6 +3456,14 @@ async function createChessInvitation(){
   if(!S.active)return;
   const button=$("game-picker-chess");
   button.disabled=true;
+  status("game-picker-status","Checking conversation size…");
+  const members=await db.from("conversation_members").select("user_id",{count:"exact",head:true}).eq("conversation_id",S.active);
+  if(members.error){
+    button.disabled=false;status("game-picker-status","Could not verify the conversation members. Please try again.","error");return;
+  }
+  if(members.count!==2){
+    button.disabled=false;status("game-picker-status","Chess is a two-player game. Start it in a one-to-one conversation.","error");return;
+  }
   status("game-picker-status","Sending the Chess invitation…");
   const result=await db.rpc("create_game_invitation",{p_conversation_id:S.active,p_game_key:"chess"});
   button.disabled=false;
@@ -3480,13 +3488,13 @@ async function respondToUnoInvitation(matchId,responseValue){
     if(responseValue==="accepted"&&isActive){
       await openGameMatch(matchId);
     }else if(responseValue==="accepted"){
-      toast("UNO invitation accepted. Waiting for the other invited players to respond.");
+      toast((S.gameMatches[matchId]?.game_key==="chess"?"Chess":"UNO")+" invitation accepted. Waiting for the other invited players to respond.");
     }else{
-      toast("You declined the UNO invitation.");
+      toast("You declined the "+(S.gameMatches[matchId]?.game_key==="chess"?"Chess":"UNO")+" invitation.");
     }
   }catch(error){
     console.error("UNO invitation response failed:",error);
-    toast("Your UNO response could not be saved: "+(error?.message||"Please try again."));
+    toast("Your game response could not be saved: "+(error?.message||"Please try again."));
     if(conversationId)await loadGameCards(conversationId);
   }finally{
     S.gameRespondingIds.delete(matchId);
@@ -3514,7 +3522,7 @@ async function loadActiveGameView(){
   if(S.activeGameId!==matchId||requestId!==S.gameViewRequest)return;
   if(result.error||!result.data){
     $("uno-game-status").textContent="Game service unavailable";
-    $("uno-game-content").replaceChildren(el("p","game-service-error","The UNO game service is not available yet. The match and invitation remain saved in this conversation."));
+    $("uno-game-content").replaceChildren(el("p","game-service-error","The game service is not available yet. The match and invitation remain saved in this conversation."));
     return;
   }
   S.activeGameView=result.data;
@@ -3619,17 +3627,19 @@ function renderChessGame(){
   const boardWrap=el("section","chess-board-wrap");
   const board=el("div","chess-board");
   const legal=Array.isArray(state.legalMoves)?state.legalMoves:[];
+  const flipped=S.user.id===black;
   for(let r=0;r<8;r++)for(let c=0;c<8;c++){
-    const index=r*8+c,square=chessSquareName(index),piece=state.board?.[index]||null;
-    const button=el("button","chess-square "+((r+c)%2===0?"is-light":"is-dark"));
+    const index=flipped?(7-r)*8+(7-c):r*8+c;
+    const square=chessSquareName(index),piece=state.board?.[index]||null;
+    const button=el("button","chess-square "+((Math.floor(index/8)+index%8)%2===0?"is-light":"is-dark"));
     button.type="button";
     button.setAttribute("aria-label",square+(piece?" "+(CHESS_GLYPHS[piece]||"piece"):" empty"));
     if(state.lastMove&&(state.lastMove.from===square||state.lastMove.to===square))button.classList.add("is-last-move");
     if(S.chessSelectedSquare===square)button.classList.add("is-selected");
     if(legal.some(move=>move.from===S.chessSelectedSquare&&move.to===square))button.classList.add(piece?"is-capture-target":"is-legal-target");
     if(piece)button.append(el("span","chess-piece "+(piece===piece.toUpperCase()?"is-white":"is-black"),CHESS_GLYPHS[piece]||piece));
-    if(c===0)button.append(el("span","chess-coordinate rank",String(8-r)));
-    if(r===7)button.append(el("span","chess-coordinate file","abcdefgh"[c]));
+    if(c===0)button.append(el("span","chess-coordinate rank",String(8-Math.floor(index/8))));
+    if(r===7)button.append(el("span","chess-coordinate file","abcdefgh"[index%8]));
     button.disabled=!current||view.status!=="active";
     button.addEventListener("click",()=>{
       if(!current)return;
