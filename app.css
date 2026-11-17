@@ -4124,8 +4124,9 @@ html[data-theme="light"] .offline-status{color:#59421d;background:#fff4d8;border
 .game-picker-tile:disabled{opacity:.55;cursor:wait}
 .game-picker-tile>span:nth-child(2){display:grid;gap:3px}
 .game-picker-tile small{font-size:12px;color:var(--muted)}
-.game-picker-uno-icon{display:flex;align-items:center;justify-content:center;width:46px;height:46px;border:3px solid #fff;border-radius:50%;background:linear-gradient(135deg,#f44336 0 28%,#f6c945 28% 52%,#36ad69 52% 75%,#477bff 75%);color:#fff;font-size:10px;font-weight:950;text-shadow:0 1px 3px #222;transform:rotate(-12deg)}
-.game-picker-uno-icon span+span{margin-left:-2px}
+.game-picker-icon{display:grid;place-items:center;width:46px;height:46px;flex:none;border:1px solid var(--accent-outline-soft);border-radius:14px;background:var(--accent-surface);color:var(--accent-text);transition:background .16s ease,border-color .16s ease,transform .16s ease}
+.game-picker-icon svg{display:block;width:25px;height:25px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.game-picker-tile:hover .game-picker-icon{border-color:var(--accent-outline);background:var(--accent-hover);transform:translateY(-1px)}
 .game-picker-arrow{font-size:21px;color:var(--accent)}
 .game-overlay{position:fixed;inset:0;z-index:10050;display:grid;place-items:center;padding:0;background:rgba(4,7,12,.97);color:#f5f7fb}
 .game-overlay[hidden]{display:none}
@@ -4269,7 +4270,7 @@ html[data-theme="light"] .offline-status{color:#59421d;background:#fff4d8;border
 @media(max-width:420px){.uno-play-mode-choices{grid-template-columns:1fr}}
 
 /* Conversation Chess */
-.game-picker-chess-icon{display:grid;place-items:center;width:46px;height:46px;border:1px solid #a2e8cc66;border-radius:14px;background:linear-gradient(145deg,#315c50,#162d29);color:#c5f5df;font-size:31px;line-height:1}
+
 .chess-player-strip{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .chess-player-chip{display:grid;grid-template-columns:34px minmax(0,1fr);grid-template-rows:auto auto;align-items:center;column-gap:9px;padding:10px 12px;border:1px solid #ffffff22;border-radius:13px;background:#ffffff0a;min-width:0}
 .chess-player-chip.is-current{border-color:#a4e6c3a8;background:#a4e6c315;box-shadow:0 0 0 1px #a4e6c333}
@@ -4403,12 +4404,7 @@ html[data-theme="light"]{
 
 
 /* Conversation Battleship */
-.game-picker-battleship-icon{
-  display:grid;place-items:center;width:46px;height:46px;
-  border:1px solid var(--accent-outline-soft);border-radius:14px;
-  background:var(--accent-surface);color:var(--accent-text);
-  font-size:27px;font-weight:800;line-height:1;
-}
+
 .battleship-player-strip{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .battleship-board-panel{display:grid;gap:8px;min-width:0}
 .battleship-board-title{font-size:13px;font-weight:850;color:var(--text)}
