@@ -6692,7 +6692,7 @@ function wire(){
   homeSearchToggle.addEventListener("click",()=>setHomeSearchOpen(!homeSearchControls.classList.contains("is-open")));
   homeSearchClose.addEventListener("click",()=>setHomeSearchOpen(false));
   document.addEventListener("keydown",event=>{if(event.key==="Escape"&&homeSearchControls.classList.contains("is-open")){setHomeSearchOpen(false);homeSearchToggle.focus();}});
-  document.addEventListener("pointerdown",event=>{if(homeSearchControls.classList.contains("is-open")&&!homeSearchControls.contains(event.target))setHomeSearchOpen(false);});
+  document.addEventListener("pointerdown",event=>{if(homeSearchControls.classList.contains("is-open")&&!homeSearchControls.contains(event.target)&&!event.target.closest("#home-search-results"))setHomeSearchOpen(false);});
 
   document.querySelectorAll("[data-home-search-tab]").forEach(button=>button.addEventListener("click",()=>setHomeSearchTab(button.dataset.homeSearchTab)));
   $("in-chat-filter").addEventListener("input",renderInChatSidebar);
