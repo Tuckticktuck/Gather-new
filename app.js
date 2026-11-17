@@ -3386,6 +3386,21 @@ function subscribeGameMatches(conversationId){
     })
     .subscribe();
 }
+
+// A backgrounded tab can have its WebSocket paused, and a closed browser has
+// no live client at all. The database remains authoritative; rejoin and fetch
+// the latest match state whenever this page becomes active again.
+let lastGameResumeSyncAt=0;
+function resumeGameSync(){
+  if(!S.user||!S.active||document.hidden||!navigator.onLine)return;
+  const now=Date.now();
+  if(now-lastGameResumeSyncAt<1200)return;
+  lastGameResumeSyncAt=now;
+  const conversationId=S.active;
+  subscribeGameMatches(conversationId);
+  void loadGameCards(conversationId);
+  if(S.activeGameId)void loadActiveGameView();
+}
 function gameTitleForKey(key){
   if(key==="chess")return "Chess";
   if(key==="battleship")return "Battleship";
@@ -6789,6 +6804,7 @@ document.querySelectorAll("[data-folder]").forEach(b=>b.addEventListener("click"
     if(S.user){
       syncFriendPresenceChannels();
       if(!S.ownPresenceChannel)void syncOwnPresence();
+      resumeGameSync();
     }
   });
   document.addEventListener("visibilitychange",()=>{
@@ -6796,6 +6812,7 @@ document.querySelectorAll("[data-folder]").forEach(b=>b.addEventListener("click"
       syncFriendPresenceChannels();
       if(!S.ownPresenceChannel)void syncOwnPresence();
       void recordLastSeen();
+      resumeGameSync();
     }
   });
   $("messages").addEventListener("wheel",()=>{if(S.initialChatScrollLockId===S.active)releaseInitialChatScrollLock();},{passive:true});
@@ -6803,6 +6820,8 @@ document.querySelectorAll("[data-folder]").forEach(b=>b.addEventListener("click"
   $("messages").addEventListener("keydown",event=>{
     if(S.initialChatScrollLockId===S.active&&["ArrowUp","PageUp","Home"].includes(event.key))releaseInitialChatScrollLock();
   });
+  window.addEventListener("focus",resumeGameSync);
+  window.addEventListener("pageshow",resumeGameSync);
   window.addEventListener("resize",repositionFloatingMessageActionMenu);
   window.visualViewport?.addEventListener("resize",repositionFloatingMessageActionMenu);
   window.visualViewport?.addEventListener("scroll",repositionFloatingMessageActionMenu);
