@@ -4263,3 +4263,7 @@ html[data-theme="light"] .offline-status{color:#59421d;background:#fff4d8;border
   .uno-table:before{animation:none}
   .uno-player-chip,.uno-card-hand,.uno-selection-panel,.uno-color-choice{transition:none;animation:none}
 }
+
+.uno-play-mode-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.uno-play-mode-choices .font-choice{min-height:48px;padding:10px 12px;white-space:normal}
+@media(max-width:420px){.uno-play-mode-choices{grid-template-columns:1fr}}
