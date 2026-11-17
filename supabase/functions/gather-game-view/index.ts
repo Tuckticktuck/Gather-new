@@ -66,7 +66,7 @@ Deno.serve(async (request: Request) => {
     });
     const matches = await getRows<Array<Record<string, unknown>>>(supabaseUrl, serviceKey, "game_matches", matchQuery);
     const match = matches[0];
-    if (!match || match.game_key !== "uno") return respond(404, { error: "UNO match not found." }, origin);
+    if (!match || !["uno", "chess"].includes(String(match.game_key))) return respond(404, { error: "Game match not found." }, origin);
 
     const membershipQuery = new URLSearchParams({
       conversation_id: `eq.${String(match.conversation_id)}`,
@@ -92,9 +92,24 @@ Deno.serve(async (request: Request) => {
     }
 
     const state = match.state && typeof match.state === "object" ? match.state as Record<string, unknown> : {};
+    if (match.game_key === "chess") {
+      return respond(200, {
+        matchId,
+        gameKey: "chess",
+        status: match.status,
+        version: match.version,
+        currentTurnUserId: match.current_turn_user_id,
+        initialized: state.started === true,
+        publicState: state,
+        hand: [],
+        drawnCardId: null,
+        drawPileCount: null,
+      }, origin);
+    }
     if (state.started !== true) {
       return respond(200, {
         matchId,
+        gameKey: "uno",
         status: match.status,
         version: match.version,
         currentTurnUserId: match.current_turn_user_id,
@@ -124,6 +139,7 @@ Deno.serve(async (request: Request) => {
 
     return respond(200, {
       matchId,
+      gameKey: "uno",
       status: match.status,
       version: match.version,
       currentTurnUserId: match.current_turn_user_id,
