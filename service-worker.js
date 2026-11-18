@@ -7,7 +7,7 @@ const SHELL_URLS = [
   "./index.html",
   "./app.css?v=20261118-uno-stacking-v1",
   "./design-system.css?v=20261118-continuous-chat-canvas-v1",
-  "./app.js?v=20261118-chess-premoves-uno-house-rules-v1",
+  "./app.js?v=20261118-uno-stacking-v1",
   "./favicon.svg?v=20261111-1",
   "./manifest.webmanifest?v=20261111-pwa",
   "./icons/gather-180.png",
