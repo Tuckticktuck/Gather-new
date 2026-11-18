@@ -79,8 +79,11 @@ function appendFormattedMessageText(parent,value){
 function status(id, text, kind) { const n=$(id); n.textContent=text||""; n.className="status"+(kind?" "+kind:""); }
 function isFeedbackAdmin(user){return !!user&&!user.is_anonymous&&user.app_metadata?.gather_role==="admin";}
 function syncAdminModeButton(){
-  const button=$("admin-mode-open");
-  if(button)button.hidden=!isFeedbackAdmin(S.user);
+  const allowed=isFeedbackAdmin(S.user);
+  const section=$("settings-admin-mode-section");
+  const button=$("settings-admin-mode-open");
+  if(section)section.hidden=!allowed;
+  if(button)button.disabled=!allowed;
 }
 function toast(text) { $("toast").textContent=text; $("toast").classList.add("show"); clearTimeout(toast.t); toast.t=setTimeout(()=>$("toast").classList.remove("show"),3000); }
 function setChatLoadStatus(message,retry=false){
@@ -454,7 +457,7 @@ function setGroupUnreadMessages(enabled){
   renderNotifications();
 }
 function openSettings(){
-  applyUIPreferences();renderAccountApprovalSettings();$("settings-modal").hidden=false;
+  syncAdminModeButton();applyUIPreferences();renderAccountApprovalSettings();$("settings-modal").hidden=false;
 }
 function initials(s) { return (String(s||"?").trim()[0]||"?").toUpperCase(); }
 function paintAvatar(node,name,imageData){
@@ -6944,7 +6947,7 @@ function wire(){
   $("settings-open").addEventListener("click",openSettings);
   $("notifications-open").addEventListener("click",openNotifications);
   $("notifications-mark-all").addEventListener("click",markAllNotificationsRead);
-  $("admin-mode-open").addEventListener("click",openAdminMode);
+  $("settings-admin-mode-open").addEventListener("click",()=>{$("settings-modal").hidden=true;openAdminMode();});
   document.querySelectorAll("[data-admin-section]").forEach(button=>button.addEventListener("click",()=>setAdminModeSection(button.dataset.adminSection)));
   $("admin-quick-accounts").addEventListener("click",()=>setAdminModeSection("accounts"));
   $("admin-quick-reports").addEventListener("click",()=>setAdminModeSection("reports"));
