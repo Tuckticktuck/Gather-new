@@ -299,14 +299,61 @@ test("completes the match when a player plays their final card", async () => {
 });
 
 
+
+test("same-type +2 cards stack and the next player draws the accumulated penalty", async () => {
+  const f=fixture(
+    [card("red:draw2:first","red","draw2"),card("blue:draw2:second","blue","draw2")],
+    [card("yellow:1","yellow","1")],
+    {publicState:{houseRules:{stack_draw_cards:true}}},
+  );
+  const first=await apply(f,actor,{type:"play",cardId:"red:draw2:first"});
+  assert.equal(first.nextState.pendingDraw.amount,2);
+  const stacked=await apply({state:first.nextState,privateState:first.nextPrivateState},other,
+    {type:"play",cardId:"blue:draw2:second"});
+  assert.equal(stacked.nextState.pendingDraw.amount,4);
+  assert.equal(stacked.nextState.pendingDraw.kind,"draw2");
+  assert.equal(stacked.nextTurnUserId,actor);
+  const penalized=await apply({state:stacked.nextState,privateState:stacked.nextPrivateState},actor,{type:"draw"});
+  assert.equal(penalized.nextState.handCounts[actor],6);
+  assert.equal(penalized.nextTurnUserId,other);
+});
+
+test("same-type stacking rejects a +4 on a +2 penalty", async () => {
+  const f=fixture([card("red:draw2","red","draw2")],[card("wild4","", "wild4")],
+    {publicState:{houseRules:{stack_draw_cards:true}}});
+  const first=await apply(f,actor,{type:"play",cardId:"red:draw2"});
+  await assert.rejects(
+    apply({state:first.nextState,privateState:first.nextPrivateState},other,
+      {type:"play",cardId:"wild4",chosenColor:"blue"}),
+    /Only another \+2 can be stacked/,
+  );
+});
+
+test("same-type +4 cards stack and a successful challenge penalizes the last +4 player", async () => {
+  const f=fixture(
+    [card("wild4:first",null,"wild4"),card("red:held","red","2")],
+    [card("wild4:second",null,"wild4"),card("green:held","green","3")],
+    {publicState:{houseRules:{stack_draw_cards:true}}},
+  );
+  const first=await apply(f,actor,{type:"play",cardId:"wild4:first",chosenColor:"blue"});
+  const stacked=await apply({state:first.nextState,privateState:first.nextPrivateState},other,
+    {type:"play",cardId:"wild4:second",chosenColor:"green"});
+  assert.equal(stacked.nextState.pendingDraw.amount,8);
+  assert.equal(stacked.nextState.pendingDraw.offenderId,other);
+  assert.equal(stacked.nextPrivateState.challengeWasIllegal,true);
+  const challenged=await apply({state:stacked.nextState,privateState:stacked.nextPrivateState},actor,{type:"challenge"});
+  assert.equal(challenged.nextState.handCounts[other],9);
+  assert.equal(challenged.nextTurnUserId,actor);
+});
+
 test("host can save custom house rules before initializing UNO", async () => {
   const configured=await unoEngine.applyAction({
     state:{},privateState:null,action:{type:"set_house_rules",houseRules:{
-      starting_hand_size:5,draw_until_playable:true,wild4_anytime:true,
+      starting_hand_size:5,draw_until_playable:true,wild4_anytime:true,stack_draw_cards:true,
     }},actorId:actor,players,serverSeed:seed,
   });
   assert.deepEqual(configured.nextState.houseRules,{
-    starting_hand_size:5,draw_until_playable:true,wild4_anytime:true,
+    starting_hand_size:5,draw_until_playable:true,wild4_anytime:true,stack_draw_cards:true,
   });
   const initialized=await unoEngine.applyAction({
     state:configured.nextState,privateState:null,action:{type:"initialize"},
