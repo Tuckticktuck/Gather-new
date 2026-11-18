@@ -915,3 +915,30 @@ select:focus {
     scroll-behavior: auto;
   }
 }
+
+
+/* Keep the composer area visually continuous with the message canvas.
+   The parent chat surfaces must use the same painted background as #messages;
+   the composer wrapper itself remains fully transparent. */
+html:not([data-theme="light"]) #layout.show-chat > .main,
+html:not([data-theme="light"]) #layout.show-chat > .main > #chat,
+html:not([data-theme="light"]) #layout.show-chat > .main > #chat > #messages {
+  background: #000000 !important;
+}
+html[data-theme="light"] #layout.show-chat > .main,
+html[data-theme="light"] #layout.show-chat > .main > #chat,
+html[data-theme="light"] #layout.show-chat > .main > #chat > #messages {
+  background:
+    radial-gradient(ellipse at 90% 0%,color-mix(in srgb,var(--accent) 8%,transparent),transparent 46%),
+    linear-gradient(145deg,#fafbfe 0%,color-mix(in srgb,var(--accent) 4%,#f4f5fa) 58%,#f7f8fc 100%) !important;
+}
+#layout.show-chat #chat.chat-appearance-custom,
+#layout.show-chat #chat.chat-appearance-custom > #messages {
+  background: var(--conversation-background) !important;
+}
+#layout.show-chat #send-form.composer,
+#layout.show-chat #send-form.composer:focus-within {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
