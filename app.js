@@ -4166,6 +4166,7 @@ function renderUnoGame(){
   if(!view.initialized){
     const current=view.currentTurnUserId===S.user.id;
     const savedRules=normalizeUnoHouseRulesUI(view.publicState?.houseRules);
+    if(!current)S.unoHouseRulesDraft=null;
     if(!S.unoHouseRulesDraft)S.unoHouseRulesDraft={...savedRules};
     const draft=S.unoHouseRulesDraft;
     $("uno-game-status").textContent=current?"UNO lobby · host setup":"UNO lobby · waiting for host";
