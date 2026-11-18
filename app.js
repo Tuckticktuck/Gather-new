@@ -6971,8 +6971,10 @@ function wire(){
   $("announcement-send-open").addEventListener("click",()=>{$("settings-modal").hidden=true;openAnnouncementComposer();});
   $("announcement-compose-form").addEventListener("submit",publishAnnouncement);
   $("announcement-edit-open").addEventListener("click",()=>openAnnouncementEditor(S.activeAnnouncementId));
-  $("home-announcement-open").addEventListener("click",()=>{const latest=S.announcements[0];if(latest)openAnnouncement(latest.id);});
-  $("home-announcements-all").addEventListener("click",openAnnouncementsPage);
+  const homeAnnouncementOpen=$("home-announcement-open");
+  if(homeAnnouncementOpen)homeAnnouncementOpen.addEventListener("click",()=>{const latest=S.announcements[0];if(latest)openAnnouncement(latest.id);});
+  const homeAnnouncementsAll=$("home-announcements-all");
+  if(homeAnnouncementsAll)homeAnnouncementsAll.addEventListener("click",openAnnouncementsPage);
   // Notification center uses a single chronological feed; viewing an item dismisses it.
   $("report-form").addEventListener("submit",submitReport);
   $("member-profile-report").addEventListener("click",()=>{const userId=S.publicProfileId;setModalBackTarget("report-modal","member-profile-modal");$("member-profile-modal").hidden=true;openReport(userId);});
