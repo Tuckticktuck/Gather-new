@@ -30,7 +30,7 @@ function normalizeChatSettings(raw){
   });
   return {pinned,muted,drafts,appearance};
 }
-const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", inChatFilterType:"all", inChatMessageMatches:new Set(), inChatSearchRequestId:0, inChatSearchTimer:null, editingMessageId:null, editDraft:"", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], favoriteFriendIds:new Set(), archivedConversationIds:new Set(), blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), deletedConversationId:null, selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingUndoSend:null, undoSendTimer:null, undoCountdownInterval:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null,textSelectionMessageId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, homeSearchQuery:"", homeSearchTab:"messages", homeSearchMessages:[], homeSearchProfiles:[], homeSearchLoading:false, homeSearchErrors:{messages:"",profiles:""}, homeSearchTimer:null, homeSearchRequestId:0, directStatus:null, directStatusCache:new Map(), directStatusChecks:new Map(), groupMessageStatus:null, ageStatus:null, ageChangeStatus:null, ageRequestChannel:null, messageRestriction:null, messageRestrictionLoaded:false, messageRestrictionError:"", messageRestrictionChannel:null, messageRestrictionTimer:null, active:null, messages:[], gameMatches:{}, gameMatchPlayers:{}, gameRespondingIds:new Set(), gameChannel:null, gameCardsLoading:false, gameCardsRefreshPending:false, activeGameId:null, activeGameView:null, gameViewRequest:0, unoInitializing:false, chessSelectedSquare:null, chessPendingPromotion:null, battleshipDraftFleet:null,  unoSelectedCardId:null, initialChatScrollLockId:null, channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), friendPresenceRetryTimers:new Map(), friendPresenceRetryAttempts:new Map(), ownPresenceChannel:null, ownPresenceRetryTimer:null, ownPresenceRetryAttempt:0, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],intergroupRequests:[],ageChangeRequests:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
+const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", inChatFilterType:"all", inChatMessageMatches:new Set(), inChatSearchRequestId:0, inChatSearchTimer:null, editingMessageId:null, editDraft:"", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], favoriteFriendIds:new Set(), archivedConversationIds:new Set(), blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), deletedConversationId:null, selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingUndoSend:null, undoSendTimer:null, undoCountdownInterval:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null,textSelectionMessageId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, homeSearchQuery:"", homeSearchTab:"messages", homeSearchMessages:[], homeSearchProfiles:[], homeSearchLoading:false, homeSearchErrors:{messages:"",profiles:""}, homeSearchTimer:null, homeSearchRequestId:0, directStatus:null, directStatusCache:new Map(), directStatusChecks:new Map(), groupMessageStatus:null, ageStatus:null, ageChangeStatus:null, ageRequestChannel:null, messageRestriction:null, messageRestrictionLoaded:false, messageRestrictionError:"", messageRestrictionChannel:null, messageRestrictionTimer:null, active:null, messages:[], gameMatches:{}, gameMatchPlayers:{}, gameRespondingIds:new Set(), gameChannel:null, gameCardsLoading:false, gameCardsRefreshPending:false, activeGameId:null, activeGameView:null, gameViewRequest:0, unoInitializing:false, unoHouseRulesDraft:null, chessSelectedSquare:null, chessPendingPromotion:null, battleshipDraftFleet:null,  unoSelectedCardId:null, initialChatScrollLockId:null, channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), friendPresenceRetryTimers:new Map(), friendPresenceRetryAttempts:new Map(), ownPresenceChannel:null, ownPresenceRetryTimer:null, ownPresenceRetryAttempt:0, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],intergroupRequests:[],ageChangeRequests:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function appendSafeText(parent,value){
@@ -3589,7 +3589,7 @@ function closeUnoGame(){
   S.activeGameId=null;S.activeGameView=null;S.unoSelectedCardId=null;S.unoInitializing=false;S.chessSelectedSquare=null;S.chessPendingPromotion=null;S.battleshipDraftFleet=null;
 }
 async function openGameMatch(matchId){
-  S.activeGameId=matchId;S.activeGameView=null;S.unoSelectedCardId=null;S.chessSelectedSquare=null;S.chessPendingPromotion=null;
+  S.activeGameId=matchId;S.activeGameView=null;S.unoSelectedCardId=null;S.unoHouseRulesDraft=null;S.chessSelectedSquare=null;S.chessPendingPromotion=null;
   $("game-overlay").hidden=false;
   $("uno-game-title").textContent=gameTitleForKey(S.gameMatches[matchId]?.game_key);
   $("uno-game-status").textContent="Loading match…";
@@ -3614,7 +3614,7 @@ async function loadActiveGameView(){
   else if(result.data.gameKey==="battleship")renderBattleshipGame();
   else renderUnoGame();
   const view=result.data;
-  if(view.status==="active"&&!view.initialized&&view.currentTurnUserId===S.user.id&&!S.unoInitializing){
+  if(view.gameKey!=="uno"&&view.status==="active"&&!view.initialized&&view.currentTurnUserId===S.user.id&&!S.unoInitializing){
     S.unoInitializing=true;
     const started=await db.functions.invoke("gather-game-action",{
       body:{matchId,expectedVersion:Number(view.version),action:{type:"initialize"}}
@@ -3632,20 +3632,22 @@ async function loadActiveGameView(){
 async function performUnoAction(action){
   const view=S.activeGameView,matchId=S.activeGameId;
   const outOfTurnUnoAction=action?.type==="call_uno"||action?.type==="catch_uno";
-  if(!view||!matchId||(view.currentTurnUserId!==S.user.id&&!outOfTurnUnoAction))return;
+  if(!view||!matchId||(view.currentTurnUserId!==S.user.id&&!outOfTurnUnoAction))return false;
   const content=$("uno-game-content");
   content.querySelectorAll("button").forEach(button=>button.disabled=true);
   const result=await db.functions.invoke("gather-game-action",{
     body:{matchId,expectedVersion:Number(view.version),action}
   });
   if(result.error){
-    toast(result.error.message||"That UNO move could not be saved.");
+    toast(result.error.message||"That UNO action could not be saved.");
     await loadActiveGameView();
-    return;
+    return false;
   }
   S.unoSelectedCardId=null;
+  if(action.type==="set_house_rules")S.unoHouseRulesDraft=null;
   await loadActiveGameView();
   if(S.active)await loadGameCards(S.active);
+  return true;
 }
 function unoCardSortKey(card,index){
   const colorOrder={red:0,yellow:1,green:2,blue:3,wild:4};
@@ -3673,6 +3675,18 @@ function unoCardLabel(card){
   if(card.value==="wild4")return "+4";
   return card.value;
 }
+const DEFAULT_UNO_HOUSE_RULES_UI={starting_hand_size:7,draw_until_playable:false,wild4_anytime:false};
+function normalizeUnoHouseRulesUI(value){
+  return {
+    starting_hand_size:[5,7,10].includes(Number(value?.starting_hand_size))?Number(value.starting_hand_size):7,
+    draw_until_playable:!!value?.draw_until_playable,
+    wild4_anytime:!!value?.wild4_anytime
+  };
+}
+function unoHouseRulesSummary(rules){
+  const value=normalizeUnoHouseRulesUI(rules);
+  return [value.starting_hand_size+" cards to start",value.draw_until_playable?"Draw until playable":"Draw one card",value.wild4_anytime?"+4 can be played anytime":"Standard +4 challenge"].join(" · ");
+}
 
 const CHESS_GLYPHS={K:"King",Q:"Queen",R:"Rook",B:"Bishop",N:"Knight",P:"Pawn",k:"King",q:"Queen",r:"Rook",b:"Bishop",n:"Knight",p:"Pawn"};
 function chessPieceMarkup(piece,forceColor=null){
@@ -3693,12 +3707,15 @@ function chessPieceMarkup(piece,forceColor=null){
 function chessSquareName(index){return "abcdefgh"[index%8]+(8-Math.floor(index/8));}
 async function performChessAction(action){
   const view=S.activeGameView,matchId=S.activeGameId;
-  if(!view||!matchId||view.currentTurnUserId!==S.user.id)return;
+  const premoveAction=action?.type==="queue_premove"||action?.type==="cancel_premove";
+  if(!view||!matchId||(!premoveAction&&view.currentTurnUserId!==S.user.id)||(premoveAction&&view.currentTurnUserId===S.user.id))return;
   const content=$("uno-game-content");
   content.querySelectorAll("button").forEach(button=>button.disabled=true);
   const result=await db.functions.invoke("gather-game-action",{body:{matchId,expectedVersion:Number(view.version),action}});
-  if(result.error){toast(result.error.message||"That Chess move could not be saved.");await loadActiveGameView();return;}
+  if(result.error){toast(result.error.message||"That Chess action could not be saved.");await loadActiveGameView();return;}
   S.chessSelectedSquare=null;S.chessPendingPromotion=null;
+  if(action.type==="queue_premove")toast("Pre-move queued. It will play automatically if it is legal when your turn begins.");
+  else if(action.type==="cancel_premove")toast("Pre-move cancelled.");
   await loadActiveGameView();
   if(S.active)await loadGameCards(S.active);
 }
@@ -3725,10 +3742,11 @@ function renderChessGame(){
   const state=view.publicState||{};
   const white=state.whiteUserId,black=state.blackUserId;
   const current=view.currentTurnUserId===S.user.id;
-  const side= S.user.id===white?"White":"Black";
+  const side=S.user.id===white?"White":"Black";
   const turnSide=state.turn==="w"?"White":"Black";
   const winner=state.winnerId;
-  $("uno-game-status").textContent=view.status==="completed"?(winner?gamePlayerName(winner,0)+" won":"Draw"):current?"Your turn · "+side:"Waiting for "+turnSide;
+  const queuedPremove=view.queuedPremove||null;
+  $("uno-game-status").textContent=view.status==="completed"?(winner?gamePlayerName(winner,0)+" won":"Draw"):current?"Your turn · "+side:"Waiting for "+turnSide+" · pre-moves enabled";
   const players=el("div","chess-player-strip");
   [[white,"White","K"],[black,"Black","k"]].forEach(([id,label,glyph])=>{
     const chip=el("div","chess-player-chip"+(id===view.currentTurnUserId?" is-current":"")+(id===S.user.id?" is-you":""));
@@ -3743,6 +3761,12 @@ function renderChessGame(){
     close.type="button";close.addEventListener("click",closeUnoGame);content.append(close);return;
   }
   if(state.check)content.append(el("div","chess-check-banner","Check"));
+  if(queuedPremove){
+    const banner=el("div","chess-premove-banner","Pre-move queued · "+queuedPremove.from+" → "+queuedPremove.to+(queuedPremove.promotion?" · "+queuedPremove.promotion.toUpperCase():""));
+    content.append(banner);
+  }else if(!current){
+    content.append(el("div","chess-premove-hint","Select one of your pieces, then its destination, to queue a pre-move."));
+  }
   const boardWrap=el("section","chess-board-wrap");
   const board=el("div","chess-board");
   const legal=Array.isArray(state.legalMoves)?state.legalMoves:[];
@@ -3754,25 +3778,37 @@ function renderChessGame(){
     button.type="button";
     button.setAttribute("aria-label",square+(piece?" "+(CHESS_GLYPHS[piece]||"piece"):" empty"));
     if(state.lastMove&&(state.lastMove.from===square||state.lastMove.to===square))button.classList.add("is-last-move");
+    if(queuedPremove?.from===square)button.classList.add("is-premove-from");
+    if(queuedPremove?.to===square)button.classList.add("is-premove-to");
     if(S.chessSelectedSquare===square)button.classList.add("is-selected");
-    if(legal.some(move=>move.from===S.chessSelectedSquare&&move.to===square))button.classList.add(piece?"is-capture-target":"is-legal-target");
+    if(current&&legal.some(move=>move.from===S.chessSelectedSquare&&move.to===square))button.classList.add(piece?"is-capture-target":"is-legal-target");
     if(piece)button.append(chessPieceMarkup(piece));
     if(c===0)button.append(el("span","chess-coordinate rank",String(8-Math.floor(index/8))));
     if(r===7)button.append(el("span","chess-coordinate file","abcdefgh"[index%8]));
-    button.disabled=!current||view.status!=="active";
+    button.disabled=view.status!=="active";
     button.addEventListener("click",()=>{
-      if(!current)return;
+      if(view.status!=="active")return;
+      const own=piece&&(piece===piece.toUpperCase()?S.user.id===white:S.user.id===black);
       if(S.chessSelectedSquare){
         const from=S.chessSelectedSquare;
-        const choices=legal.filter(move=>move.from===from&&move.to===square);
-        if(choices.length){
-          if(choices.some(move=>move.promotion)){
-            S.chessPendingPromotion={from,to:square};renderChessGame();return;
+        if(current){
+          const choices=legal.filter(move=>move.from===from&&move.to===square);
+          if(choices.length){
+            if(choices.some(move=>move.promotion)){
+              S.chessPendingPromotion={from,to:square,premove:false};renderChessGame();return;
+            }
+            void performChessAction({type:"move",from,to:square});return;
           }
-          void performChessAction({type:"move",from,to:square});return;
+          if(own){S.chessSelectedSquare=square;S.chessPendingPromotion=null;renderChessGame();return;}
+        }else{
+          if(own){S.chessSelectedSquare=square;S.chessPendingPromotion=null;renderChessGame();return;}
+          const fromIndex=(8-Number(from[1]))*8+"abcdefgh".indexOf(from[0]);
+          const movingPiece=state.board?.[fromIndex];
+          const promotes=movingPiece?.toLowerCase()==="p"&&(S.user.id===white?Math.floor(index/8)===0:Math.floor(index/8)===7);
+          if(promotes){S.chessPendingPromotion={from,to:square,premove:true};renderChessGame();return;}
+          void performChessAction({type:"queue_premove",from,to:square});return;
         }
       }
-      const own=piece&&(piece===piece.toUpperCase()?S.user.id===white:S.user.id===black);
       S.chessSelectedSquare=own?square:null;S.chessPendingPromotion=null;renderChessGame();
     });
     board.append(button);
@@ -3784,7 +3820,11 @@ function renderChessGame(){
     panel.append(el("strong","","Promote pawn to"));
     [["q","Queen"],["r","Rook"],["b","Bishop"],["n","Knight"]].forEach(([piece,label])=>{
       const button=el("button","chess-promotion-choice");button.append(chessPieceMarkup(piece,side.toLowerCase()),el("span","",label));
-      button.type="button";button.addEventListener("click",()=>void performChessAction({type:"move",...S.chessPendingPromotion,promotion:piece}));
+      button.type="button";
+      button.addEventListener("click",()=>{
+        const pending=S.chessPendingPromotion;
+        void performChessAction({type:pending.premove?"queue_premove":"move",from:pending.from,to:pending.to,promotion:piece});
+      });
       panel.append(button);
     });
     const cancel=el("button","game-card-action secondary","Cancel");cancel.type="button";cancel.addEventListener("click",()=>{S.chessPendingPromotion=null;renderChessGame();});panel.append(cancel);
@@ -3801,6 +3841,11 @@ function renderChessGame(){
     history.append(list);
   }
   lower.append(history);
+  if(queuedPremove){
+    const cancelPremove=el("button","game-card-action secondary chess-premove-cancel","Cancel pre-move");
+    cancelPremove.type="button";cancelPremove.addEventListener("click",()=>void performChessAction({type:"cancel_premove"}));
+    lower.append(cancelPremove);
+  }
   if(current){
     const resign=el("button","game-card-action secondary chess-resign","Resign");
     resign.type="button";resign.addEventListener("click",()=>{if(window.confirm("Resign this Chess match?"))void performChessAction({type:"resign"});});
@@ -3808,7 +3853,6 @@ function renderChessGame(){
   }
   content.append(lower);
 }
-
 function renderBattleshipFleetRandomly(){
   const lengths=[5,4,3,3,2],occupied=new Set(),fleet=[];
   for(const length of lengths){
@@ -4120,9 +4164,61 @@ function renderUnoGame(){
     return;
   }
   if(!view.initialized){
-    $("uno-game-status").textContent="Preparing match";
-    const current= view.currentTurnUserId===S.user.id;
-    content.append(el("p","uno-waiting-title",current?"Starting your UNO match…":"Waiting for the first player to start"));
+    const current=view.currentTurnUserId===S.user.id;
+    const savedRules=normalizeUnoHouseRulesUI(view.publicState?.houseRules);
+    if(!S.unoHouseRulesDraft)S.unoHouseRulesDraft={...savedRules};
+    const draft=S.unoHouseRulesDraft;
+    $("uno-game-status").textContent=current?"UNO lobby · host setup":"UNO lobby · waiting for host";
+    const panel=el("section","uno-house-rules-panel");
+    const heading=el("div","uno-house-rules-heading");
+    heading.append(el("small","uno-house-rules-eyebrow","MATCH SETUP"),el("strong","","House rules"),el("p","muted","Choose the rules for this match before dealing the cards."));
+    panel.append(heading);
+    const handSizeLabel=el("label","uno-house-rule-select-label","Starting hand");
+    const handSize=el("select","uno-house-rule-select");
+    [[5,"5 cards"],[7,"7 cards · Classic"],[10,"10 cards"]].forEach(([value,label])=>{
+      const option=el("option","",label);option.value=String(value);handSize.append(option);
+    });
+    handSize.value=String(draft.starting_hand_size);
+    handSize.disabled=!current;
+    handSize.addEventListener("change",()=>{S.unoHouseRulesDraft={...S.unoHouseRulesDraft,starting_hand_size:Number(handSize.value)};});
+    handSizeLabel.append(handSize);panel.append(handSizeLabel);
+    const addRule=(title,description,key)=>{
+      const row=el("label","uno-house-rule-row");
+      const copy=el("span","uno-house-rule-copy");
+      copy.append(el("strong","",title),el("small","",description));
+      const toggle=el("input","uno-house-rule-toggle");toggle.type="checkbox";toggle.checked=!!draft[key];toggle.disabled=!current;
+      toggle.addEventListener("change",()=>{S.unoHouseRulesDraft={...S.unoHouseRulesDraft,[key]:toggle.checked};});
+      row.append(copy,toggle);panel.append(row);
+    };
+    addRule("Draw until playable","Keep drawing until you find a card you can play. If none remain, your turn passes.","draw_until_playable");
+    addRule("Wild Draw Four anytime","Allow +4 even when you hold a card matching the current color. Challenges against it will fail.","wild4_anytime");
+    const summary=el("p","uno-house-rules-summary",unoHouseRulesSummary(savedRules));
+    panel.append(summary);
+    if(current){
+      const actions=el("div","uno-house-rules-actions");
+      const save=el("button","game-card-action secondary","Save rules");
+      save.type="button";
+      const changed=JSON.stringify(draft)!==JSON.stringify(savedRules);
+      save.disabled=!changed;
+      save.addEventListener("click",()=>void performUnoAction({type:"set_house_rules",houseRules:{...S.unoHouseRulesDraft}}));
+      const start=el("button","game-card-action primary","Start match");
+      start.type="button";
+      start.addEventListener("click",async()=>{
+        const latest=S.unoHouseRulesDraft||savedRules;
+        if(JSON.stringify(latest)!==JSON.stringify(savedRules)){
+          const saved=await performUnoAction({type:"set_house_rules",houseRules:{...latest}});
+          if(!saved)return;
+        }
+        await performUnoAction({type:"initialize"});
+      });
+      actions.append(save,start);panel.append(actions);
+      panel.append(el("p","tiny muted","Only the host can change these settings. All players will use the saved rules."));
+    }else{
+      panel.append(el("p","uno-waiting-title","Waiting for the host to start"));
+      panel.append(el("p","muted","Selected rules: "+unoHouseRulesSummary(savedRules)));
+      panel.querySelectorAll("input,select,button").forEach(control=>control.disabled=true);
+    }
+    content.append(panel);
     return;
   }
   const state=view.publicState||{};
