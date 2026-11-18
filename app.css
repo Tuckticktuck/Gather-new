@@ -5235,3 +5235,37 @@ html .layout.show-chat #send-form.composer:focus-within {
   border-color: transparent !important;
   box-shadow: none !important;
 }
+
+
+/* Chess pre-moves and UNO lobby house-rule setup */
+.chess-premove-hint,.chess-premove-banner{
+  width:min(100%,680px);margin:0 auto 10px;padding:10px 13px;border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);
+  border-radius:12px;background:color-mix(in srgb,var(--accent) 12%,var(--panel));color:var(--text);
+  font-size:12px;font-weight:700;text-align:center;
+}
+.chess-premove-banner{background:color-mix(in srgb,var(--accent) 19%,var(--panel));}
+.chess-square.is-premove-from{box-shadow:inset 0 0 0 3px #e6b94f!important;}
+.chess-square.is-premove-to{box-shadow:inset 0 0 0 3px #e6b94f!important;background-image:linear-gradient(#e6b94f35,#e6b94f35);}
+.chess-premove-cancel{align-self:flex-start}
+.uno-house-rules-panel{
+  width:min(100%,620px);margin:18px auto;padding:clamp(16px,3vw,24px);border:1px solid color-mix(in srgb,var(--accent) 34%,var(--border));
+  border-radius:18px;background:color-mix(in srgb,var(--panel) 92%,var(--accent) 8%);display:grid;gap:14px;
+}
+.uno-house-rules-heading{display:grid;gap:5px}
+.uno-house-rules-eyebrow{font-size:10px;letter-spacing:.15em;font-weight:900;color:var(--accent)}
+.uno-house-rules-heading>strong{font-size:22px;font-weight:900}
+.uno-house-rules-heading>p{margin:0;font-size:12px}
+.uno-house-rule-select-label{display:grid;gap:7px;font-size:12px;font-weight:800}
+.uno-house-rule-select{width:100%;min-height:42px;padding:8px 12px;border:1px solid var(--border);border-radius:11px;background:var(--surface);color:var(--text);font:inherit}
+.uno-house-rule-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px;border:1px solid var(--border);border-radius:13px;background:color-mix(in srgb,var(--surface) 85%,transparent);cursor:pointer}
+.uno-house-rule-copy{display:grid;gap:4px;min-width:0}
+.uno-house-rule-copy strong{font-size:13px}
+.uno-house-rule-copy small{font-size:11px;line-height:1.45;color:var(--muted)}
+.uno-house-rule-toggle{width:20px;height:20px;flex:0 0 auto;accent-color:var(--accent)}
+.uno-house-rules-summary{margin:0;padding:10px 12px;border-radius:10px;background:color-mix(in srgb,var(--accent) 10%,transparent);font-size:11px;color:var(--muted);line-height:1.5}
+.uno-house-rules-actions{display:flex;flex-wrap:wrap;gap:9px}
+.uno-house-rules-actions>*{flex:1 1 140px}
+@media(max-width:520px){
+  .uno-house-rules-panel{margin:12px auto;padding:15px}
+  .uno-house-rules-actions{display:grid;grid-template-columns:1fr}
+}
