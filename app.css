@@ -5195,3 +5195,14 @@ html[data-theme="light"]{
   background: transparent !important;
   border-color: transparent !important;
 }
+
+
+/* The composer sits inside .main; make the chat canvas itself transparent too. */
+.layout.show-chat .main,
+.layout.show-chat .main:has(> #chat) {
+  background: transparent !important;
+}
+.layout.show-chat #chat,
+.layout.show-chat #chat .composer {
+  background: transparent !important;
+}
