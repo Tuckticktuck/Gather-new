@@ -5184,3 +5184,14 @@ html[data-theme="light"]{
   border-color: transparent !important;
   box-shadow: none !important;
 }
+
+
+/* Keep the custom conversation canvas on the message list, not behind the composer. */
+#chat.chat-appearance-custom {
+  background: transparent !important;
+}
+#chat.chat-appearance-custom #send-form.composer,
+#chat.chat-appearance-custom #send-form.composer:focus-within {
+  background: transparent !important;
+  border-color: transparent !important;
+}
