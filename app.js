@@ -3213,6 +3213,9 @@ async function loadMessages(id){
   S.messages=loadedMessages;
   if(S.active!==id)return;
   renderMessages();
+  // Position the first populated render immediately; do not wait for secondary
+  // metadata (reactions, polls, receipts) before moving to the latest message.
+  scrollMessagesToLatest(id);
   await Promise.all([
     loadMessagePolls(id,S.messages.map(m=>m.id)),
     loadPinnedMessages(id),
@@ -4469,6 +4472,10 @@ function repositionFloatingMessageActionMenu(){
 function scrollMessagesToLatest(conversationId=S.active){
   if(!conversationId||S.active!==conversationId||S.initialChatScrollLockId!==conversationId)return;
   const list=$("messages");
+  // The conversation list normally uses smooth scrolling. Override that only
+  // for initial positioning so opening a chat never animates from the top.
+  const previousInlineBehavior=list.style.scrollBehavior;
+  list.style.scrollBehavior="auto";
   const scroll=()=>{
     if(S.active!==conversationId||S.initialChatScrollLockId!==conversationId)return;
     list.scrollTop=list.scrollHeight;
@@ -4476,7 +4483,11 @@ function scrollMessagesToLatest(conversationId=S.active){
   scroll();
   requestAnimationFrame(()=>{
     scroll();
-    requestAnimationFrame(scroll);
+    requestAnimationFrame(()=>{
+      scroll();
+      if(previousInlineBehavior)list.style.scrollBehavior=previousInlineBehavior;
+      else list.style.removeProperty("scroll-behavior");
+    });
   });
 }
 function releaseInitialChatScrollLock(){
