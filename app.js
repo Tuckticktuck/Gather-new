@@ -1817,8 +1817,24 @@ async function openAnnouncement(id){
   $("announcement-view-date").textContent="Published "+dateLabel(result.data.created_at)+(result.data.edited_at?" · Edited "+dateLabel(result.data.edited_at):"");
 }
 
+function isTurnNotificationForOpenGame(item){
+  if(item?.kind!=="game_turn"||!S.activeGameId||S.active!==item.conversation_id||$("game-overlay")?.hidden!==false)return false;
+  const match=S.gameMatches[S.activeGameId];
+  return !!match&&match.id===S.activeGameId&&match.conversation_id===item.conversation_id&&match.message_id===item.message_id;
+}
+async function dismissOpenGameTurnNotifications(){
+  const match=S.activeGameId?S.gameMatches[S.activeGameId]:null;
+  if(!match?.conversation_id||!match?.message_id||!S.user)return;
+  S.notifications=S.notifications.filter(item=>!isTurnNotificationForOpenGame(item));
+  renderNotifications();
+  const result=await db.from("notifications").delete()
+    .eq("recipient_id",S.user.id).eq("kind","game_turn")
+    .eq("conversation_id",match.conversation_id).eq("message_id",match.message_id);
+  if(result.error)console.warn("Open-game turn notification could not be dismissed:",result.error.message);
+}
 function notificationItemsForCenter(){
   return S.notifications.filter(item=>
+    !isTurnNotificationForOpenGame(item)&&
     !(item.kind==="message"&&item.conversation_id&&item.conversation_id===S.active)&&
     !(item.kind==="message"&&item.conversation_id&&S.chatSettings.muted[item.conversation_id])
   );
@@ -1910,6 +1926,13 @@ function subscribeNotifications(){
   S.notificationChannel=db.channel("notifications-"+uid)
     .on("postgres_changes",{event:"INSERT",schema:"public",table:"notifications",filter:"recipient_id=eq."+uid},async payload=>{
       if(payload.new?.recipient_id!==S.user?.id)return;
+      if(isTurnNotificationForOpenGame(payload.new)){
+        const dismissed=await db.from("notifications").delete().eq("id",payload.new.id).eq("recipient_id",uid);
+        if(dismissed.error)console.warn("Open-game turn notification could not be dismissed:",dismissed.error.message);
+        S.notifications=S.notifications.filter(item=>item.id!==payload.new.id);
+        renderNotifications();
+        return;
+      }
       const activeConversationMessage=payload.new?.kind==="message"&&payload.new.conversation_id===S.active;
       if(activeConversationMessage){
         const dismissed=await db.from("notifications").delete().eq("id",payload.new.id).eq("recipient_id",uid);
@@ -3594,6 +3617,7 @@ async function openGameMatch(matchId){
   $("uno-game-title").textContent=gameTitleForKey(S.gameMatches[matchId]?.game_key);
   $("uno-game-status").textContent="Loading match…";
   $("uno-game-content").replaceChildren(el("p","muted","Loading your game…"));
+  await dismissOpenGameTurnNotifications();
   await loadActiveGameView();
 }
 async function loadActiveGameView(){
