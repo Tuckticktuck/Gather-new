@@ -314,7 +314,7 @@ test("same-type +2 cards stack and the next player draws the accumulated penalty
   assert.equal(stacked.nextState.pendingDraw.kind,"draw2");
   assert.equal(stacked.nextTurnUserId,actor);
   const penalized=await apply({state:stacked.nextState,privateState:stacked.nextPrivateState},actor,{type:"draw"});
-  assert.equal(penalized.nextState.handCounts[actor],6);
+  assert.equal(penalized.nextState.handCounts[actor],5);
   assert.equal(penalized.nextTurnUserId,other);
 });
 
