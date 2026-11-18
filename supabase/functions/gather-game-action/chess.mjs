@@ -186,7 +186,12 @@ function positionStatus(position){
 
 export const chessEngine={
   key:"chess",
-  applyAction({state,action,actorId,players,currentTurnUserId}){
+  canActOutOfTurn({state,action,actorId,currentTurnUserId}){
+    return state?.started===true&&actorId!==currentTurnUserId&&
+      [state.whiteUserId,state.blackUserId].includes(actorId)&&
+      ["queue_premove","cancel_premove"].includes(action?.type);
+  },
+  applyAction({state,privateState,action,actorId,players,currentTurnUserId}){
     if(action?.type==="initialize"){
       if(state?.started===true)throw new GameRuleError("Chess has already started.");
       const accepted=players.filter(p=>p.response==="accepted").sort((a,b)=>a.player_order-b.player_order);
@@ -199,14 +204,43 @@ export const chessEngine={
         check:false,checkmate:false,stalemate:false,
       };
       nextState.legalMoves=legalMoves(nextState).map(move=>({from:squareName(move.from),to:squareName(move.to),promotion:move.promotion||null}));
-      return {nextState,eventType:"chess_started",eventPayload:{whiteUserId:accepted[0].user_id,blackUserId:accepted[1].user_id},nextTurnUserId:accepted[0].user_id};
+      return {nextState,nextPrivateState:{premoves:{}},eventType:"chess_started",eventPayload:{whiteUserId:accepted[0].user_id,blackUserId:accepted[1].user_id},nextTurnUserId:accepted[0].user_id};
     }
     if(action?.type==="resign"){
       if(state?.started!==true)throw new GameRuleError("The Chess match has not started.");
       const winnerId=actorId===state.whiteUserId?state.blackUserId:actorId===state.blackUserId?state.whiteUserId:null;
       if(!winnerId)throw new GameRuleError("You are not a player in this Chess match.");
       const nextState={...clone(state),winnerId,result:"resignation",checkmate:false,stalemate:false,legalMoves:[]};
-      return {nextState,eventType:"chess_resigned",eventPayload:{resignedBy:actorId,winnerId},nextTurnUserId:null,nextStatus:"completed"};
+      return {nextState,nextPrivateState:{premoves:{}},eventType:"chess_resigned",eventPayload:{resignedBy:actorId,winnerId},nextTurnUserId:null,nextStatus:"completed"};
+    }
+    if(action?.type==="queue_premove"||action?.type==="cancel_premove"){
+      if(state?.started!==true||!Array.isArray(state.board)||state.board.length!==64)
+        throw new GameRuleError("The Chess board is not initialized.");
+      const color=actorId===state.whiteUserId?"w":actorId===state.blackUserId?"b":null;
+      if(!color)throw new GameRuleError("You are not a player in this Chess match.");
+      if(color===state.turn)throw new GameRuleError("You can queue a pre-move only during your opponent's turn.");
+      const nextPrivateState=privateState&&typeof privateState==="object"&&!Array.isArray(privateState)
+        ?clone(privateState):{premoves:{}};
+      if(!nextPrivateState.premoves||typeof nextPrivateState.premoves!=="object"||Array.isArray(nextPrivateState.premoves))
+        nextPrivateState.premoves={};
+      const nextTurnUserId=state.turn==="w"?state.whiteUserId:state.blackUserId;
+      if(action.type==="cancel_premove"){
+        if(!nextPrivateState.premoves[actorId])throw new GameRuleError("You do not have a queued pre-move.");
+        delete nextPrivateState.premoves[actorId];
+        return {nextState:clone(state),nextPrivateState,eventType:"chess_premove_cancelled",
+          eventPayload:{playerId:actorId},nextTurnUserId};
+      }
+      const from=squareIndex(action.from),to=squareIndex(action.to);
+      if(from<0||to<0||from===to)throw new GameRuleError("Choose a valid pre-move source and destination.");
+      const piece=state.board[from];
+      if(!piece||colorOf(piece)!==color)throw new GameRuleError("Choose one of your own pieces for the pre-move.");
+      const promotes=piece.toLowerCase()==="p"&&(color==="w"?to<8:to>=56);
+      const promotion=typeof action.promotion==="string"?action.promotion.toLowerCase():"";
+      if(promotes&&!PROMOTIONS.includes(promotion))throw new GameRuleError("Choose a piece for the pre-move promotion.");
+      if(!promotes&&promotion)throw new GameRuleError("Only a promoting pawn can choose a pre-move promotion.");
+      nextPrivateState.premoves[actorId]={from:action.from,to:action.to,...(promotes?{promotion}:{})};
+      return {nextState:clone(state),nextPrivateState,eventType:"chess_premove_queued",
+        eventPayload:{playerId:actorId,from:action.from,to:action.to,promotion:promotes?promotion:null},nextTurnUserId};
     }
     if(action?.type!=="move")throw new GameRuleError("Unsupported Chess action.");
     if(state?.started!==true||!Array.isArray(state.board)||state.board.length!==64)
@@ -225,19 +259,52 @@ export const chessEngine={
       if(!PROMOTIONS.includes(promotion))throw new GameRuleError("Choose a piece for pawn promotion.");
       move=matching.find(m=>m.promotion===promotion);
     }else if(action.promotion)throw new GameRuleError("Only a promoting pawn can choose a promotion piece.");
-    const nextState=rawMove(state,move);
-    const status=positionStatus(nextState);
+
+    let nextState=rawMove(state,move);
+    let status=positionStatus(nextState);
+    let completed=!!(status.checkmate||status.stalemate||status.draw);
+    let winnerId=status.checkmate?actorId:null;
+    let nextTurnUserId=completed?null:(nextState.turn==="w"?nextState.whiteUserId:nextState.blackUserId);
+    const nextPrivateState=privateState&&typeof privateState==="object"&&!Array.isArray(privateState)
+      ?clone(privateState):{premoves:{}};
+    if(!nextPrivateState.premoves||typeof nextPrivateState.premoves!=="object"||Array.isArray(nextPrivateState.premoves))
+      nextPrivateState.premoves={};
+    delete nextPrivateState.premoves[actorId];
+    let premoveResult=null;
+
+    if(!completed&&nextTurnUserId&&nextPrivateState.premoves[nextTurnUserId]){
+      const queued=nextPrivateState.premoves[nextTurnUserId];
+      delete nextPrivateState.premoves[nextTurnUserId];
+      const queuedFrom=squareIndex(queued.from),queuedTo=squareIndex(queued.to);
+      const queuedMatches=queuedFrom>=0&&queuedTo>=0
+        ?legalMoves(nextState,nextState.turn).filter(candidate=>candidate.from===queuedFrom&&candidate.to===queuedTo):[];
+      let queuedMove=null;
+      if(queuedMatches.some(candidate=>candidate.promotion)){
+        queuedMove=queuedMatches.find(candidate=>candidate.promotion===queued.promotion)||null;
+      }else if(queuedMatches.length&&!queued.promotion){
+        queuedMove=queuedMatches[0];
+      }
+      if(queuedMove){
+        const premovePlayerId=nextTurnUserId;
+        nextState=rawMove(nextState,queuedMove);
+        status=positionStatus(nextState);
+        completed=!!(status.checkmate||status.stalemate||status.draw);
+        winnerId=status.checkmate?premovePlayerId:null;
+        nextTurnUserId=completed?null:(nextState.turn==="w"?nextState.whiteUserId:nextState.blackUserId);
+        premoveResult={status:"played",from:queued.from,to:queued.to,promotion:queuedMove.promotion||null};
+      }else{
+        premoveResult={status:"cancelled",from:queued.from,to:queued.to};
+      }
+    }
+    if(completed)nextPrivateState.premoves={};
     Object.assign(nextState,status);
-    const completed=!!(status.checkmate||status.stalemate||status.draw);
-    const winnerId=status.checkmate?actorId:null;
     nextState.winnerId=winnerId;
     nextState.legalMoves=completed?[]:legalMoves(nextState).map(item=>({from:squareName(item.from),to:squareName(item.to),promotion:item.promotion||null}));
     nextState.result=status.checkmate?"checkmate":status.stalemate?"stalemate":status.draw||null;
     return {
-      nextState,eventType:completed?"chess_finished":"chess_move",
-      eventPayload:{from:action.from,to:action.to,promotion:move.promotion||null,check:status.check,checkmate:status.checkmate,stalemate:status.stalemate,result:nextState.result},
-      nextTurnUserId:completed?null:(nextState.turn==="w"?nextState.whiteUserId:nextState.blackUserId),
-      nextStatus:completed?"completed":"active",
+      nextState,nextPrivateState,eventType:completed?"chess_finished":"chess_move",
+      eventPayload:{from:action.from,to:action.to,promotion:move.promotion||null,check:status.check,checkmate:status.checkmate,stalemate:status.stalemate,result:nextState.result,...(premoveResult?{premove:premoveResult}:{})},
+      nextTurnUserId,nextStatus:completed?"completed":"active",
     };
   },
 };
