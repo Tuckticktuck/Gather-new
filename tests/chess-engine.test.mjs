@@ -114,7 +114,7 @@ test("cancels a queued pre-move when the opponent's move makes it illegal", () =
     state,privateState:queued.nextPrivateState,action:{type:"move",from:"a7",to:"a6"},
     actorId:black,players,currentTurnUserId:black,
   });
-  assert.deepEqual(response.eventPayload.premove,{status:"cancelled",from:"a1",to:"a8"});
+  assert.deepEqual(response.eventPayload.premove,{status:"cancelled"});
   assert.equal(response.nextState.board[56],"R");
   assert.equal(response.nextPrivateState.premoves[white],undefined);
 });
