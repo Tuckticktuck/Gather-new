@@ -4180,14 +4180,19 @@ function renderUnoGame(){
     });
     handSize.value=String(draft.starting_hand_size);
     handSize.disabled=!current;
-    handSize.addEventListener("change",()=>{S.unoHouseRulesDraft={...S.unoHouseRulesDraft,starting_hand_size:Number(handSize.value)};});
+    const updateDraft=patch=>{
+      S.unoHouseRulesDraft={...S.unoHouseRulesDraft,...patch};
+      const summaryNode=panel.querySelector(".uno-house-rules-summary");
+      if(summaryNode)summaryNode.textContent=unoHouseRulesSummary(S.unoHouseRulesDraft);
+    };
+    handSize.addEventListener("change",()=>updateDraft({starting_hand_size:Number(handSize.value)}));
     handSizeLabel.append(handSize);panel.append(handSizeLabel);
     const addRule=(title,description,key)=>{
       const row=el("label","uno-house-rule-row");
       const copy=el("span","uno-house-rule-copy");
       copy.append(el("strong","",title),el("small","",description));
       const toggle=el("input","uno-house-rule-toggle");toggle.type="checkbox";toggle.checked=!!draft[key];toggle.disabled=!current;
-      toggle.addEventListener("change",()=>{S.unoHouseRulesDraft={...S.unoHouseRulesDraft,[key]:toggle.checked};});
+      toggle.addEventListener("change",()=>updateDraft({[key]:toggle.checked}));
       row.append(copy,toggle);panel.append(row);
     };
     addRule("Draw until playable","Keep drawing until you find a card you can play. If none remain, your turn passes.","draw_until_playable");
@@ -4198,8 +4203,6 @@ function renderUnoGame(){
       const actions=el("div","uno-house-rules-actions");
       const save=el("button","game-card-action secondary","Save rules");
       save.type="button";
-      const changed=JSON.stringify(draft)!==JSON.stringify(savedRules);
-      save.disabled=!changed;
       save.addEventListener("click",()=>void performUnoAction({type:"set_house_rules",houseRules:{...S.unoHouseRulesDraft}}));
       const start=el("button","game-card-action primary","Start match");
       start.type="button";
