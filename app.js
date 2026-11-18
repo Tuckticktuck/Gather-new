@@ -1666,6 +1666,8 @@ function renderHomeAnnouncement(){
   if(!card)return;
   const latest=S.announcements[0];
   card.hidden=!latest;
+  const empty=$("settings-announcement-empty");
+  if(empty)empty.hidden=!!latest;
   if(!latest)return;
   $("home-announcement-title").textContent=latest.title;
   renderAnnouncementText($("home-announcement-preview"),latest.body);
@@ -7160,7 +7162,7 @@ function isGatherInstalled(){
 }
 function refreshGatherInstallButtons(){
   const installed=isGatherInstalled();
-  ["install-app-button","install-app-auth"].forEach(id=>{
+  ["settings-install-app"].forEach(id=>{
     const button=$(id);
     if(button)button.hidden=installed;
   });
@@ -7222,8 +7224,7 @@ async function requestGatherInstall(){
 }
 function setupGatherPWA(){
   refreshGatherInstallButtons();
-  $("install-app-button").addEventListener("click",requestGatherInstall);
-  $("install-app-auth").addEventListener("click",requestGatherInstall);
+  $("settings-install-app").addEventListener("click",requestGatherInstall);
   $("install-app-close").addEventListener("click",()=>$("install-app-modal").hidden=true);
   $("install-app-modal").addEventListener("click",event=>{
     if(event.target===$("install-app-modal"))$("install-app-modal").hidden=true;
