@@ -297,3 +297,59 @@ test("completes the match when a player plays their final card", async () => {
   assert.equal(result.nextState.winnerId, actor);
   assert.equal(result.nextTurnUserId, null);
 });
+
+
+test("host can save custom house rules before initializing UNO", async () => {
+  const configured=await unoEngine.applyAction({
+    state:{},privateState:null,action:{type:"set_house_rules",houseRules:{
+      starting_hand_size:5,draw_until_playable:true,wild4_anytime:true,
+    }},actorId:actor,players,serverSeed:seed,
+  });
+  assert.deepEqual(configured.nextState.houseRules,{
+    starting_hand_size:5,draw_until_playable:true,wild4_anytime:true,
+  });
+  const initialized=await unoEngine.applyAction({
+    state:configured.nextState,privateState:null,action:{type:"initialize"},
+    actorId:actor,players,serverSeed:seed,
+  });
+  assert.equal(initialized.nextState.handCounts[actor],5);
+  assert.equal(initialized.nextPrivateState.hands[other].length,5);
+  assert.equal(initialized.eventPayload.cardsPerPlayer,5);
+  assert.equal(initialized.nextState.houseRules.draw_until_playable,true);
+});
+
+test("only the first accepted player can change UNO house rules", async () => {
+  assert.throws(()=>unoEngine.applyAction({
+    state:{},privateState:null,action:{type:"set_house_rules",houseRules:{starting_hand_size:10}},
+    actorId:other,players,serverSeed:seed,
+  }),/Only the UNO host/);
+});
+
+test("draw-until-playable keeps drawing until a legal card is found", async () => {
+  const f=fixture([card("blue:1","blue","1")],[card("yellow:2","yellow","2")],{
+    publicState:{houseRules:{starting_hand_size:7,draw_until_playable:true,wild4_anytime:false}},
+    privateState:{drawPile:[
+      card("red:playable","red","2"),
+      card("blue:miss","blue","9"),
+      card("yellow:miss","yellow","3"),
+    ]},
+  });
+  const drawn=await apply(f,actor,{type:"draw"});
+  assert.equal(drawn.nextPrivateState.hands[actor].length,4);
+  assert.equal(drawn.nextPrivateState.drawnCardId,"red:playable");
+  assert.equal(drawn.eventPayload.cardCount,3);
+  assert.equal(drawn.nextTurnUserId,actor);
+});
+
+test("Wild Draw Four anytime makes a challenge fail even when the player holds the current color", async () => {
+  const f=fixture([card("wild4:anytime",null,"wild4"),card("red:held","red","2")],
+    [card("yellow:1","yellow","1")],{
+      publicState:{houseRules:{starting_hand_size:7,draw_until_playable:false,wild4_anytime:true}},
+    });
+  const played=await apply(f,actor,{type:"play",cardId:"wild4:anytime",chosenColor:"blue"});
+  assert.equal(played.nextPrivateState.challengeWasIllegal,false);
+  const challenged=await apply({state:played.nextState,privateState:played.nextPrivateState},other,{type:"challenge"});
+  assert.equal(challenged.nextState.handCounts[other],7);
+  assert.equal(challenged.nextTurnUserId,actor);
+  assert.equal(challenged.eventType,"wild4_challenge_failed");
+});

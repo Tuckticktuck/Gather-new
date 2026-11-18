@@ -4,6 +4,26 @@ export const UNO_COLORS = Object.freeze(["red", "yellow", "green", "blue"]);
 export const UNO_MAX_PLAYERS = 20;
 const VALUES = Object.freeze(["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "skip", "reverse", "draw2"]);
 const isRecord = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
+const DEFAULT_HOUSE_RULES = Object.freeze({
+  starting_hand_size: 7,
+  draw_until_playable: false,
+  wild4_anytime: false,
+});
+function normalizeHouseRules(value) {
+  if (value === undefined || value === null) return { ...DEFAULT_HOUSE_RULES };
+  if (!isRecord(value)) throw new GameRuleError("UNO house rules must be an object.");
+  const handSize = value.starting_hand_size ?? DEFAULT_HOUSE_RULES.starting_hand_size;
+  const drawUntilPlayable = value.draw_until_playable ?? DEFAULT_HOUSE_RULES.draw_until_playable;
+  const wild4Anytime = value.wild4_anytime ?? DEFAULT_HOUSE_RULES.wild4_anytime;
+  if (![5, 7, 10].includes(handSize)) throw new GameRuleError("Starting hand size must be 5, 7, or 10 cards.");
+  if (typeof drawUntilPlayable !== "boolean") throw new GameRuleError("Draw-until-playable must be true or false.");
+  if (typeof wild4Anytime !== "boolean") throw new GameRuleError("The Wild Draw Four rule must be true or false.");
+  return {
+    starting_hand_size: handSize,
+    draw_until_playable: drawUntilPlayable,
+    wild4_anytime: wild4Anytime,
+  };
+}
 
 function makeDeck(copies = 1) {
   const deck = [];
@@ -103,7 +123,9 @@ function drawCards(privateState, userId, count) {
   }
 }
 
-function createInitialState(players, actorId, serverSeed) {
+function createInitialState(players, actorId, serverSeed, configuredHouseRules) {
+  const houseRules = normalizeHouseRules(configuredHouseRules);
+  const handSize = houseRules.starting_hand_size;
   const playerOrder = orderedPlayers(players);
   if (playerOrder.length < 2) throw new GameRuleError("UNO requires at least two accepted players.");
   if (playerOrder.length > UNO_MAX_PLAYERS) {
@@ -121,10 +143,10 @@ function createInitialState(players, actorId, serverSeed) {
     challengeWasIllegal: null,
     rngState: parseSeed(serverSeed),
   };
-  const deckCopies = Math.max(1, Math.ceil((playerOrder.length * 7 + 1) / 108));
+  const deckCopies = Math.max(1, Math.ceil((playerOrder.length * handSize + 1) / 108));
   privateState.drawPile = shuffle(makeDeck(deckCopies), privateState);
 
-  for (let card = 0; card < 7; card++) {
+  for (let card = 0; card < handSize; card++) {
     for (const userId of playerOrder) {
       privateState.hands[userId].push(privateState.drawPile.pop());
     }
@@ -142,6 +164,7 @@ function createInitialState(players, actorId, serverSeed) {
   const publicState = {
     schemaVersion: 1,
     started: true,
+    houseRules,
     playerOrder,
     currentPlayerId: playerOrder[0],
     handCounts: {},
@@ -161,9 +184,25 @@ function applyUnoAction({ state, privateState, action, actorId, players, serverS
     throw new GameRuleError("A valid UNO action is required.");
   }
 
+  if (action.type === "set_house_rules") {
+    if (state?.started === true) throw new GameRuleError("House rules cannot be changed after UNO starts.");
+    const accepted = orderedPlayers(players);
+    if (accepted[0] !== actorId) throw new GameRuleError("Only the UNO host can change house rules.");
+    const houseRules = normalizeHouseRules(action.houseRules);
+    const nextState = isRecord(state) ? structuredClone(state) : {};
+    nextState.houseRules = houseRules;
+    return {
+      nextState,
+      eventType: "uno_house_rules_updated",
+      eventPayload: { houseRules },
+      nextTurnUserId: actorId,
+      nextStatus: "active",
+    };
+  }
+
   if (action.type === "initialize") {
     if (state?.started === true) throw new GameRuleError("UNO has already been initialized.");
-    const initialized = createInitialState(players, actorId, serverSeed);
+    const initialized = createInitialState(players, actorId, serverSeed, state?.houseRules);
     return {
       nextState: initialized.publicState,
       nextPrivateState: initialized.privateState,
@@ -171,7 +210,8 @@ function applyUnoAction({ state, privateState, action, actorId, players, serverS
       eventPayload: {
         playerCount: initialized.publicState.playerOrder.length,
         firstPlayerId: initialized.publicState.currentPlayerId,
-        cardsPerPlayer: 7,
+        cardsPerPlayer: initialized.publicState.houseRules.starting_hand_size,
+        houseRules: initialized.publicState.houseRules,
       },
       nextTurnUserId: initialized.publicState.currentPlayerId,
       nextStatus: "active",
@@ -250,11 +290,40 @@ function applyUnoAction({ state, privateState, action, actorId, players, serverS
   } else if (action.type === "draw") {
     clearPendingUno();
     if (nextPrivateState.drawnCardId) throw new GameRuleError("You have already drawn this turn.");
-    drawCards(nextPrivateState, actorId, 1);
-    const drawnCard = hand[hand.length - 1];
-    nextPrivateState.drawnCardId = drawnCard.id;
-    eventType = "card_drawn";
-    eventPayload = { playerId: actorId, cardCount: 1 };
+    const houseRules = normalizeHouseRules(nextState.houseRules);
+    if (houseRules.draw_until_playable) {
+      let playableCard = null;
+      let cardsDrawn = 0;
+      while (!playableCard) {
+        try {
+          drawCards(nextPrivateState, actorId, 1);
+        } catch (error) {
+          if (error instanceof GameRuleError && error.message === "There are no cards left to draw.") break;
+          throw error;
+        }
+        const candidate = hand[hand.length - 1];
+        cardsDrawn += 1;
+        const wild4Allowed = candidate.value !== "wild4" || houseRules.wild4_anytime ||
+          !hand.some((heldCard, index) => index !== hand.length - 1 && heldCard.color === nextState.currentColor);
+        if (isPlayable(candidate, nextState) && wild4Allowed) playableCard = candidate;
+      }
+      if (playableCard) {
+        nextPrivateState.drawnCardId = playableCard.id;
+        eventType = "cards_drawn";
+        eventPayload = { playerId: actorId, cardCount: cardsDrawn, playableCardId: playableCard.id };
+      } else {
+        nextPrivateState.drawnCardId = null;
+        nextTurnUserId = nextPlayerId(order, actorId, nextState.direction);
+        eventType = "cards_drawn_turn_passed";
+        eventPayload = { playerId: actorId, cardCount: cardsDrawn, noPlayableCard: true };
+      }
+    } else {
+      drawCards(nextPrivateState, actorId, 1);
+      const drawnCard = hand[hand.length - 1];
+      nextPrivateState.drawnCardId = drawnCard.id;
+      eventType = "card_drawn";
+      eventPayload = { playerId: actorId, cardCount: 1 };
+    }
   } else if (action.type === "pass") {
     if (!nextPrivateState.drawnCardId) {
       throw new GameRuleError("Draw a card before passing.");
@@ -287,7 +356,8 @@ function applyUnoAction({ state, privateState, action, actorId, players, serverS
       throw new GameRuleError("Only a Wild card can choose a new color.");
     }
 
-    const wild4WasIllegal = card.value === "wild4" &&
+    const houseRules = normalizeHouseRules(nextState.houseRules);
+    const wild4WasIllegal = card.value === "wild4" && !houseRules.wild4_anytime &&
       hand.some((heldCard, index) => index !== cardIndex && heldCard.color === nextState.currentColor);
 
     hand.splice(cardIndex, 1);

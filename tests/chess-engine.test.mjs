@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { chessEngine } from "../supabase/functions/gather-game-action/chess.mjs";
+import { resolveGameAction } from "../supabase/functions/gather-game-action/engine.mjs";
 
 const white="11111111-1111-4111-8111-111111111111";
 const black="22222222-2222-4222-8222-222222222222";
@@ -76,4 +77,61 @@ test("allows a player to resign and awards the match to the opponent",()=>{
   assert.equal(result.nextStatus,"completed");
   assert.equal(result.nextState.winnerId,black);
   assert.equal(result.nextState.result,"resignation");
+});
+
+
+test("queues a private pre-move out of turn and plays it automatically when it remains legal", async () => {
+  let state=start();
+  state=move(state,white,"e2","e4").nextState;
+  const queued=await resolveGameAction({
+    engine:chessEngine,
+    match:{status:"active",state,private_state:{premoves:{}},version:2,current_turn_user_id:black},
+    actorId:white,players,action:{type:"queue_premove",from:"g1",to:"f3"},
+  });
+  assert.equal(queued.eventType,"chess_premove_queued");
+  assert.deepEqual(queued.nextPrivateState.premoves[white],{from:"g1",to:"f3"});
+  const response=await resolveGameAction({
+    engine:chessEngine,
+    match:{status:"active",state,private_state:queued.nextPrivateState,version:3,current_turn_user_id:black},
+    actorId:black,players,action:{type:"move",from:"e7",to:"e5"},
+  });
+  assert.equal(response.eventType,"chess_move");
+  assert.deepEqual(response.eventPayload.premove,{status:"played",from:"g1",to:"f3",promotion:null});
+  assert.equal(response.nextState.board[45],"N");
+  assert.equal(response.nextTurnUserId,black);
+  assert.equal(response.nextPrivateState.premoves[white],undefined);
+});
+
+test("cancels a queued pre-move when the opponent's move makes it illegal", () => {
+  const board=Array(64).fill(null);
+  board[60]="K";board[4]="k";board[56]="R";board[8]="p";
+  const state={started:true,board,turn:"b",castling:"",enPassant:null,halfmove:0,fullmove:1,moveHistory:[],whiteUserId:white,blackUserId:black};
+  const queued=chessEngine.applyAction({
+    state,privateState:{premoves:{}},action:{type:"queue_premove",from:"a1",to:"a8"},
+    actorId:white,players,currentTurnUserId:black,
+  });
+  const response=chessEngine.applyAction({
+    state,privateState:queued.nextPrivateState,action:{type:"move",from:"a7",to:"a6"},
+    actorId:black,players,currentTurnUserId:black,
+  });
+  assert.deepEqual(response.eventPayload.premove,{status:"cancelled"});
+  assert.equal(response.nextState.board[56],"R");
+  assert.equal(response.nextPrivateState.premoves[white],undefined);
+});
+
+test("allows a player to cancel their own queued pre-move during the opponent's turn", async () => {
+  let state=start();
+  state=move(state,white,"e2","e4").nextState;
+  const queued=chessEngine.applyAction({
+    state,privateState:{premoves:{}},action:{type:"queue_premove",from:"g1",to:"f3"},
+    actorId:white,players,currentTurnUserId:black,
+  });
+  const cancelled=await resolveGameAction({
+    engine:chessEngine,
+    match:{status:"active",state,private_state:queued.nextPrivateState,version:3,current_turn_user_id:black},
+    actorId:white,players,action:{type:"cancel_premove"},
+  });
+  assert.equal(cancelled.eventType,"chess_premove_cancelled");
+  assert.equal(cancelled.nextTurnUserId,black);
+  assert.equal(cancelled.nextPrivateState.premoves[white],undefined);
 });

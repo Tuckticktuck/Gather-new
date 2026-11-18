@@ -125,6 +125,17 @@ Deno.serve(async (request: Request) => {
     }
 
     if (match.game_key === "chess") {
+      const privateQuery = new URLSearchParams({
+        match_id: `eq.${matchId}`,
+        select: "state",
+        limit: "1",
+      });
+      const privateRows = await getRows<Array<{ state: Record<string, unknown> }>>(
+        supabaseUrl, serviceKey, "game_match_private_state", privateQuery,
+      );
+      const privateState = privateRows[0]?.state;
+      const premoves = privateState?.premoves && typeof privateState.premoves === "object"
+        ? privateState.premoves as Record<string, unknown> : {};
       return respond(200, {
         matchId,
         gameKey: "chess",
@@ -133,6 +144,7 @@ Deno.serve(async (request: Request) => {
         currentTurnUserId: match.current_turn_user_id,
         initialized: state.started === true,
         publicState: state,
+        queuedPremove: premoves[user.id] ?? null,
         hand: [],
         drawnCardId: null,
         drawPileCount: null,
