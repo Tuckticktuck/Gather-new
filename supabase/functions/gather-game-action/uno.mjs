@@ -271,7 +271,7 @@ function applyUnoAction({ state, privateState, action, actorId, players, serverS
       nextState.pendingDraw = null;
       nextPrivateState.challengeWasIllegal = null;
       eventType = "wild4_challenge_success";
-      eventPayload = { offenderId: pendingDraw.offenderId, penaltyCards: 4, challengerWon: true };
+      eventPayload = { offenderId: pendingDraw.offenderId, penaltyCards: pendingDraw.amount, challengerWon: true };
     } else {
       drawCards(nextPrivateState, actorId, pendingDraw.amount + 2);
       nextState.pendingDraw = null;
