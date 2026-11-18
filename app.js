@@ -7144,6 +7144,13 @@ document.querySelectorAll("[data-folder]").forEach(b=>b.addEventListener("click"
   document.querySelectorAll("[data-admin-back]").forEach(b=>b.addEventListener("click",()=>handleModalBack(b.closest(".overlay")?.id)));
   document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",()=>closeModals()));
   ["admin-mode-modal","announcement-compose-modal","announcement-view-modal","announcements-page-modal","notifications-modal","member-profile-modal","report-modal","reports-admin-modal","people-modal","profile-modal","requests-modal","friends-modal","settings-modal","group-photo-modal","group-settings-modal","message-search-modal","poll-create-modal","forward-message-modal","saved-messages-modal","chat-actions-modal","feedback-modal","install-app-modal"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target===$(id))closeModals();}));
+  // Dismiss the floating message action menu when the user taps anywhere outside it.
+  document.addEventListener("click",event=>{
+    if(!S.openMessageMenuId)return;
+    if(event.target instanceof Element&&event.target.closest(".message-action-menu"))return;
+    S.openMessageMenuId=null;
+    document.querySelectorAll(".message-action-menu[data-floating-menu]").forEach(menu=>menu.remove());
+  });
   document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeComposerMoreMenu();if(!$("install-app-modal").hidden){$("install-app-modal").hidden=true;return;}if(!$("image-viewer-modal").hidden){closeImageViewer();return;}closeModals();}});
 }
 
