@@ -267,13 +267,13 @@ function applyUnoAction({ state, privateState, action, actorId, players, serverS
     }
     clearPendingUno();
     if (nextPrivateState.challengeWasIllegal) {
-      drawCards(nextPrivateState, pendingDraw.offenderId, 4);
+      drawCards(nextPrivateState, pendingDraw.offenderId, pendingDraw.amount);
       nextState.pendingDraw = null;
       nextPrivateState.challengeWasIllegal = null;
       eventType = "wild4_challenge_success";
       eventPayload = { offenderId: pendingDraw.offenderId, penaltyCards: 4, challengerWon: true };
     } else {
-      drawCards(nextPrivateState, actorId, 6);
+      drawCards(nextPrivateState, actorId, pendingDraw.amount + 2);
       nextState.pendingDraw = null;
       nextPrivateState.challengeWasIllegal = null;
       nextTurnUserId = nextPlayerId(order, actorId, nextState.direction);
