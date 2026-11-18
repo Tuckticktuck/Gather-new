@@ -5165,3 +5165,22 @@ html[data-theme="light"]{
   .battleship-ship-picker{grid-template-columns:repeat(2,minmax(0,1fr))}
   .battleship-placement-actions .battleship-control-button{flex:1;min-width:0}
 }
+
+
+/* Make the message composer shell fully transparent; retain the individual controls. */
+#chat #send-form.composer,
+#chat.chat-appearance-custom #send-form.composer,
+.chat #send-form.composer {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+#chat #send-form.composer:focus-within,
+#chat.chat-appearance-custom #send-form.composer:focus-within,
+.chat #send-form.composer:focus-within {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
