@@ -3675,17 +3675,18 @@ function unoCardLabel(card){
   if(card.value==="wild4")return "+4";
   return card.value;
 }
-const DEFAULT_UNO_HOUSE_RULES_UI={starting_hand_size:7,draw_until_playable:false,wild4_anytime:false};
+const DEFAULT_UNO_HOUSE_RULES_UI={starting_hand_size:7,draw_until_playable:false,wild4_anytime:false,stack_draw_cards:false};
 function normalizeUnoHouseRulesUI(value){
   return {
     starting_hand_size:[5,7,10].includes(Number(value?.starting_hand_size))?Number(value.starting_hand_size):7,
     draw_until_playable:!!value?.draw_until_playable,
-    wild4_anytime:!!value?.wild4_anytime
+    wild4_anytime:!!value?.wild4_anytime,
+    stack_draw_cards:!!value?.stack_draw_cards
   };
 }
 function unoHouseRulesSummary(rules){
   const value=normalizeUnoHouseRulesUI(rules);
-  return [value.starting_hand_size+" cards to start",value.draw_until_playable?"Draw until playable":"Draw one card",value.wild4_anytime?"+4 can be played anytime":"Standard +4 challenge"].join(" · ");
+  return [value.starting_hand_size+" cards to start",value.draw_until_playable?"Draw until playable":"Draw one card",value.wild4_anytime?"+4 can be played anytime":"Standard +4 challenge",value.stack_draw_cards?"Same-type +2/+4 stacking":"No penalty stacking"].join(" · ");
 }
 
 const CHESS_GLYPHS={K:"King",Q:"Queen",R:"Rook",B:"Bishop",N:"Knight",P:"Pawn",k:"King",q:"Queen",r:"Rook",b:"Bishop",n:"Knight",p:"Pawn"};
@@ -4198,6 +4199,7 @@ function renderUnoGame(){
     };
     addRule("Draw until playable","Keep drawing until you find a card you can play. If none remain, your turn passes.","draw_until_playable");
     addRule("Wild Draw Four anytime","Allow +4 even when you hold a card matching the current color. Challenges against it will fail.","wild4_anytime");
+    addRule("Stack +2 and +4","Stack +2 only on +2 and +4 only on +4. The next player draws the accumulated total if they cannot stack.","stack_draw_cards");
     const summary=el("p","uno-house-rules-summary",unoHouseRulesSummary(savedRules));
     panel.append(summary);
     if(current){
