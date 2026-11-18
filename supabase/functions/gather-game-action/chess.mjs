@@ -240,7 +240,7 @@ export const chessEngine={
       if(!promotes&&promotion)throw new GameRuleError("Only a promoting pawn can choose a pre-move promotion.");
       nextPrivateState.premoves[actorId]={from:action.from,to:action.to,...(promotes?{promotion}:{})};
       return {nextState:clone(state),nextPrivateState,eventType:"chess_premove_queued",
-        eventPayload:{playerId:actorId,from:action.from,to:action.to,promotion:promotes?promotion:null},nextTurnUserId};
+        eventPayload:{playerId:actorId},nextTurnUserId};
     }
     if(action?.type!=="move")throw new GameRuleError("Unsupported Chess action.");
     if(state?.started!==true||!Array.isArray(state.board)||state.board.length!==64)
@@ -293,7 +293,7 @@ export const chessEngine={
         nextTurnUserId=completed?null:(nextState.turn==="w"?nextState.whiteUserId:nextState.blackUserId);
         premoveResult={status:"played",from:queued.from,to:queued.to,promotion:queuedMove.promotion||null};
       }else{
-        premoveResult={status:"cancelled",from:queued.from,to:queued.to};
+        premoveResult={status:"cancelled"};
       }
     }
     if(completed)nextPrivateState.premoves={};
