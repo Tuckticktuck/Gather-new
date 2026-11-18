@@ -8,6 +8,7 @@ const DEFAULT_HOUSE_RULES = Object.freeze({
   starting_hand_size: 7,
   draw_until_playable: false,
   wild4_anytime: false,
+  stack_draw_cards: false,
 });
 function normalizeHouseRules(value) {
   if (value === undefined || value === null) return { ...DEFAULT_HOUSE_RULES };
@@ -15,13 +16,16 @@ function normalizeHouseRules(value) {
   const handSize = value.starting_hand_size ?? DEFAULT_HOUSE_RULES.starting_hand_size;
   const drawUntilPlayable = value.draw_until_playable ?? DEFAULT_HOUSE_RULES.draw_until_playable;
   const wild4Anytime = value.wild4_anytime ?? DEFAULT_HOUSE_RULES.wild4_anytime;
+  const stackDrawCards = value.stack_draw_cards ?? DEFAULT_HOUSE_RULES.stack_draw_cards;
   if (![5, 7, 10].includes(handSize)) throw new GameRuleError("Starting hand size must be 5, 7, or 10 cards.");
   if (typeof drawUntilPlayable !== "boolean") throw new GameRuleError("Draw-until-playable must be true or false.");
   if (typeof wild4Anytime !== "boolean") throw new GameRuleError("The Wild Draw Four rule must be true or false.");
+  if (typeof stackDrawCards !== "boolean") throw new GameRuleError("Draw-card stacking must be true or false.");
   return {
     starting_hand_size: handSize,
     draw_until_playable: drawUntilPlayable,
     wild4_anytime: wild4Anytime,
+    stack_draw_cards: stackDrawCards,
   };
 }
 
@@ -263,13 +267,13 @@ function applyUnoAction({ state, privateState, action, actorId, players, serverS
     }
     clearPendingUno();
     if (nextPrivateState.challengeWasIllegal) {
-      drawCards(nextPrivateState, pendingDraw.offenderId, 4);
+      drawCards(nextPrivateState, pendingDraw.offenderId, pendingDraw.amount);
       nextState.pendingDraw = null;
       nextPrivateState.challengeWasIllegal = null;
       eventType = "wild4_challenge_success";
-      eventPayload = { offenderId: pendingDraw.offenderId, penaltyCards: 4, challengerWon: true };
+      eventPayload = { offenderId: pendingDraw.offenderId, penaltyCards: pendingDraw.amount, challengerWon: true };
     } else {
-      drawCards(nextPrivateState, actorId, 6);
+      drawCards(nextPrivateState, actorId, pendingDraw.amount + 2);
       nextState.pendingDraw = null;
       nextPrivateState.challengeWasIllegal = null;
       nextTurnUserId = nextPlayerId(order, actorId, nextState.direction);
@@ -285,7 +289,7 @@ function applyUnoAction({ state, privateState, action, actorId, players, serverS
     nextTurnUserId = nextPlayerId(order, actorId, nextState.direction);
     eventType = "penalty_drawn";
     eventPayload = { playerId: actorId, cards: amount, reason: pendingDraw.kind };
-  } else if (pendingDraw) {
+  } else if (pendingDraw && !(action.type === "play" && normalizeHouseRules(nextState.houseRules).stack_draw_cards)) {
     throw new GameRuleError("You must draw the penalty cards or challenge the Wild Draw Four.");
   } else if (action.type === "draw") {
     clearPendingUno();
@@ -342,7 +346,14 @@ function applyUnoAction({ state, privateState, action, actorId, players, serverS
     if (nextPrivateState.drawnCardId && card.id !== nextPrivateState.drawnCardId) {
       throw new GameRuleError("After drawing, you may only play the card you just drew.");
     }
-    if (!isPlayable(card, nextState)) {
+    if (pendingDraw) {
+      const stackingEnabled = normalizeHouseRules(nextState.houseRules).stack_draw_cards;
+      if (!stackingEnabled || card.value !== pendingDraw.kind) {
+        throw new GameRuleError(pendingDraw.kind === "draw2"
+          ? "Only another +2 can be stacked. Draw the accumulated penalty instead."
+          : "Only another +4 can be stacked. Draw the accumulated penalty or challenge the last +4.");
+      }
+    } else if (!isPlayable(card, nextState)) {
       throw new GameRuleError("That card does not match the current color or symbol.");
     }
 
@@ -384,9 +395,15 @@ function applyUnoAction({ state, privateState, action, actorId, players, serverS
         if (order.length === 2) steps = 2;
       }
       if (card.value === "draw2") {
-        nextState.pendingDraw = { amount: 2, kind: "draw2", offenderId: actorId };
+        nextState.pendingDraw = {
+          amount: (pendingDraw?.kind === "draw2" ? pendingDraw.amount : 0) + 2,
+          kind: "draw2", offenderId: actorId,
+        };
       } else if (card.value === "wild4") {
-        nextState.pendingDraw = { amount: 4, kind: "wild4", offenderId: actorId };
+        nextState.pendingDraw = {
+          amount: (pendingDraw?.kind === "wild4" ? pendingDraw.amount : 0) + 4,
+          kind: "wild4", offenderId: actorId,
+        };
         nextPrivateState.challengeWasIllegal = wild4WasIllegal;
       } else {
         nextState.pendingDraw = null;
