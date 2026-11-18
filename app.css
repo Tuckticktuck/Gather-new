@@ -5211,11 +5211,11 @@ html[data-theme="light"]{
 /* The composer is intentionally transparent. Give its chat canvas the neutral
    app surface so the global accent gradient cannot show through as a green rail. */
 .layout.show-chat > .main,
-.layout.show-chat > .main > #chat,
-.layout.show-chat > .main > #chat > #send-form.composer {
+.layout.show-chat > .main > #chat {
   background: var(--bg) !important;
 }
 .layout.show-chat > .main > #chat > #send-form.composer {
+  background: transparent !important;
   border: 0 !important;
   box-shadow: none !important;
   backdrop-filter: none !important;
