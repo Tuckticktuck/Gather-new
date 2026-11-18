@@ -302,8 +302,8 @@ test("completes the match when a player plays their final card", async () => {
 
 test("same-type +2 cards stack and the next player draws the accumulated penalty", async () => {
   const f=fixture(
-    [card("red:draw2:first","red","draw2"),card("blue:draw2:second","blue","draw2")],
-    [card("yellow:1","yellow","1")],
+    [card("red:draw2:first","red","draw2"),card("yellow:actor","yellow","1")],
+    [card("blue:draw2:second","blue","draw2"),card("yellow:other","yellow","1")],
     {publicState:{houseRules:{stack_draw_cards:true}}},
   );
   const first=await apply(f,actor,{type:"play",cardId:"red:draw2:first"});
@@ -319,7 +319,7 @@ test("same-type +2 cards stack and the next player draws the accumulated penalty
 });
 
 test("same-type stacking rejects a +4 on a +2 penalty", async () => {
-  const f=fixture([card("red:draw2","red","draw2")],[card("wild4","", "wild4")],
+  const f=fixture([card("red:draw2","red","draw2"),card("yellow:actor","yellow","1")],[card("wild4",null,"wild4"),card("yellow:other","yellow","1")],
     {publicState:{houseRules:{stack_draw_cards:true}}});
   const first=await apply(f,actor,{type:"play",cardId:"red:draw2"});
   await assert.rejects(
@@ -332,7 +332,7 @@ test("same-type stacking rejects a +4 on a +2 penalty", async () => {
 test("same-type +4 cards stack and a successful challenge penalizes the last +4 player", async () => {
   const f=fixture(
     [card("wild4:first",null,"wild4"),card("red:held","red","2")],
-    [card("wild4:second",null,"wild4"),card("green:held","green","3")],
+    [card("wild4:second",null,"wild4"),card("blue:held","blue","3")],
     {publicState:{houseRules:{stack_draw_cards:true}}},
   );
   const first=await apply(f,actor,{type:"play",cardId:"wild4:first",chosenColor:"blue"});
