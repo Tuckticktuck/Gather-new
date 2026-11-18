@@ -319,7 +319,7 @@ test("host can save custom house rules before initializing UNO", async () => {
 });
 
 test("only the first accepted player can change UNO house rules", async () => {
-  await assert.rejects(unoEngine.applyAction({
+  assert.throws(()=>unoEngine.applyAction({
     state:{},privateState:null,action:{type:"set_house_rules",houseRules:{starting_hand_size:10}},
     actorId:other,players,serverSeed:seed,
   }),/Only the UNO host/);
