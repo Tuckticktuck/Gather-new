@@ -1,11 +1,11 @@
 "use strict";
 
-const CACHE_NAME = "gather-shell-v165";
+const CACHE_NAME = "gather-shell-v166";
 const APP_BASE = new URL("./", self.registration.scope);
 const SHELL_URLS = [
   "./",
   "./index.html",
-  "./app.css?v=20261118-neutral-chat-composer-canvas-v2",
+  "./app.css?v=20261118-no-chat-composer-backdrop-v1",
   "./design-system.css?v=20261117-ui-polish",
   "./app.js?v=20261118-battleship-custom-placement-v1",
   "./favicon.svg?v=20261111-1",
