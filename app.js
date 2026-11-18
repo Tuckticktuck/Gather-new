@@ -4449,6 +4449,15 @@ function renderMessages(preserveScroll=false){
   const activeChat=S.chats.find(chat=>chat.id===S.active);
   const showSenderNames=activeChat?.kind==="group";
   const latestOwnMessageId=[...S.messages].reverse().find(message=>message.sender_id===S.user.id)?.id||null;
+  const receiptMemberIds=new Set((activeChat?.members||[]).map(member=>member.user_id).filter(id=>id!==S.user.id));
+  // Keep a Seen marker on the newest outgoing message that has a reader receipt,
+  // while the newest outgoing message can independently retain its Sent marker.
+  const latestSeenOwnMessageId=[...S.messages].reverse().find(message=>
+    message.sender_id===S.user.id&&
+    (S.messageReads[message.id]||[]).some(receipt=>
+      receipt.user_id!==S.user.id&&(activeChat?.kind!=="group"||receiptMemberIds.has(receipt.user_id))
+    )
+  )?.id||null;
   const pinnedBanner=renderPinnedMessageBanner();if(pinnedBanner)list.append(pinnedBanner);
   if(!S.messages.length){
     list.append(el("p","muted tiny","This is the beginning of the conversation. Say hello."));
@@ -4573,10 +4582,10 @@ function renderMessages(preserveScroll=false){
     const reactionArea=renderMessageReactionArea(m);
     if(reactionArea)bubble.append(reactionArea);
     let receiptElement=null;
-    if(mine&&m.id===latestOwnMessageId){
-      const memberIds=new Set((activeChat?.members||[]).map(member=>member.user_id).filter(id=>id!==S.user.id));
+    if(mine&&(m.id===latestOwnMessageId||m.id===latestSeenOwnMessageId)){
+      const memberIds=receiptMemberIds;
       const readers=[...new Map((S.messageReads[m.id]||[])
-        .filter(receipt=>receipt.user_id!==S.user.id&&memberIds.has(receipt.user_id))
+        .filter(receipt=>receipt.user_id!==S.user.id&&(activeChat?.kind!=="group"||memberIds.has(receipt.user_id)))
         .map(receipt=>[receipt.user_id,receipt])).values()];
       if(activeChat?.kind==="direct"){
         receiptElement=el("div","message-receipts"+(readers.length?" is-seen":" is-sent"),readers.length?"✓✓ Seen":"✓ Sent");
