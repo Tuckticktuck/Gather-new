@@ -4194,6 +4194,21 @@ html[data-theme="light"] .offline-status{color:#59421d;background:#fff4d8;border
 }
 
 
+/* Prevent iOS long-press selection from highlighting message chrome,
+   receipts, and embedded game-invite controls while opening the message menu. */
+.messages .message,
+.messages .message *{
+  -webkit-user-select:none;
+  user-select:none;
+  -webkit-touch-callout:none;
+}
+.messages .message input,
+.messages .message textarea,
+.messages .message [contenteditable="true"]{
+  -webkit-user-select:text;
+  user-select:text;
+  -webkit-touch-callout:default;
+}
 /* Prevent accidental selection during message long-press; enable it only via Select. */
 .message .body-text{
   -webkit-user-select:none;
