@@ -3825,7 +3825,7 @@ function renderBattleshipFleetRandomly(){
 function battleshipCellLabel(cell){
   return "ABCDEFGHIJ"[cell%10]+(Math.floor(cell/10)+1);
 }
-function renderBattleshipBoard(title,fleet,shots,{revealShips=false,allowFire=false}={}){
+function renderBattleshipBoard(title,fleet,shots,{revealShips=false,allowFire=false,onPlaceCell=null}={}){
   const section=el("section","battleship-board-panel"+(allowFire?" is-target-board":" is-friendly-board"));
   const shotList=Array.isArray(shots)?shots:[];
   const hits=shotList.filter(shot=>shot.outcome==="hit").length;
@@ -3860,6 +3860,11 @@ function renderBattleshipBoard(title,fleet,shots,{revealShips=false,allowFire=fa
         if(shot.shipSunk)button.classList.add("is-sunk");
         button.textContent=shot.outcome==="hit"?"×":"•";
         button.disabled=true;
+      }else if(typeof onPlaceCell==="function"){
+        button.classList.add("is-placement-target");
+        button.disabled=false;
+        button.title="Place selected ship at "+battleshipCellLabel(cell);
+        button.addEventListener("click",()=>onPlaceCell(cell));
       }else if(allowFire){
         button.classList.add("is-targetable");
         button.disabled=false;
@@ -3983,15 +3988,58 @@ function renderBattleshipGame(){
     }else{
       $("uno-game-status").textContent="Deploy your fleet";
       if(!Array.isArray(S.battleshipDraftFleet))S.battleshipDraftFleet=renderBattleshipFleetRandomly();
-      ui.append(renderBattleshipBoard("Fleet preview",S.battleshipDraftFleet.map((cells,index)=>({type:"draft-"+index,length:cells.length,cells})),incoming,{revealShips:true}));
-      const controls=el("div","battleship-controls");
-      const randomize=el("button","game-card-action secondary battleship-control-button","↻  Randomize fleet");
+      if(!Number.isInteger(S.battleshipSelectedShipIndex))S.battleshipSelectedShipIndex=0;
+      if(!["horizontal","vertical"].includes(S.battleshipPlacementOrientation))S.battleshipPlacementOrientation="horizontal";
+      const shipSpecs=[["Carrier",5],["Battleship",4],["Cruiser",3],["Submarine",3],["Destroyer",2]];
+      const placement=el("section","battleship-placement-panel");
+      placement.append(el("div","battleship-placement-heading","CUSTOM FLEET PLACEMENT"),el("p","battleship-placement-help","Choose a ship, set its direction, then tap any starting square on the board. You can reposition every ship until you deploy."));
+      const shipPicker=el("div","battleship-ship-picker");
+      shipSpecs.forEach(([label,length],index)=>{
+        const cells=S.battleshipDraftFleet[index]||[];
+        const choice=el("button","battleship-ship-choice"+(S.battleshipSelectedShipIndex===index?" is-selected":"")+(cells.length===length?" is-placed":""));
+        choice.type="button";
+        choice.append(el("span","battleship-ship-choice-name",label),el("span","battleship-ship-choice-meta",length+" cells"));
+        choice.addEventListener("click",()=>{S.battleshipSelectedShipIndex=index;renderBattleshipGame();});
+        shipPicker.append(choice);
+      });
+      placement.append(shipPicker);
+      const placementActions=el("div","battleship-placement-actions");
+      const rotate=el("button","game-card-action secondary battleship-control-button","↻  "+(S.battleshipPlacementOrientation==="horizontal"?"Horizontal":"Vertical"));
+      rotate.type="button";
+      rotate.addEventListener("click",()=>{S.battleshipPlacementOrientation=S.battleshipPlacementOrientation==="horizontal"?"vertical":"horizontal";renderBattleshipGame();});
+      const randomize=el("button","game-card-action secondary battleship-control-button","Shuffle fleet");
       randomize.type="button";
       randomize.addEventListener("click",()=>{S.battleshipDraftFleet=renderBattleshipFleetRandomly();renderBattleshipGame();});
+      placementActions.append(rotate,randomize);
+      placement.append(placementActions);
+      const selectedSpec=shipSpecs[S.battleshipSelectedShipIndex]||shipSpecs[0];
+      const placeAt=(anchor)=>{
+        const [label,length]=selectedSpec;
+        const row=Math.floor(anchor/10),col=anchor%10;
+        const horizontal=S.battleshipPlacementOrientation==="horizontal";
+        if((horizontal&&col+length>10)||(!horizontal&&row+length>10)){
+          toast(label+" does not fit there. Choose another starting square.");
+          return;
+        }
+        const candidate=Array.from({length},(_,offset)=>(row+(horizontal?0:offset))*10+col+(horizontal?offset:0));
+        const occupied=new Set(S.battleshipDraftFleet.flatMap((cells,index)=>index===S.battleshipSelectedShipIndex?[]:cells||[]));
+        if(candidate.some(cell=>occupied.has(cell))){
+          toast("Ships cannot overlap. Choose a clear stretch of water.");
+          return;
+        }
+        S.battleshipDraftFleet=S.battleshipDraftFleet.map((cells,index)=>index===S.battleshipSelectedShipIndex?candidate:[...cells]);
+        const nextIndex=shipSpecs.findIndex((spec,index)=>index!==S.battleshipSelectedShipIndex&&S.battleshipDraftFleet[index]?.length!==spec[1]);
+        if(nextIndex>=0)S.battleshipSelectedShipIndex=nextIndex;
+        renderBattleshipGame();
+      };
+      ui.append(placement);
+      ui.append(renderBattleshipBoard("Fleet preview",S.battleshipDraftFleet.map((cells,index)=>({type:"draft-"+index,length:cells.length,cells})),incoming,{revealShips:true,onPlaceCell:placeAt}));
+      const controls=el("div","battleship-controls");
       const deploy=el("button","game-card-action primary battleship-control-button battleship-deploy-button","Deploy fleet  →");
       deploy.type="button";
+      deploy.disabled=!S.battleshipDraftFleet.every((cells,index)=>cells.length===shipSpecs[index][1]);
       deploy.addEventListener("click",()=>void performBattleshipAction({type:"place_fleet",fleet:S.battleshipDraftFleet}));
-      controls.append(randomize,deploy);
+      controls.append(deploy);
       ui.append(controls);
     }
     const readyCount=Array.isArray(state.readyPlayerIds)?state.readyPlayerIds.length:0;
