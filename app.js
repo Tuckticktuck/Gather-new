@@ -3229,19 +3229,20 @@ function publishCurrentVoiceCallSignal(call,type,extra={}){
 function clearVoiceCallResources(call){
   if(!call)return;
   if(call.ringTimer)clearTimeout(call.ringTimer);
-  if(call.pc){
-    call.pc.onicecandidate=null;
-    call.pc.ontrack=null;
-    call.pc.onconnectionstatechange=null;
-    try{call.pc.close();}catch(error){}
-    call.pc=null;
-  }
-  if(call.localStream)call.localStream.getTracks().forEach(track=>track.stop());
-  call.localStream=null;
-  const audio=$("voice-call-remote-audio");
-  if(audio){
-    try{audio.pause();}catch(error){}
-    audio.srcObject=null;
+  call.ending=true;
+  if(call.room){
+    try{
+      const audio=$("voice-call-remote-audio");
+      if(audio){
+        call.room.remoteParticipants.forEach(participant=>{
+          participant.trackPublications.forEach(publication=>publication.track?.detach(audio));
+        });
+        audio.pause();
+        audio.srcObject=null;
+      }
+      void call.room.disconnect();
+    }catch(error){console.warn("Gather could not fully close the LiveKit room:",error);}
+    call.room=null;
   }
   if(S.voiceCall===call)S.voiceCall=null;
   const overlay=$("voice-call-overlay");
@@ -3255,26 +3256,31 @@ function finishVoiceCall(message="",notifyPeer=false){
   clearVoiceCallResources(call);
   if(message)toast(message);
 }
-function createVoicePeerConnection(call){
-  const pc=new RTCPeerConnection({
-    iceServers:[{urls:"stun:stun.l.google.com:19302"}],
-    bundlePolicy:"max-bundle",
-    rtcpMuxPolicy:"require"
+async function connectLiveKitVoiceCall(call,publishMicrophone){
+  if(!window.LivekitClient?.Room||!window.LivekitClient?.RoomEvent){
+    throw new Error("Gather calling could not load. Check your connection and reload Gather.");
+  }
+  const sessionResult=await db.auth.getSession();
+  const accessToken=sessionResult.data?.session?.access_token;
+  if(sessionResult.error||!accessToken)throw new Error("Your Gather session expired. Sign in again before calling.");
+  const response=await fetch(URL+"/functions/v1/gather-livekit-token",{
+    method:"POST",
+    headers:{"Authorization":"Bearer "+accessToken,"apikey":KEY,"Content-Type":"application/json"},
+    body:JSON.stringify({conversation_id:call.conversationId,call_id:call.callId})
   });
-  call.pc=pc;
-  call.localStream?.getTracks().forEach(track=>pc.addTrack(track,call.localStream));
-  pc.onicecandidate=event=>{
-    if(event.candidate&&S.voiceCall===call){
-      const candidate=event.candidate.toJSON?event.candidate.toJSON():event.candidate;
-      void publishCurrentVoiceCallSignal(call,"candidate",{candidate});
-    }
-  };
-  pc.ontrack=event=>{
-    if(S.voiceCall!==call)return;
-    const remoteStream=event.streams?.[0]||new MediaStream([event.track]);
-    call.remoteStream=remoteStream;
-    const audio=$("voice-call-remote-audio");
-    audio.srcObject=remoteStream;
+  let payload={};
+  try{payload=await response.json();}catch(error){}
+  if(!response.ok)throw new Error(payload.error||"Gather could not authorize this call. Please try again.");
+  if(typeof payload.server_url!=="string"||typeof payload.participant_token!=="string"){
+    throw new Error("Gather received an invalid calling-service response.");
+  }
+  const sdk=window.LivekitClient;
+  const room=new sdk.Room({adaptiveStream:false,dynacast:false});
+  call.room=room;
+  const audio=$("voice-call-remote-audio");
+  room.on(sdk.RoomEvent.TrackSubscribed,(track)=>{
+    if(S.voiceCall!==call||track.kind!==sdk.Track.Kind.Audio)return;
+    track.attach(audio);
     const playback=audio.play();
     if(playback&&typeof playback.catch==="function"){
       playback.catch(()=>{
@@ -3282,82 +3288,57 @@ function createVoicePeerConnection(call){
         renderVoiceCall();
       });
     }
-  };
-  pc.onconnectionstatechange=()=>{
+  });
+  room.on(sdk.RoomEvent.TrackUnsubscribed,(track)=>{
+    if(track.kind===sdk.Track.Kind.Audio)track.detach(audio);
+  });
+  room.on(sdk.RoomEvent.ParticipantConnected,()=>{
     if(S.voiceCall!==call)return;
-    if(pc.connectionState==="connected"){
-      call.state="active";
-      call.statusText="Connected";
-      if(call.ringTimer){clearTimeout(call.ringTimer);call.ringTimer=null;}
-      renderVoiceCall();
-    }else if(pc.connectionState==="failed"){
-      call.statusText="Connection failed. End the call and try again.";
-      renderVoiceCall();
-    }else if(pc.connectionState==="disconnected"){
-      call.statusText="Connection interrupted. Trying to reconnect…";
-      renderVoiceCall();
-    }else if(pc.connectionState==="connecting"){
-      call.statusText="Connecting audio…";
-      renderVoiceCall();
-    }
-  };
-  return pc;
-}
-async function applyQueuedVoiceCandidates(call){
-  if(!call?.pc?.remoteDescription)return;
-  const queued=call.pendingCandidates.splice(0);
-  for(const candidate of queued){
-    try{await call.pc.addIceCandidate(new RTCIceCandidate(candidate));}
-    catch(error){console.warn("A queued voice-call network candidate could not be applied:",error);}
-  }
-}
-async function answerIncomingVoiceCall(call){
-  if(!call||S.voiceCall!==call||!call.accepted||!call.offer||!call.pc||call.answerStarted)return;
-  call.answerStarted=true;
-  try{
-    await call.pc.setRemoteDescription(new RTCSessionDescription(call.offer));
-    await applyQueuedVoiceCandidates(call);
-    const answer=await call.pc.createAnswer();
-    await call.pc.setLocalDescription(answer);
-    const sent=await publishCurrentVoiceCallSignal(call,"answer",{sdp:call.pc.localDescription});
-    if(!sent)throw new Error("Gather could not send the call response. Check the connection and try again.");
-    call.statusText="Waiting for the other person to connect…";
+    call.state="active";
+    call.statusText="Connected";
+    if(call.ringTimer){clearTimeout(call.ringTimer);call.ringTimer=null;}
     renderVoiceCall();
-  }catch(error){
-    console.error("Could not answer Gather voice call:",error);
-    finishVoiceCall(error?.message||"Could not answer the call.",true);
+  });
+  room.on(sdk.RoomEvent.ParticipantDisconnected,()=>{
+    if(S.voiceCall!==call)return;
+    call.statusText="The other person disconnected. You can end the call.";
+    renderVoiceCall();
+  });
+  room.on(sdk.RoomEvent.Disconnected,()=>{
+    if(S.voiceCall!==call||call.ending)return;
+    call.statusText="The calling connection was interrupted. Check your connection or end the call.";
+    renderVoiceCall();
+  });
+  await room.connect(payload.server_url,payload.participant_token);
+  if(S.voiceCall!==call){await room.disconnect();return;}
+  if(publishMicrophone)await room.localParticipant.setMicrophoneEnabled(true);
+  if(room.remoteParticipants.size>0){
+    call.state="active";
+    call.statusText="Connected";
+    if(call.ringTimer){clearTimeout(call.ringTimer);call.ringTimer=null;}
+  }else{
+    call.statusText="Waiting for the other person to join…";
   }
+  renderVoiceCall();
 }
 async function acceptVoiceCall(){
   const call=S.voiceCall;
   if(!call||call.state!=="incoming"||call.accepted)return;
-  if(!navigator.mediaDevices?.getUserMedia){
-    finishVoiceCall("This browser does not support microphone access for calls.");
-    return;
-  }
   call.accepted=true;
   call.state="connecting";
-  call.statusText="Requesting microphone permission…";
+  call.statusText="Connecting securely and requesting microphone permission…";
   if(call.ringTimer){clearTimeout(call.ringTimer);call.ringTimer=null;}
   renderVoiceCall();
   try{
-    const stream=await navigator.mediaDevices.getUserMedia({
-      audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},
-      video:false
-    });
-    if(S.voiceCall!==call){stream.getTracks().forEach(track=>track.stop());return;}
-    call.localStream=stream;
-    createVoicePeerConnection(call);
+    await connectLiveKitVoiceCall(call,true);
+    if(S.voiceCall!==call)return;
     const accepted=await publishCurrentVoiceCallSignal(call,"accept");
     if(!accepted)throw new Error("Gather could not confirm that you accepted the call.");
-    if(call.offer)await answerIncomingVoiceCall(call);
-    else{
-      call.statusText="Waiting for the caller to connect…";
-      renderVoiceCall();
-    }
+    if(call.state!=="active")call.statusText="Waiting for the caller to join…";
+    renderVoiceCall();
   }catch(error){
     console.error("Could not accept Gather voice call:",error);
-    finishVoiceCall(error?.name==="NotAllowedError"?"Microphone permission was not granted.":error?.message||"Could not access the microphone.",true);
+    if(S.voiceCall===call)finishVoiceCall(error?.name==="NotAllowedError"?"Microphone permission was not granted.":error?.message||"Could not connect the call.",true);
   }
 }
 async function declineVoiceCall(){
@@ -3374,29 +3355,25 @@ async function hangUpVoiceCall(){
 }
 function toggleVoiceCallMute(){
   const call=S.voiceCall;
-  if(!call?.localStream)return;
+  if(!call?.room)return;
   call.muted=!call.muted;
-  call.localStream.getAudioTracks().forEach(track=>{track.enabled=!call.muted;});
+  call.room.localParticipant.setMicrophoneEnabled(!call.muted).catch(error=>{
+    console.warn("Gather could not update microphone state:",error);
+    call.muted=!call.muted;
+    toast("Could not change microphone state. Please try again.");
+  });
   renderVoiceCall();
 }
 async function beginOutgoingVoiceCall(call){
   if(!call||S.voiceCall!==call||call.state!=="outgoing"||!call.accepted||call.connectingStarted)return;
   call.connectingStarted=true;
-  call.statusText="The other person accepted. Requesting microphone permission…";
+  call.state="connecting";
+  call.statusText="The other person accepted. Connecting securely and requesting microphone permission…";
   renderVoiceCall();
   try{
-    const stream=await navigator.mediaDevices.getUserMedia({
-      audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},
-      video:false
-    });
-    if(S.voiceCall!==call){stream.getTracks().forEach(track=>track.stop());return;}
-    call.localStream=stream;
-    createVoicePeerConnection(call);
-    const offer=await call.pc.createOffer({offerToReceiveAudio:true});
-    await call.pc.setLocalDescription(offer);
-    const sent=await publishCurrentVoiceCallSignal(call,"offer",{sdp:call.pc.localDescription});
-    if(!sent)throw new Error("Gather could not send the call offer. Check your connection and try again.");
-    call.statusText="Connecting audio…";
+    await connectLiveKitVoiceCall(call,true);
+    if(S.voiceCall!==call)return;
+    if(call.state!=="active")call.statusText="Waiting for the other person to join…";
     renderVoiceCall();
   }catch(error){
     console.error("Could not prepare Gather voice call:",error);
@@ -3414,8 +3391,8 @@ async function startVoiceCall(){
     toast("Voice calls require a secure HTTPS connection.");
     return;
   }
-  if(!window.RTCPeerConnection||!navigator.mediaDevices?.getUserMedia){
-    toast("This browser does not support voice calling.");
+  if(!window.LivekitClient?.Room){
+    toast("Gather calling could not load. Please reload and try again.");
     return;
   }
   if(!S.typingReady||!S.typingChannel||S.active!==details.chat.id){
@@ -3428,13 +3405,10 @@ async function startVoiceCall(){
     peerUserId:details.peerUserId,
     peerName:details.peerName,
     callId:createVoiceCallId(),
-    pc:null,
-    localStream:null,
-    remoteStream:null,
-    pendingCandidates:[],
-    offer:null,
+    room:null,
     accepted:false,
-    answerStarted:false,
+    ending:false,
+    connectingStarted:false,
     muted:false,
     ringTimer:null,
     statusText:"Waiting for the other person to accept…"
@@ -3467,9 +3441,9 @@ async function handleVoiceCallSignal(conversationId,payload){
      payload.to_user_id!==S.user?.id||
      payload.from_user_id!==details.peerUserId||
      typeof payload.call_id!=="string"||! /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(payload.call_id)||
-     !["invite","accept","offer","answer","candidate","decline","busy","no-answer","hangup"].includes(payload.type))return;
+     !["invite","accept","decline","busy","no-answer","hangup"].includes(payload.type))return;
   if(payload.type==="invite"){
-    if(S.directStatus?.can_message!==true||payload.call_id.length!==36)return;
+    if(S.directStatus?.can_message!==true)return;
     if(S.voiceCall){
       if(S.voiceCall.callId!==payload.call_id){
         void publishVoiceCallSignal(conversationId,payload.call_id,payload.from_user_id,"busy");
@@ -3482,16 +3456,13 @@ async function handleVoiceCallSignal(conversationId,payload){
       peerUserId:details.peerUserId,
       peerName:details.peerName,
       callId:payload.call_id,
-      pc:null,
-      localStream:null,
-      remoteStream:null,
-      pendingCandidates:[],
-      offer:null,
+      room:null,
       accepted:false,
-      answerStarted:false,
+      ending:false,
+      connectingStarted:false,
       muted:false,
       ringTimer:null,
-      statusText:"Incoming call. Accept to turn on your microphone."
+      statusText:"Incoming call. Accept to connect and turn on your microphone."
     };
     S.voiceCall=call;
     call.ringTimer=setTimeout(()=>{
@@ -3510,39 +3481,6 @@ async function handleVoiceCallSignal(conversationId,payload){
     call.accepted=true;
     if(call.ringTimer){clearTimeout(call.ringTimer);call.ringTimer=null;}
     await beginOutgoingVoiceCall(call);
-    return;
-  }
-  if(payload.type==="offer"){
-    if(call.state!=="connecting"||!call.accepted||!payload.sdp||payload.sdp.type!=="offer"||typeof payload.sdp.sdp!=="string"||payload.sdp.sdp.length>16000)return;
-    call.offer=payload.sdp;
-    if(call.accepted)await answerIncomingVoiceCall(call);
-    return;
-  }
-  if(payload.type==="answer"){
-    if(call.state!=="outgoing"||!call.accepted||!call.pc||!payload.sdp||payload.sdp.type!=="answer"||typeof payload.sdp.sdp!=="string"||payload.sdp.sdp.length>16000)return;
-    try{
-      await call.pc.setRemoteDescription(new RTCSessionDescription(payload.sdp));
-      await applyQueuedVoiceCandidates(call);
-      call.statusText="Connecting audio…";
-      renderVoiceCall();
-    }catch(error){
-      console.error("Could not apply Gather voice-call answer:",error);
-      finishVoiceCall("Could not connect the call. Please try again.");
-    }
-    return;
-  }
-  if(payload.type==="candidate"){
-    const candidate=payload.candidate;
-    if(!call.accepted||!candidate||typeof candidate.candidate!=="string"||candidate.candidate.length>2048||
-       (candidate.sdpMid!==null&&candidate.sdpMid!==undefined&&typeof candidate.sdpMid!=="string")||
-       (candidate.sdpMLineIndex!==null&&candidate.sdpMLineIndex!==undefined&&!Number.isInteger(candidate.sdpMLineIndex)))return;
-    if(!call.pc||!call.pc.remoteDescription){
-      if(call.pendingCandidates.length>=64)return;
-      call.pendingCandidates.push(candidate);
-      return;
-    }
-    try{await call.pc.addIceCandidate(new RTCIceCandidate(candidate));}
-    catch(error){console.warn("A voice-call network candidate could not be applied:",error);}
     return;
   }
   if(payload.type==="decline"){finishVoiceCall("The call was declined.");return;}
