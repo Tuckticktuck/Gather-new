@@ -78,6 +78,7 @@ Deno.serve(async (request: Request) => {
       roomJoin: true,
       room: roomName,
       canPublish: true,
+      canPublishSources: ["microphone"],
       canSubscribe: true,
       canPublishData: false
     });
