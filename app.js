@@ -30,7 +30,7 @@ function normalizeChatSettings(raw){
   });
   return {pinned,muted,drafts,appearance};
 }
-const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", inChatFilterType:"all", inChatMessageMatches:new Set(), inChatSearchRequestId:0, inChatSearchTimer:null, editingMessageId:null, editDraft:"", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], favoriteFriendIds:new Set(), archivedConversationIds:new Set(), blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), deletedConversationId:null, selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingUndoSend:null, undoSendTimer:null, undoCountdownInterval:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null,textSelectionMessageId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, homeSearchQuery:"", homeSearchTab:"messages", homeSearchMessages:[], homeSearchProfiles:[], homeSearchLoading:false, homeSearchErrors:{messages:"",profiles:""}, homeSearchTimer:null, homeSearchRequestId:0, directStatus:null, directStatusCache:new Map(), directStatusChecks:new Map(), groupMessageStatus:null, ageStatus:null, ageChangeStatus:null, ageRequestChannel:null, messageRestriction:null, messageRestrictionLoaded:false, messageRestrictionError:"", messageRestrictionChannel:null, messageRestrictionTimer:null, active:null, messages:[], gameMatches:{}, gameMatchPlayers:{}, gameRespondingIds:new Set(), gameChannel:null, gameCardsLoading:false, gameCardsRefreshPending:false, activeGameId:null, activeGameView:null, gameViewRequest:0, unoInitializing:false, unoHouseRulesDraft:null, chessSelectedSquare:null, chessPendingPromotion:null, battleshipDraftFleet:null,  unoSelectedCardId:null, initialChatScrollLockId:null, channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), friendPresenceRetryTimers:new Map(), friendPresenceRetryAttempts:new Map(), ownPresenceChannel:null, ownPresenceRetryTimer:null, ownPresenceRetryAttempt:0, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],intergroupRequests:[],ageChangeRequests:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
+const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", inChatFilterType:"all", inChatMessageMatches:new Set(), inChatSearchRequestId:0, inChatSearchTimer:null, editingMessageId:null, editDraft:"", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], favoriteFriendIds:new Set(), archivedConversationIds:new Set(), blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), deletedConversationId:null, selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingUndoSend:null, undoSendTimer:null, undoCountdownInterval:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null,textSelectionMessageId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, homeSearchQuery:"", homeSearchTab:"messages", homeSearchMessages:[], homeSearchProfiles:[], homeSearchLoading:false, homeSearchErrors:{messages:"",profiles:""}, homeSearchTimer:null, homeSearchRequestId:0, directStatus:null, directStatusCache:new Map(), directStatusChecks:new Map(), groupMessageStatus:null, ageStatus:null, ageChangeStatus:null, ageRequestChannel:null, messageRestriction:null, messageRestrictionLoaded:false, messageRestrictionError:"", messageRestrictionChannel:null, messageRestrictionTimer:null, active:null, messages:[], gameMatches:{}, gameMatchPlayers:{}, gameRespondingIds:new Set(), gameChannel:null, gameCardsLoading:false, gameCardsRefreshPending:false, activeGameId:null, activeGameView:null, gameViewRequest:0, unoInitializing:false, unoHouseRulesDraft:null, chessSelectedSquare:null, chessPendingPromotion:null, battleshipDraftFleet:null,  unoSelectedCardId:null, initialChatScrollLockId:null, channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), friendPresenceRetryTimers:new Map(), friendPresenceRetryAttempts:new Map(), ownPresenceChannel:null, ownPresenceRetryTimer:null, ownPresenceRetryAttempt:0, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, voiceCall:null, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],intergroupRequests:[],ageChangeRequests:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function appendSafeText(parent,value){
@@ -2801,6 +2801,7 @@ async function unblockUser(userId){
   toast("Member unblocked.");
 }
 function renderActive(){
+  $("voice-call-start").hidden=true;
   const c=S.chats.find(x=>x.id===S.active);
   $("message-create-poll").hidden=c?.kind!=="group";
   renderUndoSend();
@@ -2844,6 +2845,12 @@ function renderActive(){
 }
 function renderDirectControls(){
   const c=S.chats.find(x=>x.id===S.active),isDirect=c?.kind==="direct";
+  const callButton=$("voice-call-start");
+  if(callButton){
+    callButton.hidden=!isDirect||S.directStatus?.can_message!==true;
+    callButton.disabled=!isDirect||!S.typingReady||!!S.voiceCall;
+    callButton.title=S.voiceCall?"A voice call is already in progress":!S.typingReady?"Connecting to this conversation":"Start voice call";
+  }
   const restrictionPending=!S.messageRestrictionLoaded;
   const messageRestricted=!!activeMessageRestriction();
   const sendingDisabled=restrictionPending||messageRestricted;
@@ -3163,7 +3170,355 @@ function handleTypingBroadcast(chatId,payload){
     },6500);
   }
 }
+
+function voiceCallChatDetails(conversationId=S.active){
+  const chat=S.chats.find(item=>item.id===conversationId);
+  if(!chat||chat.kind!=="direct"||!Array.isArray(chat.members)||chat.members.length!==2||!S.user)return null;
+  const peer=chat.members.find(member=>member.user_id!==S.user.id);
+  if(!peer?.user_id)return null;
+  return {chat,peerUserId:peer.user_id,peerName:chatTitle(chat)};
+}
+function createVoiceCallId(){
+  try{return crypto.randomUUID();}
+  catch(error){return Date.now().toString(36)+"-"+Math.random().toString(36).slice(2)+"-"+Math.random().toString(36).slice(2);}
+}
+function renderVoiceCall(){
+  const overlay=$("voice-call-overlay"),call=S.voiceCall;
+  if(!overlay)return;
+  overlay.hidden=!call;
+  if(!call)return;
+  const incoming=call.state==="incoming";
+  const active=call.state==="active";
+  $("voice-call-title").textContent=incoming?"Incoming voice call":call.state==="outgoing"?"Calling…":"Voice call";
+  $("voice-call-peer").textContent=call.peerName||"Gather member";
+  $("voice-call-status").textContent=call.statusText||(active?"Connected":incoming?"Wants to talk with you.":"Connecting…");
+  $("voice-call-accept").hidden=!incoming;
+  $("voice-call-decline").hidden=!incoming;
+  $("voice-call-mute").hidden=!(call.state==="connecting"||active);
+  $("voice-call-mute").textContent=call.muted?"Unmute":"Mute";
+  $("voice-call-hangup").hidden=incoming;
+  $("voice-call-hangup").textContent=call.state==="outgoing"?"Cancel call":"End call";
+  overlay.setAttribute("aria-label",incoming?"Incoming voice call":"Voice call with "+(call.peerName||"Gather member"));
+}
+function publishVoiceCallSignal(conversationId,callId,toUserId,type,extra={}){
+  const channel=S.typingChannel;
+  if(!channel||!S.typingReady||S.active!==conversationId||!S.user)return Promise.resolve(false);
+  const payload={
+    type,
+    conversation_id:conversationId,
+    call_id:callId,
+    from_user_id:S.user.id,
+    to_user_id:toUserId,
+    ...extra
+  };
+  return channel.send({type:"broadcast",event:"call-signal",payload})
+    .then(status=>{
+      if(status!=="ok")console.warn("Voice-call signal was not delivered:",status);
+      return status==="ok";
+    })
+    .catch(error=>{console.warn("Voice-call signal failed:",error);return false;});
+}
+function publishCurrentVoiceCallSignal(call,type,extra={}){
+  if(!call)return Promise.resolve(false);
+  return publishVoiceCallSignal(call.conversationId,call.callId,call.peerUserId,type,extra);
+}
+function clearVoiceCallResources(call){
+  if(!call)return;
+  if(call.ringTimer)clearTimeout(call.ringTimer);
+  if(call.pc){
+    call.pc.onicecandidate=null;
+    call.pc.ontrack=null;
+    call.pc.onconnectionstatechange=null;
+    try{call.pc.close();}catch(error){}
+    call.pc=null;
+  }
+  if(call.localStream)call.localStream.getTracks().forEach(track=>track.stop());
+  call.localStream=null;
+  const audio=$("voice-call-remote-audio");
+  if(audio){
+    try{audio.pause();}catch(error){}
+    audio.srcObject=null;
+  }
+  if(S.voiceCall===call)S.voiceCall=null;
+  const overlay=$("voice-call-overlay");
+  if(overlay)overlay.hidden=true;
+  if(S.active)renderDirectControls();
+}
+function finishVoiceCall(message="",notifyPeer=false){
+  const call=S.voiceCall;
+  if(!call)return;
+  if(notifyPeer)void publishCurrentVoiceCallSignal(call,"hangup");
+  clearVoiceCallResources(call);
+  if(message)toast(message);
+}
+function createVoicePeerConnection(call){
+  const pc=new RTCPeerConnection({
+    iceServers:[{urls:"stun:stun.l.google.com:19302"}],
+    bundlePolicy:"max-bundle"
+  });
+  call.pc=pc;
+  call.localStream?.getTracks().forEach(track=>pc.addTrack(track,call.localStream));
+  pc.onicecandidate=event=>{
+    if(event.candidate&&S.voiceCall===call){
+      const candidate=event.candidate.toJSON?event.candidate.toJSON():event.candidate;
+      void publishCurrentVoiceCallSignal(call,"candidate",{candidate});
+    }
+  };
+  pc.ontrack=event=>{
+    if(S.voiceCall!==call)return;
+    const remoteStream=event.streams?.[0]||new MediaStream([event.track]);
+    call.remoteStream=remoteStream;
+    const audio=$("voice-call-remote-audio");
+    audio.srcObject=remoteStream;
+    const playback=audio.play();
+    if(playback&&typeof playback.catch==="function"){
+      playback.catch(()=>{
+        call.statusText="Connected. Tap the page once if you cannot hear audio.";
+        renderVoiceCall();
+      });
+    }
+  };
+  pc.onconnectionstatechange=()=>{
+    if(S.voiceCall!==call)return;
+    if(pc.connectionState==="connected"){
+      call.state="active";
+      call.statusText="Connected";
+      if(call.ringTimer){clearTimeout(call.ringTimer);call.ringTimer=null;}
+      renderVoiceCall();
+    }else if(pc.connectionState==="failed"){
+      call.statusText="Connection failed. End the call and try again.";
+      renderVoiceCall();
+    }else if(pc.connectionState==="disconnected"){
+      call.statusText="Connection interrupted. Trying to reconnect…";
+      renderVoiceCall();
+    }else if(pc.connectionState==="connecting"){
+      call.statusText="Connecting audio…";
+      renderVoiceCall();
+    }
+  };
+  return pc;
+}
+async function applyQueuedVoiceCandidates(call){
+  if(!call?.pc?.remoteDescription)return;
+  const queued=call.pendingCandidates.splice(0);
+  for(const candidate of queued){
+    try{await call.pc.addIceCandidate(new RTCIceCandidate(candidate));}
+    catch(error){console.warn("A queued voice-call network candidate could not be applied:",error);}
+  }
+}
+async function answerIncomingVoiceCall(call){
+  if(!call||S.voiceCall!==call||!call.accepted||!call.offer||!call.pc||call.answerStarted)return;
+  call.answerStarted=true;
+  try{
+    await call.pc.setRemoteDescription(new RTCSessionDescription(call.offer));
+    await applyQueuedVoiceCandidates(call);
+    const answer=await call.pc.createAnswer();
+    await call.pc.setLocalDescription(answer);
+    const sent=await publishCurrentVoiceCallSignal(call,"answer",{sdp:call.pc.localDescription});
+    if(!sent)throw new Error("Gather could not send the call response. Check the connection and try again.");
+    call.statusText="Waiting for the other person to connect…";
+    renderVoiceCall();
+  }catch(error){
+    console.error("Could not answer Gather voice call:",error);
+    finishVoiceCall(error?.message||"Could not answer the call.",true);
+  }
+}
+async function acceptVoiceCall(){
+  const call=S.voiceCall;
+  if(!call||call.state!=="incoming"||call.accepted)return;
+  if(!navigator.mediaDevices?.getUserMedia){
+    finishVoiceCall("This browser does not support microphone access for calls.");
+    return;
+  }
+  call.accepted=true;
+  call.state="connecting";
+  call.statusText="Requesting microphone permission…";
+  if(call.ringTimer){clearTimeout(call.ringTimer);call.ringTimer=null;}
+  renderVoiceCall();
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({
+      audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},
+      video:false
+    });
+    if(S.voiceCall!==call){stream.getTracks().forEach(track=>track.stop());return;}
+    call.localStream=stream;
+    createVoicePeerConnection(call);
+    if(call.offer)await answerIncomingVoiceCall(call);
+    else{
+      call.statusText="Preparing the audio connection…";
+      renderVoiceCall();
+    }
+  }catch(error){
+    console.error("Could not accept Gather voice call:",error);
+    finishVoiceCall(error?.name==="NotAllowedError"?"Microphone permission was not granted.":error?.message||"Could not access the microphone.",true);
+  }
+}
+async function declineVoiceCall(){
+  const call=S.voiceCall;
+  if(!call||call.state!=="incoming")return;
+  await publishCurrentVoiceCallSignal(call,"decline");
+  if(S.voiceCall===call)finishVoiceCall("Call declined.");
+}
+async function hangUpVoiceCall(){
+  const call=S.voiceCall;
+  if(!call)return;
+  await publishCurrentVoiceCallSignal(call,"hangup");
+  if(S.voiceCall===call)finishVoiceCall("Call ended.");
+}
+function toggleVoiceCallMute(){
+  const call=S.voiceCall;
+  if(!call?.localStream)return;
+  call.muted=!call.muted;
+  call.localStream.getAudioTracks().forEach(track=>{track.enabled=!call.muted;});
+  renderVoiceCall();
+}
+async function startVoiceCall(){
+  const details=voiceCallChatDetails();
+  if(!details||S.directStatus?.can_message!==true){
+    toast("Voice calls are available only in an approved private conversation.");
+    return;
+  }
+  if(S.voiceCall){toast("A voice call is already in progress.");return;}
+  if(!window.isSecureContext&&location.hostname!=="localhost"){
+    toast("Voice calls require a secure HTTPS connection.");
+    return;
+  }
+  if(!window.RTCPeerConnection||!navigator.mediaDevices?.getUserMedia){
+    toast("This browser does not support voice calling.");
+    return;
+  }
+  if(!S.typingReady||!S.typingChannel||S.active!==details.chat.id){
+    toast("Connect to this conversation before starting a call.");
+    return;
+  }
+  const call={
+    state:"outgoing",
+    conversationId:details.chat.id,
+    peerUserId:details.peerUserId,
+    peerName:details.peerName,
+    callId:createVoiceCallId(),
+    pc:null,
+    localStream:null,
+    remoteStream:null,
+    pendingCandidates:[],
+    offer:null,
+    accepted:false,
+    answerStarted:false,
+    muted:false,
+    ringTimer:null,
+    statusText:"Requesting microphone permission…"
+  };
+  S.voiceCall=call;
+  renderVoiceCall();
+  renderDirectControls();
+  let invitationSent=false;
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({
+      audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},
+      video:false
+    });
+    if(S.voiceCall!==call){stream.getTracks().forEach(track=>track.stop());return;}
+    call.localStream=stream;
+    createVoicePeerConnection(call);
+    const invited=await publishCurrentVoiceCallSignal(call,"invite");
+    if(!invited)throw new Error("Gather could not reach the other member. Make sure both people have this private chat open.");
+    invitationSent=true;
+    const offer=await call.pc.createOffer({offerToReceiveAudio:true});
+    await call.pc.setLocalDescription(offer);
+    const sent=await publishCurrentVoiceCallSignal(call,"offer",{sdp:call.pc.localDescription});
+    if(!sent)throw new Error("Gather could not send the call offer. Check your connection and try again.");
+    call.statusText="Ringing…";
+    call.ringTimer=setTimeout(()=>{
+      if(S.voiceCall!==call||call.state==="active")return;
+      void publishCurrentVoiceCallSignal(call,"hangup");
+      finishVoiceCall("No answer.");
+    },35000);
+    renderVoiceCall();
+  }catch(error){
+    console.error("Could not start Gather voice call:",error);
+    if(invitationSent)void publishCurrentVoiceCallSignal(call,"hangup");
+    if(S.voiceCall===call)finishVoiceCall(error?.name==="NotAllowedError"?"Microphone permission was not granted.":error?.message||"Could not start the call.");
+  }
+}
+async function handleVoiceCallSignal(conversationId,payload){
+  const details=voiceCallChatDetails(conversationId);
+  if(!details||S.active!==conversationId||!payload||
+     payload.conversation_id!==conversationId||
+     payload.to_user_id!==S.user?.id||
+     payload.from_user_id!==details.peerUserId||
+     typeof payload.call_id!=="string")return;
+  if(payload.type==="invite"){
+    if(S.voiceCall){
+      if(S.voiceCall.callId!==payload.call_id){
+        void publishVoiceCallSignal(conversationId,payload.call_id,payload.from_user_id,"busy");
+      }
+      return;
+    }
+    const call={
+      state:"incoming",
+      conversationId,
+      peerUserId:details.peerUserId,
+      peerName:details.peerName,
+      callId:payload.call_id,
+      pc:null,
+      localStream:null,
+      remoteStream:null,
+      pendingCandidates:[],
+      offer:null,
+      accepted:false,
+      answerStarted:false,
+      muted:false,
+      ringTimer:null,
+      statusText:"Incoming call. Accept to turn on your microphone."
+    };
+    S.voiceCall=call;
+    call.ringTimer=setTimeout(()=>{
+      if(S.voiceCall!==call||call.state!=="incoming")return;
+      void publishCurrentVoiceCallSignal(call,"no-answer");
+      finishVoiceCall("Missed voice call.");
+    },30000);
+    renderVoiceCall();
+    return;
+  }
+  const call=S.voiceCall;
+  if(!call||call.callId!==payload.call_id||call.peerUserId!==payload.from_user_id)return;
+  if(payload.type==="offer"){
+    if(call.state!=="incoming"||!payload.sdp)return;
+    call.offer=payload.sdp;
+    if(call.accepted)await answerIncomingVoiceCall(call);
+    return;
+  }
+  if(payload.type==="answer"){
+    if(call.state!=="outgoing"||!call.pc||!payload.sdp)return;
+    try{
+      await call.pc.setRemoteDescription(new RTCSessionDescription(payload.sdp));
+      await applyQueuedVoiceCandidates(call);
+      call.statusText="Connecting audio…";
+      renderVoiceCall();
+    }catch(error){
+      console.error("Could not apply Gather voice-call answer:",error);
+      finishVoiceCall("Could not connect the call. Please try again.");
+    }
+    return;
+  }
+  if(payload.type==="candidate"){
+    if(!payload.candidate)return;
+    if(!call.pc||!call.pc.remoteDescription){
+      call.pendingCandidates.push(payload.candidate);
+      return;
+    }
+    try{await call.pc.addIceCandidate(new RTCIceCandidate(payload.candidate));}
+    catch(error){console.warn("A voice-call network candidate could not be applied:",error);}
+    return;
+  }
+  if(payload.type==="decline"){finishVoiceCall("The call was declined.");return;}
+  if(payload.type==="busy"){finishVoiceCall("The other member is already on a call.");return;}
+  if(payload.type==="no-answer"){finishVoiceCall("No answer.");return;}
+  if(payload.type==="hangup"){finishVoiceCall("The other member ended the call.");}
+}
+
 function closeTypingChannel(){
+  if(S.voiceCall)finishVoiceCall("",false);
   stopTyping(true);
   const channel=S.typingChannel;S.typingChannel=null;S.typingReady=false;S.typingSent=false;S.typingLastSentAt=0;
   if(S.typingRemoteTimer){clearTimeout(S.typingRemoteTimer);S.typingRemoteTimer=null;}
@@ -3176,11 +3531,13 @@ function subscribeTyping(conversationId){
   const channel=db.channel("gather-chat:"+conversationId,{config:{private:true,broadcast:{ack:false,self:false}}});
   S.typingChannel=channel;S.typingReady=false;
   channel.on("broadcast",{event:"typing"},event=>handleTypingBroadcast(conversationId,event.payload));
+  channel.on("broadcast",{event:"call-signal"},event=>{void handleVoiceCallSignal(conversationId,event.payload);});
   channel.subscribe((status,error)=>{
     if(S.active!==conversationId||S.typingChannel!==channel)return;
     if(status==="SUBSCRIBED"){
       S.typingReady=true;
       updateLocalTyping();
+      renderDirectControls();
     }else if(status==="CHANNEL_ERROR"||status==="TIMED_OUT"){
       console.warn("Typing indicator connection failed:",error||status);
     }
@@ -6999,6 +7356,11 @@ function wire(){
   $("retry-load-chats").addEventListener("click",()=>{if(S.user&&!S.loading)signedIn(S.user,true);});
   $("empty-private").addEventListener("click",()=>openPeople("direct"));$("empty-group").addEventListener("click",()=>openPeople("group"));
   $("chat-actions-open").addEventListener("click",()=>{renderChatOptions();$("chat-actions-modal").hidden=false;});
+  $("voice-call-start").addEventListener("click",()=>{void startVoiceCall();});
+  $("voice-call-accept").addEventListener("click",()=>{void acceptVoiceCall();});
+  $("voice-call-decline").addEventListener("click",()=>{void declineVoiceCall();});
+  $("voice-call-mute").addEventListener("click",toggleVoiceCallMute);
+  $("voice-call-hangup").addEventListener("click",()=>{void hangUpVoiceCall();});
   $("search-messages-open").addEventListener("click",()=>{ $("chat-actions-modal").hidden=true; openMessageSearch("conversation"); });
   $("archive-conversation").addEventListener("click",toggleArchiveConversation);
   $("group-events-open").addEventListener("click",()=>{$("chat-actions-modal").hidden=true;void openGroupEvents();});
@@ -7351,5 +7713,6 @@ async function boot(){
     status("auth-status","Gather could not start: "+(error?.message||"an unexpected startup error occurred."),"error");
   }
 }
+window.addEventListener("pagehide",()=>{if(S.voiceCall)finishVoiceCall("",false);});
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);else boot();
 })();
