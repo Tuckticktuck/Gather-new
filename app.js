@@ -17,25 +17,59 @@ const MESSAGE_REACTION_EMOJIS = ["👍","❤️","😂","🔥","😢","🎉"];
 const DEFAULT_PREFERENCES = {accent:"lavender",fontSize:"normal",theme:"dark",messageNotificationMode:"temporary",notificationSound:"off",notificationSounds:{private:"off",group:"off",requests:"off",updates:"off"},directMessageRequests:"everyone",groupUnreadMessages:false,shareOnlineStatus:true,quietHoursEnabled:false,quietHoursStart:"22:00",quietHoursEnd:"07:00",unoCardPlayMode:"confirm"};
 const DEFAULT_CHAT_SETTINGS = {pinned:[],muted:{},drafts:{},appearance:{}};
 const CHAT_BACKGROUNDS = {default:null,slate:"#202a37",forest:"#1d302b",plum:"#302438",sand:"#40382d"};
-// Keep signed image URLs stable during their validity window so the browser can reuse
-// its HTTP cache instead of downloading the same private attachment on every refresh.
+// Signed private image URLs survive a page reload in sessionStorage for the
+// remainder of their short validity window. This keeps a stable URL so the
+// browser/CDN cache can serve the same immutable image rather than re-fetch it.
 const MESSAGE_IMAGE_URL_CACHE = new Map();
+const MESSAGE_IMAGE_CACHE_PREFIX = "gather:signed-image:v2:";
+function messageImageCacheKey(path){
+  return S.user?.id ? MESSAGE_IMAGE_CACHE_PREFIX+S.user.id+":"+path : null;
+}
+function readMessageImageUrl(path,now=Date.now()){
+  const memory=MESSAGE_IMAGE_URL_CACHE.get(path);
+  if(memory&&memory.expiresAt>now+60000)return memory.url;
+  const key=messageImageCacheKey(path);
+  if(!key)return null;
+  try{
+    const stored=JSON.parse(sessionStorage.getItem(key)||"null");
+    if(stored?.url&&Number(stored.expiresAt)>now+60000){
+      MESSAGE_IMAGE_URL_CACHE.set(path,stored);
+      return stored.url;
+    }
+    if(stored)sessionStorage.removeItem(key);
+  }catch(error){}
+  return null;
+}
+function storeMessageImageUrl(path,url,expiresAt){
+  const entry={url,expiresAt};
+  MESSAGE_IMAGE_URL_CACHE.set(path,entry);
+  const key=messageImageCacheKey(path);
+  if(key){try{sessionStorage.setItem(key,JSON.stringify(entry));}catch(error){}}
+}
+function clearMessageImageUrlCache(userId=S.user?.id){
+  MESSAGE_IMAGE_URL_CACHE.clear();
+  if(!userId)return;
+  const prefix=MESSAGE_IMAGE_CACHE_PREFIX+userId+":";
+  try{
+    for(let i=sessionStorage.length-1;i>=0;i--){
+      const key=sessionStorage.key(i);
+      if(key?.startsWith(prefix))sessionStorage.removeItem(key);
+    }
+  }catch(error){}
+}
 async function getMessageImageUrls(paths,expiresIn=3600){
   const unique=[...new Set((paths||[]).filter(path=>typeof path==="string"&&path.length))];
   const now=Date.now();
-  const missing=unique.filter(path=>{
-    const entry=MESSAGE_IMAGE_URL_CACHE.get(path);
-    return !entry||entry.expiresAt<=now+60000;
-  });
+  const missing=unique.filter(path=>!readMessageImageUrl(path,now));
   if(missing.length){
     const result=await db.storage.from("gather-message-images").createSignedUrls(missing,expiresIn);
     if(result.error)throw result.error;
     const expiry=Date.now()+Math.max(60,expiresIn-60)*1000;
     (result.data||[]).forEach(item=>{
-      if(item.path&&item.signedUrl)MESSAGE_IMAGE_URL_CACHE.set(item.path,{url:item.signedUrl,expiresAt:expiry});
+      if(item.path&&item.signedUrl)storeMessageImageUrl(item.path,item.signedUrl,expiry);
     });
   }
-  return new Map(unique.map(path=>[path,MESSAGE_IMAGE_URL_CACHE.get(path)?.url||null]));
+  return new Map(unique.map(path=>[path,readMessageImageUrl(path)||null]));
 }
 
 function normalizeChatSettings(raw){
@@ -765,7 +799,7 @@ function markChatRead(chatId,through=null){
   saveReadState();
 }
 function showAuth() {
-  MESSAGE_IMAGE_URL_CACHE.clear();
+  clearMessageImageUrlCache();
   saveActiveChatDraft();clearUnreadDividerState();
   closeTypingChannel();
   stopOnlinePresence();
@@ -1133,6 +1167,9 @@ async function signedIn(user,retry=false){
   if(!retry&&S.user&&S.user.id===user.id&&S.profile)return;
   S.loading=user.id;S.user=user;S.loadError=null;syncAdminModeButton();$("feedback-admin-open").hidden=!isFeedbackAdmin(user);$("feedback-admin-settings-section").hidden=!isFeedbackAdmin(user);showApp();setChatLoadStatus("Loading your chats…");
   try{
+    const realtimeSession=await db.auth.getSession();
+    if(realtimeSession.error)throw realtimeSession.error;
+    if(realtimeSession.data.session?.access_token)db.realtime.setAuth(realtimeSession.data.session.access_token);
     S.profile=await ensureProfile(user);
     if(S.user?.id!==user.id)return;
     const ageStatus=await loadMyAgeStatus();
@@ -3061,13 +3098,16 @@ async function attachReplyPreviews(rows,conversationId){
   }else{
     messages=messages.map(m=>({...m,reply_preview:null}));
   }
-  const paths=[...new Set(messages.map(m=>m.attachment_path).filter(Boolean))];
+  const paths=[...new Set(messages.map(m=>m.thumbnail_path||m.attachment_path).filter(Boolean))];
   if(paths.length){
     try{
       const byPath=await getMessageImageUrls(paths,3600);
-      messages=messages.map(m=>({...m,image_url:m.attachment_path?(byPath.get(m.attachment_path)||null):null}));
+      messages=messages.map(m=>{
+        const previewPath=m.thumbnail_path||m.attachment_path;
+        return {...m,image_url:previewPath?(byPath.get(previewPath)||null):null};
+      });
     }catch(error){
-      console.warn("Message images could not be opened:",error?.message||error);
+      console.warn("Message previews could not be opened:",error?.message||error);
       messages=messages.map(m=>({...m,image_url:null}));
     }
   }
@@ -3124,7 +3164,7 @@ function cancelReply(){S.replyTo=null;renderReplyComposer();}
 async function loadOlderMessages(){
   if(!S.active||!S.hasOlderMessages||S.loadingOlder||!S.messages.length)return;
   const conversationId=S.active,oldest=S.messages[0].created_at;S.loadingOlder=true;
-  const result=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,edited_at,reply_to_id,attachment_path,forwarded_from_id,is_admin_message").eq("conversation_id",conversationId).or("created_at.lt."+oldest+",and(created_at.eq."+oldest+",id.lt."+S.messages[0].id+")").order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
+  const result=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,edited_at,reply_to_id,attachment_path,thumbnail_path,forwarded_from_id,is_admin_message").eq("conversation_id",conversationId).or("created_at.lt."+oldest+",and(created_at.eq."+oldest+",id.lt."+S.messages[0].id+")").order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
   S.loadingOlder=false;
   if(result.error){toast("Older messages could not be loaded: "+result.error.message);return;}
   if(S.active!==conversationId)return;
@@ -3589,7 +3629,7 @@ async function openChat(id){
   subscribeMessageReads(id);subscribePollVotes(id);await loadUnreadCounts();renderChats();
 }
 async function loadMessages(id){
-  const r=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,edited_at,reply_to_id,attachment_path,forwarded_from_id,is_admin_message").eq("conversation_id",id).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
+  const r=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,edited_at,reply_to_id,attachment_path,thumbnail_path,forwarded_from_id,is_admin_message").eq("conversation_id",id).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
   if(S.active!==id)return;
   if(r.error){$("messages").replaceChildren(el("p","status error","Messages could not be loaded. Please try again."));$("messages").setAttribute("aria-busy","false");toast("Messages could not be loaded: "+r.error.message);return;}
   const raw=r.data||[];S.hasOlderMessages=raw.length===300;
@@ -3738,25 +3778,16 @@ async function loadGameCards(conversationId){
   S.gameCardsLoading=true;
   try{
     const matchResult=await db.from("game_matches")
-      .select("id,message_id,conversation_id,game_key,status,state,version,current_turn_user_id,created_by")
+      .select("id,message_id,conversation_id,game_key,status,state,version,current_turn_user_id,created_by,game_match_players(match_id,user_id,response,player_order)")
       .eq("conversation_id",conversationId).in("id",ids);
     if(matchResult.error)throw matchResult.error;
     const matches=matchResult.data||[];
-    const matchIds=matches.map(match=>match.id);
-    let playerRows=[];
-    if(matchIds.length){
-      const playersResult=await db.from("game_match_players")
-        .select("match_id,user_id,response,player_order")
-        .in("match_id",matchIds).order("player_order",{ascending:true});
-      if(playersResult.error)throw playersResult.error;
-      playerRows=playersResult.data||[];
-    }
     if(S.active!==conversationId)return;
-    S.gameMatches=Object.fromEntries(matches.map(match=>[match.id,match]));
-    S.gameMatchPlayers={};
-    playerRows.forEach(player=>{
-      (S.gameMatchPlayers[player.match_id]||(S.gameMatchPlayers[player.match_id]=[])).push(player);
-    });
+    S.gameMatches=Object.fromEntries(matches.map(({game_match_players,...match})=>[match.id,match]));
+    S.gameMatchPlayers=Object.fromEntries(matches.map(match=>[
+      match.id,
+      (match.game_match_players||[]).sort((a,b)=>(a.player_order||0)-(b.player_order||0))
+    ]));
     renderMessages(true);
   }catch(error){
     console.warn("Game invitations could not be refreshed:",error?.message||error);
@@ -5169,7 +5200,7 @@ function renderMessages(preserveScroll=false){
       if(m.image_url){
         const link=el("a","message-image-link");
         link.href=m.image_url;link.setAttribute("aria-label","View image");
-        link.addEventListener("click",event=>{event.preventDefault();openImageViewer(m.image_url,"Image shared in "+chatTitle(activeChat||{kind:"direct",members:[]}));});
+        link.addEventListener("click",event=>{event.preventDefault();void openOriginalMessageImage(m,"Image shared in "+chatTitle(activeChat||{kind:"direct",members:[]}));});
         const image=el("img","message-image");
         image.src=m.image_url;image.alt="Image sent by "+(p?.display_name||"a Gather member");
         image.loading="lazy";image.decoding="async";
@@ -5437,7 +5468,7 @@ async function openSearchResult(message){
   releaseInitialChatScrollLock();
   if(!conversationId||!S.chats.some(chat=>chat.id===conversationId)){toast("That conversation is no longer available.");return;}
   if(S.active!==conversationId)await openChat(conversationId);
-  const result=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,edited_at,reply_to_id,attachment_path").eq("conversation_id",conversationId).lte("created_at",message.created_at).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
+  const result=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,edited_at,reply_to_id,attachment_path,thumbnail_path").eq("conversation_id",conversationId).lte("created_at",message.created_at).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
   if(result.error){toast("That message could not be opened: "+result.error.message);return;}
   if(S.active!==conversationId)return;
   releaseInitialChatScrollLock();
@@ -5474,7 +5505,7 @@ function imageFileExtension(file){
   return {"image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/gif":"gif"}[file.type]||null;
 }
 async function optimizeMessageImage(file){
-  if(!file||file.type==="image/gif"||file.size<512*1024||typeof createImageBitmap!=="function")return file;
+  if(!file||file.type==="image/gif"||file.size<384*1024||typeof createImageBitmap!=="function")return file;
   let bitmap=null;
   try{
     bitmap=await createImageBitmap(file);
@@ -5487,7 +5518,7 @@ async function optimizeMessageImage(file){
     const context=canvas.getContext("2d",{alpha:true});
     if(!context)return file;
     context.drawImage(bitmap,0,0,width,height);
-    const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/webp",0.82));
+    const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/webp",0.78));
     if(!blob||blob.size>=file.size)return file;
     const name=file.name.replace(/\.[^.]+$/,"")+".webp";
     return new File([blob],name,{type:"image/webp",lastModified:Date.now()});
@@ -5497,6 +5528,36 @@ async function optimizeMessageImage(file){
   }finally{
     bitmap?.close?.();
   }
+}
+async function createMessageImageThumbnail(file){
+  if(!file||file.type==="image/gif"||typeof createImageBitmap!=="function")return null;
+  let bitmap=null;
+  try{
+    bitmap=await createImageBitmap(file);
+    const maxDimension=480;
+    const scale=Math.min(1,maxDimension/Math.max(bitmap.width,bitmap.height));
+    const width=Math.max(1,Math.round(bitmap.width*scale));
+    const height=Math.max(1,Math.round(bitmap.height*scale));
+    const canvas=document.createElement("canvas");
+    canvas.width=width;canvas.height=height;
+    const context=canvas.getContext("2d",{alpha:true});
+    if(!context)return null;
+    context.drawImage(bitmap,0,0,width,height);
+    return await new Promise(resolve=>canvas.toBlob(resolve,"image/webp",0.68));
+  }catch(error){
+    console.warn("Message thumbnail generation was skipped:",error?.message||error);
+    return null;
+  }finally{
+    bitmap?.close?.();
+  }
+}
+async function uploadMessageThumbnail(blob,path){
+  if(!blob)return false;
+  const result=await db.storage.from("gather-message-images").upload(path,blob,{
+    contentType:"image/webp",cacheControl:"31536000",upsert:false
+  });
+  if(result.error)throw result.error;
+  return true;
 }
 async function uploadMessageImage(file,path){
   if(!window.tus?.Upload)throw new Error("The large-image upload service did not load. Refresh Gather and try again.");
@@ -5513,7 +5574,7 @@ async function uploadMessageImage(file,path){
         bucketName:"gather-message-images",
         objectName:path,
         contentType:file.type,
-        cacheControl:"3600"
+        cacheControl:"31536000"
       },
       uploadDataDuringCreation:true,
       removeFingerprintOnSuccess:true,
@@ -5588,9 +5649,12 @@ async function undoSendMessage(message){
   const result=await db.from("messages").delete().eq("id",message.id).eq("sender_id",S.user.id).select("id").maybeSingle();
   if(button)button.disabled=false;
   if(result.error||!result.data){toast("Message could not be unsent: "+(result.error?.message||"It may no longer be available."));return;}
-  const attachmentPath=message._undoAttachmentPath||message.attachment_path;
-  if(attachmentPath){
-    const cleanup=await db.storage.from("gather-message-images").remove([attachmentPath]);
+  const attachmentPaths=[
+    message._undoAttachmentPath||message.attachment_path,
+    message._undoThumbnailPath||message.thumbnail_path
+  ].filter(Boolean);
+  if(attachmentPaths.length){
+    const cleanup=await db.storage.from("gather-message-images").remove(attachmentPaths);
     if(cleanup.error)console.warn("Unsent image cleanup failed:",cleanup.error.message);
   }
   if(S.pendingUndoSend?.message.id===message.id){
@@ -5623,18 +5687,34 @@ async function sendMessage(e){
   if(activeChat?.kind==="group"&&!S.groupMessageStatus?.can_message){toast("Group messaging is unavailable until age-group and block permissions are satisfied.");return;}
   const reply=S.replyTo;const send=$("send");send.disabled=true;
   const file=sourceFile?await optimizeMessageImage(sourceFile):null;
-  let attachmentPath=null;
+  let attachmentPath=null,thumbnailPath=null;
   if(file){
     const extension=imageFileExtension(file);
     if(!extension||file.size>50*1024*1024){send.disabled=false;toast("That image is not supported or is larger than 50 MB.");return;}
     const unique=window.crypto?.randomUUID?window.crypto.randomUUID():(Date.now().toString(36)+"_"+Math.random().toString(36).slice(2));
-    attachmentPath=conversationId+"/"+S.user.id+"_"+unique+"."+extension;
-    try{await uploadMessageImage(file,attachmentPath);}
-    catch(error){send.disabled=false;toast("Image upload failed: "+(error?.message||"Please try again."));return;}
+    const filename=S.user.id+"_"+unique;
+    attachmentPath=conversationId+"/"+filename+"."+extension;
+    try{
+      await uploadMessageImage(file,attachmentPath);
+      const thumbnailBlob=await createMessageImageThumbnail(file);
+      if(thumbnailBlob){
+        thumbnailPath=conversationId+"/"+filename+".thumb.webp";
+        try{await uploadMessageThumbnail(thumbnailBlob,thumbnailPath);}
+        catch(error){
+          console.warn("Message thumbnail upload was skipped:",error?.message||error);
+          thumbnailPath=null;
+        }
+      }
+    }catch(error){
+      const cleanupPaths=[attachmentPath,thumbnailPath].filter(Boolean);
+      if(cleanupPaths.length)await db.storage.from("gather-message-images").remove(cleanupPaths);
+      send.disabled=false;toast("Image upload failed: "+(error?.message||"Please try again."));return;
+    }
   }
-  const r=await db.from("messages").insert({conversation_id:conversationId,sender_id:S.user.id,body,attachment_path:attachmentPath,reply_to_id:reply?.id||null}).select("id,conversation_id,sender_id,body,created_at,edited_at,reply_to_id,attachment_path").single();
+  const r=await db.from("messages").insert({conversation_id:conversationId,sender_id:S.user.id,body,attachment_path:attachmentPath,thumbnail_path:thumbnailPath,reply_to_id:reply?.id||null}).select("id,conversation_id,sender_id,body,created_at,edited_at,reply_to_id,attachment_path,thumbnail_path").single();
   if(r.error){
-    if(attachmentPath){const cleanup=await db.storage.from("gather-message-images").remove([attachmentPath]);if(cleanup.error)console.warn("Unused image cleanup failed:",cleanup.error.message);}
+    const cleanupPaths=[attachmentPath,thumbnailPath].filter(Boolean);
+    if(cleanupPaths.length){const cleanup=await db.storage.from("gather-message-images").remove(cleanupPaths);if(cleanup.error)console.warn("Unused image cleanup failed:",cleanup.error.message);}
     send.disabled=false;toast("Message not sent: "+r.error.message);return;
   }
   stopTyping(true);
@@ -5642,7 +5722,9 @@ async function sendMessage(e){
   const [withReply]=await attachReplyPreviews([r.data],conversationId);
   let localMessage=S.messages.find(x=>x.id===r.data.id);
   if(!localMessage){localMessage={...withReply,reply_preview:reply||null};S.messages.push(localMessage);S.messageReactions[r.data.id]=[];}
-  localMessage._undoExpiresAt=Date.now()+10000;localMessage._undoAttachmentPath=attachmentPath;
+  localMessage._undoExpiresAt=Date.now()+10000;
+  localMessage._undoAttachmentPath=attachmentPath;
+  localMessage._undoThumbnailPath=thumbnailPath;
   renderMessages();armUndoSend(localMessage);
   if(S.active===conversationId&&activeChat){
     activeChat.last=r.data;activeChat.updated_at=r.data.created_at;activeChat.hasMessages=true;
@@ -7071,25 +7153,37 @@ function closeImageViewer(){
   image.removeAttribute("src");
   image.alt="";
 }
+async function openOriginalMessageImage(message,title){
+  if(!message?.attachment_path)return;
+  try{
+    const urls=await getMessageImageUrls([message.attachment_path],3600);
+    const originalUrl=urls.get(message.attachment_path);
+    if(!originalUrl)throw new Error("The original image is unavailable.");
+    openImageViewer(originalUrl,title||"Shared image");
+  }catch(error){
+    toast("The original image could not be opened: "+(error?.message||"Please try again."));
+  }
+}
 async function openSharedMedia(){
   const chat=S.chats.find(item=>item.id===S.active);
   if(!chat)return;
   const list=$("shared-media-list");
   list.replaceChildren(el("p","muted tiny","Loading shared media…"));
   $("shared-media-modal").hidden=false;
-  const result=await db.from("messages").select("id,sender_id,attachment_path,created_at").eq("conversation_id",chat.id).not("attachment_path","is",null).order("created_at",{ascending:false}).limit(150);
+  const result=await db.from("messages").select("id,sender_id,attachment_path,thumbnail_path,created_at").eq("conversation_id",chat.id).not("attachment_path","is",null).order("created_at",{ascending:false}).limit(150);
   if(result.error){list.replaceChildren(el("p","status error","Shared media could not be loaded: "+result.error.message));return;}
   const rows=(result.data||[]).filter(row=>!S.deletedMessageIds.has(row.id)&&row.attachment_path);
   if(!rows.length){list.replaceChildren(el("p","muted tiny","No shared images in this conversation yet."));return;}
   let byPath;
-  try{byPath=await getMessageImageUrls(rows.map(row=>row.attachment_path),3600);}
+  try{byPath=await getMessageImageUrls(rows.map(row=>row.thumbnail_path||row.attachment_path),3600);}
   catch(error){list.replaceChildren(el("p","status error","Images could not be opened: "+(error?.message||"Please try again.")));return;}
   list.replaceChildren();
   rows.forEach(row=>{
-    const src=byPath.get(row.attachment_path);if(!src)return;
+    const previewPath=row.thumbnail_path||row.attachment_path;
+    const src=byPath.get(previewPath);if(!src)return;
     const button=el("button","shared-media-item");button.type="button";
-    const image=el("img");image.src=src;image.alt="Shared image";image.loading="lazy";
-    button.append(image);button.addEventListener("click",()=>openImageViewer(src,"Image shared in "+chatTitle(chat)));
+    const image=el("img");image.src=src;image.alt="Shared image";image.loading="lazy";image.decoding="async";
+    button.append(image);button.addEventListener("click",()=>void openOriginalMessageImage(row,"Image shared in "+chatTitle(chat)));
     list.append(button);
   });
   if(!list.children.length)list.append(el("p","muted tiny","No shared images are available right now."));
@@ -7729,11 +7823,14 @@ async function boot(){
       status("auth-status","Gather could not load its secure login service. Please reload the page and check your connection or content blocker.","error");
       return;
     }
-    db.auth.onAuthStateChange((event,session)=>{setTimeout(()=>{
-      if(event==="PASSWORD_RECOVERY"&&session?.user){signedIn(session.user);openPasswordRecovery();}
-      else if(session?.user)signedIn(session.user);
-      else if(event==="SIGNED_OUT")showAuth();
-    },0);});
+    db.auth.onAuthStateChange((event,session)=>{
+      if(session?.access_token)db.realtime.setAuth(session.access_token);
+      setTimeout(()=>{
+        if(event==="PASSWORD_RECOVERY"&&session?.user){signedIn(session.user);openPasswordRecovery();}
+        else if(session?.user)signedIn(session.user);
+        else if(event==="SIGNED_OUT")showAuth();
+      },0);
+    });
     const session=await db.auth.getSession();
     if(session.error){status("auth-status",session.error.message,"error");return;}
     if(session.data.session?.user)await signedIn(session.data.session.user);else showAuth();
