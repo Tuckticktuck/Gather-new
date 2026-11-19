@@ -814,6 +814,7 @@ function markChatRead(chatId,through=null){
 function showAuth() {
   clearMessageImageUrlCache();
   saveActiveChatDraft();clearUnreadDividerState();
+  if(S.voiceCall)finishVoiceCall("",false);
   closeTypingChannel();
   closeGameMatchChannel();
   stopOnlinePresence();
@@ -3639,7 +3640,6 @@ async function handleVoiceCallSignal(payload){
 }
 
 function closeTypingChannel(){
-  if(S.voiceCall)finishVoiceCall("",false);
   stopTyping(true);
   const channel=S.typingChannel;S.typingChannel=null;S.typingReady=false;S.typingSent=false;S.typingLastSentAt=0;
   if(S.typingRemoteTimer){clearTimeout(S.typingRemoteTimer);S.typingRemoteTimer=null;}
