@@ -17,6 +17,27 @@ const MESSAGE_REACTION_EMOJIS = ["👍","❤️","😂","🔥","😢","🎉"];
 const DEFAULT_PREFERENCES = {accent:"lavender",fontSize:"normal",theme:"dark",messageNotificationMode:"temporary",notificationSound:"off",notificationSounds:{private:"off",group:"off",requests:"off",updates:"off"},directMessageRequests:"everyone",groupUnreadMessages:false,shareOnlineStatus:true,quietHoursEnabled:false,quietHoursStart:"22:00",quietHoursEnd:"07:00",unoCardPlayMode:"confirm"};
 const DEFAULT_CHAT_SETTINGS = {pinned:[],muted:{},drafts:{},appearance:{}};
 const CHAT_BACKGROUNDS = {default:null,slate:"#202a37",forest:"#1d302b",plum:"#302438",sand:"#40382d"};
+// Keep signed image URLs stable during their validity window so the browser can reuse
+// its HTTP cache instead of downloading the same private attachment on every refresh.
+const MESSAGE_IMAGE_URL_CACHE = new Map();
+async function getMessageImageUrls(paths,expiresIn=3600){
+  const unique=[...new Set((paths||[]).filter(path=>typeof path==="string"&&path.length))];
+  const now=Date.now();
+  const missing=unique.filter(path=>{
+    const entry=MESSAGE_IMAGE_URL_CACHE.get(path);
+    return !entry||entry.expiresAt<=now+60000;
+  });
+  if(missing.length){
+    const result=await db.storage.from("gather-message-images").createSignedUrls(missing,expiresIn);
+    if(result.error)throw result.error;
+    const expiry=Date.now()+Math.max(60,expiresIn-60)*1000;
+    (result.data||[]).forEach(item=>{
+      if(item.path&&item.signedUrl)MESSAGE_IMAGE_URL_CACHE.set(item.path,{url:item.signedUrl,expiresAt:expiry});
+    });
+  }
+  return new Map(unique.map(path=>[path,MESSAGE_IMAGE_URL_CACHE.get(path)?.url||null]));
+}
+
 function normalizeChatSettings(raw){
   const pinned=[...new Set((Array.isArray(raw?.pinned)?raw.pinned:[]).filter(x=>typeof x==="string"&&x.length<=80))].slice(0,100);
   const muted={};
@@ -1333,9 +1354,9 @@ function renderPresenceUI(){
 function ensurePresenceDisplayTimer(){
   if(S.presenceDisplayTimer)return;
   S.presenceDisplayTimer=setInterval(()=>{
+    // Realtime Presence events update status immediately. Only repaint the relative
+    // last-seen labels here; do not issue a database query every 30 seconds.
     renderPresenceUI();
-    // Heartbeat fallback keeps status accurate if a Realtime presence event is missed.
-    void refreshFriendLastSeen();
   },30000);
 }
 async function refreshFriendLastSeen(userId=null){
@@ -1459,6 +1480,9 @@ async function syncOwnPresence(){
   if(S.ownPresenceChannel)return;
   if(S.ownPresenceRetryTimer){clearTimeout(S.ownPresenceRetryTimer);S.ownPresenceRetryTimer=null;}
   const channel=db.channel("gather-presence:"+uid,{config:{private:true}});
+  // Register a Presence listener before subscribing. Private Realtime channels
+  // authorize the Presence read path as well as the track/write path.
+  channel.on("presence",{event:"sync"},()=>{});
   S.ownPresenceChannel=channel;
   const handleOwnChannelFailure=(status,error)=>{
     if(S.ownPresenceChannel!==channel)return;
@@ -3038,10 +3062,13 @@ async function attachReplyPreviews(rows,conversationId){
   }
   const paths=[...new Set(messages.map(m=>m.attachment_path).filter(Boolean))];
   if(paths.length){
-    const result=await db.storage.from("gather-message-images").createSignedUrls(paths,3600);
-    if(result.error)console.warn("Message images could not be opened:",result.error.message);
-    const byPath=new Map((result.data||[]).filter(x=>x.signedUrl).map(x=>[x.path,x.signedUrl]));
-    messages=messages.map(m=>({...m,image_url:m.attachment_path?(byPath.get(m.attachment_path)||null):null}));
+    try{
+      const byPath=await getMessageImageUrls(paths,3600);
+      messages=messages.map(m=>({...m,image_url:m.attachment_path?(byPath.get(m.attachment_path)||null):null}));
+    }catch(error){
+      console.warn("Message images could not be opened:",error?.message||error);
+      messages=messages.map(m=>({...m,image_url:null}));
+    }
   }
   return messages;
 }
@@ -5445,6 +5472,31 @@ function handleMessageImageFile(){
 function imageFileExtension(file){
   return {"image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/gif":"gif"}[file.type]||null;
 }
+async function optimizeMessageImage(file){
+  if(!file||file.type==="image/gif"||file.size<512*1024||typeof createImageBitmap!=="function")return file;
+  let bitmap=null;
+  try{
+    bitmap=await createImageBitmap(file);
+    const maxDimension=1920;
+    const scale=Math.min(1,maxDimension/Math.max(bitmap.width,bitmap.height));
+    const width=Math.max(1,Math.round(bitmap.width*scale));
+    const height=Math.max(1,Math.round(bitmap.height*scale));
+    const canvas=document.createElement("canvas");
+    canvas.width=width;canvas.height=height;
+    const context=canvas.getContext("2d",{alpha:true});
+    if(!context)return file;
+    context.drawImage(bitmap,0,0,width,height);
+    const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/webp",0.82));
+    if(!blob||blob.size>=file.size)return file;
+    const name=file.name.replace(/\\.[^.]+$/,"")+".webp";
+    return new File([blob],name,{type:"image/webp",lastModified:Date.now()});
+  }catch(error){
+    console.warn("Image optimization was skipped:",error?.message||error);
+    return file;
+  }finally{
+    bitmap?.close?.();
+  }
+}
 async function uploadMessageImage(file,path){
   if(!window.tus?.Upload)throw new Error("The large-image upload service did not load. Refresh Gather and try again.");
   const sessionResult=await db.auth.getSession();
@@ -5560,8 +5612,9 @@ async function sendMessage(e){
   e.preventDefault();
   if(!S.messageRestrictionLoaded){toast("Gather is still checking your messaging permissions. Please try again in a moment.");return;}
   if(activeMessageRestriction()){toast("Messaging is temporarily restricted for your account.");return;}
-  const body=$("message").value.trim(),file=S.pendingImageFile;
-  if((!body&&!file)||!S.active)return;
+  const body=$("message").value.trim(),sourceFile=S.pendingImageFile;
+  if((!body&&!sourceFile)||!S.active)return;
+  const file=sourceFile?await optimizeMessageImage(sourceFile):null;
   const conversationId=S.active,activeChat=S.chats.find(x=>x.id===conversationId);
   if(activeChat?.kind==="direct"&&!S.directStatus?.can_message){toast("Private messaging is unavailable in this conversation.");return;}
   if(activeChat?.kind==="group"&&!S.groupMessageStatus?.can_message){toast("Group messaging is unavailable until age-group and block permissions are satisfied.");return;}
@@ -7024,9 +7077,9 @@ async function openSharedMedia(){
   if(result.error){list.replaceChildren(el("p","status error","Shared media could not be loaded: "+result.error.message));return;}
   const rows=(result.data||[]).filter(row=>!S.deletedMessageIds.has(row.id)&&row.attachment_path);
   if(!rows.length){list.replaceChildren(el("p","muted tiny","No shared images in this conversation yet."));return;}
-  const signed=await db.storage.from("gather-message-images").createSignedUrls(rows.map(row=>row.attachment_path),3600);
-  if(signed.error){list.replaceChildren(el("p","status error","Images could not be opened: "+signed.error.message));return;}
-  const byPath=new Map((signed.data||[]).filter(row=>row.signedUrl).map(row=>[row.path,row.signedUrl]));
+  let byPath;
+  try{byPath=await getMessageImageUrls(rows.map(row=>row.attachment_path),3600);}
+  catch(error){list.replaceChildren(el("p","status error","Images could not be opened: "+(error?.message||"Please try again.")));return;}
   list.replaceChildren();
   rows.forEach(row=>{
     const src=byPath.get(row.attachment_path);if(!src)return;
