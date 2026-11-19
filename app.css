@@ -5437,3 +5437,30 @@ html .layout.show-chat #send-form.composer:focus-within {
   .tic-tac-toe-board{width:min(88vw,430px);gap:7px;padding:9px;border-radius:17px}
   .tic-tac-toe-cell{border-radius:10px;font-size:clamp(42px,15vw,72px)}
 }
+
+
+/* One-to-one voice calling */
+.voice-call-start{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:70px;min-height:40px;padding:8px 12px;font-weight:800;white-space:nowrap}
+.voice-call-start>span:first-child{font-size:17px;line-height:1}
+.voice-call-overlay{z-index:12000;display:flex;align-items:center;justify-content:center;padding:18px;background:#050b09df;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.voice-call-overlay[hidden]{display:none}
+.voice-call-panel{position:relative;display:flex;flex-direction:column;align-items:center;gap:12px;width:min(100%,420px);padding:32px 24px 24px;border:1px solid #a8e5c833;border-radius:26px;background:linear-gradient(155deg,#1e3029,#101a17 72%);color:#f3fbf6;box-shadow:0 24px 80px #0009;text-align:center}
+.voice-call-emblem{display:grid;place-items:center;width:76px;height:76px;border:1px solid #a8e5c855;border-radius:50%;background:#72c99b20;color:#b8f0d0;font-size:34px;box-shadow:0 0 0 10px #72c99b0d}
+.voice-call-panel .eyebrow{margin:10px 0 0;color:#a8e5c8;font-weight:850;letter-spacing:.14em}
+.voice-call-panel h2{margin:0;font-size:clamp(24px,6vw,30px);line-height:1.15}
+.voice-call-peer{margin:0;color:#e2f1e9;font-size:16px;font-weight:750;overflow-wrap:anywhere}
+.voice-call-status{min-height:24px;margin:0;color:#b8cfc2;font-size:13px;line-height:1.5}
+.voice-call-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;width:100%;margin-top:12px}
+.voice-call-actions button{min-width:108px;min-height:46px;border-radius:999px;font-weight:850}
+.voice-call-actions #voice-call-accept{background:#69c994;color:#082318;border-color:#69c994}
+.voice-call-actions #voice-call-decline{border-color:#ffffff3b;color:#f3fbf6}
+.voice-call-actions #voice-call-mute{border-color:#a8e5c866;color:#d8f5e5}
+.voice-call-actions .voice-call-end{background:#c94e59;border:1px solid #c94e59;color:#fff}
+.voice-call-note{max-width:300px;margin:7px 0 0;color:#9fb7aa;font-size:11px;line-height:1.5}
+.voice-call-remote-audio{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+@media(max-width:520px){
+  .voice-call-overlay{padding:14px}
+  .voice-call-panel{padding:28px 18px 20px;border-radius:22px}
+  .voice-call-start{min-width:42px;padding:8px 10px}
+  .voice-call-start>span:last-child{display:none}
+}
