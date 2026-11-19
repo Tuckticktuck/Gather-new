@@ -3330,33 +3330,19 @@ function publishVoiceCallSignal(conversationId,callId,toUserId,type,extra={}){
     to_user_id:toUserId
   };
   const channel=db.channel("gather-call:"+toUserId,{config:{private:true,broadcast:{ack:true,self:false}}});
-  return new Promise(resolve=>{
-    let settled=false,timer=null;
-    const finish=async delivered=>{
-      if(settled)return;
-      settled=true;
-      if(timer)clearTimeout(timer);
+  // Sending before subscribing uses Supabase's HTTP Broadcast path. This avoids
+  // opening a listener on another member's private incoming-call topic.
+  return channel.send({type:"broadcast",event:"call-signal",payload})
+    .then(async status=>{
+      if(status!=="ok")console.warn("Voice-call signal was not delivered:",status);
       try{await db.removeChannel(channel);}catch(error){}
-      resolve(delivered);
-    };
-    timer=setTimeout(()=>{console.warn("Voice-call signal channel timed out.");void finish(false);},10000);
-    channel.subscribe(async(status,error)=>{
-      if(settled)return;
-      if(status==="SUBSCRIBED"){
-        try{
-          const result=await channel.send({type:"broadcast",event:"call-signal",payload});
-          if(result!=="ok")console.warn("Voice-call signal was not delivered:",result);
-          await finish(result==="ok");
-        }catch(sendError){
-          console.warn("Voice-call signal failed:",sendError||error);
-          await finish(false);
-        }
-      }else if(status==="CHANNEL_ERROR"||status==="TIMED_OUT"||status==="CLOSED"){
-        console.warn("Voice-call signal channel could not connect:",error||status);
-        await finish(false);
-      }
+      return status==="ok";
+    })
+    .catch(async error=>{
+      console.warn("Voice-call signal failed:",error);
+      try{await db.removeChannel(channel);}catch(cleanupError){}
+      return false;
     });
-  });
 }
 function publishCurrentVoiceCallSignal(call,type,extra={}){
   if(!call)return Promise.resolve(false);
