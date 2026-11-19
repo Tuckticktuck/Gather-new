@@ -1,13 +1,13 @@
 "use strict";
 
-const CACHE_NAME = "gather-shell-v183-media-thumbnails";
+const CACHE_NAME = "gather-shell-v184-game-sync";
 const APP_BASE = new URL("./", self.registration.scope);
 const SHELL_URLS = [
   "./",
   "./index.html",
   "./app.css?v=20261119-voice-calls-v2",
   "./design-system.css?v=20261118-continuous-chat-canvas-v1",
-  "./app.js?v=20261119-media-thumbnails-v1",
+  "./app.js?v=20261119-game-sync-v1",
   "./favicon.svg?v=20261111-1",
   "./manifest.webmanifest?v=20261111-pwa",
   "./icons/gather-180.png",
