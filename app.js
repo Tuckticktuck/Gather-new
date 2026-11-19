@@ -765,6 +765,7 @@ function markChatRead(chatId,through=null){
   saveReadState();
 }
 function showAuth() {
+  MESSAGE_IMAGE_URL_CACHE.clear();
   saveActiveChatDraft();clearUnreadDividerState();
   closeTypingChannel();
   stopOnlinePresence();
@@ -5488,7 +5489,7 @@ async function optimizeMessageImage(file){
     context.drawImage(bitmap,0,0,width,height);
     const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/webp",0.82));
     if(!blob||blob.size>=file.size)return file;
-    const name=file.name.replace(/\\.[^.]+$/,"")+".webp";
+    const name=file.name.replace(/\.[^.]+$/,"")+".webp";
     return new File([blob],name,{type:"image/webp",lastModified:Date.now()});
   }catch(error){
     console.warn("Image optimization was skipped:",error?.message||error);
@@ -5614,11 +5615,14 @@ async function sendMessage(e){
   if(activeMessageRestriction()){toast("Messaging is temporarily restricted for your account.");return;}
   const body=$("message").value.trim(),sourceFile=S.pendingImageFile;
   if((!body&&!sourceFile)||!S.active)return;
-  const file=sourceFile?await optimizeMessageImage(sourceFile):null;
+  if(sourceFile&&(!imageFileExtension(sourceFile)||sourceFile.size>50*1024*1024)){
+    toast("That image is not supported or is larger than 50 MB.");return;
+  }
   const conversationId=S.active,activeChat=S.chats.find(x=>x.id===conversationId);
   if(activeChat?.kind==="direct"&&!S.directStatus?.can_message){toast("Private messaging is unavailable in this conversation.");return;}
   if(activeChat?.kind==="group"&&!S.groupMessageStatus?.can_message){toast("Group messaging is unavailable until age-group and block permissions are satisfied.");return;}
   const reply=S.replyTo;const send=$("send");send.disabled=true;
+  const file=sourceFile?await optimizeMessageImage(sourceFile):null;
   let attachmentPath=null;
   if(file){
     const extension=imageFileExtension(file);
