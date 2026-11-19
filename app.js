@@ -71,6 +71,19 @@ async function getMessageImageUrls(paths,expiresIn=3600){
   }
   return new Map(unique.map(path=>[path,readMessageImageUrl(path)||null]));
 }
+function setPrivateImageSource(image,src){
+  if(!image||!src)return;
+  // CORS mode enables safe canvas reads for legacy thumbnail generation. If a
+  // Storage endpoint ever omits CORS headers, retry as a normal display image.
+  image.crossOrigin="anonymous";
+  image.addEventListener("error",()=>{
+    if(image.dataset.corsFallback==="true")return;
+    image.dataset.corsFallback="true";
+    image.removeAttribute("crossorigin");
+    image.src=src;
+  },{once:true});
+  image.src=src;
+}
 
 function normalizeChatSettings(raw){
   const pinned=[...new Set((Array.isArray(raw?.pinned)?raw.pinned:[]).filter(x=>typeof x==="string"&&x.length<=80))].slice(0,100);
@@ -5223,13 +5236,13 @@ function renderMessages(preserveScroll=false){
         link.href=m.image_url;link.setAttribute("aria-label","View image");
         link.addEventListener("click",event=>{event.preventDefault();void openOriginalMessageImage(m,"Image shared in "+chatTitle(activeChat||{kind:"direct",members:[]}));});
         const image=el("img","message-image");
-        image.crossOrigin="anonymous";
-        image.src=m.image_url;image.alt="Image sent by "+(p?.display_name||"a Gather member");
+        image.alt="Image sent by "+(p?.display_name||"a Gather member");
         image.loading="lazy";image.decoding="async";
         image.addEventListener("load",()=>{
           scrollMessagesToLatest(S.active);
           if(!m.thumbnail_path)void backfillLegacyMessageThumbnail(m,image,m.conversation_id||S.active);
         },{once:true});
+        setPrivateImageSource(image,m.image_url);
         link.append(image);bubble.append(link);
         if(image.complete)queueMicrotask(()=>{
           scrollMessagesToLatest(S.active);
@@ -7268,10 +7281,11 @@ async function openSharedMedia(){
     const previewPath=row.thumbnail_path||row.attachment_path;
     const src=byPath.get(previewPath);if(!src)return;
     const button=el("button","shared-media-item");button.type="button";
-    const image=el("img");image.crossOrigin="anonymous";image.src=src;image.alt="Shared image";image.loading="lazy";image.decoding="async";
+    const image=el("img");image.alt="Shared image";image.loading="lazy";image.decoding="async";
     image.addEventListener("load",()=>{
       if(!row.thumbnail_path)void backfillLegacyMessageThumbnail(row,image,chat.id);
     },{once:true});
+    setPrivateImageSource(image,src);
     button.append(image);button.addEventListener("click",()=>void openOriginalMessageImage(row,"Image shared in "+chatTitle(chat)));
     list.append(button);
   });
@@ -7913,19 +7927,28 @@ async function boot(){
       return;
     }
     db.auth.onAuthStateChange((event,session)=>{
+      let realtimeAuthReady=Promise.resolve(true);
       if(session?.access_token){
-        try{void db.realtime.setAuth(session.access_token);}
-        catch(error){console.warn("Realtime token update failed:",error?.message||error);}
+        realtimeAuthReady=Promise.resolve()
+          .then(()=>db.realtime.setAuth(session.access_token))
+          .then(()=>true)
+          .catch(error=>{
+            console.warn("Realtime token update failed:",error?.message||error);
+            return false;
+          });
         if(event==="TOKEN_REFRESHED"&&session.user){
-          setTimeout(()=>{
-            if(S.user?.id!==session.user.id)return;
-            S.ownPresenceRetryAttempt=0;
-            for(const timer of S.friendPresenceRetryTimers.values())clearTimeout(timer);
-            S.friendPresenceRetryTimers.clear();
-            S.friendPresenceRetryAttempts.clear();
-            if(!S.ownPresenceChannel)void syncOwnPresence();
-            void syncFriendPresenceChannels();
-          },0);
+          realtimeAuthReady.then(ready=>{
+            if(!ready)return;
+            setTimeout(()=>{
+              if(S.user?.id!==session.user.id)return;
+              S.ownPresenceRetryAttempt=0;
+              for(const timer of S.friendPresenceRetryTimers.values())clearTimeout(timer);
+              S.friendPresenceRetryTimers.clear();
+              S.friendPresenceRetryAttempts.clear();
+              if(!S.ownPresenceChannel)void syncOwnPresence();
+              void syncFriendPresenceChannels();
+            },0);
+          });
         }
       }
       setTimeout(()=>{
