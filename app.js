@@ -3437,7 +3437,7 @@ async function startVoiceCall(){
     answerStarted:false,
     muted:false,
     ringTimer:null,
-    statusText:"Requesting microphone permission…"
+    statusText:"Waiting for the other person to accept…"
   };
   S.voiceCall=call;
   renderVoiceCall();
