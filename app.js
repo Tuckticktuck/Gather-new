@@ -98,7 +98,7 @@ function normalizeChatSettings(raw){
   });
   return {pinned,muted,drafts,appearance};
 }
-const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", inChatFilterType:"all", inChatMessageMatches:new Set(), inChatSearchRequestId:0, inChatSearchTimer:null, editingMessageId:null, editDraft:"", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], favoriteFriendIds:new Set(), archivedConversationIds:new Set(), blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), deletedConversationId:null, selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingUndoSend:null, undoSendTimer:null, undoCountdownInterval:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null,textSelectionMessageId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, homeSearchQuery:"", homeSearchTab:"messages", homeSearchMessages:[], homeSearchProfiles:[], homeSearchLoading:false, homeSearchErrors:{messages:"",profiles:""}, homeSearchTimer:null, homeSearchRequestId:0, directStatus:null, directStatusCache:new Map(), directStatusChecks:new Map(), groupMessageStatus:null, ageStatus:null, ageChangeStatus:null, ageRequestChannel:null, messageRestriction:null, messageRestrictionLoaded:false, messageRestrictionError:"", messageRestrictionChannel:null, messageRestrictionTimer:null, active:null, messages:[], gameMatches:{}, gameMatchPlayers:{}, gameRespondingIds:new Set(), gameChannel:null, gameCardsLoading:false, gameCardsRefreshPending:false, activeGameId:null, activeGameView:null, gameViewRequest:0, unoInitializing:false, unoHouseRulesDraft:null, chessSelectedSquare:null, chessPendingPromotion:null, battleshipDraftFleet:null,  unoSelectedCardId:null, initialChatScrollLockId:null, channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), friendPresenceRetryTimers:new Map(), friendPresenceRetryAttempts:new Map(), ownPresenceChannel:null, ownPresenceRetryTimer:null, ownPresenceRetryAttempt:0, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, voiceCall:null, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],intergroupRequests:[],ageChangeRequests:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
+const S = { user:null, profile:null, profiles:{}, modalBackTargets:{}, approvedUserIds:new Set(), ownApprovalRequests:[], chatSettings:{...DEFAULT_CHAT_SETTINGS}, draftSaveTimer:null, selectingConversations:false, selectedConversationIds:new Set(), unreadTargetMessageId:null, unreadTargetLoaded:false, unreadDividerMessageId:null, unreadDividerTimer:null, unreadDividerArmed:false, suppressReadDividerUpdates:false, announcements:[], activeAnnouncementId:null, announcementInView:null, announcementChannel:null, feedbackThreads:[], feedbackMessages:[], feedbackProfiles:{}, activeFeedbackThreadId:null, feedbackAdminView:false, notifications:[], notificationChannel:null, notificationView:"all", inChatFilterType:"all", inChatMessageMatches:new Set(), inChatSearchRequestId:0, inChatSearchTimer:null, editingMessageId:null, editDraft:"", publicProfileId:null, reportTargetUserId:null, reportTargetMessageId:null, chats:[], requests:[], friendRequests:[], friends:[], favoriteFriendIds:new Set(), archivedConversationIds:new Set(), blockedUsers:[], deletedMessages:[], deletedMessageIds:new Set(), deletedConversationId:null, selectingMessages:false, selectedMessageIds:new Set(), folder:"friends", lastReadAt:{}, preferences:{...DEFAULT_PREFERENCES}, notificationTimers:{}, unreadCounts:{}, unreadCountsLoaded:false, totalUnreadCount:0, passwordRecovery:false, pendingAvatarData:null, avatarChanged:false, pendingImageFile:null, pendingImageUrl:null, pendingUndoSend:null, undoSendTimer:null, undoCountdownInterval:null, pendingGroupAvatarData:null, groupAvatarChanged:false, groupAvatarConversationId:null, requestChannel:null, readChannel:null, messageReads:{}, messageReactions:{}, pendingReactionKeys:new Set(), openReactionPickerMessageId:null, openMessageMenuId:null,textSelectionMessageId:null, hasOlderMessages:false, loadingOlder:false, replyTo:null, messagePolls:{}, pinnedMessages:[], savedMessageIds:new Set(), pollChannel:null, forwardMessage:null, searchConversationId:null, searchQuery:"", searchOffset:0, searchHasMore:false, homeSearchQuery:"", homeSearchTab:"messages", homeSearchMessages:[], homeSearchProfiles:[], homeSearchLoading:false, homeSearchErrors:{messages:"",profiles:""}, homeSearchTimer:null, homeSearchRequestId:0, directStatus:null, directStatusCache:new Map(), directStatusChecks:new Map(), groupMessageStatus:null, ageStatus:null, ageChangeStatus:null, ageRequestChannel:null, messageRestriction:null, messageRestrictionLoaded:false, messageRestrictionError:"", messageRestrictionChannel:null, messageRestrictionTimer:null, active:null, messages:[], gameMatches:{}, gameMatchPlayers:{}, gameRespondingIds:new Set(), gameChannel:null, gameCardsLoading:false, gameCardsRefreshPending:false, activeGameId:null, activeGameView:null, gameViewRequest:0, unoInitializing:false, unoHouseRulesDraft:null, chessSelectedSquare:null, chessPendingPromotion:null, battleshipDraftFleet:null,  unoSelectedCardId:null, initialChatScrollLockId:null, channel:null, mode:"signin", picker:"direct", selected:new Set(), loading:null, loadError:null, timer:null, friendPresenceChannels:new Map(), friendPresenceRetryTimers:new Map(), friendPresenceRetryAttempts:new Map(), ownPresenceChannel:null, ownPresenceRetryTimer:null, ownPresenceRetryAttempt:0, lastSeenHeartbeatTimer:null, presenceDisplayTimer:null, onlineStatuses:{}, typingChannel:null, typingReady:false, voiceCall:null, voiceCallChannel:null, typingSent:false, typingLastSentAt:0, typingStopTimer:null, typingRemoteTimer:null, typingUsers:new Map(), admin:{users:[],page:0,hasMore:false,selectedUserId:null,section:"overview",loading:false,summary:null,activity:[],intergroupRequests:[],ageChangeRequests:[],modalStack:[],approvalPending:[],approvalApproved:[]} };
 
 function el(tag, cls, text) { const n=document.createElement(tag); if(cls)n.className=cls; if(text!==undefined)n.textContent=String(text); return n; }
 function appendSafeText(parent,value){
@@ -819,6 +819,7 @@ function showAuth() {
   stopOnlinePresence();
   clearPendingMessageImage();clearMessageNotifications();
   $("password-recovery-modal").hidden=true;S.passwordRecovery=false;
+  if(S.voiceCallChannel){db.removeChannel(S.voiceCallChannel);S.voiceCallChannel=null;}
   if(S.channel){db.removeChannel(S.channel);S.channel=null;}
   if(S.requestChannel){db.removeChannel(S.requestChannel);S.requestChannel=null;}
   if(S.messageRestrictionChannel){db.removeChannel(S.messageRestrictionChannel);S.messageRestrictionChannel=null;}
@@ -1212,6 +1213,7 @@ async function signedIn(user,retry=false){
     const loaded=await loadChats();
     if(!loaded)throw new Error(S.loadError||"Please check your connection and try again.");
     subscribeMessages();
+    subscribeUserVoiceCallChannel(user.id);
     // Start friend data immediately after chats are ready, in parallel with secondary home data.
     const friendsLoad=loadFriends();
     const [notificationsLoaded,announcementsLoaded,friendsLoaded,blockedLoaded]=await Promise.all([
@@ -2954,8 +2956,8 @@ function renderDirectControls(){
   const callButton=$("voice-call-start");
   if(callButton){
     callButton.hidden=!isDirect||S.directStatus?.can_message!==true;
-    callButton.disabled=!isDirect||!S.typingReady||!!S.voiceCall;
-    callButton.title=S.voiceCall?"A voice call is already in progress":!S.typingReady?"Connecting to this conversation":"Start voice call";
+    callButton.disabled=!isDirect||S.directStatus?.can_message!==true||!!S.voiceCall;
+    callButton.title=S.voiceCall?"A voice call is already in progress":S.directStatus?.can_message!==true?"Private calling is unavailable":"Start voice call";
   }
   const restrictionPending=!S.messageRestrictionLoaded;
   const messageRestricted=!!activeMessageRestriction();
@@ -3317,8 +3319,7 @@ function renderVoiceCall(){
   overlay.setAttribute("aria-label",incoming?"Incoming voice call":"Voice call with "+(call.peerName||"Gather member"));
 }
 function publishVoiceCallSignal(conversationId,callId,toUserId,type,extra={}){
-  const channel=S.typingChannel;
-  if(!channel||!S.typingReady||S.active!==conversationId||!S.user)return Promise.resolve(false);
+  if(!S.user||!conversationId||!callId||!toUserId)return Promise.resolve(false);
   const payload={
     ...extra,
     type,
@@ -3327,16 +3328,52 @@ function publishVoiceCallSignal(conversationId,callId,toUserId,type,extra={}){
     from_user_id:S.user.id,
     to_user_id:toUserId
   };
-  return channel.send({type:"broadcast",event:"call-signal",payload})
-    .then(status=>{
-      if(status!=="ok")console.warn("Voice-call signal was not delivered:",status);
-      return status==="ok";
-    })
-    .catch(error=>{console.warn("Voice-call signal failed:",error);return false;});
+  const channel=db.channel("gather-call:"+toUserId,{config:{private:true,broadcast:{ack:true,self:false}}});
+  return new Promise(resolve=>{
+    let settled=false,timer=null;
+    const finish=async delivered=>{
+      if(settled)return;
+      settled=true;
+      if(timer)clearTimeout(timer);
+      try{await db.removeChannel(channel);}catch(error){}
+      resolve(delivered);
+    };
+    timer=setTimeout(()=>{console.warn("Voice-call signal channel timed out.");void finish(false);},10000);
+    channel.subscribe(async(status,error)=>{
+      if(settled)return;
+      if(status==="SUBSCRIBED"){
+        try{
+          const result=await channel.send({type:"broadcast",event:"call-signal",payload});
+          if(result!=="ok")console.warn("Voice-call signal was not delivered:",result);
+          await finish(result==="ok");
+        }catch(sendError){
+          console.warn("Voice-call signal failed:",sendError||error);
+          await finish(false);
+        }
+      }else if(status==="CHANNEL_ERROR"||status==="TIMED_OUT"||status==="CLOSED"){
+        console.warn("Voice-call signal channel could not connect:",error||status);
+        await finish(false);
+      }
+    });
+  });
 }
 function publishCurrentVoiceCallSignal(call,type,extra={}){
   if(!call)return Promise.resolve(false);
   return publishVoiceCallSignal(call.conversationId,call.callId,call.peerUserId,type,extra);
+}
+function subscribeUserVoiceCallChannel(userId){
+  if(!userId||S.user?.id!==userId)return;
+  if(S.voiceCallChannel){db.removeChannel(S.voiceCallChannel);S.voiceCallChannel=null;}
+  const channel=db.channel("gather-call:"+userId,{config:{private:true,broadcast:{ack:true,self:false}}});
+  S.voiceCallChannel=channel;
+  channel.on("broadcast",{event:"call-signal"},event=>{
+    if(S.user?.id!==userId||S.voiceCallChannel!==channel)return;
+    void handleVoiceCallSignal(event.payload);
+  });
+  channel.subscribe((status,error)=>{
+    if(S.user?.id!==userId||S.voiceCallChannel!==channel)return;
+    if(status==="CHANNEL_ERROR"||status==="TIMED_OUT")console.warn("Incoming call channel failed:",error||status);
+  });
 }
 function clearVoiceCallResources(call){
   if(!call)return;
@@ -3507,10 +3544,6 @@ async function startVoiceCall(){
     toast("Gather calling could not load. Please reload and try again.");
     return;
   }
-  if(!S.typingReady||!S.typingChannel||S.active!==details.chat.id){
-    toast("Connect to this conversation before starting a call.");
-    return;
-  }
   const call={
     state:"outgoing",
     conversationId:details.chat.id,
@@ -3531,7 +3564,7 @@ async function startVoiceCall(){
   let invitationSent=false;
   try{
     const invited=await publishCurrentVoiceCallSignal(call,"invite");
-    if(!invited)throw new Error("Gather could not reach the other member. Make sure both people have this private chat open.");
+    if(!invited)throw new Error("Gather could not reach the other member. Please check your connection and try again.");
     invitationSent=true;
     call.statusText="Ringing. Your microphone stays off until the other person accepts.";
     call.ringTimer=setTimeout(()=>{
@@ -3546,16 +3579,20 @@ async function startVoiceCall(){
     if(S.voiceCall===call)finishVoiceCall(error?.message||"Could not start the call.");
   }
 }
-async function handleVoiceCallSignal(conversationId,payload){
+async function handleVoiceCallSignal(payload){
+  const conversationId=payload?.conversation_id;
   const details=voiceCallChatDetails(conversationId);
-  if(!details||S.active!==conversationId||!payload||
-     payload.conversation_id!==conversationId||
+  if(!details||!payload||
      payload.to_user_id!==S.user?.id||
      payload.from_user_id!==details.peerUserId||
      typeof payload.call_id!=="string"||! /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(payload.call_id)||
      !["invite","accept","decline","busy","no-answer","hangup"].includes(payload.type))return;
   if(payload.type==="invite"){
-    if(S.directStatus?.can_message!==true)return;
+    try{
+      const checked=await runPermissionRpc("get_direct_chat_status",{p_other_user_id:details.peerUserId});
+      if(checked.error||checked.data?.can_message!==true)return;
+    }catch(error){console.warn("Incoming call permission check failed:",error);return;}
+    if(S.user?.id!==payload.to_user_id||S.chats.find(chat=>chat.id===conversationId)!==details.chat)return;
     if(S.voiceCall){
       if(S.voiceCall.callId!==payload.call_id){
         void publishVoiceCallSignal(conversationId,payload.call_id,payload.from_user_id,"busy");
@@ -3615,7 +3652,6 @@ function subscribeTyping(conversationId){
   const channel=db.channel("gather-chat:"+conversationId,{config:{private:true,broadcast:{ack:false,self:false}}});
   S.typingChannel=channel;S.typingReady=false;
   channel.on("broadcast",{event:"typing"},event=>handleTypingBroadcast(conversationId,event.payload));
-  channel.on("broadcast",{event:"call-signal"},event=>{void handleVoiceCallSignal(conversationId,event.payload);});
   channel.subscribe((status,error)=>{
     if(S.active!==conversationId||S.typingChannel!==channel)return;
     if(status==="SUBSCRIBED"){
