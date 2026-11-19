@@ -66,7 +66,7 @@ Deno.serve(async (request: Request) => {
     });
     const matches = await getRows<Array<Record<string, unknown>>>(supabaseUrl, serviceKey, "game_matches", matchQuery);
     const match = matches[0];
-    if (!match || !["uno", "chess", "battleship"].includes(String(match.game_key))) return respond(404, { error: "Game match not found." }, origin);
+    if (!match || !["uno", "chess", "battleship", "tic-tac-toe"].includes(String(match.game_key))) return respond(404, { error: "Game match not found." }, origin);
 
     const membershipQuery = new URLSearchParams({
       conversation_id: `eq.${String(match.conversation_id)}`,
@@ -121,6 +121,22 @@ Deno.serve(async (request: Request) => {
         ownFleet: Array.isArray(fleets[user.id]) ? fleets[user.id] : null,
         incomingShots: opponentId && Array.isArray(shotsByPlayer[opponentId]) ? shotsByPlayer[opponentId] : [],
         outgoingShots: Array.isArray(shotsByPlayer[user.id]) ? shotsByPlayer[user.id] : [],
+      }, origin);
+    }
+
+
+    if (match.game_key === "tic-tac-toe") {
+      return respond(200, {
+        matchId,
+        gameKey: "tic-tac-toe",
+        status: match.status,
+        version: match.version,
+        currentTurnUserId: match.current_turn_user_id,
+        initialized: state.started === true,
+        publicState: state,
+        hand: [],
+        drawnCardId: null,
+        drawPileCount: null,
       }, origin);
     }
 

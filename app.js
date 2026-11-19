@@ -3435,6 +3435,7 @@ function resumeGameSync(){
 function gameTitleForKey(key){
   if(key==="chess")return "Chess";
   if(key==="battleship")return "Battleship";
+  if(key==="tic-tac-toe")return "Tic-Tac-Toe";
   return "UNO";
 }
 function createGameCardIcon(gameKey){
@@ -3450,6 +3451,8 @@ function createGameCardIcon(gameKey){
     add("path",{d:"M6 20h13l-1.2-4-3.2-2.1 2.7-3.1-.9-4.2-4.7-2-3.2 3.1 1.7 3.1-2.5 2.6L6 20Z"});
     add("path",{d:"M8.5 20v-2.2M11 7.5l1.2 1.1"});
     add("circle",{cx:"14.2",cy:"8.2",r:".7",fill:"currentColor",stroke:"none"});
+  }else if(gameKey==="tic-tac-toe"){
+    add("path",{d:"M8 3v18M16 3v18M3 8h18M3 16h18"});
   }else if(gameKey==="battleship"){
     add("path",{d:"M3 14.5h18l-3.1 5H7.1L3 14.5Z"});
     add("path",{d:"M7.5 14.5V9h8l3 5.5M11.5 9V5h2v4"});
@@ -3559,6 +3562,24 @@ async function createChessInvitation(){
   await loadGameCards(S.active);
 }
 
+
+async function createTicTacToeInvitation(){
+  if(!S.active)return;
+  const button=$("game-picker-tic-tac-toe");
+  button.disabled=true;
+  status("game-picker-status","Checking conversation size…");
+  const members=await db.from("conversation_members").select("user_id",{count:"exact",head:true}).eq("conversation_id",S.active);
+  if(members.error){button.disabled=false;status("game-picker-status","Could not verify the conversation members. Please try again.","error");return;}
+  if(members.count!==2){button.disabled=false;status("game-picker-status","Tic-Tac-Toe is a two-player game. Start it in a one-to-one conversation.","error");return;}
+  status("game-picker-status","Sending the Tic-Tac-Toe invitation…");
+  const result=await db.rpc("create_game_invitation",{p_conversation_id:S.active,p_game_key:"tic-tac-toe"});
+  button.disabled=false;
+  if(result.error){status("game-picker-status",result.error.message,"error");return;}
+  $("game-picker-modal").hidden=true;
+  toast("Tic-Tac-Toe invitation sent to the conversation.");
+  await loadMessages(S.active);await loadGameCards(S.active);
+}
+
 async function createBattleshipInvitation(){
   if(!S.active)return;
   const button=$("game-picker-battleship");
@@ -3619,6 +3640,7 @@ function closeUnoGame(){
 async function openGameMatch(matchId){
   S.activeGameId=matchId;S.activeGameView=null;S.unoSelectedCardId=null;S.unoHouseRulesDraft=null;S.chessSelectedSquare=null;S.chessPendingPromotion=null;
   $("game-overlay").hidden=false;
+  $("uno-game-content").classList.remove("tic-tac-toe-mode","battleship-mode");
   $("uno-game-title").textContent=gameTitleForKey(S.gameMatches[matchId]?.game_key);
   $("uno-game-status").textContent="Loading match…";
   $("uno-game-content").replaceChildren(el("p","muted","Loading your game…"));
@@ -3640,6 +3662,7 @@ async function loadActiveGameView(){
   S.activeGameView=result.data;
   $("uno-game-title").textContent=gameTitleForKey(result.data.gameKey);
   if(result.data.gameKey==="chess")renderChessGame();
+  else if(result.data.gameKey==="tic-tac-toe")renderTicTacToeGame();
   else if(result.data.gameKey==="battleship")renderBattleshipGame();
   else renderUnoGame();
   const view=result.data;
@@ -3883,6 +3906,54 @@ function renderChessGame(){
   }
   content.append(lower);
 }
+
+async function performTicTacToeAction(action){
+  const view=S.activeGameView,matchId=S.activeGameId;
+  if(!view||!matchId||view.status!=="active"||view.currentTurnUserId!==S.user.id)return;
+  $("uno-game-content").querySelectorAll("button").forEach(button=>button.disabled=true);
+  const result=await db.functions.invoke("gather-game-action",{body:{matchId,expectedVersion:Number(view.version),action}});
+  if(result.error){toast(result.error.message||"That Tic-Tac-Toe move could not be saved.");await loadActiveGameView();return;}
+  await loadActiveGameView();if(S.active)await loadGameCards(S.active);
+}
+function renderTicTacToeGame(){
+  const view=S.activeGameView,content=$("uno-game-content");content.classList.add("tic-tac-toe-mode");content.replaceChildren();
+  if(!view){content.append(el("p","muted","Loading your game…"));return;}
+  if(view.status==="invited"||view.status==="cancelled"||!view.initialized){
+    const closed=view.status==="cancelled",waiting=view.status==="invited";
+    $("uno-game-status").textContent=closed?"Invitation closed":waiting?"Waiting for players":"Preparing match";
+    content.append(el("p","uno-waiting-title",closed?"This Tic-Tac-Toe invitation was closed.":waiting?"Waiting for everyone to respond":view.currentTurnUserId===S.user.id?"Setting up the board…":"Waiting for the first player to start"));
+    if(waiting)content.append(el("p","muted","Tic-Tac-Toe begins when both players accept."));
+    return;
+  }
+  const state=view.publicState||{},order=Array.isArray(state.playerOrder)?state.playerOrder:[];
+  const xId=state.xUserId||order[0],oId=state.oUserId||order[1],current=view.status==="active"&&view.currentTurnUserId===S.user.id;
+  const winner=state.winnerId||null,isDraw=state.result==="draw";
+  $("uno-game-status").textContent=view.status==="completed"?(winner?gamePlayerName(winner,order.indexOf(winner))+" won":"Draw"):current?"Your turn · "+(S.user.id===xId?"X":"O"):"Waiting for "+(state.currentSymbol||"opponent");
+  const strip=el("div","tic-tac-toe-players");
+  [[xId,"X"],[oId,"O"]].forEach(([id,symbol])=>{
+    const chip=el("div","tic-tac-toe-player"+(id===view.currentTurnUserId?" is-current":"")+(id===S.user.id?" is-you":""));
+    chip.append(el("strong","tic-tac-toe-symbol symbol-"+symbol.toLowerCase(),symbol),el("span","",gamePlayerName(id,order.indexOf(id))),el("small","",id===view.currentTurnUserId?"To move":id===S.user.id?"You":"Opponent"));strip.append(chip);
+  });
+  content.append(strip);
+  const board=el("div","tic-tac-toe-board");board.setAttribute("role","group");board.setAttribute("aria-label","Tic-Tac-Toe board");
+  const cells=Array.isArray(state.board)?state.board:Array(9).fill(null),winning=Array.isArray(state.winningCells)?state.winningCells:[];
+  cells.forEach((mark,index)=>{
+    const button=el("button","tic-tac-toe-cell"+(mark?" has-mark mark-"+String(mark).toLowerCase():"")+(winning.includes(index)?" is-winning":""));
+    button.type="button";button.textContent=mark||"";button.setAttribute("aria-label","Square "+(index+1)+(mark?", "+mark:" empty"));
+    button.disabled=!current||!!mark||view.status!=="active";button.addEventListener("click",()=>void performTicTacToeAction({type:"place",cell:index}));board.append(button);
+  });
+  content.append(board);
+  if(view.status==="completed"){
+    const label=winner?"Winner: "+gamePlayerName(winner,order.indexOf(winner))+(winner===xId?" (X)":" (O)"):isDraw?"It's a draw":"Match complete";
+    content.append(el("div","tic-tac-toe-result",label));
+    const done=el("button","game-card-action primary","Return to conversation");done.type="button";done.addEventListener("click",closeUnoGame);content.append(done);
+  }else{
+    const actions=el("div","tic-tac-toe-actions"),resign=el("button","game-card-action secondary","Resign");
+    resign.type="button";resign.addEventListener("click",()=>{if(window.confirm("Resign this Tic-Tac-Toe match?"))void performTicTacToeAction({type:"resign"});});
+    actions.append(resign);content.append(actions);
+  }
+}
+
 function renderBattleshipFleetRandomly(){
   const lengths=[5,4,3,3,2],occupied=new Set(),fleet=[];
   for(const length of lengths){
