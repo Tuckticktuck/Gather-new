@@ -3185,11 +3185,11 @@ function cancelReply(){S.replyTo=null;renderReplyComposer();}
 async function loadOlderMessages(){
   if(!S.active||!S.hasOlderMessages||S.loadingOlder||!S.messages.length)return;
   const conversationId=S.active,oldest=S.messages[0].created_at;S.loadingOlder=true;
-  const result=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,edited_at,reply_to_id,attachment_path,thumbnail_path,forwarded_from_id,is_admin_message").eq("conversation_id",conversationId).or("created_at.lt."+oldest+",and(created_at.eq."+oldest+",id.lt."+S.messages[0].id+")").order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
+  const result=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,edited_at,reply_to_id,attachment_path,thumbnail_path,forwarded_from_id,is_admin_message").eq("conversation_id",conversationId).or("created_at.lt."+oldest+",and(created_at.eq."+oldest+",id.lt."+S.messages[0].id+")").order("created_at",{ascending:false}).order("id",{ascending:false}).limit(100);
   S.loadingOlder=false;
   if(result.error){toast("Older messages could not be loaded: "+result.error.message);return;}
   if(S.active!==conversationId)return;
-  const raw=result.data||[];S.hasOlderMessages=raw.length===300;
+  const raw=result.data||[];S.hasOlderMessages=raw.length===100;
   const visible=raw.filter(m=>!S.deletedMessageIds.has(m.id));
   const withReplies=await attachReplyPreviews(visible,conversationId);
   const existing=new Set(S.messages.map(m=>m.id));
@@ -3650,10 +3650,10 @@ async function openChat(id){
   subscribeMessageReads(id);subscribePollVotes(id);await loadUnreadCounts();renderChats();
 }
 async function loadMessages(id){
-  const r=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,edited_at,reply_to_id,attachment_path,thumbnail_path,forwarded_from_id,is_admin_message").eq("conversation_id",id).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(300);
+  const r=await db.from("messages").select("id,conversation_id,sender_id,body,created_at,edited_at,reply_to_id,attachment_path,thumbnail_path,forwarded_from_id,is_admin_message").eq("conversation_id",id).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(100);
   if(S.active!==id)return;
   if(r.error){$("messages").replaceChildren(el("p","status error","Messages could not be loaded. Please try again."));$("messages").setAttribute("aria-busy","false");toast("Messages could not be loaded: "+r.error.message);return;}
-  const raw=r.data||[];S.hasOlderMessages=raw.length===300;
+  const raw=r.data||[];S.hasOlderMessages=raw.length===100;
   const loadedMessages=await attachReplyPreviews(raw.filter(m=>!S.deletedMessageIds.has(m.id)).reverse(),id);
   if(S.active!==id)return;
   S.messages=loadedMessages;
@@ -5582,7 +5582,7 @@ async function createMessageImageThumbnail(file){
 async function uploadMessageThumbnail(blob,path){
   if(!blob)return false;
   const result=await db.storage.from("gather-message-images").upload(path,blob,{
-    contentType:"image/webp",cacheControl:"31536000",upsert:false
+    contentType:"image/webp",cacheControl:"3600",upsert:false
   });
   if(result.error)throw result.error;
   return true;
@@ -5658,7 +5658,7 @@ async function uploadMessageImage(file,path){
         bucketName:"gather-message-images",
         objectName:path,
         contentType:file.type,
-        cacheControl:"31536000"
+        cacheControl:"3600"
       },
       uploadDataDuringCreation:true,
       removeFingerprintOnSuccess:true,
