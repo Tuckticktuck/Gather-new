@@ -5533,7 +5533,8 @@ function imageFileExtension(file){
   return {"image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/gif":"gif"}[file.type]||null;
 }
 async function optimizeMessageImage(file){
-  if(!file||file.type==="image/gif"||file.size<384*1024||typeof createImageBitmap!=="function")return file;
+  // Leave GIF and WebP originals untouched so animated files are never flattened.
+  if(!file||file.type==="image/gif"||file.type==="image/webp"||file.size<384*1024||typeof createImageBitmap!=="function")return file;
   let bitmap=null;
   try{
     bitmap=await createImageBitmap(file);
@@ -5558,7 +5559,8 @@ async function optimizeMessageImage(file){
   }
 }
 async function createMessageImageThumbnail(file){
-  if(!file||file.type==="image/gif"||typeof createImageBitmap!=="function")return null;
+  // Animated formats remain their original file in message history.
+  if(!file||file.type==="image/gif"||file.type==="image/webp"||typeof createImageBitmap!=="function")return null;
   let bitmap=null;
   try{
     bitmap=await createImageBitmap(file);
