@@ -1168,8 +1168,11 @@ async function signedIn(user,retry=false){
   S.loading=user.id;S.user=user;S.loadError=null;syncAdminModeButton();$("feedback-admin-open").hidden=!isFeedbackAdmin(user);$("feedback-admin-settings-section").hidden=!isFeedbackAdmin(user);showApp();setChatLoadStatus("Loading your chats…");
   try{
     const realtimeSession=await db.auth.getSession();
-    if(realtimeSession.error)throw realtimeSession.error;
-    if(realtimeSession.data.session?.access_token)db.realtime.setAuth(realtimeSession.data.session.access_token);
+    if(realtimeSession.error)console.warn("Realtime session could not be refreshed before sign-in:",realtimeSession.error.message);
+    else if(realtimeSession.data.session?.user?.id===user.id&&realtimeSession.data.session?.access_token){
+      try{await db.realtime.setAuth(realtimeSession.data.session.access_token);}
+      catch(error){console.warn("Realtime authentication could not be synchronized:",error?.message||error);}
+    }
     S.profile=await ensureProfile(user);
     if(S.user?.id!==user.id)return;
     const ageStatus=await loadMyAgeStatus();
@@ -1450,6 +1453,10 @@ function clearFriendPresenceRetry(friendId){
   S.friendPresenceRetryTimers?.delete(friendId);
   S.friendPresenceRetryAttempts?.delete(friendId);
 }
+function isRealtimeAuthorizationFailure(error,status){
+  const detail=typeof error==="string"?error:(error?.message||String(error||status||""));
+  return /unauthorized|not authorized|permission denied|not allowed/i.test(detail);
+}
 function syncFriendPresenceChannels(){
   if(!S.user)return;
   const friendIds=new Set(S.friends.map(friend=>friend.friend_id));
@@ -1471,12 +1478,20 @@ function syncFriendPresenceChannels(){
         handleFriendPresenceSync(friendId,channel);
       }else if(status==="CHANNEL_ERROR"||status==="TIMED_OUT"||status==="CLOSED"){
         if(S.friendPresenceChannels.get(friendId)!==channel)return;
-        console.warn("Friend online status subscription failed; retrying:",error||status);
+        const authorizationFailure=isRealtimeAuthorizationFailure(error,status);
+        console.warn(
+          authorizationFailure
+            ?"Friend presence authorization failed; retrying after the next auth refresh."
+            :"Friend online status subscription failed; retrying:",
+          error||status
+        );
         S.friendPresenceChannels.delete(friendId);
         S.onlineStatuses[friendId]={...(S.onlineStatuses[friendId]||{}),online:false,statusUnavailable:true};
         renderPresenceUI();
         void db.removeChannel(channel);
-        scheduleFriendPresenceRetry(friendId);
+        // Repeatedly retrying an RLS denial produces an unbounded stream of
+        // identical Realtime log entries. Wait for a fresh JWT before retrying.
+        if(!authorizationFailure)scheduleFriendPresenceRetry(friendId);
       }
     });
     S.friendPresenceChannels.set(friendId,channel);
@@ -1524,11 +1539,17 @@ async function syncOwnPresence(){
   S.ownPresenceChannel=channel;
   const handleOwnChannelFailure=(status,error)=>{
     if(S.ownPresenceChannel!==channel)return;
-    console.warn("Gather online presence connection failed; retrying:",error||status);
+    const authorizationFailure=isRealtimeAuthorizationFailure(error,status);
+    console.warn(
+      authorizationFailure
+        ?"Gather presence authorization failed; retrying after the next auth refresh."
+        :"Gather online presence connection failed; retrying:",
+      error||status
+    );
     S.ownPresenceChannel=null;
     if(S.lastSeenHeartbeatTimer){clearInterval(S.lastSeenHeartbeatTimer);S.lastSeenHeartbeatTimer=null;}
     void db.removeChannel(channel);
-    scheduleOwnPresenceRetry();
+    if(!authorizationFailure)scheduleOwnPresenceRetry();
   };
   channel.subscribe(async(status,error)=>{
     if(S.user?.id!==uid||S.preferences.shareOnlineStatus===false||S.ownPresenceChannel!==channel)return;
@@ -7824,7 +7845,21 @@ async function boot(){
       return;
     }
     db.auth.onAuthStateChange((event,session)=>{
-      if(session?.access_token)db.realtime.setAuth(session.access_token);
+      if(session?.access_token){
+        try{void db.realtime.setAuth(session.access_token);}
+        catch(error){console.warn("Realtime token update failed:",error?.message||error);}
+        if(event==="TOKEN_REFRESHED"&&session.user){
+          setTimeout(()=>{
+            if(S.user?.id!==session.user.id)return;
+            S.ownPresenceRetryAttempt=0;
+            for(const timer of S.friendPresenceRetryTimers.values())clearTimeout(timer);
+            S.friendPresenceRetryTimers.clear();
+            S.friendPresenceRetryAttempts.clear();
+            if(!S.ownPresenceChannel)void syncOwnPresence();
+            void syncFriendPresenceChannels();
+          },0);
+        }
+      }
       setTimeout(()=>{
         if(event==="PASSWORD_RECOVERY"&&session?.user){signedIn(session.user);openPasswordRecovery();}
         else if(session?.user)signedIn(session.user);
