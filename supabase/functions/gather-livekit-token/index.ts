@@ -17,7 +17,7 @@ Deno.serve(async (request: Request) => {
   if (request.method !== "POST") return json({ error: "Method not allowed." }, 405);
 
   const authorization = request.headers.get("Authorization") || "";
-  const bearer = authorization.match(/^Bearer\\s+(.+)$/i)?.[1];
+  const bearer = authorization.match(/^Bearer\s+(.+)$/i)?.[1];
   if (!bearer) return json({ error: "Sign in to Gather before starting a call." }, 401);
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
