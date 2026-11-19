@@ -13,7 +13,7 @@
 <meta name="description" content="Private direct and group conversations.">
 <title>Gather</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg?v=20261111-1">
-<link rel="stylesheet" href="app.css?v=20261119-voice-calls-v1">
+<link rel="stylesheet" href="app.css?v=20261119-voice-calls-v2">
 <script src="https://unpkg.com/@supabase/supabase-js@2.118.0"></script>
 <script>
 if (!window.supabase?.createClient) {
@@ -716,7 +716,7 @@ if (!window.supabase?.createClient) {
       <button id="voice-call-mute" class="outline" type="button" hidden>Mute</button>
       <button id="voice-call-hangup" class="voice-call-end" type="button">End call</button>
     </div>
-    <p class="voice-call-note">Audio only. Both people need this private chat open while calling.</p>
+    <p class="voice-call-note">Audio only. Your microphone turns on only after both people accept. Peer-to-peer calls may expose your network address to the other person; only call people you trust.</p>
   </section>
 </div>
 <div id="offline-status" class="offline-status" role="status" hidden>You’re offline. Gather can open its saved app shell, but signing in, sending messages, and syncing conversations require an internet connection.</div>

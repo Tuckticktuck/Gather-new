@@ -3179,8 +3179,12 @@ function voiceCallChatDetails(conversationId=S.active){
   return {chat,peerUserId:peer.user_id,peerName:chatTitle(chat)};
 }
 function createVoiceCallId(){
-  try{return crypto.randomUUID();}
-  catch(error){return Date.now().toString(36)+"-"+Math.random().toString(36).slice(2)+"-"+Math.random().toString(36).slice(2);}
+  if(typeof crypto?.randomUUID==="function")return crypto.randomUUID();
+  if(typeof crypto?.getRandomValues!=="function")throw new Error("Secure random IDs are unavailable in this browser.");
+  const bytes=crypto.getRandomValues(new Uint8Array(16));
+  bytes[6]=(bytes[6]&0x0f)|0x40;bytes[8]=(bytes[8]&0x3f)|0x80;
+  const hex=[...bytes].map(value=>value.toString(16).padStart(2,"0")).join("");
+  return hex.slice(0,8)+"-"+hex.slice(8,12)+"-"+hex.slice(12,16)+"-"+hex.slice(16,20)+"-"+hex.slice(20);
 }
 function renderVoiceCall(){
   const overlay=$("voice-call-overlay"),call=S.voiceCall;
@@ -3204,12 +3208,12 @@ function publishVoiceCallSignal(conversationId,callId,toUserId,type,extra={}){
   const channel=S.typingChannel;
   if(!channel||!S.typingReady||S.active!==conversationId||!S.user)return Promise.resolve(false);
   const payload={
+    ...extra,
     type,
     conversation_id:conversationId,
     call_id:callId,
     from_user_id:S.user.id,
-    to_user_id:toUserId,
-    ...extra
+    to_user_id:toUserId
   };
   return channel.send({type:"broadcast",event:"call-signal",payload})
     .then(status=>{
@@ -3254,7 +3258,8 @@ function finishVoiceCall(message="",notifyPeer=false){
 function createVoicePeerConnection(call){
   const pc=new RTCPeerConnection({
     iceServers:[{urls:"stun:stun.l.google.com:19302"}],
-    bundlePolicy:"max-bundle"
+    bundlePolicy:"max-bundle",
+    rtcpMuxPolicy:"require"
   });
   call.pc=pc;
   call.localStream?.getTracks().forEach(track=>pc.addTrack(track,call.localStream));
@@ -3343,9 +3348,11 @@ async function acceptVoiceCall(){
     if(S.voiceCall!==call){stream.getTracks().forEach(track=>track.stop());return;}
     call.localStream=stream;
     createVoicePeerConnection(call);
+    const accepted=await publishCurrentVoiceCallSignal(call,"accept");
+    if(!accepted)throw new Error("Gather could not confirm that you accepted the call.");
     if(call.offer)await answerIncomingVoiceCall(call);
     else{
-      call.statusText="Preparing the audio connection…";
+      call.statusText="Waiting for the caller to connect…";
       renderVoiceCall();
     }
   }catch(error){
@@ -3371,6 +3378,30 @@ function toggleVoiceCallMute(){
   call.muted=!call.muted;
   call.localStream.getAudioTracks().forEach(track=>{track.enabled=!call.muted;});
   renderVoiceCall();
+}
+async function beginOutgoingVoiceCall(call){
+  if(!call||S.voiceCall!==call||call.state!=="outgoing"||!call.accepted||call.connectingStarted)return;
+  call.connectingStarted=true;
+  call.statusText="The other person accepted. Requesting microphone permission…";
+  renderVoiceCall();
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({
+      audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},
+      video:false
+    });
+    if(S.voiceCall!==call){stream.getTracks().forEach(track=>track.stop());return;}
+    call.localStream=stream;
+    createVoicePeerConnection(call);
+    const offer=await call.pc.createOffer({offerToReceiveAudio:true});
+    await call.pc.setLocalDescription(offer);
+    const sent=await publishCurrentVoiceCallSignal(call,"offer",{sdp:call.pc.localDescription});
+    if(!sent)throw new Error("Gather could not send the call offer. Check your connection and try again.");
+    call.statusText="Connecting audio…";
+    renderVoiceCall();
+  }catch(error){
+    console.error("Could not prepare Gather voice call:",error);
+    if(S.voiceCall===call)finishVoiceCall(error?.name==="NotAllowedError"?"Microphone permission was not granted.":error?.message||"Could not connect the call.",true);
+  }
 }
 async function startVoiceCall(){
   const details=voiceCallChatDetails();
@@ -3406,38 +3437,27 @@ async function startVoiceCall(){
     answerStarted:false,
     muted:false,
     ringTimer:null,
-    statusText:"Requesting microphone permission…"
+    statusText:"Waiting for the other person to accept…"
   };
   S.voiceCall=call;
   renderVoiceCall();
   renderDirectControls();
   let invitationSent=false;
   try{
-    const stream=await navigator.mediaDevices.getUserMedia({
-      audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},
-      video:false
-    });
-    if(S.voiceCall!==call){stream.getTracks().forEach(track=>track.stop());return;}
-    call.localStream=stream;
-    createVoicePeerConnection(call);
     const invited=await publishCurrentVoiceCallSignal(call,"invite");
     if(!invited)throw new Error("Gather could not reach the other member. Make sure both people have this private chat open.");
     invitationSent=true;
-    const offer=await call.pc.createOffer({offerToReceiveAudio:true});
-    await call.pc.setLocalDescription(offer);
-    const sent=await publishCurrentVoiceCallSignal(call,"offer",{sdp:call.pc.localDescription});
-    if(!sent)throw new Error("Gather could not send the call offer. Check your connection and try again.");
-    call.statusText="Ringing…";
+    call.statusText="Ringing. Your microphone stays off until the other person accepts.";
     call.ringTimer=setTimeout(()=>{
       if(S.voiceCall!==call||call.state==="active")return;
-      void publishCurrentVoiceCallSignal(call,"hangup");
+      void publishCurrentVoiceCallSignal(call,"no-answer");
       finishVoiceCall("No answer.");
     },35000);
     renderVoiceCall();
   }catch(error){
     console.error("Could not start Gather voice call:",error);
     if(invitationSent)void publishCurrentVoiceCallSignal(call,"hangup");
-    if(S.voiceCall===call)finishVoiceCall(error?.name==="NotAllowedError"?"Microphone permission was not granted.":error?.message||"Could not start the call.");
+    if(S.voiceCall===call)finishVoiceCall(error?.message||"Could not start the call.");
   }
 }
 async function handleVoiceCallSignal(conversationId,payload){
@@ -3446,9 +3466,10 @@ async function handleVoiceCallSignal(conversationId,payload){
      payload.conversation_id!==conversationId||
      payload.to_user_id!==S.user?.id||
      payload.from_user_id!==details.peerUserId||
-     typeof payload.call_id!=="string")return;
+     typeof payload.call_id!=="string"||! /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(payload.call_id)||
+     !["invite","accept","offer","answer","candidate","decline","busy","no-answer","hangup"].includes(payload.type))return;
   if(payload.type==="invite"){
-    if(S.directStatus?.can_message!==true||payload.call_id.length>128)return;
+    if(S.directStatus?.can_message!==true||payload.call_id.length!==36)return;
     if(S.voiceCall){
       if(S.voiceCall.callId!==payload.call_id){
         void publishVoiceCallSignal(conversationId,payload.call_id,payload.from_user_id,"busy");
@@ -3484,14 +3505,21 @@ async function handleVoiceCallSignal(conversationId,payload){
   }
   const call=S.voiceCall;
   if(!call||call.callId!==payload.call_id||call.peerUserId!==payload.from_user_id)return;
+  if(payload.type==="accept"){
+    if(call.state!=="outgoing"||call.accepted)return;
+    call.accepted=true;
+    if(call.ringTimer){clearTimeout(call.ringTimer);call.ringTimer=null;}
+    await beginOutgoingVoiceCall(call);
+    return;
+  }
   if(payload.type==="offer"){
-    if(call.state!=="incoming"||!payload.sdp)return;
+    if(call.state!=="connecting"||!call.accepted||!payload.sdp||payload.sdp.type!=="offer"||typeof payload.sdp.sdp!=="string"||payload.sdp.sdp.length>16000)return;
     call.offer=payload.sdp;
     if(call.accepted)await answerIncomingVoiceCall(call);
     return;
   }
   if(payload.type==="answer"){
-    if(call.state!=="outgoing"||!call.pc||!payload.sdp)return;
+    if(call.state!=="outgoing"||!call.accepted||!call.pc||!payload.sdp||payload.sdp.type!=="answer"||typeof payload.sdp.sdp!=="string"||payload.sdp.sdp.length>16000)return;
     try{
       await call.pc.setRemoteDescription(new RTCSessionDescription(payload.sdp));
       await applyQueuedVoiceCandidates(call);
@@ -3504,12 +3532,16 @@ async function handleVoiceCallSignal(conversationId,payload){
     return;
   }
   if(payload.type==="candidate"){
-    if(!payload.candidate)return;
+    const candidate=payload.candidate;
+    if(!call.accepted||!candidate||typeof candidate.candidate!=="string"||candidate.candidate.length>2048||
+       (candidate.sdpMid!==null&&candidate.sdpMid!==undefined&&typeof candidate.sdpMid!=="string")||
+       (candidate.sdpMLineIndex!==null&&candidate.sdpMLineIndex!==undefined&&!Number.isInteger(candidate.sdpMLineIndex)))return;
     if(!call.pc||!call.pc.remoteDescription){
-      call.pendingCandidates.push(payload.candidate);
+      if(call.pendingCandidates.length>=64)return;
+      call.pendingCandidates.push(candidate);
       return;
     }
-    try{await call.pc.addIceCandidate(new RTCIceCandidate(payload.candidate));}
+    try{await call.pc.addIceCandidate(new RTCIceCandidate(candidate));}
     catch(error){console.warn("A voice-call network candidate could not be applied:",error);}
     return;
   }
