@@ -5804,7 +5804,7 @@ async function sendMessage(e){
     attachmentPath=conversationId+"/"+filename+"."+extension;
     try{
       await uploadMessageImage(file,attachmentPath);
-      const thumbnailBlob=await createMessageImageThumbnail(file);
+      const thumbnailBlob=await createMessageImageThumbnail(sourceFile);
       if(thumbnailBlob){
         thumbnailPath=conversationId+"/"+filename+".thumb.webp";
         try{await uploadMessageThumbnail(thumbnailBlob,thumbnailPath);}
