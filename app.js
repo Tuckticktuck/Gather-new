@@ -3799,7 +3799,7 @@ async function loadGameCards(conversationId){
   S.gameCardsLoading=true;
   try{
     const matchResult=await db.from("game_matches")
-      .select("id,message_id,conversation_id,game_key,status,state,version,current_turn_user_id,created_by,game_match_players(match_id,user_id,response,player_order)")
+      .select("id,message_id,conversation_id,game_key,status,state,version,current_turn_user_id,created_by,game_match_players!game_match_players_match_id_fkey(match_id,user_id,response,player_order)")
       .eq("conversation_id",conversationId).in("id",ids);
     if(matchResult.error)throw matchResult.error;
     const matches=matchResult.data||[];
@@ -5223,11 +5223,18 @@ function renderMessages(preserveScroll=false){
         link.href=m.image_url;link.setAttribute("aria-label","View image");
         link.addEventListener("click",event=>{event.preventDefault();void openOriginalMessageImage(m,"Image shared in "+chatTitle(activeChat||{kind:"direct",members:[]}));});
         const image=el("img","message-image");
+        image.crossOrigin="anonymous";
         image.src=m.image_url;image.alt="Image sent by "+(p?.display_name||"a Gather member");
         image.loading="lazy";image.decoding="async";
-        image.addEventListener("load",()=>scrollMessagesToLatest(S.active),{once:true});
+        image.addEventListener("load",()=>{
+          scrollMessagesToLatest(S.active);
+          if(!m.thumbnail_path)void backfillLegacyMessageThumbnail(m,image,m.conversation_id||S.active);
+        },{once:true});
         link.append(image);bubble.append(link);
-        if(image.complete)queueMicrotask(()=>scrollMessagesToLatest(S.active));
+        if(image.complete)queueMicrotask(()=>{
+          scrollMessagesToLatest(S.active);
+          if(!m.thumbnail_path&&image.naturalWidth)void backfillLegacyMessageThumbnail(m,image,m.conversation_id||S.active);
+        });
       }else bubble.append(el("p","message-image-unavailable","Image unavailable"));
     }
     if(S.editingMessageId===m.id){
@@ -5579,6 +5586,62 @@ async function uploadMessageThumbnail(blob,path){
   });
   if(result.error)throw result.error;
   return true;
+}
+function messageThumbnailPathForOriginal(originalPath){
+  if(typeof originalPath!=="string")return null;
+  const slash=originalPath.lastIndexOf("/");
+  if(slash<0)return null;
+  const filename=originalPath.slice(slash+1);
+  // Only auto-generate legacy thumbnails for formats that are reliably static.
+  if(!/\.(?:jpe?g|png)$/i.test(filename))return null;
+  return originalPath.slice(0,slash+1)+filename.replace(/\.[^.]+$/i,"")+".thumb.webp";
+}
+async function backfillLegacyMessageThumbnail(message,image,conversationId=S.active){
+  if(!message?.id||!message?.attachment_path||message.thumbnail_path||message._thumbnailBackfillAttempted)return;
+  if(!image?.complete||!image.naturalWidth||!conversationId)return;
+  const thumbnailPath=messageThumbnailPathForOriginal(message.attachment_path);
+  if(!thumbnailPath||typeof createImageBitmap!=="function")return;
+  message._thumbnailBackfillAttempted=true;
+  let bitmap=null;
+  try{
+    bitmap=await createImageBitmap(image);
+    const maxDimension=480;
+    const scale=Math.min(1,maxDimension/Math.max(bitmap.width,bitmap.height));
+    const width=Math.max(1,Math.round(bitmap.width*scale));
+    const height=Math.max(1,Math.round(bitmap.height*scale));
+    const canvas=document.createElement("canvas");
+    canvas.width=width;canvas.height=height;
+    const context=canvas.getContext("2d",{alpha:true});
+    if(!context)return;
+    context.drawImage(bitmap,0,0,width,height);
+    const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/webp",0.68));
+    if(!blob)return;
+    try{
+      await uploadMessageThumbnail(blob,thumbnailPath);
+    }catch(uploadError){
+      // Another device may have generated this deterministic thumbnail already.
+      // The guarded RPC below verifies that the object exists before attaching it.
+      const detail=String(uploadError?.message||uploadError||"");
+      if(!/already exists|duplicate|409/i.test(detail))throw uploadError;
+    }
+    const attached=await db.rpc("attach_message_thumbnail",{
+      p_message_id:message.id,
+      p_thumbnail_path:thumbnailPath
+    });
+    if(attached.error)throw attached.error;
+    const savedPath=typeof attached.data==="string"?attached.data:null;
+    if(!savedPath)return;
+    message.thumbnail_path=savedPath;
+    const urls=await getMessageImageUrls([savedPath],3600);
+    message.image_url=urls.get(savedPath)||message.image_url;
+    if(S.active===conversationId)renderMessages(true);
+  }catch(error){
+    // This is a best-effort optimization. Original images remain available
+    // whenever a browser cannot create a CORS-safe thumbnail.
+    console.debug("Legacy image thumbnail was not generated:",error?.message||error);
+  }finally{
+    bitmap?.close?.();
+  }
 }
 async function uploadMessageImage(file,path){
   if(!window.tus?.Upload)throw new Error("The large-image upload service did not load. Refresh Gather and try again.");
@@ -7203,7 +7266,10 @@ async function openSharedMedia(){
     const previewPath=row.thumbnail_path||row.attachment_path;
     const src=byPath.get(previewPath);if(!src)return;
     const button=el("button","shared-media-item");button.type="button";
-    const image=el("img");image.src=src;image.alt="Shared image";image.loading="lazy";image.decoding="async";
+    const image=el("img");image.crossOrigin="anonymous";image.src=src;image.alt="Shared image";image.loading="lazy";image.decoding="async";
+    image.addEventListener("load",()=>{
+      if(!row.thumbnail_path)void backfillLegacyMessageThumbnail(row,image,chat.id);
+    },{once:true});
     button.append(image);button.addEventListener("click",()=>void openOriginalMessageImage(row,"Image shared in "+chatTitle(chat)));
     list.append(button);
   });
