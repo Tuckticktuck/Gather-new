@@ -9,9 +9,6 @@ function acceptedPlayers(players) {
   return players.filter(player => player.response === "accepted")
     .sort((a,b) => a.player_order-b.player_order).map(player => player.user_id);
 }
-function winningLine(board) {
-  return WIN_LINES.find(line => board[line[0] && board[line[0]] === board[line[1]] && board[line[1]] === board[line[2]]) || null;
-}
 function applyTicTacToeAction({state,action,actorId,players,currentTurnUserId}) {
   if (!action || typeof action !== "object" || Array.isArray(action) || typeof action.type !== "string") {
     throw new GameRuleError("A valid Tic-Tac-Toe action is required.");
