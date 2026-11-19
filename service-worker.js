@@ -1,13 +1,13 @@
 "use strict";
 
-const CACHE_NAME = "gather-shell-v180-voice-call-security";
+const CACHE_NAME = "gather-shell-v181-livekit-voice";
 const APP_BASE = new URL("./", self.registration.scope);
 const SHELL_URLS = [
   "./",
   "./index.html",
   "./app.css?v=20261119-voice-calls-v2",
   "./design-system.css?v=20261118-continuous-chat-canvas-v1",
-  "./app.js?v=20261119-voice-calls-v2",
+  "./app.js?v=20261119-livekit-voice-v1",
   "./favicon.svg?v=20261111-1",
   "./manifest.webmanifest?v=20261111-pwa",
   "./icons/gather-180.png",
