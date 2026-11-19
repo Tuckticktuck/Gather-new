@@ -3640,6 +3640,7 @@ function closeUnoGame(){
 async function openGameMatch(matchId){
   S.activeGameId=matchId;S.activeGameView=null;S.unoSelectedCardId=null;S.unoHouseRulesDraft=null;S.chessSelectedSquare=null;S.chessPendingPromotion=null;
   $("game-overlay").hidden=false;
+  $("uno-game-content").classList.remove("tic-tac-toe-mode","battleship-mode");
   $("uno-game-title").textContent=gameTitleForKey(S.gameMatches[matchId]?.game_key);
   $("uno-game-status").textContent="Loading match…";
   $("uno-game-content").replaceChildren(el("p","muted","Loading your game…"));
