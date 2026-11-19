@@ -13,7 +13,7 @@
 <meta name="description" content="Private direct and group conversations.">
 <title>Gather</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg?v=20261111-1">
-<link rel="stylesheet" href="app.css?v=20261119-tic-tac-toe-v1">
+<link rel="stylesheet" href="app.css?v=20261119-voice-calls-v1">
 <script src="https://unpkg.com/@supabase/supabase-js@2.118.0"></script>
 <script>
 if (!window.supabase?.createClient) {
@@ -22,7 +22,7 @@ if (!window.supabase?.createClient) {
 </script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
 <link rel="stylesheet" href="design-system.css?v=20261118-continuous-chat-canvas-v1">
-<script defer src="app.js?v=20261119-tic-tac-toe-v1" onerror="const s=document.getElementById('auth-status');if(s){s.textContent='Gather could not load its app script. Check your connection and reload the page.';s.classList.add('error');}"></script>
+<script defer src="app.js?v=20261119-voice-calls-v1" onerror="const s=document.getElementById('auth-status');if(s){s.textContent='Gather could not load its app script. Check your connection and reload the page.';s.classList.add('error');}"></script>
 </head>
 <body>
 <section id="auth" class="auth-shell">
@@ -221,7 +221,7 @@ if (!window.supabase?.createClient) {
           <strong class="message-restriction-title"></strong><p class="message-restriction-detail"></p>
           <button class="message-restriction-retry outline" type="button" hidden>Retry check</button>
         </div>
-        <header class="chat-head"><button id="back" class="back" aria-label="Back to conversations">←</button><button id="conversation-drawer-toggle" class="outline conversation-drawer-toggle" type="button" aria-label="Open conversations" aria-controls="in-chat-sidebar" aria-expanded="false">☰</button><span id="chat-avatar" class="avatar">?</span><div class="chat-title"><button id="chat-title" class="chat-title-profile" type="button" hidden></button><small id="chat-subtitle"></small><small id="chat-presence-status" class="presence-label" hidden></small><small id="chat-typing-indicator" class="chat-typing-indicator" aria-live="polite" hidden></small></div><button id="conversation-sidebar-collapse" class="outline conversation-sidebar-collapse" type="button" aria-label="Collapse conversation sidebar" aria-controls="in-chat-sidebar" aria-expanded="true" title="Collapse conversation list">☰</button><button id="chat-actions-open" class="outline chat-actions-trigger" type="button" aria-label="Open chat options" aria-haspopup="dialog">Chat options <span aria-hidden="true">⌄</span></button></header>
+        <header class="chat-head"><button id="back" class="back" aria-label="Back to conversations">←</button><button id="conversation-drawer-toggle" class="outline conversation-drawer-toggle" type="button" aria-label="Open conversations" aria-controls="in-chat-sidebar" aria-expanded="false">☰</button><span id="chat-avatar" class="avatar">?</span><div class="chat-title"><button id="chat-title" class="chat-title-profile" type="button" hidden></button><small id="chat-subtitle"></small><small id="chat-presence-status" class="presence-label" hidden></small><small id="chat-typing-indicator" class="chat-typing-indicator" aria-live="polite" hidden></small></div><button id="conversation-sidebar-collapse" class="outline conversation-sidebar-collapse" type="button" aria-label="Collapse conversation sidebar" aria-controls="in-chat-sidebar" aria-expanded="true" title="Collapse conversation list">☰</button><button id="voice-call-start" class="outline voice-call-start" type="button" aria-label="Start voice call" title="Start voice call" hidden><span aria-hidden="true">☎</span><span>Call</span></button><button id="chat-actions-open" class="outline chat-actions-trigger" type="button" aria-label="Open chat options" aria-haspopup="dialog">Chat options <span aria-hidden="true">⌄</span></button></header>
         <div id="messages" class="messages"></div>
         <p id="chat-notice" class="chat-notice" hidden></p>
         <form id="send-form" class="composer">
@@ -702,6 +702,23 @@ if (!window.supabase?.createClient) {
   <button class="close" data-close aria-label="Close">×</button><p class="eyebrow">GATHER ADMIN</p><h2 id="reports-admin-title">Member reports</h2><p class="tiny muted">Private reports submitted by Gather members.</p>
   <div id="reports-admin-list" class="reports-admin-list"><p class="muted tiny">Loading reports…</p></div>
 </section></div>
+<div id="voice-call-overlay" class="overlay voice-call-overlay" hidden>
+  <section class="voice-call-panel" role="dialog" aria-modal="true" aria-labelledby="voice-call-title">
+    <div class="voice-call-emblem" aria-hidden="true">☎</div>
+    <p class="eyebrow">GATHER VOICE CALL</p>
+    <h2 id="voice-call-title">Voice call</h2>
+    <p id="voice-call-peer" class="voice-call-peer">Gather member</p>
+    <p id="voice-call-status" class="voice-call-status" role="status" aria-live="polite">Connecting…</p>
+    <audio id="voice-call-remote-audio" class="voice-call-remote-audio" autoplay playsinline></audio>
+    <div class="voice-call-actions">
+      <button id="voice-call-accept" class="primary" type="button" hidden>Accept</button>
+      <button id="voice-call-decline" class="outline" type="button" hidden>Decline</button>
+      <button id="voice-call-mute" class="outline" type="button" hidden>Mute</button>
+      <button id="voice-call-hangup" class="voice-call-end" type="button">End call</button>
+    </div>
+    <p class="voice-call-note">Audio only. Both people need this private chat open while calling.</p>
+  </section>
+</div>
 <div id="offline-status" class="offline-status" role="status" hidden>You’re offline. Gather can open its saved app shell, but signing in, sending messages, and syncing conversations require an internet connection.</div>
 <div id="toast" class="toast" role="status"></div>
 <div id="message-notifications" class="message-notifications" role="status" aria-live="polite" aria-atomic="false" hidden></div>
