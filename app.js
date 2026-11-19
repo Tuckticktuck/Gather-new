@@ -3380,7 +3380,7 @@ function toggleVoiceCallMute(){
   renderVoiceCall();
 }
 async function beginOutgoingVoiceCall(call){
-  if(!call||S.voiceCall!==call||call.state!=="outgoing"||call.accepted||call.connectingStarted)return;
+  if(!call||S.voiceCall!==call||call.state!=="outgoing"||!call.accepted||call.connectingStarted)return;
   call.connectingStarted=true;
   call.statusText="The other person accepted. Requesting microphone permission…";
   renderVoiceCall();
@@ -3513,7 +3513,7 @@ async function handleVoiceCallSignal(conversationId,payload){
     return;
   }
   if(payload.type==="offer"){
-    if(call.state!=="incoming"||!call.accepted||!payload.sdp||payload.sdp.type!=="offer"||typeof payload.sdp.sdp!=="string"||payload.sdp.sdp.length>16000)return;
+    if(call.state!=="connecting"||!call.accepted||!payload.sdp||payload.sdp.type!=="offer"||typeof payload.sdp.sdp!=="string"||payload.sdp.sdp.length>16000)return;
     call.offer=payload.sdp;
     if(call.accepted)await answerIncomingVoiceCall(call);
     return;
