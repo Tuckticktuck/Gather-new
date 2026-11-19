@@ -815,6 +815,7 @@ function showAuth() {
   clearMessageImageUrlCache();
   saveActiveChatDraft();clearUnreadDividerState();
   closeTypingChannel();
+  closeGameMatchChannel();
   stopOnlinePresence();
   clearPendingMessageImage();clearMessageNotifications();
   $("password-recovery-modal").hidden=true;S.passwordRecovery=false;
@@ -3649,7 +3650,7 @@ async function openChat(id){
   closeTypingChannel();
   if(S.readChannel){db.removeChannel(S.readChannel);S.readChannel=null;}
   if(S.pollChannel){db.removeChannel(S.pollChannel);S.pollChannel=null;}
-  if(S.gameChannel){db.removeChannel(S.gameChannel);S.gameChannel=null;}
+  closeGameMatchChannel();
   if(S.activeGameId)closeUnoGame();
   S.gameMatches={};S.gameMatchPlayers={};S.gameCardsLoading=false;
   clearPendingMessageImage();
@@ -3839,24 +3840,43 @@ async function loadGameCards(conversationId){
     if(S.gameCardsRefreshPending&&S.active===conversationId){S.gameCardsRefreshPending=false;void loadGameCards(conversationId);}
   }
 }
+let activeGameMatchChannelConversationId=null;
+function closeGameMatchChannel(){
+  const channel=S.gameChannel;
+  S.gameChannel=null;
+  activeGameMatchChannelConversationId=null;
+  if(channel)void db.removeChannel(channel);
+}
 function subscribeGameMatches(conversationId){
-  if(S.gameChannel){db.removeChannel(S.gameChannel);S.gameChannel=null;}
-  S.gameChannel=db.channel("gather-game-matches-"+conversationId)
+  if(!conversationId||!S.user)return;
+  if(S.gameChannel&&activeGameMatchChannelConversationId===conversationId)return;
+  closeGameMatchChannel();
+  const channel=db.channel("gather-game-matches-"+conversationId)
     .on("postgres_changes",{event:"*",schema:"public",table:"game_matches",filter:"conversation_id=eq."+conversationId},()=>{
       void loadGameCards(conversationId);
       if(S.activeGameId&&S.active===conversationId)void loadActiveGameView();
-    })
-    .subscribe();
+    });
+  S.gameChannel=channel;
+  activeGameMatchChannelConversationId=conversationId;
+  channel.subscribe((status,error)=>{
+    if(status==="CHANNEL_ERROR"||status==="TIMED_OUT"||status==="CLOSED"){
+      if(S.gameChannel!==channel)return;
+      console.warn("Game updates subscription disconnected:",error||status);
+      S.gameChannel=null;
+      activeGameMatchChannelConversationId=null;
+      void db.removeChannel(channel);
+    }
+  });
 }
 
 // A backgrounded tab can have its WebSocket paused, and a closed browser has
-// no live client at all. The database remains authoritative; rejoin and fetch
-// the latest match state whenever this page becomes active again.
+// no live client at all. Keep one subscription per active conversation and
+// coalesce overlapping focus/pageshow/visibility events before refetching.
 let lastGameResumeSyncAt=0;
 function resumeGameSync(){
   if(!S.user||!S.active||document.hidden||!navigator.onLine)return;
   const now=Date.now();
-  if(now-lastGameResumeSyncAt<1200)return;
+  if(now-lastGameResumeSyncAt<5000)return;
   lastGameResumeSyncAt=now;
   const conversationId=S.active;
   subscribeGameMatches(conversationId);
@@ -7199,7 +7219,7 @@ function goHome(){
   saveActiveChatDraft();clearUnreadDividerState();
   closeTypingChannel();
   runScreenTransition(()=>{
-    clearPendingMessageImage();closeModals(true);S.active=null;S.messages=[];S.messageReads={};S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.replyTo=null;S.hasOlderMessages=false;S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;renderReplyComposer();
+    clearPendingMessageImage();closeModals(true);closeGameMatchChannel();S.active=null;S.messages=[];S.messageReads={};S.messageReactions={};S.messagePolls={};S.pinnedMessages=[];S.forwardMessage=null;S.pendingReactionKeys.clear();S.openReactionPickerMessageId=null;S.replyTo=null;S.hasOlderMessages=false;S.selectingMessages=false;S.selectedMessageIds.clear();S.directStatus=null;renderReplyComposer();
     $("layout").classList.remove("show-chat");$("layout").classList.add("show-home");
     renderChats();renderActive();
   });
