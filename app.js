@@ -1413,6 +1413,14 @@ function ensurePresenceDisplayTimer(){
     renderPresenceUI();
   },30000);
 }
+let friendPresenceFallbackTimer=null;
+function scheduleFriendPresenceFallbackRefresh(){
+  if(friendPresenceFallbackTimer)return;
+  friendPresenceFallbackTimer=setTimeout(()=>{
+    friendPresenceFallbackTimer=null;
+    void refreshFriendLastSeen();
+  },250);
+}
 async function refreshFriendLastSeen(userId=null){
   if(!S.user)return false;
   const ids=userId?[userId]:S.friends.map(friend=>friend.friend_id);
@@ -1443,7 +1451,7 @@ function handleFriendPresenceSync(friendId,channel){
   const presences=Object.values(state).flat();
   const online=presences.length>0;
   S.onlineStatuses[friendId]={...(S.onlineStatuses[friendId]||{}),online,statusUnavailable:false};
-  if(!online)refreshFriendLastSeen(friendId);
+  if(!online)scheduleFriendPresenceFallbackRefresh();
   else renderPresenceUI();
 }
 function scheduleFriendPresenceRetry(friendId){
@@ -1583,6 +1591,7 @@ async function syncOwnPresence(){
   });
 }
 async function stopOnlinePresence(){
+  if(friendPresenceFallbackTimer){clearTimeout(friendPresenceFallbackTimer);friendPresenceFallbackTimer=null;}
   if(S.lastSeenHeartbeatTimer){clearInterval(S.lastSeenHeartbeatTimer);S.lastSeenHeartbeatTimer=null;}
   if(S.presenceDisplayTimer){clearInterval(S.presenceDisplayTimer);S.presenceDisplayTimer=null;}
   if(S.ownPresenceRetryTimer){clearTimeout(S.ownPresenceRetryTimer);S.ownPresenceRetryTimer=null;}
