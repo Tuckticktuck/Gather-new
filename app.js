@@ -3448,6 +3448,7 @@ async function handleVoiceCallSignal(conversationId,payload){
      payload.from_user_id!==details.peerUserId||
      typeof payload.call_id!=="string")return;
   if(payload.type==="invite"){
+    if(S.directStatus?.can_message!==true||payload.call_id.length>128)return;
     if(S.voiceCall){
       if(S.voiceCall.callId!==payload.call_id){
         void publishVoiceCallSignal(conversationId,payload.call_id,payload.from_user_id,"busy");
@@ -3478,6 +3479,7 @@ async function handleVoiceCallSignal(conversationId,payload){
       finishVoiceCall("Missed voice call.");
     },30000);
     renderVoiceCall();
+    renderDirectControls();
     return;
   }
   const call=S.voiceCall;
